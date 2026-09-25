@@ -27,25 +27,33 @@ per phase. This doc is the map; the board is the source of truth for what's actu
 
 Mostly the scaffold work already merged in PR #1/#2. What's left before any gameplay code starts:
 
-- [ ] Write the save/load **data contract** doc (`docs/DATA_CONTRACT.md`) — the exact field
+- [x] Write the save/load **data contract** doc (`docs/DATA_CONTRACT.md`) — the exact field
       order/types shared by the Postgres schema, the C++ extension's `RVExtensionArgs` return
       format, and the SQF `select`/array-building code that parses it. This is the single most
       important doc in the repo — the prototype's save/load bug happened because this contract
       only ever existed implicitly, split across three files that drifted out of sync.
-- [ ] Canonical Postgres schema (`database/schema.sql`) for: player record (uid, name, cash,
+- [x] Canonical Postgres schema (`database/schema.sql`) for: player record (uid, name, cash,
       bank, faction, rank), inventory (JSONB), licenses (JSONB), and staff ranks
       (`staff_ranks` + `players.staff_rank_id` — see [ADMIN_TOOLS.md §3](ADMIN_TOOLS.md#3-data-model)).
-- [ ] Local dev Postgres instance + `config.ini` set up and connecting.
-- [ ] HEMTT (or equivalent) build tooling decided for the C++ extension and the mission.
+      Reviewed against [AsYetUntitled/Framework](https://github.com/AsYetUntitled/Framework)
+      (Tonic's widely-deployed Altis Life base) before finalizing — added persisted per-faction
+      alive/position (prevents a known disconnect-to-escape-death/arrest exploit in this genre),
+      a `wanted_crimes` table, name history, and per-hitpoint vehicle damage as a direct result.
+- [x] Local dev Postgres instance + `config.ini` set up and connecting.
+- [x] Build tooling decided for the C++ extension: MSVC (`cl.exe`) directly via `build.ps1`, not
+      HEMTT — HEMTT builds Arma content/PBOs, not an arbitrary C++ DLL; no cmake/vcpkg needed
+      either, since `libpq` ships with the local PostgreSQL server install already.
 
 **Milestone exit criteria:** data contract doc merged, schema applied to a local DB, dev
-environment reproducible from a clean clone.
+environment reproducible from a clean clone. ✅ **Phase 0 complete.**
 
 ## Phase 1 — Core Bridge & Persistence *(2026-10-06 → 2026-10-26)*
 
-- [ ] C++ extension skeleton: `RVExtension`/`RVExtensionArgs` entry points, `libpq` (the C client
+- [x] C++ extension skeleton: `RVExtension`/`RVExtensionArgs` entry points, `libpq` (the C client
       library — ships with the Postgres server install, no vcpkg needed) connection, config
-      loading from `config.ini`.
+      loading from `config.ini`. Verified end-to-end with a native `LoadLibrary`/`GetProcAddress`
+      test harness (no Arma install needed to prove it): `ping` round-trips through the DLL,
+      libpq, and a local Postgres instance and returns `OK`.
 - [ ] `cmd_save` / `cmd_load` implemented against the Phase 0 schema, **prepared statements
       only** — no hand-built SQL strings.
 - [ ] SQF request/response framework skeleton: the "Client Requests, Server Decides" pattern —
