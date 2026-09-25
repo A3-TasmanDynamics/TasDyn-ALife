@@ -23,36 +23,79 @@ import { EventsOn } from '../wailsjs/runtime/runtime';
 // caught this while testing, not something to reintroduce.
 // -----------------------------------------------------------------------
 
+const ICONS = {
+    launch: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>',
+    console: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>',
+    dashboard: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
+    settings: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+};
+
 document.querySelector('#app')!.innerHTML = `
-  <header>
-    <div class="brand-mark">TD</div>
-    <h1>ALife Server Manager</h1>
-    <span class="subtitle">TASMAN DYNAMICS</span>
-  </header>
-  <nav>
-    <button data-tab="launch" class="active">Launch</button>
-    <button data-tab="console">Console</button>
-    <button data-tab="dashboard">Dashboard</button>
-    <button data-tab="settings">Settings</button>
-  </nav>
-  <main>
-    <section id="panel-launch" class="panel active"></section>
-    <section id="panel-console" class="panel"></section>
-    <section id="panel-dashboard" class="panel"></section>
-    <section id="panel-settings" class="panel"></section>
-  </main>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">TD</div>
+        <div class="brand-text">
+          <div class="brand-title">ALife</div>
+          <div class="brand-subtitle">SERVER MANAGER</div>
+        </div>
+      </div>
+      <nav>
+        <button data-tab="launch" class="nav-item active">${ICONS.launch}<span>Launch</span></button>
+        <button data-tab="console" class="nav-item">${ICONS.console}<span>Console</span></button>
+        <button data-tab="dashboard" class="nav-item">${ICONS.dashboard}<span>Dashboard</span></button>
+        <button data-tab="settings" class="nav-item">${ICONS.settings}<span>Settings</span></button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="status-badge" id="sidebar-status">
+          <span class="status-dot" id="sidebar-status-dot"></span>
+          <span id="sidebar-status-text">Checking...</span>
+        </div>
+        <div class="sidebar-org">TASMAN DYNAMICS</div>
+      </div>
+    </aside>
+    <div class="content-area">
+      <main>
+        <section id="panel-launch" class="panel active"></section>
+        <section id="panel-console" class="panel"></section>
+        <section id="panel-dashboard" class="panel"></section>
+        <section id="panel-settings" class="panel"></section>
+      </main>
+    </div>
+  </div>
 `;
 
-document.querySelectorAll('nav button').forEach((btn) => {
+document.querySelectorAll('.nav-item').forEach((btn) => {
     btn.addEventListener('click', () => {
         const tab = (btn as HTMLElement).dataset.tab!;
-        document.querySelectorAll('nav button').forEach((b) => b.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
         document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
         document.getElementById(`panel-${tab}`)!.classList.add('active');
         if (tab === 'dashboard') refreshDashboard();
     });
 });
+
+// -----------------------------------------------------------------------
+// Sidebar status -- a persistent indicator of whether the dedicated server
+// process is running, visible regardless of which tab is open (previously
+// this only showed inside the Launch tab's own status card).
+// -----------------------------------------------------------------------
+
+function applySidebarStatus(status: main.ServerStatus) {
+    const dot = document.getElementById('sidebar-status-dot');
+    const text = document.getElementById('sidebar-status-text');
+    if (dot) dot.classList.toggle('running', status.running);
+    if (text) text.innerText = status.running ? `Running · PID ${status.pid}` : 'Stopped';
+}
+
+async function refreshSidebarStatus() {
+    try {
+        applySidebarStatus(await GetServerStatus());
+    } catch (e) {
+        console.error(e);
+    }
+}
 
 // -----------------------------------------------------------------------
 // Launch tab
@@ -71,7 +114,14 @@ async function renderLaunchPanel() {
         return;
     }
 
+    applySidebarStatus(status);
+
     panel.innerHTML = `
+      <div class="page-header">
+        <h1>Launch</h1>
+        <p>Configure and start your Arma 3 dedicated server.</p>
+      </div>
+
       <div class="card">
         <h2>Server Status</h2>
         <div class="status-badge">
@@ -178,6 +228,11 @@ function readServerConfigForm(): main.ServerConfig {
 function renderConsolePanel() {
     const panel = document.getElementById('panel-console')!;
     panel.innerHTML = `
+      <div class="page-header">
+        <h1>Console</h1>
+        <p>Live output from the running dedicated server.</p>
+      </div>
+
       <div class="card">
         <h2>Live Server Console</h2>
         <div class="console" id="console-output"></div>
@@ -198,6 +253,7 @@ EventsOn('server:log', (line: string) => {
 });
 
 EventsOn('server:stopped', () => {
+    refreshSidebarStatus();
     if (document.getElementById('panel-launch')?.classList.contains('active')) {
         renderLaunchPanel();
     }
@@ -214,7 +270,12 @@ let playerChart: Chart | null = null;
 function renderDashboardPanel() {
     const panel = document.getElementById('panel-dashboard')!;
     panel.innerHTML = `
-      <div class="button-row" style="margin-bottom:16px;">
+      <div class="page-header">
+        <h1>Dashboard</h1>
+        <p>Player activity, economy, and anti-cheat overview.</p>
+      </div>
+
+      <div class="button-row" style="margin-bottom:16px; margin-top:0;">
         <button class="action secondary" id="btn-refresh-dash">Refresh</button>
       </div>
       <div id="dash-content"><div class="empty-state">Loading...</div></div>
@@ -341,6 +402,11 @@ async function renderSettingsPanel() {
     }
 
     panel.innerHTML = `
+      <div class="page-header">
+        <h1>Settings</h1>
+        <p>Local paths and database connection.</p>
+      </div>
+
       <div class="card">
         <h2>Arma 3 Server</h2>
         <div class="field">
@@ -451,3 +517,4 @@ renderLaunchPanel();
 renderConsolePanel();
 renderDashboardPanel();
 renderSettingsPanel();
+refreshSidebarStatus();
