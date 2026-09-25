@@ -11,6 +11,14 @@
 - Never commit real credentials. Copy `config.ini.example` to `config.ini` locally — it's git-ignored.
 - Never commit build output (`build/`, `*.dll`, `*.pbo`) or the `server_dist/` deploy tree — see [.gitignore](.gitignore).
 
+## SQF command verification
+
+Before writing or modifying any SQF — including single-line edits — verify every command's
+syntax, parameter order, return type (especially null/`objNull` cases), and `since` version
+against the local reference: `python docs/arma/search_arma3.py --exact "<command name>"`. See
+`docs/arma/CLAUDE.md`. Flag uncertainty rather than assuming if the lookup comes back empty or
+truncated.
+
 ## The data contract
 
 `database/`, `src/cpp_extension/`, and `src/mission/` share one save/load array format across
