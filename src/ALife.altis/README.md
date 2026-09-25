@@ -1,13 +1,17 @@
-# src/mission/
+# src/ALife.altis/
 
 SQF mission source for the ALife gamemode. Client requests, server decides:
 gameplay code sends an intent to the server; the server is the only thing
 that reads or writes persistent state via `src/cpp_extension`.
 
+Named `ALife.altis` to follow Arma 3's own `<mission name>.<world>` mission-folder convention —
+`altis` because that's the terrain this is built against right now. If the terrain ever changes,
+this folder gets renamed to match; the two are meant to stay in lockstep, not drift.
+
 ## What's here
 
 ```text
-src/mission/
+src/ALife.altis/
 ├── description.ext        # Mission config — includes everything below
 ├── CfgFunctions.hpp        # Registers ALife_fnc_* from functions/
 ├── CfgRemoteExec.hpp       # The remoteExec allowlist — see docs/ANTI_CHEAT.md Layer 1
@@ -51,15 +55,17 @@ actually place — the example entries are placeholders, not a fixed set.
 ## What's *not* here yet — `mission.sqm`
 
 `mission.sqm` (the actual map layout — markers, spawn points, triggers) isn't generated here;
-it's Eden editor output and has to come from actually building the mission in-game. To wire this
-scaffold into a real mission:
+it's Eden editor output and has to come from actually building the mission in-game. Because this
+folder is already named to match Arma's own convention, the natural path is to make it the mission
+folder directly rather than building one elsewhere and copying files in afterward:
 
-1. Open Eden, create/open the mission, save it — this produces `mission.sqm` in the mission's
-   working folder.
-2. Place the spawn point markers described above.
-3. Copy (or symlink) everything else in this folder — `description.ext`, `CfgFunctions.hpp`,
-   `CfgRemoteExec.hpp`, `initServer.sqf`, `initPlayerServer.sqf`, `config/`, `dialog/`, and
-   `functions/` — into that same folder, alongside the `mission.sqm` Eden created.
+1. Symlink (or copy) this folder into your Arma 3 install's `MPMissions/` (or into your dev
+   workspace's missions folder, if you use one) as `ALife.altis` — same name, so Eden recognizes
+   it as a mission for the Altis terrain.
+2. Open it in Eden (or start a new mission on Altis named `ALife` — Eden will create/use a folder
+   by that same name) and save. This produces `mission.sqm` **directly alongside the files already
+   here** — no copy step needed once the folder is in the right place under the right name.
+3. Place the spawn point markers described above.
 4. Point the mission's `config.ini` (see the repo root's `config.ini.example`) at a real Postgres
    instance — the C++ extension side of this (Phases 0–1) is already built and verified; see
    `src/cpp_extension/README.md`.

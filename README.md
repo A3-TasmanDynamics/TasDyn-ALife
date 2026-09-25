@@ -110,7 +110,7 @@ TasDyn-ALife/
 ├── database/            # PostgreSQL schema (single source of truth — see database/README.md)
 ├── src/
 │   ├── cpp_extension/   # C++ bridge (the DB extension DLL)
-│   ├── mission/         # SQF mission source
+│   ├── ALife.altis/     # SQF mission source (named for Arma's <mission>.<world> convention)
 │   ├── web_dashboard/   # NuxtJS admin panel (planned)
 │   └── discord_bot/     # Node.js bot (planned)
 ├── docs/                # Design docs (data contracts, architecture decisions)
