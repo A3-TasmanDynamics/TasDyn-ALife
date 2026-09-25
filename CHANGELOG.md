@@ -267,3 +267,7 @@
   everywhere a player's display name is read for session/ticket display (`internal/auth/session.go`,
   both ticket queries in `internal/handlers/support.go`, `internal/handlers/tickets.go`'s ticket-detail
   query) -- the top nav's own name display had the identical gap.
+- `src/website`: `.site-main` no longer caps content at 960px centered -- pages now use the full
+  browser width (padding only, no `max-width`). Matters most for the Support Panel's sidebar+table
+  layout and the ticket queue, which had noticeably wasted space on anything wider than a laptop
+  screen.
