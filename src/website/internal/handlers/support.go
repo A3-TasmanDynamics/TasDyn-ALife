@@ -46,7 +46,7 @@ func (d *Deps) SupportDashboard(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := d.Pool.Query(r.Context(), `
 		SELECT st.id, st.subject, st.category, st.status, st.priority, COALESCE(assignee.name, ''),
-		       requester.name, st.created_at
+		       COALESCE(NULLIF(requester.name, ''), 'Player #' || requester.id), st.created_at
 		FROM support_tickets st
 		JOIN players requester ON requester.id = st.player_id
 		LEFT JOIN players assignee ON assignee.id = st.assigned_staff_id
@@ -113,7 +113,7 @@ func (d *Deps) SupportQueue(w http.ResponseWriter, r *http.Request) {
 
 	query := `
 		SELECT st.id, st.subject, st.category, st.status, st.priority, COALESCE(assignee.name, ''),
-		       requester.name, st.created_at
+		       COALESCE(NULLIF(requester.name, ''), 'Player #' || requester.id), st.created_at
 		FROM support_tickets st
 		JOIN players requester ON requester.id = st.player_id
 		LEFT JOIN players assignee ON assignee.id = st.assigned_staff_id

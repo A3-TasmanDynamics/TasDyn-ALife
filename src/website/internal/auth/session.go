@@ -173,8 +173,14 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 
 		var sess Session
 		var expiresAt time.Time
+		// COALESCE/NULLIF: players.name defaults to '' and is only ever set
+		// by the game's own save path -- a website-first signup (Steam
+		// login before ever connecting in-game) has no name yet, and an
+		// empty string here reads as a blank, mysteriously-nameless entry
+		// everywhere this session's Name gets displayed (top nav, ticket
+		// "Requester" columns, ...) rather than an honest placeholder.
 		err = a.Pool.QueryRow(r.Context(), `
-			SELECT p.id, p.name, ws.admin_panel_access, ws.support_panel_access, ws.expires_at
+			SELECT p.id, COALESCE(NULLIF(p.name, ''), 'Player #' || p.id), ws.admin_panel_access, ws.support_panel_access, ws.expires_at
 			FROM web_sessions ws
 			JOIN players p ON p.id = ws.player_id
 			WHERE ws.token_hash = $1
