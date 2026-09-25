@@ -1,0 +1,53 @@
+{{define "content"}}
+<h1 class="page-title">Support Panel</h1>
+{{if .Session.AdminPanelAccess}}<p class="hint" style="margin-top:-14px;margin-bottom:20px;"><a href="/admin">Switch to Admin Panel</a></p>{{end}}
+
+<div class="support-shell">
+  {{template "support_sidebar" .ActiveSupportTab}}
+
+  <div class="support-content">
+    <div class="stat-grid">
+      <div class="stat-tile">
+        <div class="label">Open</div>
+        <div class="value">{{.Stats.Open}}</div>
+      </div>
+      <div class="stat-tile">
+        <div class="label">Unassigned</div>
+        <div class="value">{{.Stats.Unassigned}}</div>
+      </div>
+      <div class="stat-tile">
+        <div class="label">Assigned to Me</div>
+        <div class="value">{{.Stats.AssignedToMe}}</div>
+      </div>
+      <div class="stat-tile">
+        <div class="label">Urgent</div>
+        <div class="value">{{.Stats.Urgent}}</div>
+      </div>
+    </div>
+
+    <section class="card">
+      <h2>Recent Tickets</h2>
+      {{if .RecentTickets}}
+        <table>
+          <thead><tr><th>Priority</th><th>Subject</th><th>Requester</th><th>Status</th><th>Opened</th><th></th></tr></thead>
+          <tbody>
+            {{range .RecentTickets}}
+            <tr>
+              <td><span class="badge badge-priority-{{.Priority}}">{{.Priority}}</span></td>
+              <td>{{.Subject}}</td>
+              <td>{{.RequesterName}}</td>
+              <td><span class="badge badge-status-{{.Status}}">{{.Status}}</span></td>
+              <td>{{.CreatedAt}}</td>
+              <td><a href="/tickets/{{.ID}}">Open</a></td>
+            </tr>
+            {{end}}
+          </tbody>
+        </table>
+        <p class="hint" style="margin-top:14px;"><a href="/support/tickets">View all tickets →</a></p>
+      {{else}}
+        <p class="empty-state">No tickets yet.</p>
+      {{end}}
+    </section>
+  </div>
+</div>
+{{end}}

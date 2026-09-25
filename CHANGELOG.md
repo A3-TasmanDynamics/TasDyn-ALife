@@ -234,3 +234,19 @@
   - Also caught (during testing, not by inspection) that the real dev DB already had a ticket from
     live use this session -- left untouched, only the disposable test accounts and their tickets
     were cleaned up afterward.
+- `src/website`: split the Support Panel into a two-page structure with a persistent side nav --
+  `/support` is now a **Dashboard** (stats bar + the 5 most recently opened tickets), and
+  `/support/tickets` is the full filterable **Tickets** queue -- matching how real IT ticketing
+  systems separate an at-a-glance overview from the working queue instead of cramming both into
+  one page. The side nav (`partial_support_sidebar.html`) also follows a staff viewer into the
+  ticket detail page, so workspace navigation stays visible while drilling into a specific ticket;
+  a player viewing their own ticket never sees it at all.
+  - `internal/render`'s template loader now also parses `partial_*.html` fragments alongside every
+    page (previously it only ever parsed layout + one page at a time, since pages define a
+    same-named "content" block that would collide if every page were parsed together) -- partials
+    define their own uniquely-named block instead, so this is the first shared fragment reused
+    across pages rather than duplicated in each one.
+  - Verified end-to-end: both pages render with correct active-tab highlighting, the sidebar
+    appears on the ticket page for a staff session and is confirmed absent (zero matches, not just
+    "not visible") for a plain player session viewing their own ticket. Disposable test accounts
+    cleaned up afterward; the real ticket already in the dev DB was untouched.

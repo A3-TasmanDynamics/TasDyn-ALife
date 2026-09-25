@@ -1,80 +1,67 @@
 {{define "content"}}
 <h1 class="page-title">Support Panel</h1>
-{{if .Session.AdminPanelAccess}}<p class="hint"><a href="/admin">Switch to Admin Panel</a></p>{{end}}
+{{if .Session.AdminPanelAccess}}<p class="hint" style="margin-top:-14px;margin-bottom:20px;"><a href="/admin">Switch to Admin Panel</a></p>{{end}}
 
-<div class="stat-grid">
-  <div class="stat-tile">
-    <div class="label">Open</div>
-    <div class="value">{{.Stats.Open}}</div>
-  </div>
-  <div class="stat-tile">
-    <div class="label">Unassigned</div>
-    <div class="value">{{.Stats.Unassigned}}</div>
-  </div>
-  <div class="stat-tile">
-    <div class="label">Assigned to Me</div>
-    <div class="value">{{.Stats.AssignedToMe}}</div>
-  </div>
-  <div class="stat-tile">
-    <div class="label">Urgent</div>
-    <div class="value">{{.Stats.Urgent}}</div>
+<div class="support-shell">
+  {{template "support_sidebar" .ActiveSupportTab}}
+
+  <div class="support-content">
+    <section class="card">
+      <h2>Tickets</h2>
+
+      <form method="get" action="/support/tickets" class="filter-bar">
+        <div class="field">
+          <label>Status</label>
+          <select name="status" onchange="this.form.submit()">
+            <option value="active" {{if eq .FilterStatus "active"}}selected{{end}}>Open + Pending</option>
+            <option value="open" {{if eq .FilterStatus "open"}}selected{{end}}>Open only</option>
+            <option value="pending" {{if eq .FilterStatus "pending"}}selected{{end}}>Pending only</option>
+            <option value="closed" {{if eq .FilterStatus "closed"}}selected{{end}}>Closed</option>
+            <option value="all" {{if eq .FilterStatus "all"}}selected{{end}}>All</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Priority</label>
+          <select name="priority" onchange="this.form.submit()">
+            <option value="all" {{if eq .FilterPriority "all"}}selected{{end}}>All</option>
+            <option value="urgent" {{if eq .FilterPriority "urgent"}}selected{{end}}>Urgent</option>
+            <option value="high" {{if eq .FilterPriority "high"}}selected{{end}}>High</option>
+            <option value="normal" {{if eq .FilterPriority "normal"}}selected{{end}}>Normal</option>
+            <option value="low" {{if eq .FilterPriority "low"}}selected{{end}}>Low</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Assigned</label>
+          <select name="assigned" onchange="this.form.submit()">
+            <option value="all" {{if eq .FilterAssigned "all"}}selected{{end}}>Everyone</option>
+            <option value="me" {{if eq .FilterAssigned "me"}}selected{{end}}>Assigned to me</option>
+            <option value="unassigned" {{if eq .FilterAssigned "unassigned"}}selected{{end}}>Unassigned</option>
+          </select>
+        </div>
+      </form>
+
+      {{if .Tickets}}
+        <table>
+          <thead><tr><th>Priority</th><th>Subject</th><th>Requester</th><th>Category</th><th>Status</th><th>Assigned</th><th>Opened</th><th></th></tr></thead>
+          <tbody>
+            {{range .Tickets}}
+            <tr>
+              <td><span class="badge badge-priority-{{.Priority}}">{{.Priority}}</span></td>
+              <td>{{.Subject}}</td>
+              <td>{{.RequesterName}}</td>
+              <td>{{.Category}}</td>
+              <td><span class="badge badge-status-{{.Status}}">{{.Status}}</span></td>
+              <td>{{if .AssignedTo}}{{.AssignedTo}}{{else}}<span class="hint">unassigned</span>{{end}}</td>
+              <td>{{.CreatedAt}}</td>
+              <td><a href="/tickets/{{.ID}}">Open</a></td>
+            </tr>
+            {{end}}
+          </tbody>
+        </table>
+      {{else}}
+        <p class="empty-state">No tickets match this filter.</p>
+      {{end}}
+    </section>
   </div>
 </div>
-
-<section class="card">
-  <h2>Queue</h2>
-
-  <form method="get" action="/support" class="filter-bar">
-    <div class="field">
-      <label>Status</label>
-      <select name="status" onchange="this.form.submit()">
-        <option value="active" {{if eq .FilterStatus "active"}}selected{{end}}>Open + Pending</option>
-        <option value="open" {{if eq .FilterStatus "open"}}selected{{end}}>Open only</option>
-        <option value="pending" {{if eq .FilterStatus "pending"}}selected{{end}}>Pending only</option>
-        <option value="closed" {{if eq .FilterStatus "closed"}}selected{{end}}>Closed</option>
-        <option value="all" {{if eq .FilterStatus "all"}}selected{{end}}>All</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Priority</label>
-      <select name="priority" onchange="this.form.submit()">
-        <option value="all" {{if eq .FilterPriority "all"}}selected{{end}}>All</option>
-        <option value="urgent" {{if eq .FilterPriority "urgent"}}selected{{end}}>Urgent</option>
-        <option value="high" {{if eq .FilterPriority "high"}}selected{{end}}>High</option>
-        <option value="normal" {{if eq .FilterPriority "normal"}}selected{{end}}>Normal</option>
-        <option value="low" {{if eq .FilterPriority "low"}}selected{{end}}>Low</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Assigned</label>
-      <select name="assigned" onchange="this.form.submit()">
-        <option value="all" {{if eq .FilterAssigned "all"}}selected{{end}}>Everyone</option>
-        <option value="me" {{if eq .FilterAssigned "me"}}selected{{end}}>Assigned to me</option>
-        <option value="unassigned" {{if eq .FilterAssigned "unassigned"}}selected{{end}}>Unassigned</option>
-      </select>
-    </div>
-  </form>
-
-  {{if .Tickets}}
-    <table>
-      <thead><tr><th>Priority</th><th>Subject</th><th>Requester</th><th>Category</th><th>Status</th><th>Assigned</th><th>Opened</th><th></th></tr></thead>
-      <tbody>
-        {{range .Tickets}}
-        <tr>
-          <td><span class="badge badge-priority-{{.Priority}}">{{.Priority}}</span></td>
-          <td>{{.Subject}}</td>
-          <td>{{.RequesterName}}</td>
-          <td>{{.Category}}</td>
-          <td><span class="badge badge-status-{{.Status}}">{{.Status}}</span></td>
-          <td>{{if .AssignedTo}}{{.AssignedTo}}{{else}}<span class="hint">unassigned</span>{{end}}</td>
-          <td>{{.CreatedAt}}</td>
-          <td><a href="/tickets/{{.ID}}">Open</a></td>
-        </tr>
-        {{end}}
-      </tbody>
-    </table>
-  {{else}}
-    <p class="empty-state">No tickets match this filter.</p>
-  {{end}}
-</section>
 {{end}}

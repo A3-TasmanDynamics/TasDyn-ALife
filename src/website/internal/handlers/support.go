@@ -20,22 +20,73 @@ type queueStats struct {
 	Urgent       int
 }
 
-type supportQueueData struct {
+type supportDashboardData struct {
 	Base
-	Stats          queueStats
-	Tickets        []ticketSummary
-	FilterStatus   string
-	FilterPriority string
-	FilterAssigned string
+	ActiveSupportTab string
+	Stats            queueStats
+	RecentTickets    []ticketSummary
 }
 
-// SupportQueue lists tickets for staff with Support Panel access (gated by
-// auth.RequireSupportPanel upstream, not re-checked here -- this handler
-// trusts its middleware the same way every other panel-gated handler
-// does). Filterable by status/priority/assignment via query params -- a
-// plain server-rendered GET with query-string state, not client-side JS
-// filtering, matching this app's no-SPA-framework approach everywhere
-// else.
+// SupportDashboard is the Support Panel's landing page: the stats bar plus
+// a snapshot of the 5 most recent tickets -- an overview to land on, not
+// the working queue itself (that's SupportQueue/"Tickets", the second
+// sidebar page). Same split every real IT ticketing system makes between
+// an at-a-glance dashboard and the full filterable list.
+func (d *Deps) SupportDashboard(w http.ResponseWriter, r *http.Request) {
+	sess, _ := auth.FromContext(r.Context())
+	data := supportDashboardData{Base: baseFrom(r, "Support Panel"), ActiveSupportTab: "dashboard"}
+
+	stats, err := fetchQueueStats(r.Context(), d.Pool, sess.PlayerID)
+	if err != nil {
+		slog.Error("support dashboard: stats query failed", "error", err)
+		http.Error(w, "Failed to load the dashboard.", http.StatusInternalServerError)
+		return
+	}
+	data.Stats = stats
+
+	rows, err := d.Pool.Query(r.Context(), `
+		SELECT st.id, st.subject, st.category, st.status, st.priority, COALESCE(assignee.name, ''),
+		       requester.name, st.created_at
+		FROM support_tickets st
+		JOIN players requester ON requester.id = st.player_id
+		LEFT JOIN players assignee ON assignee.id = st.assigned_staff_id
+		ORDER BY st.created_at DESC
+		LIMIT 5
+	`)
+	if err != nil {
+		slog.Error("support dashboard: recent tickets query failed", "error", err)
+		http.Error(w, "Failed to load the dashboard.", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var t ticketSummary
+		var createdAt time.Time
+		if err := rows.Scan(&t.ID, &t.Subject, &t.Category, &t.Status, &t.Priority, &t.AssignedTo, &t.RequesterName, &createdAt); err == nil {
+			t.CreatedAt = createdAt.Format("2006-01-02 15:04")
+			data.RecentTickets = append(data.RecentTickets, t)
+		}
+	}
+
+	d.Render.Render(w, "support_dashboard.html", data)
+}
+
+type supportQueueData struct {
+	Base
+	ActiveSupportTab string
+	Tickets          []ticketSummary
+	FilterStatus     string
+	FilterPriority   string
+	FilterAssigned   string
+}
+
+// SupportQueue is the Support Panel's "Tickets" page: the full
+// filterable/sortable working queue (gated by auth.RequireSupportPanel
+// upstream, not re-checked here -- this handler trusts its middleware the
+// same way every other panel-gated handler does). Filterable by
+// status/priority/assignment via query params -- a plain server-rendered
+// GET with query-string state, not client-side JS filtering, matching this
+// app's no-SPA-framework approach everywhere else.
 func (d *Deps) SupportQueue(w http.ResponseWriter, r *http.Request) {
 	sess, _ := auth.FromContext(r.Context())
 
@@ -53,19 +104,12 @@ func (d *Deps) SupportQueue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := supportQueueData{
-		Base:           baseFrom(r, "Support Panel"),
-		FilterStatus:   filterStatus,
-		FilterPriority: filterPriority,
-		FilterAssigned: filterAssigned,
+		Base:             baseFrom(r, "Support Panel · Tickets"),
+		ActiveSupportTab: "tickets",
+		FilterStatus:     filterStatus,
+		FilterPriority:   filterPriority,
+		FilterAssigned:   filterAssigned,
 	}
-
-	stats, err := fetchQueueStats(r.Context(), d.Pool, sess.PlayerID)
-	if err != nil {
-		slog.Error("support queue: stats query failed", "error", err)
-		http.Error(w, "Failed to load the queue.", http.StatusInternalServerError)
-		return
-	}
-	data.Stats = stats
 
 	query := `
 		SELECT st.id, st.subject, st.category, st.status, st.priority, COALESCE(assignee.name, ''),

@@ -145,7 +145,8 @@ func run() error {
 
 	r.Group(func(r chi.Router) {
 		r.Use(auth.RequireSupportPanel)
-		r.Get("/support", d.SupportQueue)
+		r.Get("/support", d.SupportDashboard)
+		r.Get("/support/tickets", d.SupportQueue)
 		r.Post("/support/tickets/{id}/claim", d.ClaimTicket)
 		r.Post("/support/tickets/{id}/unassign", d.UnassignTicket)
 		r.Post("/support/tickets/{id}/priority", d.SetTicketPriority)

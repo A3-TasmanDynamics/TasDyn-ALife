@@ -258,8 +258,21 @@ whether the action happened in-game or on the web, not two logs staff have to cr
 
 ## 8. Support Panel
 
-Built out as a proper IT-support-portal, not a bare table — the concrete features that distinguish
-one from a plain forum thread:
+Built out as a proper IT-support-portal, not a bare table — its own two-page structure with a
+persistent side nav (`/support` Dashboard, `/support/tickets` Tickets), matching how real IT
+ticketing systems separate an at-a-glance overview from the full working queue rather than
+cramming both into one page:
+
+- **Dashboard** (`/support`) — the stats bar plus the 5 most recently opened tickets. An overview
+  to land on, not the working queue.
+- **Tickets** (`/support/tickets`) — the full filterable/sortable queue (below).
+- The side nav (`partial_support_sidebar.html`, a shared template partial — see
+  `internal/render`'s partial-loading support) also appears on the ticket detail page for a staff
+  viewer, so the workspace navigation stays visible while drilling into a specific ticket; a
+  player viewing their own ticket never sees it at all, since that partial is only rendered inside
+  the `{{if .IsStaff}}` branch of `ticket_thread.html`.
+
+The concrete features that distinguish this from a plain forum thread:
 
 - **Priority** (`support_tickets.priority`: `low`/`normal`/`high`/`urgent`) — the submitter picks
   one when opening a ticket (their own sense of urgency, not a locked-in SLA commitment); staff can
