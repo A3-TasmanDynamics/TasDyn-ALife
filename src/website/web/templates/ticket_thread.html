@@ -1,5 +1,17 @@
 {{define "content"}}
 <h1 class="page-title">{{.Ticket.Subject}}</h1>
+
+{{if .IsStaff}}
+<div class="support-shell">
+  {{template "support_sidebar" ""}}
+  <div class="support-content">{{template "ticket_body" .}}</div>
+</div>
+{{else}}
+  {{template "ticket_body" .}}
+{{end}}
+{{end}}
+
+{{define "ticket_body"}}
 <p class="hint">
   <span class="badge badge-priority-{{.Ticket.Priority}}">{{.Ticket.Priority}}</span>
   <span class="badge badge-status-{{.Ticket.Status}}">{{.Ticket.Status}}</span>

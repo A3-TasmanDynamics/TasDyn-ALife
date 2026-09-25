@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"net/http"
 	"path/filepath"
+	"strings"
 )
 
 type Renderer struct {
@@ -16,11 +17,25 @@ type Renderer struct {
 	templates map[string]*template.Template
 }
 
-// New parses every "<dir>/*.html" page against the shared layout.html,
-// once, at startup -- not per-request. A template error is a startup-time
-// failure, not something a player can trigger by hitting a route.
+// New parses every "<dir>/*.html" page against the shared layout.html plus
+// every "partial_*.html" fragment, once, at startup -- not per-request. A
+// template error is a startup-time failure, not something a player can
+// trigger by hitting a route.
+//
+// Partials are separate from pages because a page defines a "content"
+// block (what layout.html renders into) -- parsing every page together in
+// one set would mean N different files all defining "content", silently
+// overriding each other. A partial defines its own uniquely-named block
+// (e.g. "support_sidebar") instead, so it can be parsed alongside every
+// page without that collision, and any page can reference it with
+// {{template "name" .}}.
 func New(dir string) (*Renderer, error) {
 	layout := filepath.Join(dir, "layout.html")
+
+	partials, err := filepath.Glob(filepath.Join(dir, "partial_*.html"))
+	if err != nil {
+		return nil, err
+	}
 
 	pages, err := filepath.Glob(filepath.Join(dir, "*.html"))
 	if err != nil {
@@ -30,10 +45,11 @@ func New(dir string) (*Renderer, error) {
 	r := &Renderer{dir: dir, templates: map[string]*template.Template{}}
 	for _, page := range pages {
 		name := filepath.Base(page)
-		if name == "layout.html" {
+		if name == "layout.html" || strings.HasPrefix(name, "partial_") {
 			continue
 		}
-		t, err := template.ParseFiles(layout, page)
+		files := append([]string{layout, page}, partials...)
+		t, err := template.ParseFiles(files...)
 		if err != nil {
 			return nil, fmt.Errorf("render: parsing %s: %w", name, err)
 		}

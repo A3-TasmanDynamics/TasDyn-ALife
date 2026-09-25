@@ -209,7 +209,11 @@ its own phase instead of embedded piecemeal inside them.
       hidden in the template). Verified end-to-end with disposable test accounts: priority-sorted
       queue ordering, all three filters, claim/unassign, priority re-triage, and internal-note
       visibility (confirmed staff sees it, the ticket's own owner gets zero matches for it even in
-      the raw response).
+      the raw response). Split into a two-page structure with a persistent side nav
+      (`/support` Dashboard: stats + 5 most recent tickets; `/support/tickets` the full queue),
+      matching how real IT ticketing systems separate overview from working queue — the side nav
+      also follows staff into the ticket detail page, verified absent for a player viewing their
+      own ticket.
 - [x] Member portal: bank transfers (`internal/bank`) — both between the player's own faction
       accounts and to another player by exact name, idempotency-tokened and row-locked against
       double-spend/races. Unblocked by confirming `fn_save.sqf` never writes `*_bank` (only
