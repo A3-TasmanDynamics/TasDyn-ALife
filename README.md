@@ -26,9 +26,10 @@ client-side mods.
 
 This project is in the **concept / architecture design phase**. An earlier prototype explored this idea end-to-end and surfaced real lessons about the save/load data contract, schema discipline, and repo hygiene — this repo is a deliberate clean start that applies those lessons rather than carrying the old code forward. Expect the structure below to fill in incrementally, tracked through PRs and the roadmap.
 
-**Target public launch: 2026-12-26.** See [docs/ROADMAP.md](docs/ROADMAP.md) for the phased plan,
-timeline, and what's deliberately cut from the launch scope. Day-to-day progress is tracked as
-issues on the [Delivery Board](https://github.com/orgs/A3-TasmanDynamics/projects/1).
+**Target public launch: 2027-01-20** (revised from an original 2026-12-26 estimate once the admin
+tooling scope grew — see [docs/ROADMAP.md](docs/ROADMAP.md) for why). That doc has the phased
+plan, timeline, and what's deliberately cut from the launch scope. Day-to-day progress is tracked
+as issues on the [Delivery Board](https://github.com/orgs/A3-TasmanDynamics/projects/1).
 
 ---
 
@@ -81,6 +82,17 @@ can't see, since client memory can't be scanned on a vanilla client:
 
 Full threat model, what each layer catches, and what's explicitly out of scope:
 [docs/ANTI_CHEAT.md](docs/ANTI_CHEAT.md).
+
+### Admin Tools
+An in-game staff menu built to feature parity with [infiSTAR](https://infistar.de/product/infistar-arma3)
+and [Fini Anti-Hack & Admin Tools](https://bytex.market/products/item/7iclegb5zmytw3d22q3l/Fini%20Anti-Hack%20%26%20Admin%20Tools) —
+player/vehicle/object management, **arsenal editing** (per-faction item pools, named loadout
+presets), live staff-only map, a debug console, in-menu logs and metrics, all permission-gated by
+a DB-backed staff rank (`staff_ranks` + `players.staff_rank_id`) plus per-command overrides,
+rather than a hardcoded or client-side admin flag. Ranks are added, removed, and assigned to
+players live through the menu itself, no direct DB access needed. Four default tiers (Trial
+Moderator → Moderator → Admin → Head Admin/Developer). Full spec, and the feature-by-feature
+comparison against both reference products: [docs/ADMIN_TOOLS.md](docs/ADMIN_TOOLS.md).
 
 ### Visual Identity (vanilla workarounds)
 `setObjectTextureGlobal` texture injection for faction liveries and rank-based uniforms — no custom mod required client-side.
