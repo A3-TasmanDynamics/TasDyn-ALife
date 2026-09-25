@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/process"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -19,6 +20,18 @@ type ServerStatus struct {
 	Running   bool   `json:"running"`
 	PID       int    `json:"pid"`
 	StartedAt string `json:"startedAt"` // RFC3339, empty if not running
+}
+
+// PerformanceSample is one point on the Performance tab's live graphs,
+// pushed via the "server:performance" event -- no DB table backs this,
+// deliberately: it's ephemeral process telemetry, not durable game state,
+// so it doesn't belong in database/schema.sql alongside the things that
+// actually need to survive a restart.
+type PerformanceSample struct {
+	Timestamp      string  `json:"timestamp"` // RFC3339
+	CPUPercent     float64 `json:"cpuPercent"`
+	MemoryMB       float64 `json:"memoryMB"`
+	UptimeSeconds  int64   `json:"uptimeSeconds"`
 }
 
 // serverProcessManager owns the running arma3server_x64.exe child process
@@ -34,43 +47,67 @@ type serverProcessManager struct {
 
 var procMgr = &serverProcessManager{}
 
-// LaunchServer writes server.cfg into the configured Arma 3 Server install
-// and starts arma3server_x64.exe. Persists the current ServerConfig first,
-// so what actually launches always matches what's saved.
-func (a *App) LaunchServer() error {
+// LaunchResult carries anything Launch succeeded despite -- currently just
+// non-fatal deployExtension warnings (e.g. the C++ extension hasn't been
+// built yet). Returned directly rather than pushed as "server:log" events:
+// those get wiped by the frontend's clearConsole() call immediately after
+// a successful launch (fresh console per run), which would silently lose
+// warnings emitted before cmd.Start() in exactly that race.
+type LaunchResult struct {
+	Warnings []string `json:"warnings"`
+}
+
+// LaunchServer deploys the mission (and, best-effort, the C++ extension),
+// writes server.cfg, and starts arma3server_x64.exe. Persists the current
+// ServerConfig first, so what actually launches always matches what's saved.
+func (a *App) LaunchServer() (LaunchResult, error) {
 	procMgr.mu.Lock()
 	defer procMgr.mu.Unlock()
 
 	if procMgr.cmd != nil {
-		return fmt.Errorf("server already running (PID %d)", procMgr.cmd.Process.Pid)
+		return LaunchResult{}, fmt.Errorf("server already running (PID %d)", procMgr.cmd.Process.Pid)
 	}
 
 	settings, err := loadSettings()
 	if err != nil {
-		return fmt.Errorf("load settings: %w", err)
+		return LaunchResult{}, fmt.Errorf("load settings: %w", err)
 	}
 	if settings.ArmaServerPath == "" {
-		return fmt.Errorf("Arma 3 Server path not set -- configure it in Settings first")
+		return LaunchResult{}, fmt.Errorf("Arma 3 Server path not set -- configure it in Settings first")
 	}
 
 	exePath := filepath.Join(settings.ArmaServerPath, "arma3server_x64.exe")
 	if _, err := os.Stat(exePath); err != nil {
-		return fmt.Errorf("arma3server_x64.exe not found at %s", exePath)
+		return LaunchResult{}, fmt.Errorf("arma3server_x64.exe not found at %s", exePath)
 	}
 
 	cfg, err := loadServerConfig()
 	if err != nil {
-		return fmt.Errorf("load server config: %w", err)
+		return LaunchResult{}, fmt.Errorf("load server config: %w", err)
 	}
+
+	// Deploy the mission + (best-effort) the C++ extension before writing
+	// server.cfg -- previously server.cfg named a template that nothing
+	// had ever copied into mpmissions, so Arma had nothing to load. See
+	// deploy.go; this mirrors what tools/test_local_server.ps1 already did
+	// for its own smoke test, now wired into the real launch path too.
+	repoRoot, err := findRepoRoot()
+	if err != nil {
+		return LaunchResult{}, fmt.Errorf("locate mission source: %w", err)
+	}
+	if err := deployMission(repoRoot, settings.ArmaServerPath, cfg.MissionTemplate); err != nil {
+		return LaunchResult{}, fmt.Errorf("deploy mission: %w", err)
+	}
+	result := LaunchResult{Warnings: deployExtension(repoRoot, settings.ArmaServerPath)}
 
 	cfgPath := filepath.Join(settings.ArmaServerPath, "server.cfg")
 	if err := os.WriteFile(cfgPath, []byte(renderServerCfg(cfg)), 0o644); err != nil {
-		return fmt.Errorf("write server.cfg: %w", err)
+		return LaunchResult{}, fmt.Errorf("write server.cfg: %w", err)
 	}
 
 	profileDir := filepath.Join(os.TempDir(), fmt.Sprintf("alife_server_profile_%d", time.Now().Unix()))
 	if err := os.MkdirAll(profileDir, 0o755); err != nil {
-		return fmt.Errorf("create profile dir: %w", err)
+		return LaunchResult{}, fmt.Errorf("create profile dir: %w", err)
 	}
 
 	cmd := exec.Command(exePath,
@@ -82,7 +119,7 @@ func (a *App) LaunchServer() error {
 	cmd.Dir = settings.ArmaServerPath
 
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("start server: %w", err)
+		return LaunchResult{}, fmt.Errorf("start server: %w", err)
 	}
 
 	procMgr.cmd = cmd
@@ -91,6 +128,7 @@ func (a *App) LaunchServer() error {
 	procMgr.stopTail = make(chan struct{})
 
 	go procMgr.tailLog(a.ctx, profileDir, procMgr.stopTail)
+	go procMgr.samplePerformance(a.ctx, cmd.Process.Pid, procMgr.startedAt, procMgr.stopTail)
 
 	go func() {
 		_ = cmd.Wait() // reap the process; also means Running flips to false if the server exits/crashes on its own
@@ -106,7 +144,7 @@ func (a *App) LaunchServer() error {
 		runtime.EventsEmit(a.ctx, "server:stopped")
 	}()
 
-	return nil
+	return result, nil
 }
 
 // StopServer terminates the running server, if any. Config files this app
@@ -186,6 +224,48 @@ func (m *serverProcessManager) tailLog(ctx context.Context, profileDir string, s
 		}
 		if err != nil {
 			time.Sleep(300 * time.Millisecond)
+		}
+	}
+}
+
+// samplePerformance polls the dedicated server process's CPU/memory every
+// 2 seconds and pushes a PerformanceSample event -- same push-based
+// pattern as tailLog's log lines, for the same reason: the Performance tab
+// shouldn't have to poll a Go method on a timer just to stay current.
+//
+// CPUPercent() is gopsutil's own convention: percent of ONE core, so a
+// process using two full cores reads ~200%, not capped at 100% -- this
+// differs from Task Manager's "% of total system capacity" view. Shown
+// as-is on the graph, not renormalized, since renormalizing needs the
+// machine's core count for a conversion that isn't actually more honest,
+// just differently scaled.
+func (m *serverProcessManager) samplePerformance(ctx context.Context, pid int, startedAt time.Time, stop chan struct{}) {
+	proc, err := process.NewProcess(int32(pid))
+	if err != nil {
+		return
+	}
+
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-stop:
+			return
+		case <-ticker.C:
+			sample := PerformanceSample{
+				Timestamp:     time.Now().Format(time.RFC3339),
+				UptimeSeconds: int64(time.Since(startedAt).Seconds()),
+			}
+
+			if cpuPct, err := proc.CPUPercent(); err == nil {
+				sample.CPUPercent = cpuPct
+			}
+			if memInfo, err := proc.MemoryInfo(); err == nil && memInfo != nil {
+				sample.MemoryMB = float64(memInfo.RSS) / (1024 * 1024)
+			}
+
+			runtime.EventsEmit(ctx, "server:performance", sample)
 		}
 	}
 }

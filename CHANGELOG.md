@@ -159,3 +159,25 @@
   `gang_log` rows checked by hand for all three action types. Smoke-test gang/player rows deleted
   afterward (in FK-safe order: the gang row before its former leader, since `leader_player_id` is
   `ON DELETE RESTRICT`).
+- `src/server_manager`: fixed a real bug reported after actually trying to launch the server
+  through the app -- `LaunchServer` wrote `server.cfg` naming a mission template, but nothing had
+  ever copied a mission folder by that name into the Arma 3 Server install's `mpmissions/`, so
+  Arma had nothing to load. `deploy.go` now deploys `src/ALife.Altis` there fresh on every launch
+  (same thing `tools/test_local_server.ps1` already did for its own smoke test, now wired into the
+  real launch path too), and best-effort deploys the built C++ extension DLL + runtime deps +
+  `config.ini` (a missing extension warns rather than blocking launch, since the mission still
+  loads without it). Caught the "warnings pushed as `server:log` events get wiped by the frontend's
+  post-launch `clearConsole()`" race before shipping it -- `LaunchServer` now returns warnings
+  directly instead. Verified against the real local Arma 3 Server install via a new gated
+  integration test (`deploy_test.go`, `ALIFE_TEST_ARMA_PATH`), not just compiled -- confirmed the
+  mission's files actually land in `mpmissions/ALife.Altis` and the extension's DLLs/config.ini
+  actually land in the server root, then checked the real directory by hand.
+- `src/server_manager`: rebranded the Dashboard tab into **Logs** -- a log-type selector (Staff
+  Actions / Anti-Cheat Flags / Kicks), each backed by its own row-level Go query
+  (`GetStaffLog`/`GetAntiCheatLog`/`GetKickLog`) rather than one aggregated "everything" call.
+  Added a new **Performance** tab: live CPU%/memory line graphs for the running dedicated server
+  process, sampled every 2s via `gopsutil` and pushed as `server:performance` events -- same
+  push-based pattern the Console tab's log tailing already used. No DB table backs it on purpose
+  (ephemeral process telemetry, not durable game state); history clears on stop/relaunch. Verified
+  the `gopsutil` CPU%/memory sampling against a real child process in isolation before wiring it to
+  the real server process.
