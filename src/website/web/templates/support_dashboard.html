@@ -29,13 +29,14 @@
       <h2>Recent Tickets</h2>
       {{if .RecentTickets}}
         <table>
-          <thead><tr><th>Priority</th><th>Subject</th><th>Requester</th><th>Status</th><th>Opened</th><th></th></tr></thead>
+          <thead><tr><th>Priority</th><th>Subject</th><th>Requester</th><th>Category</th><th>Status</th><th>Opened</th><th></th></tr></thead>
           <tbody>
             {{range .RecentTickets}}
             <tr>
               <td><span class="badge badge-priority-{{.Priority}}">{{.Priority}}</span></td>
               <td>{{.Subject}}</td>
               <td>{{.RequesterName}}<div class="hint mono">{{.RequesterUID}}</div></td>
+              <td>{{.CategoryLabel}}{{if .SubcategoryLabel}}<div class="hint">{{.SubcategoryLabel}}</div>{{end}}</td>
               <td><span class="badge badge-status-{{.Status}}">{{.Status}}</span></td>
               <td>{{.CreatedAt}}</td>
               <td><a href="/tickets/{{.ID}}">Open</a></td>

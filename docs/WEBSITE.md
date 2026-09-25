@@ -200,6 +200,22 @@ Deleting a row logs that session out immediately — a ban handler or a rank cha
 player's `web_sessions` rows as part of the same transaction, same "revoke now, not eventually"
 property staff already expect from in-game kicks.
 
+**`ticket_categories`** *(new)*
+
+| Column | Type | Notes |
+|---|---|---|
+| id | serial PK | |
+| key | text, unique | globally unique by construction — a subcategory's key is prefixed with its parent's (e.g. `gameplay_bug`), not scoped per-parent, since `UNIQUE(parent_id, key)` wouldn't stop two top-level rows colliding (Postgres treats every `NULL` `parent_id` as distinct) |
+| label | text | display name |
+| parent_id | FK → ticket_categories, nullable | `NULL` = top-level category; set = a subcategory of that row |
+| sort_order | integer | display order within the same parent |
+
+A self-referential lookup table, not a hardcoded list — a support team realistically wants to
+add/rename categories over time without a code deploy, same reasoning `staff_ranks`/
+`arsenal_item_pools` were made DB-driven. Seeded with Gameplay, Discord, Panel, TeamSpeak, and
+Other as top-level categories, each (except Other) with a handful of subcategories — see
+`database/schema.sql`'s seed `INSERT`s for the exact list.
+
 **`support_tickets`** *(new)*
 
 | Column | Type | Notes |
@@ -209,7 +225,8 @@ property staff already expect from in-game kicks.
 | subject | text | |
 | status | text, check | `open` / `pending` / `closed` |
 | priority | text, check, default `normal` | `low` / `normal` / `high` / `urgent` — §8 |
-| category | text | e.g. `billing`, `report`, `bug`, `appeal` — free-standing list, not FK'd to anything else |
+| category_id | FK → ticket_categories | must reference a **top-level** row (`parent_id IS NULL`) — enforced in application code (`internal/handlers/categories.go`'s `validateCategoryPair`), not a DB constraint, since a `CHECK` can't reference another row |
+| subcategory_id | FK → ticket_categories, nullable | if set, must be a child of `category_id` — same validation function |
 | assigned_staff_id | FK → players, nullable | claimed by, null = unclaimed |
 | discord_thread_id | text, nullable | Discord thread this ticket mirrors to, §9 |
 | created_at | timestamptz | |
@@ -280,11 +297,18 @@ The concrete features that distinguish this from a plain forum thread:
   (urgent → high → normal → low), then age within each tier.
 - **Queue stats** — Open, Unassigned, Assigned to Me, Urgent counts at the top of the panel, so
   triage priorities are visible before scrolling any list.
+- **Categories and sub-categories** (`ticket_categories`, above) — top-level: Gameplay, Discord,
+  Panel, TeamSpeak, Other; Gameplay/Discord/Panel/TeamSpeak each break down further (Gameplay, for
+  instance, into Bug Report / Player Report / Ban Appeal / Whitelist Application / Economy Issue /
+  Vehicle-Property Issue). The new-ticket form's sub-category `<select>` is populated by a small
+  inline script filtering a JSON array embedded in the page by the chosen category — no page
+  reload, no framework, consistent with this app's "plain server-rendered HTML plus a sprinkle of
+  vanilla JS where it genuinely helps" approach elsewhere (e.g. the Performance tab's charts).
 - **Filters** — status (open+pending / open only / pending only / closed / all), priority,
-  category, and assignment (everyone / assigned to me / unassigned), plus a **search** box
-  (subject, player name, or Steam UID — one bound parameter reused across all three `ILIKE`
-  clauses, not three separately-trusted inputs), via plain query-string GETs — no client-side
-  filtering, consistent with this app having no SPA framework anywhere else.
+  category (top-level only), and assignment (everyone / assigned to me / unassigned), plus a
+  **search** box (subject, player name, or Steam UID — one bound parameter reused across all three
+  `ILIKE` clauses, not three separately-trusted inputs), via plain query-string GETs — no
+  client-side filtering, consistent with this app having no SPA framework anywhere else.
 - **Requester identity** — the queue, dashboard, and ticket detail page all show the requester's
   Steam64 UID (`players.uid`) alongside their name; the ticket detail page additionally shows
   their linked Discord (username + ID, or "Not linked") in a dedicated Requester panel — staff

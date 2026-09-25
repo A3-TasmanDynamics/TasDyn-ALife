@@ -484,6 +484,64 @@ CREATE TABLE web_sessions (
 
 CREATE INDEX idx_web_sessions_player_id ON web_sessions(player_id);
 
+-- ---------------------------------------------------------------------------
+-- Ticket categories (docs/WEBSITE.md §8) -- a self-referential lookup table
+-- (parent_id NULL = top-level category; non-NULL = a subcategory of that
+-- row), not a hardcoded CHECK-constraint list, since a support team
+-- realistically wants to add/rename categories over time without a code
+-- deploy -- the same reasoning staff_ranks/arsenal_item_pools were made
+-- DB-driven rather than hardcoded constants.
+--
+-- `key` is globally unique BY CONSTRUCTION (a subcategory's key is prefixed
+-- with its parent's, e.g. gameplay_bug) rather than scoped per-parent via
+-- UNIQUE(parent_id, key) -- that constraint wouldn't actually stop two
+-- top-level rows from colliding, since Postgres treats every NULL as
+-- distinct for uniqueness purposes (parent_id IS NULL for all top-level
+-- rows never conflicts with itself).
+-- ---------------------------------------------------------------------------
+CREATE TABLE ticket_categories (
+    id          SERIAL PRIMARY KEY,
+    key         TEXT NOT NULL UNIQUE,
+    label       TEXT NOT NULL,
+    parent_id   INTEGER REFERENCES ticket_categories(id) ON DELETE CASCADE,
+    sort_order  INTEGER NOT NULL DEFAULT 0,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_ticket_categories_parent_id ON ticket_categories(parent_id);
+
+INSERT INTO ticket_categories (key, label, parent_id, sort_order) VALUES
+    ('gameplay', 'Gameplay', NULL, 1),
+    ('discord', 'Discord', NULL, 2),
+    ('panel', 'Panel', NULL, 3),
+    ('teamspeak', 'TeamSpeak', NULL, 4),
+    ('other', 'Other', NULL, 5);
+
+INSERT INTO ticket_categories (key, label, parent_id, sort_order)
+    SELECT 'gameplay_bug', 'Bug Report', id, 1 FROM ticket_categories WHERE key = 'gameplay'
+    UNION ALL SELECT 'gameplay_player_report', 'Player Report', id, 2 FROM ticket_categories WHERE key = 'gameplay'
+    UNION ALL SELECT 'gameplay_ban_appeal', 'Ban Appeal', id, 3 FROM ticket_categories WHERE key = 'gameplay'
+    UNION ALL SELECT 'gameplay_whitelist', 'Whitelist Application', id, 4 FROM ticket_categories WHERE key = 'gameplay'
+    UNION ALL SELECT 'gameplay_economy', 'Economy / Item Issue', id, 5 FROM ticket_categories WHERE key = 'gameplay'
+    UNION ALL SELECT 'gameplay_vehicle_property', 'Vehicle / Property Issue', id, 6 FROM ticket_categories WHERE key = 'gameplay';
+
+INSERT INTO ticket_categories (key, label, parent_id, sort_order)
+    SELECT 'discord_access', 'Access Issue', id, 1 FROM ticket_categories WHERE key = 'discord'
+    UNION ALL SELECT 'discord_bot', 'Bot Issue', id, 2 FROM ticket_categories WHERE key = 'discord'
+    UNION ALL SELECT 'discord_report_member', 'Report a Member', id, 3 FROM ticket_categories WHERE key = 'discord'
+    UNION ALL SELECT 'discord_role_request', 'Role Request', id, 4 FROM ticket_categories WHERE key = 'discord';
+
+INSERT INTO ticket_categories (key, label, parent_id, sort_order)
+    SELECT 'panel_login', 'Login / Account Issue', id, 1 FROM ticket_categories WHERE key = 'panel'
+    UNION ALL SELECT 'panel_bug', 'Bug Report', id, 2 FROM ticket_categories WHERE key = 'panel'
+    UNION ALL SELECT 'panel_feature_request', 'Feature Request', id, 3 FROM ticket_categories WHERE key = 'panel'
+    UNION ALL SELECT 'panel_discord_link', 'Discord Linking Issue', id, 4 FROM ticket_categories WHERE key = 'panel';
+
+INSERT INTO ticket_categories (key, label, parent_id, sort_order)
+    SELECT 'teamspeak_access', 'Access Issue', id, 1 FROM ticket_categories WHERE key = 'teamspeak'
+    UNION ALL SELECT 'teamspeak_report_member', 'Report a Member', id, 2 FROM ticket_categories WHERE key = 'teamspeak'
+    UNION ALL SELECT 'teamspeak_technical', 'Technical Issue', id, 3 FROM ticket_categories WHERE key = 'teamspeak';
+
 -- A ticket is one row viewed from two access levels (owner in the member
 -- portal, staff in the Support Panel) -- not two separate objects.
 CREATE TABLE support_tickets (
@@ -497,7 +555,14 @@ CREATE TABLE support_tickets (
     -- the initial signal, not a locked-in SLA commitment.
     priority            TEXT NOT NULL DEFAULT 'normal'
                             CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
-    category            TEXT NOT NULL,
+    -- category_id must reference a TOP-LEVEL row (parent_id IS NULL);
+    -- subcategory_id, if set, must be a child of category_id. Enforced in
+    -- application code (internal/handlers/tickets.go), not a DB
+    -- constraint here -- a CHECK can't reference another row, and a
+    -- trigger felt like more machinery than this needed given it's the
+    -- write path's job either way.
+    category_id         INTEGER NOT NULL REFERENCES ticket_categories(id),
+    subcategory_id      INTEGER REFERENCES ticket_categories(id),
     assigned_staff_id   BIGINT REFERENCES players(id) ON DELETE SET NULL,
     discord_thread_id   TEXT,              -- Discord thread this ticket mirrors to, docs/WEBSITE.md §9
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),

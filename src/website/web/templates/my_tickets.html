@@ -12,23 +12,25 @@
     <div class="field-grid">
       <div class="field">
         <label>Category</label>
-        <select name="category">
-          <option value="report">Player Report</option>
-          <option value="bug">Bug</option>
-          <option value="billing">Billing</option>
-          <option value="appeal">Ban Appeal</option>
-          <option value="other">Other</option>
+        <select name="category_id" id="ticket-category" required>
+          {{range .TopCategories}}<option value="{{.ID}}">{{.Label}}</option>{{end}}
         </select>
       </div>
       <div class="field">
-        <label>How urgent is this?</label>
-        <select name="priority">
-          <option value="low">Low -- no rush</option>
-          <option value="normal" selected>Normal</option>
-          <option value="high">High -- blocking me</option>
-          <option value="urgent">Urgent -- need help now</option>
+        <label>Sub-category (optional)</label>
+        <select name="subcategory_id" id="ticket-subcategory">
+          <option value="">— None —</option>
         </select>
       </div>
+    </div>
+    <div class="field">
+      <label>How urgent is this?</label>
+      <select name="priority">
+        <option value="low">Low -- no rush</option>
+        <option value="normal" selected>Normal</option>
+        <option value="high">High -- blocking me</option>
+        <option value="urgent">Urgent -- need help now</option>
+      </select>
     </div>
     <div class="field">
       <label>Details</label>
@@ -48,7 +50,7 @@
         <tr>
           <td><span class="badge badge-priority-{{.Priority}}">{{.Priority}}</span></td>
           <td>{{.Subject}}</td>
-          <td>{{.Category}}</td>
+          <td>{{.CategoryLabel}}{{if .SubcategoryLabel}} <span class="hint">/ {{.SubcategoryLabel}}</span>{{end}}</td>
           <td><span class="badge badge-status-{{.Status}}">{{.Status}}</span></td>
           <td><a href="/tickets/{{.ID}}">View</a></td>
         </tr>
@@ -59,4 +61,29 @@
     <p class="empty-state">No tickets yet.</p>
   {{end}}
 </section>
+
+<script>
+(function () {
+  var subcats = [
+    {{range .Subcategories}}{ id: {{.ID}}, parent: {{.ParentID}}, label: {{.Label | js}} },
+    {{end}}
+  ];
+  var catSel = document.getElementById('ticket-category');
+  var subSel = document.getElementById('ticket-subcategory');
+
+  function refreshSubcategories() {
+    var parentId = parseInt(catSel.value, 10);
+    subSel.innerHTML = '<option value="">— None —</option>';
+    subcats.filter(function (s) { return s.parent === parentId; }).forEach(function (s) {
+      var opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = s.label;
+      subSel.appendChild(opt);
+    });
+  }
+
+  catSel.addEventListener('change', refreshSubcategories);
+  refreshSubcategories();
+})();
+</script>
 {{end}}

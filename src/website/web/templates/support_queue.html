@@ -37,12 +37,11 @@
         <div class="field">
           <label>Category</label>
           <select name="category" onchange="this.form.submit()">
-            <option value="all" {{if eq .FilterCategory "all"}}selected{{end}}>All</option>
-            <option value="report" {{if eq .FilterCategory "report"}}selected{{end}}>Player Report</option>
-            <option value="bug" {{if eq .FilterCategory "bug"}}selected{{end}}>Bug</option>
-            <option value="billing" {{if eq .FilterCategory "billing"}}selected{{end}}>Billing</option>
-            <option value="appeal" {{if eq .FilterCategory "appeal"}}selected{{end}}>Ban Appeal</option>
-            <option value="other" {{if eq .FilterCategory "other"}}selected{{end}}>Other</option>
+            <option value="all" {{if eq $.FilterCategory "all"}}selected{{end}}>All</option>
+            {{$fc := .FilterCategory}}
+            {{range .TopCategories}}
+            <option value="{{.ID}}" {{if eq $fc (printf "%d" .ID)}}selected{{end}}>{{.Label}}</option>
+            {{end}}
           </select>
         </div>
         <div class="field">
@@ -70,7 +69,7 @@
                 {{.RequesterName}}
                 <div class="hint mono">{{.RequesterUID}}</div>
               </td>
-              <td>{{.Category}}</td>
+              <td>{{.CategoryLabel}}{{if .SubcategoryLabel}}<div class="hint">{{.SubcategoryLabel}}</div>{{end}}</td>
               <td><span class="badge badge-status-{{.Status}}">{{.Status}}</span></td>
               <td>{{if .AssignedTo}}{{.AssignedTo}}{{else}}<span class="hint">unassigned</span>{{end}}</td>
               <td>{{.CreatedAt}}</td>
