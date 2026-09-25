@@ -24,15 +24,17 @@ type playerStats struct {
 }
 
 type gangMember struct {
-	Name string
-	Rank string
+	PlayerID int64
+	Name     string
+	Rank     string
 }
 
 type gangInfo struct {
-	Name    string
-	Tag     string
-	Balance int64
-	Members []gangMember
+	Name     string
+	Tag      string
+	Balance  int64
+	IsLeader bool
+	Members  []gangMember
 }
 
 type dashboardData struct {
@@ -72,18 +74,19 @@ func (d *Deps) Dashboard(w http.ResponseWriter, r *http.Request) {
 		data.Player.DiscordUsername = *discordUsername
 	}
 
-	var gangID int64
+	var gangID, leaderPlayerID int64
 	var g gangInfo
 	err = d.Pool.QueryRow(r.Context(), `
-		SELECT g.id, g.name, g.tag, COALESCE(ga.balance, 0)
+		SELECT g.id, g.name, g.tag, COALESCE(ga.balance, 0), g.leader_player_id
 		FROM gang_members gm
 		JOIN gangs g ON g.id = gm.gang_id
 		LEFT JOIN gang_accounts ga ON ga.gang_id = g.id
 		WHERE gm.player_id = $1
-	`, sess.PlayerID).Scan(&gangID, &g.Name, &g.Tag, &g.Balance)
+	`, sess.PlayerID).Scan(&gangID, &g.Name, &g.Tag, &g.Balance, &leaderPlayerID)
 	if err == nil {
+		g.IsLeader = leaderPlayerID == sess.PlayerID
 		rows, rerr := d.Pool.Query(r.Context(), `
-			SELECT p.name, gm.rank FROM gang_members gm
+			SELECT p.id, p.name, gm.rank FROM gang_members gm
 			JOIN players p ON p.id = gm.player_id
 			WHERE gm.gang_id = $1 ORDER BY gm.rank DESC, p.name
 		`, gangID)
@@ -91,7 +94,7 @@ func (d *Deps) Dashboard(w http.ResponseWriter, r *http.Request) {
 			defer rows.Close()
 			for rows.Next() {
 				var m gangMember
-				if rows.Scan(&m.Name, &m.Rank) == nil {
+				if rows.Scan(&m.PlayerID, &m.Name, &m.Rank) == nil {
 					g.Members = append(g.Members, m)
 				}
 			}

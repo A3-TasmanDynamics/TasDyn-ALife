@@ -19,11 +19,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"website/internal/playerlookup"
 )
 
 var (
@@ -75,30 +76,14 @@ func TransferToPlayer(ctx context.Context, pool *pgxpool.Pool, senderPlayerID in
 		return ErrInvalidFaction
 	}
 
-	recipientName = strings.TrimSpace(recipientName)
-	if recipientName == "" {
+	recipientID, err := playerlookup.ByExactName(ctx, pool, recipientName)
+	switch {
+	case err == playerlookup.ErrNotFound:
 		return ErrRecipientNotFound
-	}
-
-	var recipientID int64
-	rows, err := pool.Query(ctx, `SELECT id FROM players WHERE lower(name) = lower($1)`, recipientName)
-	if err != nil {
-		return err
-	}
-	found := 0
-	for rows.Next() {
-		found++
-		if err := rows.Scan(&recipientID); err != nil {
-			rows.Close()
-			return err
-		}
-	}
-	rows.Close()
-	if found == 0 {
-		return ErrRecipientNotFound
-	}
-	if found > 1 {
+	case err == playerlookup.ErrAmbiguous:
 		return ErrRecipientAmbiguous
+	case err != nil:
+		return err
 	}
 	if recipientID == senderPlayerID {
 		return ErrSelfTransfer

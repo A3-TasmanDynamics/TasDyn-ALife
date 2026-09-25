@@ -127,6 +127,9 @@ func run() error {
 		r.Get("/dashboard", d.Dashboard)
 		r.Post("/dashboard/discord/link-code", d.GenerateDiscordLinkCode)
 		r.Post("/dashboard/transfer", d.Transfer)
+		r.Post("/dashboard/gang/invite", d.InviteToGang)
+		r.Post("/dashboard/gang/remove", d.RemoveFromGang)
+		r.Post("/dashboard/gang/rank", d.SetGangRank)
 		r.Get("/auth/discord/connect", d.DiscordConnect)
 
 		r.Get("/tickets", d.MyTickets)

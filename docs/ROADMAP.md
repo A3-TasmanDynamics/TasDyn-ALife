@@ -212,7 +212,13 @@ its own phase instead of embedded piecemeal inside them.
       duplicate-token replay) against the real local dev DB, ledger rows checked by hand.
 - [x] Security: CSRF (`internal/csrf`, double-submit cookie) on every state-changing form, wired in
       before shipping the money-moving feature above, not after.
-- [ ] Member portal: gang management (invite/remove/rank) — still read-only.
+- [x] Member portal: gang management (`internal/gang`) — invite (by exact name, rejecting
+      already-in-a-gang/ambiguous/unknown names), remove, and rank change (`member`/`officer`),
+      gated to the gang's leader (`gangs.leader_player_id`) and logged to `gang_log`. Gang
+      *creation* isn't built — membership management for an existing gang only. Verified
+      end-to-end: leader invite/promote/remove, a non-leader correctly blocked, a duplicate invite
+      and an ambiguous name both correctly rejected, `gang_log` checked by hand for all three
+      action types.
 - [ ] Admin Panel: currently a read-only staff-log viewer only. Player lookup, ban/unban, rank +
       permission-override management (the actual web UI for the DB-driven system Phase 3 built
       the data model for), anti-cheat flag review queue, and the arsenal editor are still to build.
