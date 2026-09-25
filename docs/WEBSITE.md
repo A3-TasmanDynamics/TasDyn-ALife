@@ -67,6 +67,18 @@ reuses it instead of inventing a separate login/registration system:
 
 No passwords are ever stored by this app — Steam owns the credential.
 
+**Discord is a second, linked identity, not a second way to create an account.** A player can
+connect their Discord account two ways — from the website (`/auth/discord/connect`, real OAuth2
+authorization-code flow, since Discord actually offers OAuth2 unlike Steam) or from Discord itself
+(a `/link <code>` bot command redeeming a short-lived code the website generated,
+`discord_link_codes` in §6) — whichever is more convenient for that player. Both paths converge on
+the same `players.discord_id` column; once linked, "Sign in with Discord" becomes a valid
+*additional* login method for that account (`internal/auth.FindPlayerByDiscordID`). It can never be
+the *first* login for a brand-new visitor, though — only Steam creates a `players` row, since that
+row's identity is Steam64-keyed. A Discord login attempt with no matching `players.discord_id`
+tells the visitor to sign in with Steam first, not silently create a Discord-only account that
+would have no `uid` to ever attach in-game data to.
+
 ## 4. Panel access model
 
 Extends the rank system from [ADMIN_TOOLS.md §3](ADMIN_TOOLS.md#3-data-model) rather than
@@ -134,6 +146,19 @@ yet — see [database/README.md](../database/README.md)).
 
 **`staff_ranks`** — add `default_admin_panel boolean not null default false`,
 `default_support_panel boolean not null default false` (§4).
+
+**`players`** — add `discord_id text unique` (nullable) and `discord_username text` (nullable,
+display cache only — `discord_id` is the durable key). Set by either Discord-linking path in §3.
+
+**`discord_link_codes`** *(new)*
+
+| Column | Type | Notes |
+|---|---|---|
+| code | text PK | short, human-typeable (no ambiguous characters) |
+| player_id | FK → players | who generated it, from the website |
+| created_at | timestamptz | |
+| expires_at | timestamptz | 10 minutes, matching the round-trip this is meant for |
+| used_at | timestamptz, nullable | null = unredeemed; set atomically on redemption so a code can't be replayed |
 
 **`web_sessions`** *(new)*
 
@@ -226,19 +251,26 @@ support tickets each fire a webhook POST to a configured Discord channel webhook
 forget from the Go handler — a webhook failure must never block or fail the underlying action (a
 ban still applies even if Discord is down); log the webhook error, don't propagate it.
 
-**Two-way ticket sync (a bot, via discordgo — genuinely needs a persistent connection):**
-A webhook can only post *into* Discord, never read replies back out — a real bot (gateway
-websocket connection) is unavoidable for staff to be able to reply from Discord and have it land
-back in the ticket:
-- New ticket → bot creates a thread in a configured support category, posts the opening message.
-  `support_tickets.discord_thread_id` stores the thread ID.
-- New reply on the web → bot posts it into the thread.
-- New message in that thread on Discord → bot writes a `support_ticket_messages` row
-  (`source = 'discord'`) and the web ticket view shows it, next poll/refresh.
+**A real bot (discordgo — genuinely needs a persistent connection), for two things:**
+A webhook can only post *into* Discord, never read anything back out — a bot (gateway websocket
+connection) is unavoidable both for account linking and for two-way ticket sync:
+- **Account linking (`/link <code>`) — built.** The website generates a short-lived code
+  (`discord_link_codes`, §6); the bot's slash-command handler redeems it and sets
+  `players.discord_id` for whichever player generated it, replying ephemerally with the result. See
+  §3 for why this exists alongside the OAuth2 "Connect Discord" path rather than instead of it.
+- **Ticket-thread sync — designed, not yet built.** New ticket → bot creates a thread in a
+  configured support category, posts the opening message, stores the thread ID in
+  `support_tickets.discord_thread_id`. New reply on the web → bot posts it into the thread. New
+  message in that thread on Discord → bot writes a `support_ticket_messages` row
+  (`source = 'discord'`). This is the next piece to layer onto the same bot process, not a second
+  bot — see `internal/discord/bot.go`'s trailing TODO.
 
 The bot runs as a goroutine inside the same website binary (one process to deploy, matching §1's
 reasoning) rather than a separate service — `discordgo`'s gateway client is designed to run
-alongside a normal Go program, not as a standalone daemon.
+alongside a normal Go program, not as a standalone daemon. It is optional at runtime: an unset
+`DISCORD_BOT_TOKEN` disables it (logged, not fatal) and the site runs fine without it — Steam login
+and the website-generated link code still work; only the `/link` command's redemption side and any
+future ticket sync are unavailable.
 
 Config (bot token, guild ID, ticket category ID, per-log-type webhook URLs) is external
 configuration, not hardcoded — same `.ini`-or-env pattern as `config.ini` for the C++ extension and

@@ -1,0 +1,33 @@
+{{define "content"}}
+<h1 class="page-title">Admin Panel</h1>
+{{if .Session.SupportPanelAccess}}<p class="hint"><a href="/support">Switch to Support Panel</a></p>{{end}}
+
+<section class="card">
+  <h2>Recent staff actions</h2>
+  {{if .StaffLog}}
+    <table>
+      <thead><tr><th>Staff</th><th>Action</th><th>Target</th><th>Reason</th><th>When</th></tr></thead>
+      <tbody>
+        {{range .StaffLog}}
+        <tr>
+          <td>{{.StaffName}}</td>
+          <td>{{.Action}}</td>
+          <td>{{if .TargetName}}{{.TargetName}}{{else}}—{{end}}</td>
+          <td>{{.Reason}}</td>
+          <td>{{.CreatedAt}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  {{else}}
+    <p class="empty-state">No staff actions logged yet.</p>
+  {{end}}
+</section>
+
+<section class="card">
+  <h2>Coming soon</h2>
+  <p class="hint">Player lookup, ban/unban, rank management, anti-cheat flag review, and the arsenal
+  editor are designed in <code>docs/WEBSITE.md §7</code> and land in follow-up work -- this panel
+  currently exposes the staff log (read-only) and the access-gating/switcher itself.</p>
+</section>
+{{end}}

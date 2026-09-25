@@ -1,0 +1,39 @@
+{{define "layout"}}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{if .Title}}{{.Title}} · {{end}}TasDyn-ALife</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/">
+      <span class="brand-mark">TD</span>
+      <span class="brand-text">TasDyn<strong>ALife</strong></span>
+    </a>
+    <nav class="site-nav">
+      {{if .Session}}
+        <a href="/dashboard">Dashboard</a>
+        <a href="/tickets">My Tickets</a>
+        {{if .Session.AdminPanelAccess}}<a href="/admin">Admin Panel</a>{{end}}
+        {{if .Session.SupportPanelAccess}}<a href="/support">Support Panel</a>{{end}}
+        <span class="nav-user">{{.Session.Name}}</span>
+        <form method="post" action="/auth/logout" class="inline-form"><button class="link-button" type="submit">Sign out</button></form>
+      {{else}}
+        <a class="steam-login" href="/auth/steam/login">Sign in with Steam</a>
+      {{end}}
+    </nav>
+  </header>
+
+  <main class="site-main">
+    {{if .Error}}<div class="banner banner-error">{{.Error}}</div>{{end}}
+    {{if .Notice}}<div class="banner banner-notice">{{.Notice}}</div>{{end}}
+    {{template "content" .}}
+  </main>
+
+  <footer class="site-footer">TASMAN DYNAMICS</footer>
+</body>
+</html>
+{{end}}

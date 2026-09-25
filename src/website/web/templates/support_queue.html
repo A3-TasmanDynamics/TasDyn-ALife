@@ -1,0 +1,26 @@
+{{define "content"}}
+<h1 class="page-title">Support Panel</h1>
+{{if .Session.AdminPanelAccess}}<p class="hint"><a href="/admin">Switch to Admin Panel</a></p>{{end}}
+
+<section class="card">
+  <h2>Open tickets</h2>
+  {{if .Tickets}}
+    <table>
+      <thead><tr><th>Subject</th><th>Category</th><th>Status</th><th>Assigned</th><th></th></tr></thead>
+      <tbody>
+        {{range .Tickets}}
+        <tr>
+          <td>{{.Subject}}</td>
+          <td>{{.Category}}</td>
+          <td>{{.Status}}</td>
+          <td>{{if .AssignedTo}}{{.AssignedTo}}{{else}}—{{end}}</td>
+          <td><a href="/tickets/{{.ID}}">Open</a></td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  {{else}}
+    <p class="empty-state">No open tickets.</p>
+  {{end}}
+</section>
+{{end}}
