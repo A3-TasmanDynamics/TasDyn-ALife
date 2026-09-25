@@ -82,6 +82,14 @@ can't see, since client memory can't be scanned on a vanilla client:
 Full threat model, what each layer catches, and what's explicitly out of scope:
 [docs/ANTI_CHEAT.md](docs/ANTI_CHEAT.md).
 
+### Admin Tools
+An in-game staff menu, permission-gated by a DB-backed staff rank (`staff_ranks` +
+`players.staff_rank_id`) rather than a hardcoded or client-side admin flag — ranks are added,
+removed, and assigned to players live through the menu itself, no direct DB access needed.
+Four default tiers (Trial Moderator → Moderator → Admin → Head Admin/Developer) covering
+everything from kick/teleport/spectate up through perma-ban, compensation, and reviewing flagged
+anti-cheat events. Full spec: [docs/ADMIN_TOOLS.md](docs/ADMIN_TOOLS.md).
+
 ### Visual Identity (vanilla workarounds)
 `setObjectTextureGlobal` texture injection for faction liveries and rank-based uniforms — no custom mod required client-side.
 
