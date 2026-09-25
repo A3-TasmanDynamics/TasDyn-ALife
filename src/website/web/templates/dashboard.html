@@ -27,11 +27,41 @@
   {{if .Gang}}
     <p><strong>{{.Gang.Name}}</strong> [{{.Gang.Tag}}] — bank: ${{.Gang.Balance}}</p>
     <table>
-      <thead><tr><th>Member</th><th>Rank</th></tr></thead>
+      <thead><tr><th>Member</th><th>Rank</th>{{if .Gang.IsLeader}}<th></th>{{end}}</tr></thead>
       <tbody>
-        {{range .Gang.Members}}<tr><td>{{.Name}}</td><td>{{.Rank}}</td></tr>{{end}}
+        {{range .Gang.Members}}
+        <tr>
+          <td>{{.Name}}</td>
+          <td>{{.Rank}}</td>
+          {{if $.Gang.IsLeader}}
+          <td>
+            <form method="post" action="/dashboard/gang/rank" class="inline-form">
+              <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+              <input type="hidden" name="member_id" value="{{.PlayerID}}">
+              <select name="rank" onchange="this.form.submit()">
+                <option value="member" {{if eq .Rank "member"}}selected{{end}}>member</option>
+                <option value="officer" {{if eq .Rank "officer"}}selected{{end}}>officer</option>
+              </select>
+            </form>
+            <form method="post" action="/dashboard/gang/remove" class="inline-form">
+              <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+              <input type="hidden" name="member_id" value="{{.PlayerID}}">
+              <button class="link-button" type="submit">Remove</button>
+            </form>
+          </td>
+          {{end}}
+        </tr>
+        {{end}}
       </tbody>
     </table>
+
+    {{if .Gang.IsLeader}}
+    <form method="post" action="/dashboard/gang/invite" class="button-row">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      <input type="text" name="member_name" placeholder="Exact player name" required />
+      <button class="cta secondary" type="submit">Invite to Gang</button>
+    </form>
+    {{end}}
   {{else}}
     <p class="empty-state">You're not in a gang.</p>
   {{end}}

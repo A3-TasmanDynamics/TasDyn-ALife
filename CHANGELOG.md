@@ -146,3 +146,16 @@
   resubmitted-token replay (confirmed no double-apply), and a rejected request missing its CSRF
   token -- ledger rows (signed amounts, `balance_after`, shared per-pair request tokens) checked
   by hand against what the code should have produced. Smoke-test player rows deleted afterward.
+- `src/website`: member-portal gang management (`internal/gang`) -- invite, remove, and rank
+  change (`member`/`officer`) for an existing gang's membership, gated to the gang's leader
+  (`gangs.leader_player_id` -- the only permission tier that exists for this, since
+  `gang_members.rank` has no CHECK constraint in the schema and so is organizational, not a grant).
+  Every action logs to `gang_log` the same way the eventual in-game gang system will. Invite
+  reuses a new shared `internal/playerlookup` package (exact case-insensitive name resolution,
+  rejecting ambiguous/unknown names) factored out of the bank-transfer feature rather than
+  duplicated a second time. Verified end-to-end: leader invite/promote/remove all working, a
+  non-leader correctly blocked from managing a gang they don't lead, a duplicate invite (player
+  already in a gang) and an ambiguous name both correctly rejected with specific messages, and
+  `gang_log` rows checked by hand for all three action types. Smoke-test gang/player rows deleted
+  afterward (in FK-safe order: the gang row before its former leader, since `leader_player_id` is
+  `ON DELETE RESTRICT`).

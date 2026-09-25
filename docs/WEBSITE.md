@@ -116,11 +116,21 @@ buried in settings) — this is the concrete answer to "switch between without p
 **Member portal (login required, plain player):**
 - **Stats** — per-faction (civilian/police/medic) level, cash, bank balance, licences, playtime.
   Read-only, straight from `players`.
-- **Gang** — if `gang_members` has a row for this player: view roster, gang bank balance
-  (`gang_accounts`), gang log (`gang_log`). Leader/officer ranks additionally get:
-  - **Invite a member** — writes `gang_members`, logs to `gang_log` (`action = 'member_added'`),
-    same table the in-game gang system already writes.
-  - **Remove a member** / **change rank** — same pattern.
+- **Gang** — **built** (`internal/gang/gang.go`). If `gang_members` has a row for this player: view
+  roster, gang bank balance (`gang_accounts`), gang log (`gang_log`). The gang's leader
+  (`gangs.leader_player_id` — the only permission tier this checks; `gang_members.rank` has no
+  CHECK constraint in the schema, so a rank label like "officer" is organizational, not a grant of
+  these actions) additionally gets:
+  - **Invite a member** — by exact (case-insensitive) name, via the shared
+    `internal/playerlookup` resolver also used by bank transfers (§ below). Writes `gang_members`,
+    logs to `gang_log` (`action = 'member_added'`), same table the in-game gang system will use.
+    `gang_members.player_id` is `UNIQUE` (a player belongs to at most one gang at a time), so
+    inviting someone already in a gang is rejected with a specific message, not a raw constraint
+    error.
+  - **Remove a member** / **change rank** (`member`/`officer`) — same pattern, same `gang_log`
+    action trail. A leader can't remove or re-rank themselves this way — leaving/disbanding a gang
+    is a different, not-yet-built action.
+  - Gang *creation* is not built — these actions manage an existing gang's membership only.
 - **Send money** — **built** (`internal/bank/transfer.go`). Bank transfer between the player's own
   faction accounts, or to another player identified by exact (case-insensitive) name — ambiguous or
   unknown names are rejected rather than guessed at, since routing real money to the wrong account
