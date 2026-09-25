@@ -57,3 +57,14 @@
   `ALife_fnc_load`/`ALife_fnc_save` implementing `docs/DATA_CONTRACT.md` exactly. `mission.sqm`
   itself isn't generated here — it's Eden editor output — see `src/mission/README.md` for how to
   wire this scaffold into an actual mission.
+- Faction spawn/selection (Phase 2 work, done ahead of schedule alongside the mission scaffold):
+  `config/spawn_config.hpp` defines spawn points config-side (git-diffable), each resolving its
+  position from an Eden marker or a raw fallback; `dialog/spawnMenu.hpp` + three client functions
+  drive the faction/spawn-point picker; `ALife_fnc_spawnPlayer` is server-authoritative — a
+  player's spawn-point choice is a request, not a fact, and is overridden entirely (resume at
+  `<faction>_position`, ignore the request) when their stored `<faction>_alive` is `false`. This
+  is the actual enforcement of the disconnect-to-escape protection reviewed in from Tonic's schema
+  during Phase 1 — the columns existed before, now something reads and acts on them.
+- Reviewed Tonic's spawn-selection dialog and mission folder layout for structural ideas (a
+  list-based spawn-point picker, config-driven definitions) — not used directly; built fresh
+  against this project's own schema/contract.
