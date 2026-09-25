@@ -111,8 +111,19 @@ func run() error {
 	r.Use(d.Auth.Middleware)
 	r.Use(csrf.Middleware(cfg.CookieSecure))
 
+	// no-cache (not no-store): the browser still caches the response, but
+	// must revalidate with the server on every request instead of serving
+	// a stale copy for whatever heuristic period it guesses is safe with no
+	// explicit Cache-Control header at all -- exactly what let a player see
+	// stale CSS across several style.css updates today with no visible
+	// error, just a page that silently looked wrong. http.FileServer
+	// already sets ETag/Last-Modified, so revalidation correctly comes
+	// back 304 when nothing changed and 200 with the new bytes when it has.
 	fileServer := http.FileServer(http.Dir("web/static"))
-	r.Handle("/static/*", http.StripPrefix("/static/", fileServer))
+	r.Handle("/static/*", http.StripPrefix("/static/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-cache")
+		fileServer.ServeHTTP(w, r)
+	})))
 
 	r.Get("/", d.Landing)
 

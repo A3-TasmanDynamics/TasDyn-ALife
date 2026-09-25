@@ -165,7 +165,8 @@ func (d *Deps) TicketThread(w http.ResponseWriter, r *http.Request) {
 	var assignedName *string
 	t := ticketDetail{ID: ticketID}
 	err = d.Pool.QueryRow(r.Context(), `
-		SELECT st.player_id, st.subject, st.category, st.status, st.priority, p.name, requester.name
+		SELECT st.player_id, st.subject, st.category, st.status, st.priority, p.name,
+		       COALESCE(NULLIF(requester.name, ''), 'Player #' || requester.id)
 		FROM support_tickets st
 		LEFT JOIN players p ON p.id = st.assigned_staff_id
 		JOIN players requester ON requester.id = st.player_id

@@ -250,3 +250,20 @@
     appears on the ticket page for a staff session and is confirmed absent (zero matches, not just
     "not visible") for a plain player session viewing their own ticket. Disposable test accounts
     cleaned up afterward; the real ticket already in the dev DB was untouched.
+- Fixed a real bug reported right after the sidebar shipped: the sidebar looked completely absent
+  in a real browser despite the server correctly rendering it (confirmed by fetching the exact
+  same route directly and getting the full, correct HTML back). Root cause: `/static/style.css`
+  had been updated across several PRs today, but nothing told the browser to re-fetch it --
+  `http.FileServer` sets `ETag`/`Last-Modified` but no `Cache-Control`, so the browser was free to
+  keep serving a CSS snapshot from hours earlier with no visible error, just a page that silently
+  looked wrong. Fixed by setting `Cache-Control: no-cache` on `/static/*` -- the browser still
+  caches the file, but must revalidate with the server on every request (a cheap 304 when nothing
+  changed) instead of serving a stale copy on its own heuristic. This affects every future
+  `style.css`/JS change too, not just this one.
+- Also fixed, found while verifying the above: the ticket queue's "Requester" column showed
+  blank for a real ticket -- `players.name` defaults to `''` and is only ever set by the game's own
+  save path, so a website-first signup (Steam login before ever connecting in-game) has an
+  honestly-empty name. `COALESCE(NULLIF(name, ''), 'Player #' || id)` now backstops this
+  everywhere a player's display name is read for session/ticket display (`internal/auth/session.go`,
+  both ticket queries in `internal/handlers/support.go`, `internal/handlers/tickets.go`'s ticket-detail
+  query) -- the top nav's own name display had the identical gap.
