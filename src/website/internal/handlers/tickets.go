@@ -30,6 +30,7 @@ type ticketSummary struct {
 	Priority      string
 	AssignedTo    string
 	RequesterName string
+	RequesterUID  string
 	CreatedAt     string
 }
 
@@ -130,13 +131,18 @@ func (d *Deps) CreateTicket(w http.ResponseWriter, r *http.Request) {
 }
 
 type ticketDetail struct {
-	ID            int64
-	Subject       string
-	Category      string
-	Status        string
-	Priority      string
-	AssignedTo    string
-	RequesterName string
+	ID                       int64
+	Subject                  string
+	Category                 string
+	Status                   string
+	Priority                 string
+	AssignedTo               string
+	RequesterName            string
+	RequesterUID             string
+	RequesterDiscordID       string
+	RequesterDiscordUsername string
+	CreatedAt                string
+	UpdatedAt                string
 }
 
 type ticketThreadData struct {
@@ -146,13 +152,15 @@ type ticketThreadData struct {
 	IsStaff  bool
 }
 
-// TicketThread renders one ticket's conversation. Accessible to the
-// ticket's owner OR staff with Support Panel access -- checked here, not
-// assumed from which route the request came in on, since /tickets/{id} is
-// reachable by both audiences. Internal notes (support_ticket_messages.internal)
-// are filtered out in the SQL itself for a non-staff viewer, not just
-// hidden in the template -- the owner's response should never even leave
-// the database, let alone reach the page as hidden markup.
+// TicketThread renders one ticket's conversation plus, for staff, a
+// metadata/identity sidebar (docs/WEBSITE.md §8) -- accessible to the
+// ticket's owner OR staff with Support Panel access, checked here rather
+// than assumed from which route the request came in on, since
+// /tickets/{id} is reachable by both audiences. Internal notes
+// (support_ticket_messages.internal) are filtered out in the SQL itself
+// for a non-staff viewer, not just hidden in the template -- the owner's
+// response should never even leave the database, let alone reach the page
+// as hidden markup.
 func (d *Deps) TicketThread(w http.ResponseWriter, r *http.Request) {
 	sess, _ := auth.FromContext(r.Context())
 	ticketID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
@@ -162,16 +170,20 @@ func (d *Deps) TicketThread(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var ownerID int64
-	var assignedName *string
+	var assignedName, discordID, discordUsername *string
+	var createdAt, updatedAt time.Time
 	t := ticketDetail{ID: ticketID}
 	err = d.Pool.QueryRow(r.Context(), `
 		SELECT st.player_id, st.subject, st.category, st.status, st.priority, p.name,
-		       COALESCE(NULLIF(requester.name, ''), 'Player #' || requester.id)
+		       COALESCE(NULLIF(requester.name, ''), 'Player #' || requester.id),
+		       requester.uid, requester.discord_id, requester.discord_username,
+		       st.created_at, st.updated_at
 		FROM support_tickets st
 		LEFT JOIN players p ON p.id = st.assigned_staff_id
 		JOIN players requester ON requester.id = st.player_id
 		WHERE st.id = $1
-	`, ticketID).Scan(&ownerID, &t.Subject, &t.Category, &t.Status, &t.Priority, &assignedName, &t.RequesterName)
+	`, ticketID).Scan(&ownerID, &t.Subject, &t.Category, &t.Status, &t.Priority, &assignedName,
+		&t.RequesterName, &t.RequesterUID, &discordID, &discordUsername, &createdAt, &updatedAt)
 	if err == pgx.ErrNoRows {
 		http.NotFound(w, r)
 		return
@@ -184,6 +196,14 @@ func (d *Deps) TicketThread(w http.ResponseWriter, r *http.Request) {
 	if assignedName != nil {
 		t.AssignedTo = *assignedName
 	}
+	if discordID != nil {
+		t.RequesterDiscordID = *discordID
+	}
+	if discordUsername != nil {
+		t.RequesterDiscordUsername = *discordUsername
+	}
+	t.CreatedAt = createdAt.Format("2006-01-02 15:04")
+	t.UpdatedAt = updatedAt.Format("2006-01-02 15:04")
 
 	isStaff := sess.SupportPanelAccess
 	if ownerID != sess.PlayerID && !isStaff {
@@ -208,9 +228,9 @@ func (d *Deps) TicketThread(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 	for rows.Next() {
 		var m ticketMessage
-		var createdAt time.Time
-		if err := rows.Scan(&m.AuthorName, &m.Source, &m.Body, &m.Internal, &createdAt); err == nil {
-			m.CreatedAt = createdAt.Format("2006-01-02 15:04")
+		var msgCreatedAt time.Time
+		if err := rows.Scan(&m.AuthorName, &m.Source, &m.Body, &m.Internal, &msgCreatedAt); err == nil {
+			m.CreatedAt = msgCreatedAt.Format("2006-01-02 15:04")
 			data.Messages = append(data.Messages, m)
 		}
 	}

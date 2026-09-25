@@ -46,7 +46,7 @@ func (d *Deps) SupportDashboard(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := d.Pool.Query(r.Context(), `
 		SELECT st.id, st.subject, st.category, st.status, st.priority, COALESCE(assignee.name, ''),
-		       COALESCE(NULLIF(requester.name, ''), 'Player #' || requester.id), st.created_at
+		       COALESCE(NULLIF(requester.name, ''), 'Player #' || requester.id), requester.uid, st.created_at
 		FROM support_tickets st
 		JOIN players requester ON requester.id = st.player_id
 		LEFT JOIN players assignee ON assignee.id = st.assigned_staff_id
@@ -62,7 +62,7 @@ func (d *Deps) SupportDashboard(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var t ticketSummary
 		var createdAt time.Time
-		if err := rows.Scan(&t.ID, &t.Subject, &t.Category, &t.Status, &t.Priority, &t.AssignedTo, &t.RequesterName, &createdAt); err == nil {
+		if err := rows.Scan(&t.ID, &t.Subject, &t.Category, &t.Status, &t.Priority, &t.AssignedTo, &t.RequesterName, &t.RequesterUID, &createdAt); err == nil {
 			t.CreatedAt = createdAt.Format("2006-01-02 15:04")
 			data.RecentTickets = append(data.RecentTickets, t)
 		}
@@ -78,6 +78,8 @@ type supportQueueData struct {
 	FilterStatus     string
 	FilterPriority   string
 	FilterAssigned   string
+	FilterCategory   string
+	SearchQuery      string
 }
 
 // SupportQueue is the Support Panel's "Tickets" page: the full
@@ -102,6 +104,11 @@ func (d *Deps) SupportQueue(w http.ResponseWriter, r *http.Request) {
 	if filterAssigned == "" {
 		filterAssigned = "all"
 	}
+	filterCategory := r.URL.Query().Get("category")
+	if filterCategory == "" {
+		filterCategory = "all"
+	}
+	searchQuery := r.URL.Query().Get("q")
 
 	data := supportQueueData{
 		Base:             baseFrom(r, "Support Panel · Tickets"),
@@ -109,11 +116,13 @@ func (d *Deps) SupportQueue(w http.ResponseWriter, r *http.Request) {
 		FilterStatus:     filterStatus,
 		FilterPriority:   filterPriority,
 		FilterAssigned:   filterAssigned,
+		FilterCategory:   filterCategory,
+		SearchQuery:      searchQuery,
 	}
 
 	query := `
 		SELECT st.id, st.subject, st.category, st.status, st.priority, COALESCE(assignee.name, ''),
-		       COALESCE(NULLIF(requester.name, ''), 'Player #' || requester.id), st.created_at
+		       COALESCE(NULLIF(requester.name, ''), 'Player #' || requester.id), requester.uid, st.created_at
 		FROM support_tickets st
 		JOIN players requester ON requester.id = st.player_id
 		LEFT JOIN players assignee ON assignee.id = st.assigned_staff_id
@@ -138,12 +147,25 @@ func (d *Deps) SupportQueue(w http.ResponseWriter, r *http.Request) {
 		query += ` AND st.priority = ` + nextArg(filterPriority)
 	}
 
+	if filterCategory != "all" {
+		query += ` AND st.category = ` + nextArg(filterCategory)
+	}
+
 	switch filterAssigned {
 	case "me":
 		query += ` AND st.assigned_staff_id = ` + nextArg(sess.PlayerID)
 	case "unassigned":
 		query += ` AND st.assigned_staff_id IS NULL`
 	} // "all" -> no filter
+
+	if searchQuery != "" {
+		// One placeholder, referenced three times -- pgx/Postgres both
+		// allow reusing the same $N multiple times in one query, so this
+		// is still a single bound parameter, not three separate ones a
+		// caller could desync.
+		p := nextArg("%" + searchQuery + "%")
+		query += ` AND (st.subject ILIKE ` + p + ` OR requester.name ILIKE ` + p + ` OR requester.uid ILIKE ` + p + `)`
+	}
 
 	query += ` ORDER BY CASE st.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END, st.created_at ASC`
 
@@ -157,7 +179,7 @@ func (d *Deps) SupportQueue(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var t ticketSummary
 		var createdAt time.Time
-		if err := rows.Scan(&t.ID, &t.Subject, &t.Category, &t.Status, &t.Priority, &t.AssignedTo, &t.RequesterName, &createdAt); err == nil {
+		if err := rows.Scan(&t.ID, &t.Subject, &t.Category, &t.Status, &t.Priority, &t.AssignedTo, &t.RequesterName, &t.RequesterUID, &createdAt); err == nil {
 			t.CreatedAt = createdAt.Format("2006-01-02 15:04")
 			data.Tickets = append(data.Tickets, t)
 		}

@@ -10,6 +10,10 @@
       <h2>Tickets</h2>
 
       <form method="get" action="/support/tickets" class="filter-bar">
+        <div class="field" style="flex:2; min-width:220px;">
+          <label>Search</label>
+          <input type="text" name="q" value="{{.SearchQuery}}" placeholder="Subject, player name, or Steam UID..." />
+        </div>
         <div class="field">
           <label>Status</label>
           <select name="status" onchange="this.form.submit()">
@@ -31,12 +35,26 @@
           </select>
         </div>
         <div class="field">
+          <label>Category</label>
+          <select name="category" onchange="this.form.submit()">
+            <option value="all" {{if eq .FilterCategory "all"}}selected{{end}}>All</option>
+            <option value="report" {{if eq .FilterCategory "report"}}selected{{end}}>Player Report</option>
+            <option value="bug" {{if eq .FilterCategory "bug"}}selected{{end}}>Bug</option>
+            <option value="billing" {{if eq .FilterCategory "billing"}}selected{{end}}>Billing</option>
+            <option value="appeal" {{if eq .FilterCategory "appeal"}}selected{{end}}>Ban Appeal</option>
+            <option value="other" {{if eq .FilterCategory "other"}}selected{{end}}>Other</option>
+          </select>
+        </div>
+        <div class="field">
           <label>Assigned</label>
           <select name="assigned" onchange="this.form.submit()">
             <option value="all" {{if eq .FilterAssigned "all"}}selected{{end}}>Everyone</option>
             <option value="me" {{if eq .FilterAssigned "me"}}selected{{end}}>Assigned to me</option>
             <option value="unassigned" {{if eq .FilterAssigned "unassigned"}}selected{{end}}>Unassigned</option>
           </select>
+        </div>
+        <div class="button-row" style="margin-top: 22px;">
+          <button class="cta secondary" type="submit">Search</button>
         </div>
       </form>
 
@@ -48,7 +66,10 @@
             <tr>
               <td><span class="badge badge-priority-{{.Priority}}">{{.Priority}}</span></td>
               <td>{{.Subject}}</td>
-              <td>{{.RequesterName}}</td>
+              <td>
+                {{.RequesterName}}
+                <div class="hint mono">{{.RequesterUID}}</div>
+              </td>
               <td>{{.Category}}</td>
               <td><span class="badge badge-status-{{.Status}}">{{.Status}}</span></td>
               <td>{{if .AssignedTo}}{{.AssignedTo}}{{else}}<span class="hint">unassigned</span>{{end}}</td>
