@@ -69,11 +69,18 @@ Unlike traditional vanilla servers that rely on slow SQF-based MySQL bridges (ex
 ### Economy
 AUD currency, dynamic supply/demand market, physical cash vs. digital bank, resource-gated activities (e.g. uranium mining).
 
-### Anti-Cheat (heuristic, server-side)
-Since client memory can't be scanned on a vanilla client:
-* Honeypot variables to trap variable scanners.
+### Anti-Cheat
+Layered defense — BattlEye (zero client-install cost) plus a heuristic layer built for what BattlEye
+can't see, since client memory can't be scanned on a vanilla client:
+* BattlEye enabled server-side for generic memory/DLL cheat tooling.
+* A `CfgRemoteExec` allowlist so no server-side function is network-callable unless reviewed.
+* Honeypot variables to trap generic cheat-menu variable manipulation.
 * Server-side movement validation (distance-per-tick) to flag teleportation.
-* Transaction locking during DB writes to prevent duplication exploits.
+* Transaction locking **and idempotent request tokens** during DB writes to prevent both
+  concurrent-write and double-submit duplication exploits.
+
+Full threat model, what each layer catches, and what's explicitly out of scope:
+[docs/ANTI_CHEAT.md](docs/ANTI_CHEAT.md).
 
 ### Visual Identity (vanilla workarounds)
 `setObjectTextureGlobal` texture injection for faction liveries and rank-based uniforms — no custom mod required client-side.

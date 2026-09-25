@@ -41,12 +41,17 @@ environment reproducible from a clean clone.
 - [ ] SQF request/response framework skeleton: the "Client Requests, Server Decides" pattern —
       one documented event name convention, one server-side dispatcher, one client-side
       acknowledgement path.
+- [ ] `CfgRemoteExec` allowlist: only named, reviewed functions are network-callable at all — the
+      enforced version of "Server Decides," per [ANTI_CHEAT.md §3 Layer 1](ANTI_CHEAT.md#layer-1--api-surface-remoteexec-allowlist).
 - [ ] End-to-end smoke test: a player joins, a blank record is created, cash changes on the
       server, disconnect, rejoin — balance persisted correctly.
-- [ ] Transaction locking on writes (prevents the duplication-exploit class from the prototype).
+- [ ] Transaction locking **and idempotent request tokens** on economy-affecting writes (prevents
+      both the concurrent-write and the double-submit duplication classes — see
+      [ANTI_CHEAT.md §3 Layer 2](ANTI_CHEAT.md#layer-2--economic-integrity)).
 
 **Milestone exit criteria:** a player's cash/bank/rank survives a disconnect/reconnect cycle
-against a real Postgres instance, with no untested code path in the save/load contract.
+against a real Postgres instance, with no untested code path in the save/load contract, and no
+server-side function is network-callable unless it's on the `CfgRemoteExec` allowlist.
 
 ## Phase 2 — Core Gameplay Loop *(2026-10-27 → 2026-11-23)*
 
@@ -66,16 +71,24 @@ job/duty loop specific to that faction, and see money move as a result — all s
 
 ## Phase 3 — Anti-Cheat & Hardening *(2026-11-24 → 2026-12-04)*
 
-- [ ] Honeypot variables to trap variable scanners.
+Full threat model, defense layers, and response policy: [ANTI_CHEAT.md](ANTI_CHEAT.md).
+
+- [ ] Enable and configure **BattlEye** on the dedicated server (community filter set as a
+      starting point) — zero client-install cost, catches generic memory/DLL cheat tooling that
+      the heuristic layer below isn't designed to.
+- [ ] Honeypot variables to trap generic cheat-menu variable manipulation.
 - [ ] Server-side movement validation (distance-per-tick) to flag teleportation.
+- [ ] Graduated flag/alert response wired up (see [ANTI_CHEAT.md §3 Layer 4](ANTI_CHEAT.md#layer-4--response--ops)) —
+      not auto-ban on every signal, since the movement check especially needs tuning against real
+      network conditions first.
 - [ ] Load/soak test the C++ bridge under concurrent writes (simulate a full server's worth of
       saves).
 - [ ] Basic admin tooling: kick/ban, teleport-to, spectate — whatever's needed to moderate a
       closed alpha.
 
-**Milestone exit criteria:** the heuristic anti-cheat catches the two exploit classes called out
-in the README (teleport, duplication) in a deliberate red-team pass, and the bridge survives a
-concurrent-save soak test without corruption.
+**Milestone exit criteria:** BattlEye active, all four Layer 0–3 defenses from ANTI_CHEAT.md
+implemented and passing a deliberate red-team pass (teleport, dupe/double-submit, honeypot
+trigger), and the bridge survives a concurrent-save soak test without corruption.
 
 ## Phase 4 — Content & Balance *(2026-12-05 → 2026-12-14)*
 
@@ -111,7 +124,8 @@ for a full session without a restart.
 - Discord bot, two-way synced with Postgres.
 - Remaining content breadth: uranium mining, fishing, full SOG vehicle tiers, speed cameras,
   physical jail beyond the MVP flow.
-- Anti-cheat maturity beyond the two heuristic classes covered in Phase 3.
+- Anti-cheat maturity beyond [ANTI_CHEAT.md](ANTI_CHEAT.md)'s Layer 0–4 launch scope — see its
+  §3 Layer 5 for what that covers (tuned thresholds, expanded honeypot set, log-pattern review).
 
 ## Risk
 
