@@ -1,0 +1,50 @@
+# --- Secrets / local config ---
+# NEVER commit real database credentials
+config.ini
+database.ini
+.env
+*.env
+
+# --- Arma 3 build artifacts ---
+*.pbo
+*.bisign
+*.bikey
+
+# --- C++ build output ---
+build/
+out/
+x64/
+Debug/
+Release/
+*.dll
+*.pdb
+*.lib
+*.exp
+*.obj
+
+# --- Visual Studio ---
+.vs/
+*.suo
+*.user
+*.ncb
+*.aps
+
+# --- Local server deploy target (never source of truth) ---
+server_dist/
+Profiles/
+*.log
+*.rpt
+
+# --- Backups ---
+*.bak
+*.backup
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Node (web_dashboard / discord_bot, once added) ---
+node_modules/
+.nuxt/
+.next/
+dist/
