@@ -29,6 +29,16 @@ Release/
 *.ncb
 *.aps
 
+# --- Wails (src/server_manager) ---
+# Its build/ folder mixes legitimate source (app icon, platform manifests,
+# the NSIS installer script) with generated output (build/bin/) in the same
+# directory, unlike the C++ build/ convention above -- a parent directory
+# match blocks git from seeing anything inside it regardless of later
+# patterns, so the directory itself has to be un-ignored first.
+!src/server_manager/build/
+!src/server_manager/build/**
+src/server_manager/build/bin/
+
 # --- Local server deploy target (never source of truth) ---
 server_dist/
 Profiles/

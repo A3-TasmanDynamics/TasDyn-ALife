@@ -53,6 +53,12 @@ Unlike traditional vanilla servers that rely on slow SQF-based MySQL bridges (ex
     no extra dependency-management tooling (vcpkg, etc.) needed to build the extension.
   * Offloads heavy calculation (anti-cheat distance checks, economy balancing) out of SQF.
 
+### Server Operator Tooling
+* **Server Manager:** Go + Wails desktop app (`src/server_manager/`) — configure and launch the
+  dedicated server, watch its live log, and view Postgres-backed graphs (players, economy,
+  anti-cheat flags, staff actions). Distinct from the web dashboard below: this runs locally for
+  whoever's actually hosting the server, not remotely for players/staff.
+
 ### Frontend (Web & Admin) — planned
 * **Dashboard:** NuxtJS (TypeScript) — ticket system, gang management, player stats, live RCON graphs.
 * **Discord Integration:** Node.js bot, two-way synced with Postgres (in-game tickets → Discord alerts).
@@ -111,10 +117,12 @@ TasDyn-ALife/
 ├── src/
 │   ├── cpp_extension/   # C++ bridge (the DB extension DLL)
 │   ├── ALife.Altis/     # SQF mission source (named for Arma's <mission>.<world> convention)
+│   ├── server_manager/  # Desktop app (Go + Wails) — launch/monitor the server, DB dashboards
 │   ├── web_dashboard/   # NuxtJS admin panel (planned)
 │   └── discord_bot/     # Node.js bot (planned)
 ├── docs/                # Design docs (data contracts, architecture decisions)
 │   └── assets/          # Banner and brand assets
+├── tools/               # Dev tooling — see tools/README.md
 └── server_dist/         # Local server deploy target — git-ignored, never committed
 ```
 
