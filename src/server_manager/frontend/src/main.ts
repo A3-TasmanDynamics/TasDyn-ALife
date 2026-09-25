@@ -385,16 +385,25 @@ function renderKickLogTable(rows: main.KickLogEntry[]): string {
 
 const MAX_PERF_POINTS = 60; // ~2 minutes at one sample per 2s
 
-const perfHistory: { labels: string[]; cpu: number[]; mem: number[] } = { labels: [], cpu: [], mem: [] };
+const perfHistory: {
+    labels: string[]; cpu: number[]; mem: number[]; netSent: number[]; netRecv: number[]; fps: (number | null)[];
+} = { labels: [], cpu: [], mem: [], netSent: [], netRecv: [], fps: [] };
 let cpuChart: Chart | null = null;
 let memChart: Chart | null = null;
+let netChart: Chart | null = null;
+let fpsChart: Chart | null = null;
 
 function resetPerformanceHistory() {
     perfHistory.labels = [];
     perfHistory.cpu = [];
     perfHistory.mem = [];
+    perfHistory.netSent = [];
+    perfHistory.netRecv = [];
+    perfHistory.fps = [];
     cpuChart = null;
     memChart = null;
+    netChart = null;
+    fpsChart = null;
 }
 
 async function renderPerformancePanel() {
@@ -425,7 +434,7 @@ async function renderPerformancePanel() {
     panel.innerHTML = `
       <div class="page-header">
         <h1>Performance</h1>
-        <p>Live CPU and memory usage for the running dedicated server.</p>
+        <p>Live CPU, memory, network, and server FPS for the running dedicated server.</p>
       </div>
 
       <div class="stat-grid">
@@ -436,6 +445,10 @@ async function renderPerformancePanel() {
         <div class="stat-tile">
           <div class="label">Memory</div>
           <div class="value" id="perf-mem-value">--</div>
+        </div>
+        <div class="stat-tile">
+          <div class="label">Server FPS</div>
+          <div class="value" id="perf-fps-value">--</div>
         </div>
         <div class="stat-tile">
           <div class="label">Uptime</div>
@@ -452,7 +465,27 @@ async function renderPerformancePanel() {
         <h2>Memory Usage</h2>
         <canvas id="perf-mem-chart" height="70"></canvas>
       </div>
+
+      <div class="card">
+        <h2>Server FPS</h2>
+        <p class="hint">From the mission's own <code>diag_fps</code>, logged every 2s -- appears a few seconds after the mission finishes loading.</p>
+        <canvas id="perf-fps-chart" height="70"></canvas>
+      </div>
+
+      <div class="card">
+        <h2>Network I/O</h2>
+        <p class="hint">System-wide, not isolated to this process -- Windows has no reliable per-process network byte counter the way it does for CPU/memory. A reasonable proxy on a host dedicated to this server.</p>
+        <canvas id="perf-net-chart" height="70"></canvas>
+      </div>
     `;
+
+    const lineDefaults = {
+        animation: false as const,
+        scales: {
+            y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+            x: { ticks: { color: '#94a3b8', maxTicksLimit: 6 }, grid: { display: false } },
+        },
+    };
 
     const cpuCtx = (document.getElementById('perf-cpu-chart') as HTMLCanvasElement).getContext('2d')!;
     cpuChart = new Chart(cpuCtx, {
@@ -469,14 +502,7 @@ async function renderPerformancePanel() {
                 pointRadius: 0,
             }],
         },
-        options: {
-            animation: false,
-            scales: {
-                y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
-                x: { ticks: { color: '#94a3b8', maxTicksLimit: 6 }, grid: { display: false } },
-            },
-            plugins: { legend: { display: false } },
-        },
+        options: { ...lineDefaults, plugins: { legend: { display: false } } },
     });
 
     const memCtx = (document.getElementById('perf-mem-chart') as HTMLCanvasElement).getContext('2d')!;
@@ -494,46 +520,110 @@ async function renderPerformancePanel() {
                 pointRadius: 0,
             }],
         },
+        options: { ...lineDefaults, plugins: { legend: { display: false } } },
+    });
+
+    const fpsCtx = (document.getElementById('perf-fps-chart') as HTMLCanvasElement).getContext('2d')!;
+    fpsChart = new Chart(fpsCtx, {
+        type: 'line',
+        data: {
+            labels: [...perfHistory.labels],
+            datasets: [{
+                label: 'Server FPS',
+                data: [...perfHistory.fps],
+                borderColor: '#22c55e',
+                backgroundColor: 'rgba(34, 197, 94, 0.12)',
+                fill: true,
+                tension: 0.25,
+                pointRadius: 0,
+                spanGaps: true,
+            }],
+        },
+        options: { ...lineDefaults, plugins: { legend: { display: false } } },
+    });
+
+    const netCtx = (document.getElementById('perf-net-chart') as HTMLCanvasElement).getContext('2d')!;
+    netChart = new Chart(netCtx, {
+        type: 'line',
+        data: {
+            labels: [...perfHistory.labels],
+            datasets: [
+                {
+                    label: 'Sent (KB/s)',
+                    data: [...perfHistory.netSent],
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'transparent',
+                    tension: 0.25,
+                    pointRadius: 0,
+                },
+                {
+                    label: 'Received (KB/s)',
+                    data: [...perfHistory.netRecv],
+                    borderColor: '#38bdf8',
+                    backgroundColor: 'transparent',
+                    tension: 0.25,
+                    pointRadius: 0,
+                },
+            ],
+        },
         options: {
-            animation: false,
-            scales: {
-                y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
-                x: { ticks: { color: '#94a3b8', maxTicksLimit: 6 }, grid: { display: false } },
-            },
-            plugins: { legend: { display: false } },
+            ...lineDefaults,
+            plugins: { legend: { display: true, labels: { color: '#94a3b8', boxWidth: 12, font: { size: 11 } } } },
         },
     });
 
     if (perfHistory.cpu.length > 0) {
-        setMsg('perf-cpu-value', '');
         const cpuEl = document.getElementById('perf-cpu-value');
         const memEl = document.getElementById('perf-mem-value');
+        const fpsEl = document.getElementById('perf-fps-value');
         const upEl = document.getElementById('perf-uptime-value');
+        const lastFps = perfHistory.fps[perfHistory.fps.length - 1];
         if (cpuEl) cpuEl.innerText = `${perfHistory.cpu[perfHistory.cpu.length - 1].toFixed(1)}%`;
         if (memEl) memEl.innerText = `${perfHistory.mem[perfHistory.mem.length - 1].toFixed(0)} MB`;
+        if (fpsEl) fpsEl.innerText = lastFps === null ? 'waiting...' : lastFps.toFixed(1);
         if (upEl) upEl.innerText = formatUptime(lastUptimeSeconds);
     }
 }
 
 let lastUptimeSeconds = 0;
 
-EventsOn('server:performance', (sample: { timestamp: string; cpuPercent: number; memoryMB: number; uptimeSeconds: number }) => {
+type PerformanceEvent = {
+    timestamp: string;
+    cpuPercent: number;
+    memoryMB: number;
+    uptimeSeconds: number;
+    networkSentKBps: number;
+    networkRecvKBps: number;
+    serverFPS: number; // -1 = no diag_fps line read yet this run
+};
+
+EventsOn('server:performance', (sample: PerformanceEvent) => {
     const label = new Date(sample.timestamp).toLocaleTimeString();
+    const fpsValue = sample.serverFPS < 0 ? null : sample.serverFPS;
+
     perfHistory.labels.push(label);
     perfHistory.cpu.push(sample.cpuPercent);
     perfHistory.mem.push(sample.memoryMB);
+    perfHistory.netSent.push(sample.networkSentKBps);
+    perfHistory.netRecv.push(sample.networkRecvKBps);
+    perfHistory.fps.push(fpsValue);
     if (perfHistory.labels.length > MAX_PERF_POINTS) {
         perfHistory.labels.shift();
         perfHistory.cpu.shift();
         perfHistory.mem.shift();
+        perfHistory.netSent.shift();
+        perfHistory.netRecv.shift();
+        perfHistory.fps.shift();
     }
     lastUptimeSeconds = sample.uptimeSeconds;
 
     const cpuEl = document.getElementById('perf-cpu-value');
     const memEl = document.getElementById('perf-mem-value');
+    const fpsEl = document.getElementById('perf-fps-value');
     const upEl = document.getElementById('perf-uptime-value');
     if (cpuEl) cpuEl.innerText = `${sample.cpuPercent.toFixed(1)}%`;
     if (memEl) memEl.innerText = `${sample.memoryMB.toFixed(0)} MB`;
+    if (fpsEl) fpsEl.innerText = fpsValue === null ? 'waiting...' : fpsValue.toFixed(1);
     if (upEl) upEl.innerText = formatUptime(sample.uptimeSeconds);
 
     if (cpuChart) {
@@ -545,6 +635,17 @@ EventsOn('server:performance', (sample: { timestamp: string; cpuPercent: number;
         memChart.data.labels = [...perfHistory.labels];
         memChart.data.datasets[0].data = [...perfHistory.mem];
         memChart.update();
+    }
+    if (fpsChart) {
+        fpsChart.data.labels = [...perfHistory.labels];
+        fpsChart.data.datasets[0].data = [...perfHistory.fps];
+        fpsChart.update();
+    }
+    if (netChart) {
+        netChart.data.labels = [...perfHistory.labels];
+        netChart.data.datasets[0].data = [...perfHistory.netSent];
+        netChart.data.datasets[1].data = [...perfHistory.netRecv];
+        netChart.update();
     }
 
     // First sample after the panel was showing its "no server running"

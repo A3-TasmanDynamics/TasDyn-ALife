@@ -181,3 +181,30 @@
   (ephemeral process telemetry, not durable game state); history clears on stop/relaunch. Verified
   the `gopsutil` CPU%/memory sampling against a real child process in isolation before wiring it to
   the real server process.
+- `src/server_manager`: Performance tab now also graphs network I/O and server FPS.
+  - Network is system-wide (`gopsutil`'s `net.IOCounters`, all interfaces) rather than isolated to
+    `arma3server_x64.exe` -- Windows has no reliable per-process network byte counter the way it
+    does for CPU/memory short of ETW, labeled honestly as a proxy rather than presented as
+    process-specific. Delta computed against the previous 2s sample; guarded against an
+    interface-reset counter wraparound reading as a nonsensical spike (`uint64` subtraction
+    doesn't panic on underflow, it silently wraps).
+  - FPS comes from `diag_fps` -- Arma exposes this only to script running inside the sim, so
+    `src/ALife.Altis/initServer.sqf` now logs `[ALife][FPS] <value>` via `diag_log` every 2s, and
+    `server_manager`'s existing RPT tail (already reading every new line for the Console tab)
+    greps for that tag and feeds it into the same `PerformanceSample` the CPU/memory/network
+    fields ride in. Reads `-1` (rendered as "waiting...", not `0`) until the first line arrives,
+    so "no data yet" is never confused with a genuine 0 FPS.
+  - Both verified against the local Arma 3 Server install via `tools/test_local_server.ps1` --
+    which surfaced a separate, pre-existing issue while doing so (see below), not caused by this
+    change.
+- **Found, not yet fixed**: `tools/test_local_server.ps1` (run to verify the FPS logging above)
+  shows the dedicated server stalling immediately after "Initializing Steam server failed" --
+  RPT logging stops dead at that point even after a 90-second wait, meaning `initServer.sqf` (and
+  therefore the new FPS logging, and everything else mission-side) never actually executes in this
+  local test environment. `mission.sqm` lists `A3_Characters_F`/`A3_Ui_F` as addon dependencies
+  (auto-added by Eden for the placed playable units), and the RPT logs a
+  "downloadable content that has been deleted" warning for `A3_Characters_F` moments before the
+  stall -- a commonly-reported, often-harmless warning on dedicated servers for that specific
+  classname, so it's not yet confirmed as the actual cause rather than a coincidence. Flagged for
+  the user rather than guessed at further; not something to unilaterally change in a
+  user-authored `mission.sqm` without discussing it first.

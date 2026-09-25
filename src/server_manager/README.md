@@ -3,8 +3,8 @@
 A desktop app for actually running the dedicated server day to day — configure the server name,
 join/admin passwords, and slot count; launch and stop `arma3server_x64.exe` (deploying the mission
 and, best-effort, the C++ extension first — see "Launch actually deploys things now" below); watch
-its live log; view staff/anti-cheat/kick logs; and see live CPU/memory graphs for the running
-server process.
+its live log; view staff/anti-cheat/kick logs; and see live CPU, memory, network, and server FPS
+graphs for the running server process.
 
 Distinct from `tools/test_local_server.ps1`, which is a one-shot config-parses-cleanly smoke test
 for CI/dev work. This is for a real host actually running the server.
@@ -103,9 +103,18 @@ instead of by someone hitting "Launch" and getting a mission-not-found message w
 - `serverCommandPassword` in the rendered `server.cfg` mirrors the admin password field rather
   than being its own UI field, to avoid two passwords the user has to keep in sync for one
   practical purpose.
-- Performance-tab CPU/memory samples aren't persisted anywhere (no DB table backs them, on
-  purpose — live process telemetry, not durable game state) — history resets on every stop/relaunch
-  and isn't visible after closing the app.
+- Performance-tab samples aren't persisted anywhere (no DB table backs them, on purpose — live
+  process telemetry, not durable game state) — history resets on every stop/relaunch and isn't
+  visible after closing the app.
+- Performance-tab network I/O is **system-wide** (`gopsutil`'s `net.IOCounters`, all interfaces
+  summed), not isolated to `arma3server_x64.exe` specifically — Windows has no reliable
+  per-process network byte counter the way it does for CPU/memory short of ETW, which is a much
+  heavier integration than this warranted. Labeled as such in the UI; a reasonable proxy on a host
+  dedicated to running this server, not literally "this process's" traffic.
+- Performance-tab Server FPS depends on the mission itself logging `diag_fps` (see
+  `src/ALife.Altis/initServer.sqf`) via `diag_log`, read back out of the RPT log `tailLog` already
+  tails — Arma has no external query for a running server's frame rate, so a server running a
+  *different* mission (one that doesn't log this) would show "waiting..." forever, not an error.
 - `findRepoRoot()` assumes it's running from inside a repo checkout (walks up from its own `.exe`
   looking for `database/schema.sql`) — this tool isn't packaged/distributed standalone yet, so that
   assumption hasn't needed revisiting.
