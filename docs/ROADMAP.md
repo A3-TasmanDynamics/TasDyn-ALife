@@ -1,21 +1,27 @@
 # Roadmap
 
-**Revised target: public launch by 2027-01-20 (~17 weeks from project start on 2026-09-25).**
+**Revised target: public launch by 2027-03-03 (~23 weeks from project start on 2026-09-25).**
 
-> **This date moved from the original 2026-12-26 target.** The admin-tooling scope grew from
-> "basic tooling" (kick/ban/teleport/spectate) to feature parity with
+> **This date has moved twice.** First from the original 2026-12-26 to 2027-01-20, when the
+> admin-tooling scope grew from "basic tooling" (kick/ban/teleport/spectate) to feature parity with
 > [infiSTAR](https://infistar.de/product/infistar-arma3) and
 > [Fini Anti-Hack & Admin Tools](https://bytex.market/products/item/7iclegb5zmytw3d22q3l/Fini%20Anti-Hack%20%26%20Admin%20Tools)
-> plus arsenal editing — see [ADMIN_TOOLS.md §11](ADMIN_TOOLS.md#11-timeline-impact--the-honest-part) —
-> and that scope was made launch-critical rather than deferred. **~4 added weeks is this project's
-> estimate, not a confirmed decision** — treat Phase 3's new window below as a proposal to confirm
-> or adjust, not a settled fact.
+> plus arsenal editing (see [ADMIN_TOOLS.md §11](ADMIN_TOOLS.md#11-timeline-impact--the-honest-part)).
+> Now again from 2027-01-20 to 2027-03-03, adding the full website — public site, member portal,
+> Admin Panel, Support Panel, Discord integration — as launch-critical rather than post-launch
+> fast-follow (see [WEBSITE.md §11](WEBSITE.md#11-timeline-impact--the-honest-part)). **Both
+> revisions follow the same pattern: a piece originally scoped as "basic" or "deferred" was made
+> launch-critical instead, on purpose, at the cost of the date.** ~6 added weeks for the website is
+> this project's estimate, not a confirmed decision — treat Phase W's window below as a proposal to
+> confirm or adjust, same as Phase 3's was.
 
-This is a solo-scoped plan. The web dashboard and Discord bot (both already marked "planned" in
-the [README](../README.md#2-technical-stack--architecture)) are **cut from the launch critical
-path** and pushed to post-launch fast-follow — the server has to be playable end-to-end without
-them. Content scope within each faction is also deliberately thin at launch (fewer jobs, fewer
-vehicle tiers) so the core loop ships on time; breadth gets added after launch, not before.
+This is a solo-scoped plan, which matters for how "parallel track" (Phase W below) should actually
+be read: the website shares almost no *code* with the SQF/C++ side, so it doesn't block Phase 1–4
+gameplay work technically — but one person still only has one set of hours, so it is not free
+calendar time. The schedule below treats Phase W as genuinely additive, not hidden inside the
+existing window, for the same reason Phase 3's scope increase wasn't hand-waved as absorbable.
+Content scope within each faction is still deliberately thin at launch (fewer jobs, fewer vehicle
+tiers) so the core gameplay loop isn't what's absorbing this cost.
 
 Every task below is tracked as a GitHub issue on the
 [Delivery Board](https://github.com/orgs/A3-TasmanDynamics/projects/1), grouped into a milestone
@@ -173,7 +179,42 @@ soak test, and — the concrete end-to-end test — a Head Admin can create a ne
 Trial Moderator a one-off vehicle-spawn override, edit the Police arsenal's item pool, and review
 a flagged anti-cheat event, entirely through the in-game menu with no direct DB access.
 
-## Phase 4 — Content & Balance *(2026-12-30 → 2027-01-08, shifted)*
+## Phase W — Website, Member Portal & Discord Integration *(2026-12-30 → 2027-02-09, new)*
+
+Full design: [WEBSITE.md](WEBSITE.md). Sequenced after Phase 3 rather than fully overlapping it —
+the Admin Panel is a *port* of Phase 3's rank/permission model onto a second surface, so that model
+needs to exist first. Shares no SQF/C++ code with Phase 1–4, which is what makes it schedulable as
+its own phase instead of embedded piecemeal inside them.
+
+- [x] Design doc + schema additions (`web_sessions`, `support_tickets`,
+      `support_ticket_messages`, `staff_ranks.default_admin_panel`/`default_support_panel`) —
+      this PR.
+- [ ] Go project scaffold (`src/website`), Steam OpenID login, DB-backed sessions.
+- [ ] Public landing page + status strip (reuses `server_manager`'s dashboard queries).
+- [ ] Member portal: stats view, gang management (invite/remove/rank), bank transfers — the last
+      one through the *same* `bank_accounts`/`bank_transactions` idempotency path the C++
+      extension uses, per [WEBSITE.md §5](WEBSITE.md#5-public-site--member-portal)'s open
+      question about `fn_save.sqf` and the `*_bank` cache, which must be resolved before this
+      ships, not after.
+- [ ] Admin Panel: player lookup, ban/unban, rank + permission-override management (the actual web
+      UI for the DB-driven system Phase 3 built the data model for), anti-cheat flag review queue,
+      arsenal editor, staff log viewer.
+- [ ] Support Panel: ticket queue, claim, thread view; player-facing "My Tickets" in the member
+      portal.
+- [ ] Discord: one-way webhook logs (staff actions, bans, high-confidence anti-cheat flags, new
+      tickets) — the piece [ADMIN_TOOLS.md §8](ADMIN_TOOLS.md#8-access-control-banlist-and-reporting)
+      already assumed.
+- [ ] Discord: two-way ticket bot (`discordgo`, thread-per-ticket, mirrors replies both directions).
+- [ ] Security pass: CSRF on every state-changing form, rate limiting on login and transfers,
+      server-side re-check of panel access on every write (not just at login).
+
+**Milestone exit criteria:** a player can log in with Steam, view their stats, invite someone to
+their gang, and send money to another player, entirely from the website; a staff member holding
+both grants can act in the Admin Panel and Support Panel and switch between them without
+re-authenticating; a new support ticket appears in Discord and a staff reply from Discord appears
+on the website ticket.
+
+## Phase 4 — Content & Balance *(2027-02-10 → 2027-02-19, shifted)*
 
 - [ ] Economy balance pass on whatever jobs/shops shipped in Phase 2.
 - [ ] Rebel sub-faction gate (if time allows — first item to cut if the schedule slips).
@@ -183,7 +224,7 @@ a flagged anti-cheat event, entirely through the in-game menu with no direct DB 
 **Milestone exit criteria:** the team (or solo dev) can play a 2+ hour session across all three
 factions without a save/load bug or an obvious exploit.
 
-## Phase 5 — Closed Alpha *(2027-01-09 → 2027-01-15, shifted)*
+## Phase 5 — Closed Alpha *(2027-02-20 → 2027-02-26, shifted)*
 
 - [ ] Invite a small closed group, real concurrent players against the real DB.
 - [ ] Bug bash — triage everything found, fix save/load and duplication-class issues first.
@@ -191,26 +232,30 @@ factions without a save/load bug or an obvious exploit.
 - [ ] Dedicated pass on the admin menu itself: every tier's actions exercised by a real staff
       member, not just the developer — this surface is large enough now to need its own
       verification, not just gameplay testing.
+- [ ] Same dedicated pass on the website: Admin Panel and Support Panel exercised by a real staff
+      member, member portal (stats/gang/transfers) exercised by a real alpha player, not just the
+      developer — same reasoning as the admin-menu pass above, same surface-size threshold.
 
 **Milestone exit criteria:** no known data-corrupting bug; server holds its target player count
-for a full session without a restart; every admin-menu action has been used at least once by
-someone other than whoever built it.
+for a full session without a restart; every admin-menu action and every website Admin/Support
+Panel action has been used at least once by someone other than whoever built it.
 
-## Phase 6 — Launch Prep & Public Launch *(2027-01-16 → 2027-01-20, shifted)*
+## Phase 6 — Launch Prep & Public Launch *(2027-02-27 → 2027-03-03, shifted)*
 
-- [ ] Production server hosting finalized, backup/restore drill run at least once.
+- [ ] Production server hosting finalized, backup/restore drill run at least once (covers the
+      website's Postgres usage too — it's the same database, same drill).
+- [ ] Website deployed to production hosting, HTTPS/TLS in place (required for `Secure` session
+      cookies per [WEBSITE.md §10](WEBSITE.md#10-security-notes) — not optional at launch).
 - [ ] Whitelist/rules process (even a lightweight one) in place.
 - [ ] Launch announcement.
-- [ ] **Public launch — 2027-01-20.**
+- [ ] **Public launch — 2027-03-03.**
 
 ---
 
 ## Post-Launch / Fast-Follow (explicitly out of scope for launch)
 
-- NuxtJS web dashboard (tickets, gang management, player stats, RCON graphs).
-- Discord bot, two-way synced with Postgres (an admin-menu report *webhook* is in-scope per
-  [ADMIN_TOOLS.md §8](ADMIN_TOOLS.md#8-access-control-banlist-and-reporting) — the full two-way bot
-  is the separate, still-deferred piece).
+- Full [WEBSITE.md](WEBSITE.md) is now launch-critical (Phase W) — **not** deferred; see the
+  roadmap header for why this line changed from the original plan.
 - Remaining content breadth: uranium mining, fishing, full SOG vehicle tiers, speed cameras,
   physical jail beyond the MVP flow.
 - Anti-cheat maturity beyond [ANTI_CHEAT.md](ANTI_CHEAT.md)'s Layer 0–4 launch scope — see its
@@ -223,18 +268,25 @@ someone other than whoever built it.
 
 ## Risk
 
-**~17 weeks** for a from-scratch custom C++/Postgres bridge, a custom SQF framework, three
-factions, an economy, *and* an admin/anti-hack suite built to match two commercial products, is
-aggressive for a solo effort — more aggressive than the original 13-week estimate, and that
-estimate was already called aggressive. Two places a slip is most likely to show up, in order:
+**~23 weeks** for a from-scratch custom C++/Postgres bridge, a custom SQF framework, three
+factions, an economy, an admin/anti-hack suite built to match two commercial products, *and* a
+full website with its own auth/money-moving/Discord-bot surface, is aggressive for a solo effort —
+more aggressive than the original 13-week estimate, and that estimate was already called
+aggressive. Three places a slip is most likely to show up, in order:
 
-1. **Phase 3** (now the largest single phase by scope, not just Phase 2) — if the admin-tooling
-   feature list in [ADMIN_TOOLS.md §6](ADMIN_TOOLS.md#6-menu-sections) is running long, the metrics
-   dashboard and in-menu log viewer (§9) are the most cuttable pieces — RPT/direct DB query is a
-   real fallback for both, unlike the security-relevant parts of this phase.
-2. **Phase 2** (the gameplay loop) — if it slips, cut content within Phase 2/4 (fewer jobs, fewer
-   vehicle tiers) before cutting time from Phase 3's security-relevant work or Phase 5 (alpha
-   testing).
+1. **Phase W** (the website) — the newest and least-proven estimate of the three; a Steam OpenID
+   integration issue or the `fn_save.sqf`/`*_bank` cache question in
+   [WEBSITE.md §5](WEBSITE.md#5-public-site--member-portal) turning out to need real SQF-side
+   changes (not just a website-side check) is the likeliest way this phase's window is
+   optimistic. The two-way Discord bot and the admin-panel port are next-most cuttable if it runs
+   long — a one-way webhook log and a solid member portal alone still deliver most of the value.
+2. **Phase 3** — if the admin-tooling feature list in
+   [ADMIN_TOOLS.md §6](ADMIN_TOOLS.md#6-menu-sections) is running long, the metrics dashboard and
+   in-menu log viewer (§9) are the most cuttable pieces — RPT/direct DB query is a real fallback
+   for both, unlike the security-relevant parts of this phase.
+3. **Phase 2** (the gameplay loop) — if it slips, cut content within Phase 2/4 (fewer jobs, fewer
+   vehicle tiers) before cutting time from Phase 3's security-relevant work, Phase W's
+   security-relevant work (§10), or Phase 5 (alpha testing).
 
 Shipping a smaller, stable launch beats shipping a bigger, exploitable one — and a later launch
 with the security/moderation surface actually solid beats an on-time launch that isn't.

@@ -24,18 +24,26 @@ BEGIN;
 -- Staff ranks (docs/ADMIN_TOOLS.md §3) — DB-driven, not hardcoded constants.
 -- ---------------------------------------------------------------------------
 CREATE TABLE staff_ranks (
-    id            SERIAL PRIMARY KEY,
-    key           TEXT NOT NULL UNIQUE,
-    display_name  TEXT NOT NULL,
-    level         INTEGER NOT NULL,
-    created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+    id                     SERIAL PRIMARY KEY,
+    key                    TEXT NOT NULL UNIQUE,
+    display_name           TEXT NOT NULL,
+    level                  INTEGER NOT NULL,
+    -- Web panel access defaults for this rank -- see docs/WEBSITE.md §4. Per-
+    -- player exceptions reuse staff_permission_overrides below
+    -- (command_key = 'panel.admin' / 'panel.support'), not a second override
+    -- table -- Admin and Support are deliberately separate grants, not
+    -- implied by rank level alone, since a support volunteer shouldn't gain
+    -- ban tools just by being trusted enough to triage tickets.
+    default_admin_panel    BOOLEAN NOT NULL DEFAULT false,
+    default_support_panel  BOOLEAN NOT NULL DEFAULT false,
+    created_at             TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-INSERT INTO staff_ranks (key, display_name, level) VALUES
-    ('trial_mod', 'Trial Moderator', 10),
-    ('moderator', 'Moderator', 20),
-    ('admin', 'Admin', 40),
-    ('head_admin', 'Head Admin / Developer', 100);
+INSERT INTO staff_ranks (key, display_name, level, default_admin_panel, default_support_panel) VALUES
+    ('trial_mod', 'Trial Moderator', 10, false, true),
+    ('moderator', 'Moderator', 20, false, true),
+    ('admin', 'Admin', 40, true, true),
+    ('head_admin', 'Head Admin / Developer', 100, true, true);
 
 -- ---------------------------------------------------------------------------
 -- Players.
@@ -437,6 +445,66 @@ CREATE TABLE arsenal_loadout_presets (
     items          JSONB NOT NULL,     -- array of classnames
     created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- ---------------------------------------------------------------------------
+-- Website (docs/WEBSITE.md) — public site, member portal, Admin Panel,
+-- Support Panel. Deliberately NOT a parallel identity/money system: logins
+-- resolve to the same `players` row (uid = Steam64 ID), and writes from the
+-- member portal (transfers, gang management) go through the exact same
+-- bank_accounts/bank_transactions/gangs/gang_members tables the game
+-- already treats as authoritative -- see docs/WEBSITE.md §5-6.
+-- ---------------------------------------------------------------------------
+
+-- DB-backed sessions, not JWT -- deleting a row logs a session out
+-- immediately (a ban or rank change can delete it in the same transaction),
+-- which a signed, self-contained token can't do without its own blocklist
+-- table anyway. token_hash stores SHA-256 of the cookie value; the raw
+-- token itself is never persisted, same reasoning as a password-reset token.
+CREATE TABLE web_sessions (
+    id                     BIGSERIAL PRIMARY KEY,
+    player_id              BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    token_hash             TEXT NOT NULL UNIQUE,
+    admin_panel_access     BOOLEAN NOT NULL DEFAULT false,  -- resolved at login, docs/WEBSITE.md §4
+    support_panel_access   BOOLEAN NOT NULL DEFAULT false,
+    ip_address             INET,
+    user_agent             TEXT,
+    created_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_seen_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at             TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX idx_web_sessions_player_id ON web_sessions(player_id);
+
+-- A ticket is one row viewed from two access levels (owner in the member
+-- portal, staff in the Support Panel) -- not two separate objects.
+CREATE TABLE support_tickets (
+    id                  BIGSERIAL PRIMARY KEY,
+    player_id           BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    subject             TEXT NOT NULL,
+    status              TEXT NOT NULL DEFAULT 'open'
+                            CHECK (status IN ('open', 'pending', 'closed')),
+    category            TEXT NOT NULL,
+    assigned_staff_id   BIGINT REFERENCES players(id) ON DELETE SET NULL,
+    discord_thread_id   TEXT,              -- Discord thread this ticket mirrors to, docs/WEBSITE.md §9
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    closed_at           TIMESTAMPTZ
+);
+
+CREATE INDEX idx_support_tickets_player_id ON support_tickets(player_id);
+CREATE INDEX idx_support_tickets_open ON support_tickets(status) WHERE status != 'closed';
+
+CREATE TABLE support_ticket_messages (
+    id                   BIGSERIAL PRIMARY KEY,
+    ticket_id            BIGINT NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
+    author_player_id     BIGINT REFERENCES players(id) ON DELETE SET NULL,  -- NULL = system message
+    body                 TEXT NOT NULL,
+    source               TEXT NOT NULL DEFAULT 'web' CHECK (source IN ('web', 'discord')),
+    discord_message_id   TEXT,
+    created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_support_ticket_messages_ticket_id ON support_ticket_messages(ticket_id);
 
 -- ---------------------------------------------------------------------------
 -- Triggers: keep players.*_bank in sync with bank_accounts.balance
