@@ -5,7 +5,7 @@ import {
     GetSettings, SaveSettings, BrowseForArmaServerPath, TestDatabaseConnection,
     GetServerConfig, SaveServerConfig,
     LaunchServer, StopServer, GetServerStatus,
-    GetDashboardData,
+    GetStaffLog, GetAntiCheatLog, GetKickLog,
 } from '../wailsjs/go/main/App';
 import { main } from '../wailsjs/go/models';
 import { EventsOn } from '../wailsjs/runtime/runtime';
@@ -17,16 +17,15 @@ import { EventsOn } from '../wailsjs/runtime/runtime';
 // rendering its own error banner on failure -- a rejected promise used to
 // fail silently (fire-and-forget async calls with no .catch()), leaving a
 // panel stuck on its initial "Loading..." placeholder forever with nothing
-// visible going wrong. GetDashboardData() worked fine when called directly
-// from Go (proving the SQL/backend logic), but the real binding-call path
-// triggered by a click had nowhere to report a failure if one happened --
-// caught this while testing, not something to reintroduce.
+// visible going wrong. Caught this while testing, not something to
+// reintroduce.
 // -----------------------------------------------------------------------
 
 const ICONS = {
     launch: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>',
     console: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>',
-    dashboard: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
+    logs: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+    performance: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
     settings: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
 };
 
@@ -43,7 +42,8 @@ document.querySelector('#app')!.innerHTML = `
       <nav>
         <button data-tab="launch" class="nav-item active">${ICONS.launch}<span>Launch</span></button>
         <button data-tab="console" class="nav-item">${ICONS.console}<span>Console</span></button>
-        <button data-tab="dashboard" class="nav-item">${ICONS.dashboard}<span>Dashboard</span></button>
+        <button data-tab="logs" class="nav-item">${ICONS.logs}<span>Logs</span></button>
+        <button data-tab="performance" class="nav-item">${ICONS.performance}<span>Performance</span></button>
         <button data-tab="settings" class="nav-item">${ICONS.settings}<span>Settings</span></button>
       </nav>
       <div class="sidebar-footer">
@@ -58,7 +58,8 @@ document.querySelector('#app')!.innerHTML = `
       <main>
         <section id="panel-launch" class="panel active"></section>
         <section id="panel-console" class="panel"></section>
-        <section id="panel-dashboard" class="panel"></section>
+        <section id="panel-logs" class="panel"></section>
+        <section id="panel-performance" class="panel"></section>
         <section id="panel-settings" class="panel"></section>
       </main>
     </div>
@@ -72,7 +73,8 @@ document.querySelectorAll('.nav-item').forEach((btn) => {
         btn.classList.add('active');
         document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
         document.getElementById(`panel-${tab}`)!.classList.add('active');
-        if (tab === 'dashboard') refreshDashboard();
+        if (tab === 'logs') loadSelectedLog();
+        if (tab === 'performance') renderPerformancePanel();
     });
 });
 
@@ -188,9 +190,15 @@ async function renderLaunchPanel() {
         btn.disabled = true;
         try {
             await SaveServerConfig(readServerConfigForm());
-            await LaunchServer();
+            const result = await LaunchServer();
             clearConsole();
+            resetPerformanceHistory();
             await renderLaunchPanel();
+            // renderLaunchPanel() just rebuilt cfg-msg -- set this after,
+            // not before, or the re-render wipes it immediately.
+            if (result.warnings && result.warnings.length > 0) {
+                setMsg('cfg-msg', `Launched with warnings: ${result.warnings.join(' · ')}`);
+            }
         } catch (e) {
             setMsg('cfg-msg', `Launch failed: ${e}`);
             btn.disabled = false;
@@ -254,135 +262,307 @@ EventsOn('server:log', (line: string) => {
 
 EventsOn('server:stopped', () => {
     refreshSidebarStatus();
+    resetPerformanceHistory();
     if (document.getElementById('panel-launch')?.classList.contains('active')) {
         renderLaunchPanel();
+    }
+    if (document.getElementById('panel-performance')?.classList.contains('active')) {
+        renderPerformancePanel();
     }
 });
 
 // -----------------------------------------------------------------------
-// Dashboard tab -- graphs over docs/DATA_CONTRACT.md's tables. Genuinely
-// empty until the server has real players; an empty graph is shown
-// honestly, not faked.
+// Logs tab -- pick a log type, view its rows. Each type is its own Go
+// call (GetStaffLog/GetAntiCheatLog/GetKickLog) rather than one big
+// "everything" fetch, so picking a type is just a fresh, cheap query.
 // -----------------------------------------------------------------------
 
-let playerChart: Chart | null = null;
+type LogType = 'staff' | 'anticheat' | 'kick';
+let currentLogType: LogType = 'staff';
 
-function renderDashboardPanel() {
-    const panel = document.getElementById('panel-dashboard')!;
+function renderLogsPanel() {
+    const panel = document.getElementById('panel-logs')!;
     panel.innerHTML = `
       <div class="page-header">
-        <h1>Dashboard</h1>
-        <p>Player activity, economy, and anti-cheat overview.</p>
+        <h1>Logs</h1>
+        <p>Staff actions, anti-cheat flags, and kicks -- pick a log to view.</p>
       </div>
 
-      <div class="button-row" style="margin-bottom:16px; margin-top:0;">
-        <button class="action secondary" id="btn-refresh-dash">Refresh</button>
+      <div class="card">
+        <div class="field-grid" style="grid-template-columns: 1fr auto;">
+          <div class="field">
+            <label>Log type</label>
+            <select id="log-type-select">
+              <option value="staff">Staff Actions</option>
+              <option value="anticheat">Anti-Cheat Flags</option>
+              <option value="kick">Kicks</option>
+            </select>
+          </div>
+          <div class="button-row" style="margin-top: 26px;">
+            <button class="action secondary" id="btn-refresh-log">Refresh</button>
+          </div>
+        </div>
+        <div id="log-table-content"><div class="empty-state">Loading...</div></div>
       </div>
-      <div id="dash-content"><div class="empty-state">Loading...</div></div>
     `;
-    document.getElementById('btn-refresh-dash')!.addEventListener('click', refreshDashboard);
+
+    const select = document.getElementById('log-type-select') as HTMLSelectElement;
+    select.value = currentLogType;
+    select.addEventListener('change', () => {
+        currentLogType = select.value as LogType;
+        loadSelectedLog();
+    });
+    document.getElementById('btn-refresh-log')!.addEventListener('click', loadSelectedLog);
+
+    loadSelectedLog();
 }
 
-async function refreshDashboard() {
-    const content = document.getElementById('dash-content');
+async function loadSelectedLog() {
+    const content = document.getElementById('log-table-content');
     if (!content) return;
-
     content.innerHTML = '<div class="empty-state">Loading...</div>';
 
-    let data: main.DashboardData;
     try {
-        data = await GetDashboardData();
+        if (currentLogType === 'staff') {
+            const rows = await GetStaffLog();
+            content.innerHTML = renderStaffLogTable(rows);
+        } else if (currentLogType === 'anticheat') {
+            const rows = await GetAntiCheatLog();
+            content.innerHTML = renderAntiCheatLogTable(rows);
+        } else {
+            const rows = await GetKickLog();
+            content.innerHTML = renderKickLogTable(rows);
+        }
     } catch (e) {
         console.error(e);
-        content.innerHTML = `<div class="error-banner">Failed to reach the app backend: ${escapeHtml(String(e))}</div>`;
-        return;
+        content.innerHTML = `<div class="error-banner">Failed to load log: ${escapeHtml(String(e))}</div>`;
     }
-
-    if (data.error) {
-        content.innerHTML = `<div class="error-banner">${escapeHtml(data.error)}</div>`;
-        return;
-    }
-
-    content.innerHTML = `
-      <div class="stat-grid">
-        <div class="stat-tile">
-          <div class="label">Players</div>
-          <div class="value">${data.economy.playerCount}</div>
-        </div>
-        <div class="stat-tile">
-          <div class="label">Total Cash In Circulation</div>
-          <div class="value">$${data.economy.totalCash.toLocaleString()}</div>
-        </div>
-        <div class="stat-tile">
-          <div class="label">Total Bank Balance</div>
-          <div class="value">$${data.economy.totalBank.toLocaleString()}</div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Player Connections (last 7 days)</h2>
-        ${data.playerCounts.length === 0
-            ? '<div class="empty-state">No sessions recorded yet.</div>'
-            : '<canvas id="player-chart" height="80"></canvas>'}
-      </div>
-
-      <div class="card">
-        <h2>Anti-Cheat Flags</h2>
-        ${renderAntiCheatTable(data.antiCheatFlags)}
-      </div>
-
-      <div class="card">
-        <h2>Recent Staff Actions</h2>
-        ${renderStaffLogTable(data.recentStaffLog)}
-      </div>
-    `;
-
-    if (data.playerCounts.length > 0) {
-        const ctx = (document.getElementById('player-chart') as HTMLCanvasElement).getContext('2d')!;
-        if (playerChart) playerChart.destroy();
-        playerChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: data.playerCounts.map((p) => p.bucket),
-                datasets: [{
-                    label: 'Sessions',
-                    data: data.playerCounts.map((p) => p.count),
-                    backgroundColor: '#f59e0b',
-                }],
-            },
-            options: {
-                scales: {
-                    y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
-                    x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
-                },
-                plugins: { legend: { display: false } },
-            },
-        });
-    }
-}
-
-function renderAntiCheatTable(rows: main.AntiCheatFlagCount[]): string {
-    if (rows.length === 0) return '<div class="empty-state">No flags recorded yet.</div>';
-    return `
-      <table>
-        <thead><tr><th>Type</th><th>Total</th><th>Unreviewed</th></tr></thead>
-        <tbody>
-          ${rows.map((r) => `<tr><td>${escapeHtml(r.flagType)}</td><td>${r.total}</td><td>${r.unreviewed}</td></tr>`).join('')}
-        </tbody>
-      </table>
-    `;
 }
 
 function renderStaffLogTable(rows: main.StaffLogEntry[]): string {
-    if (rows.length === 0) return '<div class="empty-state">No staff actions recorded yet.</div>';
+    if (!rows || rows.length === 0) return '<div class="empty-state">No staff actions logged yet.</div>';
     return `
       <table>
-        <thead><tr><th>Action</th><th>Reason</th><th>When</th></tr></thead>
+        <thead><tr><th>Staff</th><th>Target</th><th>Action</th><th>Reason</th><th>When</th></tr></thead>
         <tbody>
-          ${rows.map((r) => `<tr><td>${escapeHtml(r.action)}</td><td>${escapeHtml(r.reason)}</td><td>${escapeHtml(r.createdAt)}</td></tr>`).join('')}
+          ${rows.map((r) => `<tr><td>${escapeHtml(r.staffName)}</td><td>${escapeHtml(r.targetName)}</td><td>${escapeHtml(r.action)}</td><td>${escapeHtml(r.reason)}</td><td>${escapeHtml(r.createdAt)}</td></tr>`).join('')}
         </tbody>
       </table>
     `;
+}
+
+function renderAntiCheatLogTable(rows: main.AntiCheatLogEntry[]): string {
+    if (!rows || rows.length === 0) return '<div class="empty-state">No flags recorded yet.</div>';
+    return `
+      <table>
+        <thead><tr><th>Player</th><th>Type</th><th>Confidence</th><th>Resolution</th><th>When</th></tr></thead>
+        <tbody>
+          ${rows.map((r) => `<tr><td>${escapeHtml(r.playerName)}</td><td>${escapeHtml(r.flagType)}</td><td>${escapeHtml(r.confidence)}</td><td>${r.resolution ? escapeHtml(r.resolution) : '<em>unreviewed</em>'}</td><td>${escapeHtml(r.createdAt)}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    `;
+}
+
+function renderKickLogTable(rows: main.KickLogEntry[]): string {
+    if (!rows || rows.length === 0) return '<div class="empty-state">No kicks logged yet.</div>';
+    return `
+      <table>
+        <thead><tr><th>Target</th><th>Kicked By</th><th>Type</th><th>Reason</th><th>When</th></tr></thead>
+        <tbody>
+          ${rows.map((r) => `<tr><td>${escapeHtml(r.targetName)}</td><td>${escapeHtml(r.kickedBy)}</td><td>${escapeHtml(r.kickType)}</td><td>${escapeHtml(r.reason)}</td><td>${escapeHtml(r.createdAt)}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    `;
+}
+
+// -----------------------------------------------------------------------
+// Performance tab -- live CPU/memory graphs for the running dedicated
+// server process, pushed via the "server:performance" event (see
+// src/server_manager/serverprocess.go's samplePerformance). No history
+// persists across a stop/relaunch -- this is live telemetry for the
+// current run, not a stored metric (no DB table backs it, on purpose).
+// -----------------------------------------------------------------------
+
+const MAX_PERF_POINTS = 60; // ~2 minutes at one sample per 2s
+
+const perfHistory: { labels: string[]; cpu: number[]; mem: number[] } = { labels: [], cpu: [], mem: [] };
+let cpuChart: Chart | null = null;
+let memChart: Chart | null = null;
+
+function resetPerformanceHistory() {
+    perfHistory.labels = [];
+    perfHistory.cpu = [];
+    perfHistory.mem = [];
+    cpuChart = null;
+    memChart = null;
+}
+
+async function renderPerformancePanel() {
+    const panel = document.getElementById('panel-performance')!;
+
+    let status: main.ServerStatus;
+    try {
+        status = await GetServerStatus();
+    } catch (e) {
+        console.error(e);
+        panel.innerHTML = `<div class="error-banner">Failed to load: ${escapeHtml(String(e))}</div>`;
+        return;
+    }
+
+    if (!status.running && perfHistory.labels.length === 0) {
+        panel.innerHTML = `
+          <div class="page-header">
+            <h1>Performance</h1>
+            <p>Live CPU and memory usage for the running dedicated server.</p>
+          </div>
+          <div class="card">
+            <div class="empty-state">No server running. Launch it from the Launch tab to see live performance graphs.</div>
+          </div>
+        `;
+        return;
+    }
+
+    panel.innerHTML = `
+      <div class="page-header">
+        <h1>Performance</h1>
+        <p>Live CPU and memory usage for the running dedicated server.</p>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-tile">
+          <div class="label">CPU</div>
+          <div class="value" id="perf-cpu-value">--</div>
+        </div>
+        <div class="stat-tile">
+          <div class="label">Memory</div>
+          <div class="value" id="perf-mem-value">--</div>
+        </div>
+        <div class="stat-tile">
+          <div class="label">Uptime</div>
+          <div class="value" id="perf-uptime-value">--</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>CPU Usage</h2>
+        <canvas id="perf-cpu-chart" height="70"></canvas>
+      </div>
+
+      <div class="card">
+        <h2>Memory Usage</h2>
+        <canvas id="perf-mem-chart" height="70"></canvas>
+      </div>
+    `;
+
+    const cpuCtx = (document.getElementById('perf-cpu-chart') as HTMLCanvasElement).getContext('2d')!;
+    cpuChart = new Chart(cpuCtx, {
+        type: 'line',
+        data: {
+            labels: [...perfHistory.labels],
+            datasets: [{
+                label: 'CPU %',
+                data: [...perfHistory.cpu],
+                borderColor: '#f59e0b',
+                backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                fill: true,
+                tension: 0.25,
+                pointRadius: 0,
+            }],
+        },
+        options: {
+            animation: false,
+            scales: {
+                y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+                x: { ticks: { color: '#94a3b8', maxTicksLimit: 6 }, grid: { display: false } },
+            },
+            plugins: { legend: { display: false } },
+        },
+    });
+
+    const memCtx = (document.getElementById('perf-mem-chart') as HTMLCanvasElement).getContext('2d')!;
+    memChart = new Chart(memCtx, {
+        type: 'line',
+        data: {
+            labels: [...perfHistory.labels],
+            datasets: [{
+                label: 'Memory (MB)',
+                data: [...perfHistory.mem],
+                borderColor: '#fbbf24',
+                backgroundColor: 'rgba(251, 191, 36, 0.12)',
+                fill: true,
+                tension: 0.25,
+                pointRadius: 0,
+            }],
+        },
+        options: {
+            animation: false,
+            scales: {
+                y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+                x: { ticks: { color: '#94a3b8', maxTicksLimit: 6 }, grid: { display: false } },
+            },
+            plugins: { legend: { display: false } },
+        },
+    });
+
+    if (perfHistory.cpu.length > 0) {
+        setMsg('perf-cpu-value', '');
+        const cpuEl = document.getElementById('perf-cpu-value');
+        const memEl = document.getElementById('perf-mem-value');
+        const upEl = document.getElementById('perf-uptime-value');
+        if (cpuEl) cpuEl.innerText = `${perfHistory.cpu[perfHistory.cpu.length - 1].toFixed(1)}%`;
+        if (memEl) memEl.innerText = `${perfHistory.mem[perfHistory.mem.length - 1].toFixed(0)} MB`;
+        if (upEl) upEl.innerText = formatUptime(lastUptimeSeconds);
+    }
+}
+
+let lastUptimeSeconds = 0;
+
+EventsOn('server:performance', (sample: { timestamp: string; cpuPercent: number; memoryMB: number; uptimeSeconds: number }) => {
+    const label = new Date(sample.timestamp).toLocaleTimeString();
+    perfHistory.labels.push(label);
+    perfHistory.cpu.push(sample.cpuPercent);
+    perfHistory.mem.push(sample.memoryMB);
+    if (perfHistory.labels.length > MAX_PERF_POINTS) {
+        perfHistory.labels.shift();
+        perfHistory.cpu.shift();
+        perfHistory.mem.shift();
+    }
+    lastUptimeSeconds = sample.uptimeSeconds;
+
+    const cpuEl = document.getElementById('perf-cpu-value');
+    const memEl = document.getElementById('perf-mem-value');
+    const upEl = document.getElementById('perf-uptime-value');
+    if (cpuEl) cpuEl.innerText = `${sample.cpuPercent.toFixed(1)}%`;
+    if (memEl) memEl.innerText = `${sample.memoryMB.toFixed(0)} MB`;
+    if (upEl) upEl.innerText = formatUptime(sample.uptimeSeconds);
+
+    if (cpuChart) {
+        cpuChart.data.labels = [...perfHistory.labels];
+        cpuChart.data.datasets[0].data = [...perfHistory.cpu];
+        cpuChart.update();
+    }
+    if (memChart) {
+        memChart.data.labels = [...perfHistory.labels];
+        memChart.data.datasets[0].data = [...perfHistory.mem];
+        memChart.update();
+    }
+
+    // First sample after the panel was showing its "no server running"
+    // empty state (opened before launch, or opened right as it started) --
+    // re-render once so the charts actually appear instead of staying on
+    // the empty-state message forever.
+    if (!cpuChart && document.getElementById('panel-performance')?.classList.contains('active')) {
+        renderPerformancePanel();
+    }
+});
+
+function formatUptime(totalSeconds: number): string {
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
 }
 
 // -----------------------------------------------------------------------
@@ -515,6 +695,7 @@ function escapeHtml(s: string | undefined): string {
 
 renderLaunchPanel();
 renderConsolePanel();
-renderDashboardPanel();
+renderLogsPanel();
+renderPerformancePanel();
 renderSettingsPanel();
 refreshSidebarStatus();

@@ -292,7 +292,8 @@ main {
 
 .field input[type="text"],
 .field input[type="password"],
-.field input[type="number"] {
+.field input[type="number"],
+.field select {
   background: var(--bg-input);
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
@@ -301,10 +302,16 @@ main {
   color: var(--text);
   padding: 9px 12px;
   font-size: 13px;
+  font-family: inherit;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.field input:focus {
+.field select {
+  cursor: pointer;
+}
+
+.field input:focus,
+.field select:focus {
   outline: none;
   border-color: var(--amber);
   box-shadow: 0 0 0 3px var(--amber-soft);
