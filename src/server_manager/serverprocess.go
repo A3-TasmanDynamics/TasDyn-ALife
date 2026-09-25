@@ -7,10 +7,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/net"
 	"github.com/shirou/gopsutil/v3/process"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -28,10 +31,18 @@ type ServerStatus struct {
 // so it doesn't belong in database/schema.sql alongside the things that
 // actually need to survive a restart.
 type PerformanceSample struct {
-	Timestamp      string  `json:"timestamp"` // RFC3339
-	CPUPercent     float64 `json:"cpuPercent"`
-	MemoryMB       float64 `json:"memoryMB"`
-	UptimeSeconds  int64   `json:"uptimeSeconds"`
+	Timestamp        string  `json:"timestamp"` // RFC3339
+	CPUPercent       float64 `json:"cpuPercent"`
+	MemoryMB         float64 `json:"memoryMB"`
+	UptimeSeconds    int64   `json:"uptimeSeconds"`
+	NetworkSentKBps  float64 `json:"networkSentKBps"`
+	NetworkRecvKBps  float64 `json:"networkRecvKBps"`
+	// ServerFPS is -1 until the first "[ALife][FPS]" line has been read
+	// from the RPT log (initServer.sqf logs one every 2s, but the first
+	// one lags a few seconds behind server startup) -- distinguishes "no
+	// data yet" from a genuine 0 FPS, which would otherwise look identical
+	// on the graph.
+	ServerFPS float64 `json:"serverFPS"`
 }
 
 // serverProcessManager owns the running arma3server_x64.exe child process
@@ -43,9 +54,23 @@ type serverProcessManager struct {
 	startedAt  time.Time
 	profileDir string
 	stopTail   chan struct{}
+
+	// fpsMu guards lastFPS specifically -- a separate, lighter-weight lock
+	// from mu (which guards process lifecycle) since tailLog updates this
+	// on every RPT line and samplePerformance reads it every 2s; neither
+	// needs to coordinate with LaunchServer/StopServer to do so.
+	fpsMu   sync.Mutex
+	lastFPS float64
 }
 
 var procMgr = &serverProcessManager{}
+
+// fpsLogPattern matches the "[ALife][FPS] <number>" line initServer.sqf
+// logs via diag_log every 2 seconds (see that file) -- Arma exposes
+// diag_fps only to script running inside the sim, so the mission has to
+// report it; this is where server_manager picks that report back up from
+// the RPT log it's already tailing.
+var fpsLogPattern = regexp.MustCompile(`\[ALife\]\[FPS\]\s+([0-9]+(?:\.[0-9]+)?)`)
 
 // LaunchResult carries anything Launch succeeded despite -- currently just
 // non-fatal deployExtension warnings (e.g. the C++ extension hasn't been
@@ -126,6 +151,9 @@ func (a *App) LaunchServer() (LaunchResult, error) {
 	procMgr.startedAt = time.Now()
 	procMgr.profileDir = profileDir
 	procMgr.stopTail = make(chan struct{})
+	procMgr.fpsMu.Lock()
+	procMgr.lastFPS = -1 // no "[ALife][FPS]" line read yet this run
+	procMgr.fpsMu.Unlock()
 
 	go procMgr.tailLog(a.ctx, profileDir, procMgr.stopTail)
 	go procMgr.samplePerformance(a.ctx, cmd.Process.Pid, procMgr.startedAt, procMgr.stopTail)
@@ -221,6 +249,13 @@ func (m *serverProcessManager) tailLog(ctx context.Context, profileDir string, s
 		line, err := reader.ReadString('\n')
 		if line != "" {
 			runtime.EventsEmit(ctx, "server:log", line)
+			if match := fpsLogPattern.FindStringSubmatch(line); match != nil {
+				if fps, parseErr := strconv.ParseFloat(match[1], 64); parseErr == nil {
+					m.fpsMu.Lock()
+					m.lastFPS = fps
+					m.fpsMu.Unlock()
+				}
+			}
 		}
 		if err != nil {
 			time.Sleep(300 * time.Millisecond)
@@ -228,10 +263,14 @@ func (m *serverProcessManager) tailLog(ctx context.Context, profileDir string, s
 	}
 }
 
-// samplePerformance polls the dedicated server process's CPU/memory every
-// 2 seconds and pushes a PerformanceSample event -- same push-based
-// pattern as tailLog's log lines, for the same reason: the Performance tab
-// shouldn't have to poll a Go method on a timer just to stay current.
+// samplePerformance polls CPU/memory/network every 2 seconds and pushes a
+// PerformanceSample event -- same push-based pattern as tailLog's log
+// lines, for the same reason: the Performance tab shouldn't have to poll a
+// Go method on a timer just to stay current. FPS isn't sampled here at
+// all -- it arrives via tailLog reading initServer.sqf's periodic
+// diag_log line (see fpsLogPattern), since gopsutil has no way to ask
+// Arma's own simulation for its frame rate; this loop just reads whatever
+// tailLog last stored.
 //
 // CPUPercent() is gopsutil's own convention: percent of ONE core, so a
 // process using two full cores reads ~200%, not capped at 100% -- this
@@ -239,10 +278,26 @@ func (m *serverProcessManager) tailLog(ctx context.Context, profileDir string, s
 // as-is on the graph, not renormalized, since renormalizing needs the
 // machine's core count for a conversion that isn't actually more honest,
 // just differently scaled.
+//
+// Network is SYSTEM-WIDE (net.IOCounters(false), all interfaces summed),
+// not specific to the arma3server_x64.exe process -- gopsutil (and Windows
+// generally, short of ETW) has no reliable per-process network byte
+// counter the way it does for CPU/memory. Labeled as such on the graph;
+// on a host dedicated to running this server, system-wide is a reasonable
+// proxy, but it's not literally "this process's" traffic and shouldn't be
+// presented as such.
 func (m *serverProcessManager) samplePerformance(ctx context.Context, pid int, startedAt time.Time, stop chan struct{}) {
 	proc, err := process.NewProcess(int32(pid))
 	if err != nil {
 		return
+	}
+
+	var prevNetSent, prevNetRecv uint64
+	var prevNetAt time.Time
+	if counters, err := net.IOCounters(false); err == nil && len(counters) > 0 {
+		prevNetSent = counters[0].BytesSent
+		prevNetRecv = counters[0].BytesRecv
+		prevNetAt = time.Now()
 	}
 
 	ticker := time.NewTicker(2 * time.Second)
@@ -264,6 +319,27 @@ func (m *serverProcessManager) samplePerformance(ctx context.Context, pid int, s
 			if memInfo, err := proc.MemoryInfo(); err == nil && memInfo != nil {
 				sample.MemoryMB = float64(memInfo.RSS) / (1024 * 1024)
 			}
+
+			if counters, err := net.IOCounters(false); err == nil && len(counters) > 0 && !prevNetAt.IsZero() {
+				elapsed := time.Since(prevNetAt).Seconds()
+				// >= guards against a wrapped/reset counter (an interface
+				// reconnecting mid-sample, say) reading as a huge negative
+				// delta -- uint64 subtraction doesn't panic on underflow,
+				// it silently wraps to a huge number, which would spike
+				// the graph. Treat a decrease as "no data this tick"
+				// instead of a nonsensical spike.
+				if elapsed > 0 && counters[0].BytesSent >= prevNetSent && counters[0].BytesRecv >= prevNetRecv {
+					sample.NetworkSentKBps = float64(counters[0].BytesSent-prevNetSent) / 1024 / elapsed
+					sample.NetworkRecvKBps = float64(counters[0].BytesRecv-prevNetRecv) / 1024 / elapsed
+				}
+				prevNetSent = counters[0].BytesSent
+				prevNetRecv = counters[0].BytesRecv
+				prevNetAt = time.Now()
+			}
+
+			m.fpsMu.Lock()
+			sample.ServerFPS = m.lastFPS
+			m.fpsMu.Unlock()
 
 			runtime.EventsEmit(ctx, "server:performance", sample)
 		}
