@@ -1,6 +1,12 @@
 {{define "content"}}
 <h1 class="page-title">{{.Ticket.Subject}}</h1>
-<p class="hint">Category: {{.Ticket.Category}} · Status: {{.Ticket.Status}}{{if .Ticket.AssignedTo}} · Claimed by {{.Ticket.AssignedTo}}{{end}}</p>
+<p class="hint">
+  <span class="badge badge-priority-{{.Ticket.Priority}}">{{.Ticket.Priority}}</span>
+  <span class="badge badge-status-{{.Ticket.Status}}">{{.Ticket.Status}}</span>
+  · {{.Ticket.Category}}
+  {{if .IsStaff}}· Requester: {{.Ticket.RequesterName}}{{end}}
+  {{if .Ticket.AssignedTo}} · Assigned to {{.Ticket.AssignedTo}}{{else}} · Unassigned{{end}}
+</p>
 
 {{if .IsStaff}}
 <section class="card">
@@ -8,12 +14,23 @@
   <div class="button-row">
     {{if not .Ticket.AssignedTo}}
       <form method="post" action="/support/tickets/{{.Ticket.ID}}/claim"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="cta secondary" type="submit">Claim</button></form>
+    {{else}}
+      <form method="post" action="/support/tickets/{{.Ticket.ID}}/unassign"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="cta secondary" type="submit">Unassign</button></form>
     {{end}}
     {{if ne .Ticket.Status "closed"}}
       <form method="post" action="/support/tickets/{{.Ticket.ID}}/close"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="cta secondary" type="submit">Close ticket</button></form>
     {{else}}
       <form method="post" action="/support/tickets/{{.Ticket.ID}}/reopen"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="cta secondary" type="submit">Reopen ticket</button></form>
     {{end}}
+    <form method="post" action="/support/tickets/{{.Ticket.ID}}/priority" class="inline-form">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      <select name="priority" onchange="this.form.submit()">
+        <option value="low" {{if eq .Ticket.Priority "low"}}selected{{end}}>Low</option>
+        <option value="normal" {{if eq .Ticket.Priority "normal"}}selected{{end}}>Normal</option>
+        <option value="high" {{if eq .Ticket.Priority "high"}}selected{{end}}>High</option>
+        <option value="urgent" {{if eq .Ticket.Priority "urgent"}}selected{{end}}>Urgent</option>
+      </select>
+    </form>
   </div>
 </section>
 {{end}}
@@ -22,8 +39,11 @@
   <h2>Conversation</h2>
   <div class="ticket-thread">
     {{range .Messages}}
-      <div class="ticket-message {{if eq .Source "discord"}}from-discord{{end}}">
-        <div class="ticket-message-meta">{{.AuthorName}} · {{.Source}} · {{.CreatedAt}}</div>
+      <div class="ticket-message {{if eq .Source "discord"}}from-discord{{end}} {{if .Internal}}internal-note{{end}}">
+        <div class="ticket-message-meta">
+          {{.AuthorName}} · {{.Source}} · {{.CreatedAt}}
+          {{if .Internal}}<span class="badge badge-internal">Internal Note</span>{{end}}
+        </div>
         <div class="ticket-message-body">{{.Body}}</div>
       </div>
     {{end}}
@@ -35,6 +55,12 @@
     <div class="field">
       <textarea name="body" rows="3" required placeholder="Write a reply..."></textarea>
     </div>
+    {{if .IsStaff}}
+    <div class="field row">
+      <input type="checkbox" name="internal" value="1" id="reply-internal" />
+      <label for="reply-internal">Internal note (staff only -- never shown to the requester or sent to Discord)</label>
+    </div>
+    {{end}}
     <button class="cta" type="submit">Reply</button>
   </form>
   {{else}}

@@ -13,18 +13,31 @@ import (
 	"website/internal/discord"
 )
 
+var validPriorities = map[string]bool{"low": true, "normal": true, "high": true, "urgent": true}
+
+func normalizePriority(p string) string {
+	if validPriorities[p] {
+		return p
+	}
+	return "normal"
+}
+
 type ticketSummary struct {
-	ID         int64
-	Subject    string
-	Category   string
-	Status     string
-	AssignedTo string
+	ID            int64
+	Subject       string
+	Category      string
+	Status        string
+	Priority      string
+	AssignedTo    string
+	RequesterName string
+	CreatedAt     string
 }
 
 type ticketMessage struct {
 	AuthorName string
 	Source     string
 	Body       string
+	Internal   bool
 	CreatedAt  string
 }
 
@@ -41,7 +54,7 @@ func (d *Deps) MyTickets(w http.ResponseWriter, r *http.Request) {
 	data := myTicketsData{Base: baseFrom(r, "My Tickets")}
 
 	rows, err := d.Pool.Query(r.Context(), `
-		SELECT id, subject, category, status FROM support_tickets
+		SELECT id, subject, category, status, priority FROM support_tickets
 		WHERE player_id = $1 ORDER BY created_at DESC
 	`, sess.PlayerID)
 	if err != nil {
@@ -52,7 +65,7 @@ func (d *Deps) MyTickets(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 	for rows.Next() {
 		var t ticketSummary
-		if err := rows.Scan(&t.ID, &t.Subject, &t.Category, &t.Status); err == nil {
+		if err := rows.Scan(&t.ID, &t.Subject, &t.Category, &t.Status, &t.Priority); err == nil {
 			data.Tickets = append(data.Tickets, t)
 		}
 	}
@@ -72,6 +85,7 @@ func (d *Deps) CreateTicket(w http.ResponseWriter, r *http.Request) {
 	subject := r.FormValue("subject")
 	category := r.FormValue("category")
 	body := r.FormValue("body")
+	priority := normalizePriority(r.FormValue("priority"))
 	if subject == "" || body == "" {
 		http.Redirect(w, r, "/tickets?error="+errMsg("Subject and details are required."), http.StatusSeeOther)
 		return
@@ -86,8 +100,8 @@ func (d *Deps) CreateTicket(w http.ResponseWriter, r *http.Request) {
 	defer tx.Rollback(r.Context())
 
 	err = tx.QueryRow(r.Context(), `
-		INSERT INTO support_tickets (player_id, subject, category) VALUES ($1, $2, $3) RETURNING id
-	`, sess.PlayerID, subject, category).Scan(&ticketID)
+		INSERT INTO support_tickets (player_id, subject, category, priority) VALUES ($1, $2, $3, $4) RETURNING id
+	`, sess.PlayerID, subject, category, priority).Scan(&ticketID)
 	if err != nil {
 		slog.Error("create ticket: insert failed", "error", err)
 		http.Redirect(w, r, "/tickets?error="+errMsg("Something went wrong."), http.StatusSeeOther)
@@ -108,18 +122,21 @@ func (d *Deps) CreateTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	priorityTag := map[string]string{"low": "", "normal": "", "high": "⚠️ ", "urgent": "🔴 "}[priority]
 	discord.SendWebhook(r.Context(), d.Cfg.DiscordTicketLogWebhook,
-		"🎫 New support ticket **#"+strconv.FormatInt(ticketID, 10)+"** ("+category+"): "+subject)
+		"🎫 "+priorityTag+"New support ticket **#"+strconv.FormatInt(ticketID, 10)+"** ("+category+", "+priority+"): "+subject)
 
 	http.Redirect(w, r, "/tickets/"+strconv.FormatInt(ticketID, 10), http.StatusSeeOther)
 }
 
 type ticketDetail struct {
-	ID         int64
-	Subject    string
-	Category   string
-	Status     string
-	AssignedTo string
+	ID            int64
+	Subject       string
+	Category      string
+	Status        string
+	Priority      string
+	AssignedTo    string
+	RequesterName string
 }
 
 type ticketThreadData struct {
@@ -132,7 +149,10 @@ type ticketThreadData struct {
 // TicketThread renders one ticket's conversation. Accessible to the
 // ticket's owner OR staff with Support Panel access -- checked here, not
 // assumed from which route the request came in on, since /tickets/{id} is
-// reachable by both audiences.
+// reachable by both audiences. Internal notes (support_ticket_messages.internal)
+// are filtered out in the SQL itself for a non-staff viewer, not just
+// hidden in the template -- the owner's response should never even leave
+// the database, let alone reach the page as hidden markup.
 func (d *Deps) TicketThread(w http.ResponseWriter, r *http.Request) {
 	sess, _ := auth.FromContext(r.Context())
 	ticketID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
@@ -145,11 +165,12 @@ func (d *Deps) TicketThread(w http.ResponseWriter, r *http.Request) {
 	var assignedName *string
 	t := ticketDetail{ID: ticketID}
 	err = d.Pool.QueryRow(r.Context(), `
-		SELECT st.player_id, st.subject, st.category, st.status, p.name
+		SELECT st.player_id, st.subject, st.category, st.status, st.priority, p.name, requester.name
 		FROM support_tickets st
 		LEFT JOIN players p ON p.id = st.assigned_staff_id
+		JOIN players requester ON requester.id = st.player_id
 		WHERE st.id = $1
-	`, ticketID).Scan(&ownerID, &t.Subject, &t.Category, &t.Status, &assignedName)
+	`, ticketID).Scan(&ownerID, &t.Subject, &t.Category, &t.Status, &t.Priority, &assignedName, &t.RequesterName)
 	if err == pgx.ErrNoRows {
 		http.NotFound(w, r)
 		return
@@ -172,11 +193,12 @@ func (d *Deps) TicketThread(w http.ResponseWriter, r *http.Request) {
 	data := ticketThreadData{Base: baseFrom(r, t.Subject), Ticket: t, IsStaff: isStaff}
 
 	rows, err := d.Pool.Query(r.Context(), `
-		SELECT COALESCE(p.name, 'System'), stm.source, stm.body, stm.created_at
+		SELECT COALESCE(p.name, 'System'), stm.source, stm.body, stm.internal, stm.created_at
 		FROM support_ticket_messages stm
 		LEFT JOIN players p ON p.id = stm.author_player_id
-		WHERE stm.ticket_id = $1 ORDER BY stm.created_at ASC
-	`, ticketID)
+		WHERE stm.ticket_id = $1 AND (NOT stm.internal OR $2)
+		ORDER BY stm.created_at ASC
+	`, ticketID, isStaff)
 	if err != nil {
 		slog.Error("ticket thread: messages query failed", "error", err)
 		http.Error(w, "Failed to load ticket.", http.StatusInternalServerError)
@@ -186,7 +208,7 @@ func (d *Deps) TicketThread(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var m ticketMessage
 		var createdAt time.Time
-		if err := rows.Scan(&m.AuthorName, &m.Source, &m.Body, &createdAt); err == nil {
+		if err := rows.Scan(&m.AuthorName, &m.Source, &m.Body, &m.Internal, &createdAt); err == nil {
 			m.CreatedAt = createdAt.Format("2006-01-02 15:04")
 			data.Messages = append(data.Messages, m)
 		}
@@ -197,7 +219,11 @@ func (d *Deps) TicketThread(w http.ResponseWriter, r *http.Request) {
 
 // ReplyToTicket appends a message from whoever's viewing (owner or staff)
 // -- same ownership/staff check as TicketThread, re-verified server-side
-// rather than trusted from the page that rendered the form.
+// rather than trusted from the page that rendered the form. "internal" is
+// only ever honored when the submitter actually has Support Panel access
+// -- a player's own reply can never become an internal note no matter what
+// the submitted form says, since that field only exists in the page's
+// staff-only UI branch but nothing stops a raw POST from including it.
 func (d *Deps) ReplyToTicket(w http.ResponseWriter, r *http.Request) {
 	sess, _ := auth.FromContext(r.Context())
 	ticketID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
@@ -221,7 +247,8 @@ func (d *Deps) ReplyToTicket(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to load ticket.", http.StatusInternalServerError)
 		return
 	}
-	if ownerID != sess.PlayerID && !sess.SupportPanelAccess {
+	isStaff := sess.SupportPanelAccess
+	if ownerID != sess.PlayerID && !isStaff {
 		http.Error(w, "403 Forbidden", http.StatusForbidden)
 		return
 	}
@@ -230,9 +257,11 @@ func (d *Deps) ReplyToTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	internal := isStaff && r.FormValue("internal") == "1"
+
 	_, err = d.Pool.Exec(r.Context(), `
-		INSERT INTO support_ticket_messages (ticket_id, author_player_id, body, source) VALUES ($1, $2, $3, 'web')
-	`, ticketID, sess.PlayerID, r.FormValue("body"))
+		INSERT INTO support_ticket_messages (ticket_id, author_player_id, body, source, internal) VALUES ($1, $2, $3, 'web', $4)
+	`, ticketID, sess.PlayerID, r.FormValue("body"), internal)
 	if err != nil {
 		slog.Error("ticket reply: insert failed", "error", err)
 		http.Redirect(w, r, "/tickets/"+chi.URLParam(r, "id")+"?error="+errMsg("Something went wrong."), http.StatusSeeOther)

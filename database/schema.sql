@@ -492,6 +492,11 @@ CREATE TABLE support_tickets (
     subject             TEXT NOT NULL,
     status              TEXT NOT NULL DEFAULT 'open'
                             CHECK (status IN ('open', 'pending', 'closed')),
+    -- Submitter's own sense of urgency at creation time -- staff can
+    -- re-triage (raise/lower) once they've actually looked at it; this is
+    -- the initial signal, not a locked-in SLA commitment.
+    priority            TEXT NOT NULL DEFAULT 'normal'
+                            CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
     category            TEXT NOT NULL,
     assigned_staff_id   BIGINT REFERENCES players(id) ON DELETE SET NULL,
     discord_thread_id   TEXT,              -- Discord thread this ticket mirrors to, docs/WEBSITE.md §9
@@ -502,6 +507,7 @@ CREATE TABLE support_tickets (
 
 CREATE INDEX idx_support_tickets_player_id ON support_tickets(player_id);
 CREATE INDEX idx_support_tickets_open ON support_tickets(status) WHERE status != 'closed';
+CREATE INDEX idx_support_tickets_unassigned ON support_tickets(created_at) WHERE assigned_staff_id IS NULL AND status != 'closed';
 
 CREATE TABLE support_ticket_messages (
     id                   BIGSERIAL PRIMARY KEY,
@@ -509,6 +515,14 @@ CREATE TABLE support_ticket_messages (
     author_player_id     BIGINT REFERENCES players(id) ON DELETE SET NULL,  -- NULL = system message
     body                 TEXT NOT NULL,
     source               TEXT NOT NULL DEFAULT 'web' CHECK (source IN ('web', 'discord')),
+    -- Staff-only note, never shown to the ticket's owner and never mirrored
+    -- to Discord -- the classic "internal comment" every real support
+    -- portal has, for staff to coordinate on a ticket without that
+    -- coordination being part of the player-facing conversation. Can only
+    -- be true on a message a staff member wrote (enforced in application
+    -- code, not a DB constraint here, since that needs the ticket's
+    -- support-panel-access check, not just a column relationship).
+    internal             BOOLEAN NOT NULL DEFAULT false,
     discord_message_id   TEXT,
     created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
 );

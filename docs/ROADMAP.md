@@ -200,9 +200,16 @@ its own phase instead of embedded piecemeal inside them.
       website or from Discord, not just one direction.
 - [x] Discord: one-way webhook logs — wired for new support tickets; staff-action/anti-cheat
       webhooks await the Admin Panel features that produce those events (below).
-- [x] Support Panel + member-portal "My Tickets": full ticket lifecycle (create, claim, reply,
-      close/reopen), one `support_tickets` row shared between both access levels per
-      [WEBSITE.md §8](WEBSITE.md#8-support-panel).
+- [x] Support Panel + member-portal "My Tickets": full ticket lifecycle (create, claim, unassign,
+      reply, close/reopen), one `support_tickets` row shared between both access levels per
+      [WEBSITE.md §8](WEBSITE.md#8-support-panel). Built out as a proper IT-support-portal:
+      priority (`low`/`normal`/`high`/`urgent`, submitter-picked then staff-adjustable),
+      queue stats (Open/Unassigned/Assigned to Me/Urgent), status/priority/assignment filters, and
+      staff-only internal notes (filtered out in the SQL itself for a non-staff viewer, not just
+      hidden in the template). Verified end-to-end with disposable test accounts: priority-sorted
+      queue ordering, all three filters, claim/unassign, priority re-triage, and internal-note
+      visibility (confirmed staff sees it, the ticket's own owner gets zero matches for it even in
+      the raw response).
 - [x] Member portal: bank transfers (`internal/bank`) — both between the player's own faction
       accounts and to another player by exact name, idempotency-tokened and row-locked against
       double-spend/races. Unblocked by confirming `fn_save.sqf` never writes `*_bank` (only
