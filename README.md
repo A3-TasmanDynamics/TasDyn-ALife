@@ -56,12 +56,18 @@ Unlike traditional vanilla servers that rely on slow SQF-based MySQL bridges (ex
 ### Server Operator Tooling
 * **Server Manager:** Go + Wails desktop app (`src/server_manager/`) — configure and launch the
   dedicated server, watch its live log, and view Postgres-backed graphs (players, economy,
-  anti-cheat flags, staff actions). Distinct from the web dashboard below: this runs locally for
+  anti-cheat flags, staff actions). Distinct from the website below: this runs locally for
   whoever's actually hosting the server, not remotely for players/staff.
 
-### Frontend (Web & Admin) — planned
-* **Dashboard:** NuxtJS (TypeScript) — ticket system, gang management, player stats, live RCON graphs.
-* **Discord Integration:** Node.js bot, two-way synced with Postgres (in-game tickets → Discord alerts).
+### Website (Public Site, Member Portal, Admin Panel, Support Panel)
+* **Website:** Go (`src/website/`, [docs/WEBSITE.md](docs/WEBSITE.md)) — one server-rendered app for
+  the public landing page, a member portal (stats, gang management, bank transfers), a separate
+  Admin Panel and Support Panel (independent access grants, switchable for staff holding both),
+  and a Discord-integrated ticket system. Same Go/`pgx` choice as the server manager, same
+  Postgres schema, its own long-running process.
+* **Discord Integration:** one-way webhook logs (staff actions, bans, anti-cheat flags, new
+  tickets) plus a `discordgo` bot for two-way support-ticket sync, running inside the website
+  process rather than a separate service.
 
 ### Game Logic (SQF)
 * Custom framework, built for this project rather than adapted from an existing base.
@@ -103,6 +109,16 @@ players live through the menu itself, no direct DB access needed. Four default t
 Moderator → Moderator → Admin → Head Admin/Developer). Full spec, and the feature-by-feature
 comparison against both reference products: [docs/ADMIN_TOOLS.md](docs/ADMIN_TOOLS.md).
 
+### Website
+A public landing page, a member portal (Steam login, faction stats, gang management, bank
+transfers), and two separate staff surfaces — an Admin Panel and a Support Panel — with
+independent access grants (a support volunteer doesn't get ban tools; staff holding both switch
+between panels without re-authenticating). Support tickets sync two-way with Discord via a bot;
+staff actions, bans, and high-confidence anti-cheat flags post to Discord via webhook. Built as a
+Go application against the same Postgres schema and the same DB-driven staff rank system as the
+in-game admin menu, not a parallel identity or money system. Full spec:
+[docs/WEBSITE.md](docs/WEBSITE.md).
+
 ### Visual Identity (vanilla workarounds)
 `setObjectTextureGlobal` texture injection for faction liveries and rank-based uniforms — no custom mod required client-side.
 
@@ -118,8 +134,7 @@ TasDyn-ALife/
 │   ├── cpp_extension/   # C++ bridge (the DB extension DLL)
 │   ├── ALife.Altis/     # SQF mission source (named for Arma's <mission>.<world> convention)
 │   ├── server_manager/  # Desktop app (Go + Wails) — launch/monitor the server, DB dashboards
-│   ├── web_dashboard/   # NuxtJS admin panel (planned)
-│   └── discord_bot/     # Node.js bot (planned)
+│   └── website/         # Go website — public site, member portal, Admin Panel, Support Panel
 ├── docs/                # Design docs (data contracts, architecture decisions)
 │   └── assets/          # Banner and brand assets
 ├── tools/               # Dev tooling — see tools/README.md

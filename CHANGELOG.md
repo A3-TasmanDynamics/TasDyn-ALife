@@ -77,3 +77,25 @@
   app: every panel's Go call is now wrapped in try/catch with a visible error banner on failure --
   previously a rejected promise failed silently, leaving a panel stuck on "Loading..." forever
   with no indication anything had gone wrong.
+- `src/server_manager/` UI revamp: sidebar shell with icon nav and a persistent live server-status
+  pill (visible on every tab, not just Launch), plus a glassmorphism treatment across cards, stat
+  tiles, and inputs -- kept the existing navy/amber palette.
+- `docs/WEBSITE.md`: full design for a Go website -- public landing page, a member portal (Steam
+  login, faction stats, gang management, bank transfers), and two separately-gated staff surfaces,
+  an Admin Panel and a Support Panel, switchable without re-authenticating for staff holding both.
+  Deliberately not a parallel identity/money system: logins resolve to the existing `players` row
+  (`uid` = Steam64 ID) and member-portal writes (transfers, gang management) go through the same
+  `bank_accounts`/`bank_transactions`/`gangs`/`gang_members` tables the game already treats as
+  authoritative. Support tickets sync two-way with Discord via a bot (`discordgo`); staff actions,
+  bans, and high-confidence anti-cheat flags post to Discord one-way via webhook.
+- Schema additions backing the website: `web_sessions` (DB-backed, revocable sessions -- not JWT,
+  so a ban can log a session out immediately), `support_tickets`, `support_ticket_messages`, and
+  `staff_ranks.default_admin_panel`/`default_support_panel` (Admin and Support are separate grants,
+  not implied by rank level alone). Applied against the real local dev DB in a rolled-back
+  transaction to verify syntax before committing.
+- Roadmap revised again: public launch target moved from 2027-01-20 to **2027-03-03** (~6 added
+  weeks, a new Phase W between Phase 3 and Phase 4) once the website above was made launch-critical
+  rather than post-launch fast-follow -- same pattern as the admin-tooling revision, flagged
+  explicitly in ROADMAP.md as an estimate pending confirmation. README's Technical Stack and
+  project-structure sections updated to match (the old "NuxtJS + Node.js bot, planned" placeholder
+  is replaced by the actual Go decision).
