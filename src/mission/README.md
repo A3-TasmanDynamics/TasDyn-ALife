@@ -18,14 +18,22 @@ src/mission/
 ├── dialog/
 │   └── spawnMenu.hpp       # Faction + spawn point selection dialog
 └── functions/
-    ├── fn_load.sqf                    # docs/DATA_CONTRACT.md "load"
-    ├── fn_save.sqf                    # docs/DATA_CONTRACT.md "save"
-    ├── fn_getSpawnPoints.sqf          # Reads config/spawn_config.hpp
-    ├── fn_spawnPlayer.sqf             # Authoritative spawn handling (server)
-    ├── fn_spawnMenu.sqf               # Opens the dialog (client)
-    ├── fn_spawnMenuFactionChanged.sqf # Repopulates spawn points on faction change (client)
-    └── fn_confirmSpawn.sqf            # Sends the spawn request to the server (client)
+    ├── data/                # DB-facing — implements docs/DATA_CONTRACT.md
+    │   ├── fn_load.sqf
+    │   └── fn_save.sqf
+    └── spawn/               # Faction/spawn-point selection
+        ├── fn_getSpawnPoints.sqf          # Reads config/spawn_config.hpp
+        ├── fn_spawnPlayer.sqf             # Authoritative spawn handling (server)
+        ├── fn_spawnMenu.sqf               # Opens the dialog (client)
+        ├── fn_spawnMenuFactionChanged.sqf # Repopulates spawn points on faction change (client)
+        └── fn_confirmSpawn.sqf            # Sends the spawn request to the server (client)
 ```
+
+One subfolder per area under `functions/` (`data/`, `spawn/`, more to come — `player/`, `admin/`,
+etc. as those systems get built) — an idea taken from how Tonic's framework splits its `core/`
+folder by area, not a copy of its actual structure. `CfgFunctions.hpp`'s `class` nesting mirrors
+this 1:1 — add a new subfolder and a matching `CfgFunctions.hpp` category together, not one
+without the other.
 
 ## Spawn points
 
