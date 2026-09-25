@@ -25,7 +25,8 @@ Mostly the scaffold work already merged in PR #1/#2. What's left before any game
       important doc in the repo — the prototype's save/load bug happened because this contract
       only ever existed implicitly, split across three files that drifted out of sync.
 - [ ] Canonical Postgres schema (`database/schema.sql`) for: player record (uid, name, cash,
-      bank, faction, rank), inventory (JSONB), licenses (JSONB).
+      bank, faction, rank), inventory (JSONB), licenses (JSONB), and staff ranks
+      (`staff_ranks` + `players.staff_rank_id` — see [ADMIN_TOOLS.md §3](ADMIN_TOOLS.md#3-data-model)).
 - [ ] Local dev Postgres instance + `config.ini` set up and connecting.
 - [ ] HEMTT (or equivalent) build tooling decided for the C++ extension and the mission.
 
@@ -43,6 +44,8 @@ environment reproducible from a clean clone.
       acknowledgement path.
 - [ ] `CfgRemoteExec` allowlist: only named, reviewed functions are network-callable at all — the
       enforced version of "Server Decides," per [ANTI_CHEAT.md §3 Layer 1](ANTI_CHEAT.md#layer-1--api-surface-remoteexec-allowlist).
+      Admin actions (Phase 3) reuse this same allowlist with an added `min_level` check per
+      function — see [ADMIN_TOOLS.md §4](ADMIN_TOOLS.md#4-security-model--every-admin-action-is-a-layer-1-action-too).
 - [ ] End-to-end smoke test: a player joins, a blank record is created, cash changes on the
       server, disconnect, rejoin — balance persisted correctly.
 - [ ] Transaction locking **and idempotent request tokens** on economy-affecting writes (prevents
@@ -83,12 +86,23 @@ Full threat model, defense layers, and response policy: [ANTI_CHEAT.md](ANTI_CHE
       network conditions first.
 - [ ] Load/soak test the C++ bridge under concurrent writes (simulate a full server's worth of
       saves).
-- [ ] Basic admin tooling: kick/ban, teleport-to, spectate — whatever's needed to moderate a
-      closed alpha.
+- [ ] **In-game admin menu**, permission-gated by staff rank — full spec in
+      [ADMIN_TOOLS.md](ADMIN_TOOLS.md):
+      - Level 10 (Trial Mod): player list/search, teleport, spectate, freeze, kick.
+      - Level 20 (Mod): + temp-ban, heal/revive, server announcements.
+      - Level 40 (Admin): + perma-ban, give item/cash (audited), vehicle spawn/delete/repair,
+        **anti-cheat flag review panel** — closes the loop on Phase 3's graduated response.
+      - Level 100 (Head Admin/Dev): + staff rank management panel — create/rename/delete a
+        `staff_ranks` row, assign/clear a player's rank. This is the "add/remove ranks in the
+        database" requirement, done as an in-menu action rather than a manual DB edit.
+- [ ] Admin action audit logging (who, target, action, reason, before/after values) — see
+      [ADMIN_TOOLS.md §8](ADMIN_TOOLS.md#8-audit-logging).
 
 **Milestone exit criteria:** BattlEye active, all four Layer 0–3 defenses from ANTI_CHEAT.md
 implemented and passing a deliberate red-team pass (teleport, dupe/double-submit, honeypot
-trigger), and the bridge survives a concurrent-save soak test without corruption.
+trigger), the bridge survives a concurrent-save soak test without corruption, and a Head
+Admin-level staff member can create a new staff rank and assign a player to it entirely through
+the in-game menu — no direct DB access required.
 
 ## Phase 4 — Content & Balance *(2026-12-05 → 2026-12-14)*
 
