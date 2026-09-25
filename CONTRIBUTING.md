@@ -21,7 +21,7 @@ truncated.
 
 ## The data contract
 
-`database/`, `src/cpp_extension/`, and `src/ALife.altis/` share one save/load array format across
+`database/`, `src/cpp_extension/`, and `src/ALife.Altis/` share one save/load array format across
 Postgres columns, the C++ bridge, and SQF. If a column is renamed, reordered, or added, update the
 documented contract in `docs/` and all three sides in the same PR — an undocumented version of
 exactly this contract is what corrupted rank data in the prototype this project replaced.

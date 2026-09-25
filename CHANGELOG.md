@@ -51,11 +51,11 @@
   (`applied_request_tokens`), not an absolute-set field — an absolute `save` on physical cash had
   the same concurrent-double-apply risk `bank_accounts` was split out to avoid; caught before any
   save code was written against the original design.
-- `src/ALife.altis/` scaffolded: `description.ext`, `CfgFunctions.hpp`, `CfgRemoteExec.hpp`
+- `src/ALife.Altis/` scaffolded: `description.ext`, `CfgFunctions.hpp`, `CfgRemoteExec.hpp`
   (reviewed against Tonic's own `CfgRemoteExec.hpp` for the real-world pattern before writing
   ours), `initPlayerServer.sqf`/`initServer.sqf` join and disconnect hooks, and
   `ALife_fnc_load`/`ALife_fnc_save` implementing `docs/DATA_CONTRACT.md` exactly. `mission.sqm`
-  itself isn't generated here — it's Eden editor output — see `src/ALife.altis/README.md` for how to
+  itself isn't generated here — it's Eden editor output — see `src/ALife.Altis/README.md` for how to
   wire this scaffold into an actual mission.
 - Faction spawn/selection (Phase 2 work, done ahead of schedule alongside the mission scaffold):
   `config/spawn_config.hpp` defines spawn points config-side (git-diffable), each resolving its

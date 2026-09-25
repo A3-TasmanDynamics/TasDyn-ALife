@@ -4,7 +4,7 @@ PostgreSQL schema for the ALife backend. `schema.sql` is the one canonical
 schema — do not let a second, drifting copy accumulate here.
 
 Column names defined here are the contract the C++ extension (`src/cpp_extension`)
-and the SQF save/load functions (`src/ALife.altis`) both code against — see
+and the SQF save/load functions (`src/ALife.Altis`) both code against — see
 [docs/DATA_CONTRACT.md](../docs/DATA_CONTRACT.md) for the `players` table's
 field order, and [docs/ADMIN_TOOLS.md §3](../docs/ADMIN_TOOLS.md#3-data-model)
 for the staff/admin/arsenal tables. If a column is renamed or reordered,
