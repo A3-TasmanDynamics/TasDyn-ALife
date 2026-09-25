@@ -54,8 +54,11 @@ environment reproducible from a clean clone. ✅ **Phase 0 complete.**
       loading from `config.ini`. Verified end-to-end with a native `LoadLibrary`/`GetProcAddress`
       test harness (no Arma install needed to prove it): `ping` round-trips through the DLL,
       libpq, and a local Postgres instance and returns `OK`.
-- [ ] `cmd_save` / `cmd_load` implemented against the Phase 0 schema, **prepared statements
-      only** — no hand-built SQL strings.
+- [x] `cmd_save` / `cmd_load` implemented against the Phase 0 schema, **prepared statements
+      only** — no hand-built SQL strings (`PQexecParams` against fixed, allowlist-selected SQL
+      literals). `load` creates a blank record + one `bank_accounts` row per faction on first
+      join; `save`'s cash fields are a delta with an idempotency-token check
+      (`applied_request_tokens`), everything else is absolute-set. See `docs/DATA_CONTRACT.md`.
 - [ ] SQF request/response framework skeleton: the "Client Requests, Server Decides" pattern —
       one documented event name convention, one server-side dispatcher, one client-side
       acknowledgement path.
@@ -63,8 +66,11 @@ environment reproducible from a clean clone. ✅ **Phase 0 complete.**
       enforced version of "Server Decides," per [ANTI_CHEAT.md §3 Layer 1](ANTI_CHEAT.md#layer-1--api-surface-remoteexec-allowlist).
       Admin actions (Phase 3) reuse this same allowlist with an added `min_level` check per
       function — see [ADMIN_TOOLS.md §4](ADMIN_TOOLS.md#4-security-model--every-admin-action-is-a-layer-1-action-too).
-- [ ] End-to-end smoke test: a player joins, a blank record is created, cash changes on the
-      server, disconnect, rejoin — balance persisted correctly.
+- [x] End-to-end smoke test (C++/DB side): a blank record is created on first `load`, `civ_cash`
+      changes persist across separate calls, a replayed idempotency token is rejected without
+      double-applying, and an overspend is rejected without going negative — all verified against
+      a real local Postgres instance via the native test harness. **Not yet tested from inside a
+      running Arma mission** — that's the SQF-side half of this bullet, still open.
 - [ ] Transaction locking **and idempotent request tokens** on economy-affecting writes (prevents
       both the concurrent-write and the double-submit duplication classes — see
       [ANTI_CHEAT.md §3 Layer 2](ANTI_CHEAT.md#layer-2--economic-integrity)).

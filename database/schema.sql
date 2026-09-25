@@ -4,6 +4,19 @@
 -- for `players`, and docs/ADMIN_TOOLS.md §3 for staff/admin/arsenal tables.
 -- Changing a column referenced by either doc is a breaking change to the C++
 -- extension and/or SQF side — update both docs and both sides in the same PR.
+--
+-- JSONB SHAPE RULE: any JSONB column whose value can cross the callExtension
+-- boundary (gear, position, inventory, storage, damage, ...) must contain
+-- only arrays, strings, numbers, and booleans -- NEVER a bare JSON object
+-- (`{...}`). SQF's `parseSimpleArray` -- the documented, intended way to
+-- turn callExtension's string output back into data (see
+-- docs/DATA_CONTRACT.md) -- has no object/map literal in its grammar at
+-- all. Represent key-value data as an array of [key, value] pairs instead
+-- of an object: `[["primaryWeapon","arifle_MX_F"], ...]`, never
+-- `{"primaryWeapon": "arifle_MX_F"}`. Written this way, Postgres's raw
+-- JSONB text is already valid `parseSimpleArray` input with zero
+-- transformation -- that's the whole point of the constraint, not an
+-- arbitrary style preference.
 
 BEGIN;
 
@@ -63,9 +76,9 @@ CREATE TABLE players (
     civ_cash       BIGINT NOT NULL DEFAULT 0,
     civ_bank       BIGINT NOT NULL DEFAULT 0,
     civ_licence    JSONB NOT NULL DEFAULT '[]'::jsonb,   -- array of licence keys, e.g. ["driver","boat"]
-    civ_gear       JSONB NOT NULL DEFAULT '{}'::jsonb,   -- full loadout + virtual items
+    civ_gear       JSONB NOT NULL DEFAULT '[]'::jsonb,   -- [[key,value],...] pairs, not an object -- see JSONB SHAPE RULE above
     civ_alive      BOOLEAN NOT NULL DEFAULT true,
-    civ_position   JSONB,           -- last known world position; NULL until first save
+    civ_position   JSONB NOT NULL DEFAULT '[]'::jsonb,   -- [] until the first death is ever recorded
     civ_bounty     BIGINT NOT NULL DEFAULT 0,            -- cache of wanted_crimes, see below
     civ_playtime_seconds BIGINT NOT NULL DEFAULT 0,
 
@@ -74,9 +87,9 @@ CREATE TABLE players (
     cop_cash       BIGINT NOT NULL DEFAULT 0,
     cop_bank       BIGINT NOT NULL DEFAULT 0,
     cop_licence    JSONB NOT NULL DEFAULT '[]'::jsonb,
-    cop_gear       JSONB NOT NULL DEFAULT '{}'::jsonb,
+    cop_gear       JSONB NOT NULL DEFAULT '[]'::jsonb,
     cop_alive      BOOLEAN NOT NULL DEFAULT true,
-    cop_position   JSONB,
+    cop_position   JSONB NOT NULL DEFAULT '[]'::jsonb,
     cop_playtime_seconds BIGINT NOT NULL DEFAULT 0,
 
     medic_level    INTEGER NOT NULL DEFAULT 0,
@@ -84,9 +97,9 @@ CREATE TABLE players (
     medic_cash     BIGINT NOT NULL DEFAULT 0,
     medic_bank     BIGINT NOT NULL DEFAULT 0,
     medic_licence  JSONB NOT NULL DEFAULT '[]'::jsonb,
-    medic_gear     JSONB NOT NULL DEFAULT '{}'::jsonb,
+    medic_gear     JSONB NOT NULL DEFAULT '[]'::jsonb,
     medic_alive    BOOLEAN NOT NULL DEFAULT true,
-    medic_position JSONB,
+    medic_position JSONB NOT NULL DEFAULT '[]'::jsonb,
     medic_playtime_seconds BIGINT NOT NULL DEFAULT 0,
 
     staff_rank_id  INTEGER REFERENCES staff_ranks(id) ON DELETE SET NULL,
@@ -155,6 +168,24 @@ CREATE TABLE wanted_crimes (
 
 CREATE INDEX idx_wanted_crimes_player_id ON wanted_crimes(player_id);
 CREATE INDEX idx_wanted_crimes_outstanding ON wanted_crimes(player_id) WHERE cleared_at IS NULL;
+
+-- ---------------------------------------------------------------------------
+-- Generic idempotency ledger for `save` calls on delta (not absolute-set)
+-- fields -- currently just *_cash. Physical cash has the same
+-- concurrent-double-apply risk bank_accounts was split into its own
+-- ledger to avoid (see docs/DATA_CONTRACT.md), so `save` treats it as a
+-- signed delta, not a new total, and checks/inserts a token here in the
+-- same transaction as the balance update. Every other `save` field is
+-- absolute-set and idempotent by nature (re-applying the same name or
+-- gear twice is harmless), so it doesn't need a token check here.
+-- ---------------------------------------------------------------------------
+CREATE TABLE applied_request_tokens (
+    id          BIGSERIAL PRIMARY KEY,
+    player_id   BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    token       TEXT NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (player_id, token)
+);
 
 -- ---------------------------------------------------------------------------
 -- Banking — bank_accounts.balance is authoritative; players.*_bank is kept
@@ -230,13 +261,13 @@ CREATE TABLE vehicles (
     plate            TEXT UNIQUE,
     faction_scope    TEXT CHECK (faction_scope IN ('civilian', 'police', 'medic')),
     fuel             REAL NOT NULL DEFAULT 1.0,
-    damage           JSONB NOT NULL DEFAULT '{}'::jsonb,  -- per-hitpoint map, e.g. {"hitengine": 0.4, "hitfuel": 0.0}
+    damage           JSONB NOT NULL DEFAULT '[]'::jsonb,  -- [[hitpointName,damage],...] pairs, e.g. [["hitengine",0.4]]
                                                             -- not a single float -- see getAllHitPointsDamage
     status           TEXT NOT NULL DEFAULT 'garaged'
                          CHECK (status IN ('garaged', 'spawned', 'impounded', 'destroyed')),
     garage_id        BIGINT REFERENCES garages(id) ON DELETE SET NULL,
     position         JSONB,           -- last known world position, NULL if garaged
-    inventory        JSONB NOT NULL DEFAULT '{}'::jsonb,  -- cargo
+    inventory        JSONB NOT NULL DEFAULT '[]'::jsonb,  -- [[key,value],...] pairs -- cargo
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
     CHECK (owner_player_id IS NOT NULL OR owner_gang_id IS NOT NULL)
 );
@@ -263,7 +294,7 @@ CREATE TABLE houses (
     house_key        TEXT NOT NULL UNIQUE,   -- matches a predefined map location/building id
     owner_player_id  BIGINT REFERENCES players(id) ON DELETE SET NULL,  -- NULL = unowned
     price            BIGINT NOT NULL,
-    storage          JSONB NOT NULL DEFAULT '{}'::jsonb,
+    storage          JSONB NOT NULL DEFAULT '[]'::jsonb,  -- [[key,value],...] pairs
     locked           BOOLEAN NOT NULL DEFAULT true,
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()

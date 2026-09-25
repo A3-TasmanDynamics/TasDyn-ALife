@@ -39,3 +39,15 @@
   (Police faction wanted list/bounty ledger) — both gaps found by reviewing Tonic's schema.
 - Vehicle damage stored as a per-hitpoint JSONB map (matching `getAllHitPointsDamage`), not a
   single float — a single-number damage column can't actually represent Arma's damage model.
+- **`cmd_load`/`cmd_save` implemented and verified end-to-end** against a real local Postgres
+  instance (blank-record creation, field persistence, idempotency-token replay rejection, and the
+  cash overspend/negative-balance guard all tested via the native harness, not just written).
+- JSONB shape rule established and applied schema-wide: any JSONB column crossing the
+  `callExtension` boundary (`gear`, `position`, vehicle `damage`/`inventory`, house `storage`) is
+  an array of `[key, value]` pairs, never a bare JSON object — `parseSimpleArray`'s grammar has no
+  object literal, so Postgres's raw JSONB text is now directly valid SQF input with zero
+  conversion code needed in the extension.
+- `civ_cash`/`cop_cash`/`medic_cash` treated as a signed delta with its own idempotency ledger
+  (`applied_request_tokens`), not an absolute-set field — an absolute `save` on physical cash had
+  the same concurrent-double-apply risk `bank_accounts` was split out to avoid; caught before any
+  save code was written against the original design.

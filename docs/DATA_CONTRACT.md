@@ -36,6 +36,27 @@ corrupt an unrelated field on the SQF side anymore — SQF looks fields up by na
 already passes a real SQF array in, no string-parsing involved. Its response is a plain status
 string (no data to key), so it stays simple.
 
+### Why array-of-pairs, not objects
+
+`parseSimpleArray`'s own grammar is explicit: "array consisting of Numbers, Strings, Booleans and
+Arrays of all of the above" — there is no object/map literal (`{...}`) in it at all. So a JSONB
+column like `gear` can't be handed to SQF as a JSON object; it has to be an array of `[key, value]`
+pairs instead — `[["primaryWeapon","arifle_MX_F"], ...]`, never `{"primaryWeapon": "..."}`. This
+is enforced at the schema level too (see the JSONB SHAPE RULE comment at the top of
+`database/schema.sql`), not just documented here and hoped for: every JSONB column that can cross
+this boundary is constrained to that shape, which means Postgres's raw JSONB text is *already*
+valid `parseSimpleArray` input — no JSON-object-to-SQF-array conversion code needed on the C++
+side at all.
+
+### Why no `null`
+
+Same grammar, same reasoning: there's no null/nil literal in a "simple array" either. Where SQL
+would naturally use `NULL` (no department assigned yet, no death ever recorded), this contract
+uses the type's own empty value instead — empty string `""` for text, empty array `[]` for
+array-of-pairs fields — rather than inventing an unsupported representation. The schema backs this
+up: `civ_position`/`cop_position`/`medic_position` are `NOT NULL DEFAULT '[]'::jsonb`, not
+nullable columns.
+
 ## `load` — full record on join
 
 Request (SQF → C++): `"tasdyn_alife" callExtension ["load", [uid]]`
@@ -57,11 +78,11 @@ On `OK`, every key below is present:
 | `civ_cash` / `cop_cash` / `medic_cash` | number | `players.<faction>_cash` | Physical cash on hand, per faction |
 | `civ_bank` / `cop_bank` / `medic_bank` | number | `players.<faction>_bank` | **Cache** — `bank_accounts.balance` is authoritative, this is kept in sync by DB trigger (see `database/schema.sql`), never written independently by application code |
 | `cop_level` / `medic_level` | number | `players.cop_level` / `players.medic_level` | Civilian has no level (no `civ_level` key) |
-| `cop_dept` / `medic_dept` | string or null | `players.cop_dept` / `players.medic_dept` | Civilian has no department |
+| `cop_dept` / `medic_dept` | string | `players.cop_dept` / `players.medic_dept` | Empty string if not yet assigned — **not `null`**, see [Why no `null`](#why-no-null) |
 | `civ_licence` / `cop_licence` / `medic_licence` | array of strings | `players.<faction>_licence` (JSONB) | e.g. `["driver","boat"]` — a set, not a single value |
-| `civ_gear` / `cop_gear` / `medic_gear` | object | `players.<faction>_gear` (JSONB) | Full loadout + virtual items for that faction |
+| `civ_gear` / `cop_gear` / `medic_gear` | array of `[key, value]` pairs | `players.<faction>_gear` (JSONB) | Full loadout + virtual items, e.g. `[["primaryWeapon","arifle_MX_F"],["uniform","U_B_CombatUniform_mcam"]]` — **not a JSON object**, see [Why array-of-pairs, not objects](#why-array-of-pairs-not-objects) |
 | `civ_alive` / `cop_alive` / `medic_alive` | boolean | `players.<faction>_alive` | **Must be checked on spawn.** A player who disconnects dead/unconscious has to resume dead at `*_position`, not respawn fresh — see the comment on `players` in `database/schema.sql` for why this isn't optional (a well-known disconnect-to-escape exploit in this genre) |
-| `civ_position` / `cop_position` / `medic_position` | object or null | `players.<faction>_position` | World position to resume at when `*_alive` is `false`. `null` until the first death is ever recorded for that faction |
+| `civ_position` / `cop_position` / `medic_position` | array of `[key, value]` pairs | `players.<faction>_position` | World position to resume at when `*_alive` is `false`. Empty array (`[]`) until the first death is ever recorded for that faction — **not `null`** |
 | `civ_bounty` | number | `players.civ_bounty` | **Cache** — authoritative source is `wanted_crimes` (sum of outstanding, i.e. `cleared_at IS NULL`, rows), synced by trigger. No `cop_bounty`/`medic_bounty` — the wanted list is civilian-only |
 
 If no row exists for `uid`, the C++ side creates a blank record (all `*_cash`/`*_bank` = 0, empty
@@ -84,8 +105,8 @@ Request (SQF → C++): `"tasdyn_alife" callExtension ["save", [uid, field, value
 |---|---|---|
 | `uid` | string | Same as above. |
 | `field` | string | **An allowlist, not an arbitrary column name** — one of: `name`, `civ_cash`, `cop_cash`, `medic_cash`, `civ_licence`, `cop_licence`, `medic_licence`, `civ_gear`, `cop_gear`, `medic_gear`, `cop_level`, `medic_level`, `cop_dept`, `medic_dept`, `civ_alive`, `cop_alive`, `medic_alive`, `civ_position`, `cop_position`, `medic_position`. Validated server-side against this known set before it ever reaches a query — the same "never trust client input as authoritative" principle as [ANTI_CHEAT.md Layer 1](ANTI_CHEAT.md#layer-1--api-surface-remoteexec-allowlist). |
-| `value` | string | Parsed and range/type-checked server-side against `field`'s real column type before use — never interpolated into SQL. |
-| `requestToken` | string | Idempotency token — see [ANTI_CHEAT.md Layer 2](ANTI_CHEAT.md#layer-2--economic-integrity). A token seen again for this `(account, token)` pair is rejected, not re-applied (enforced by `bank_transactions`' partial unique index, for the banking case). |
+| `value` | string | Meaning depends on `field` — see [Delta vs. absolute-set fields](#delta-vs-absolute-set-fields) below. Always parsed and range/type-checked server-side before use — never interpolated into SQL. For array-of-pairs fields (`*_gear`, `*_position`), this is SQF's `str` of the array — e.g. `str [["primaryWeapon","arifle_MX_F"]]` — which happens to already be valid JSON text, but the C++ side still structurally validates it before writing to the JSONB column rather than trusting that it is. |
+| `requestToken` | string | Idempotency token — required for `civ_cash`/`cop_cash`/`medic_cash`, ignored for every other field (see below). A token seen again for the same player is rejected, not re-applied — checked against `applied_request_tokens` in the same transaction as the cash update, so a check-then-insert race can't slip a duplicate through. |
 
 **`civ_bank`/`cop_bank`/`medic_bank` are deliberately not in the `save` allowlist.** Bank balance
 changes go through a separate `bank_tx` command (deposit/withdrawal/transfer against
@@ -93,11 +114,24 @@ changes go through a separate `bank_tx` command (deposit/withdrawal/transfer aga
 is a ledger-derived number, not free-standing state. That command gets its own contract entry once
 Phase 2's economy work defines the actual transaction types it needs.
 
+### Delta vs. absolute-set fields
+
+- **`civ_cash` / `cop_cash` / `medic_cash`: `value` is a signed delta**, not a new total — e.g.
+  `"-500"` to spend 500. Applied as `civ_cash = civ_cash + delta` (rejected if it would go
+  negative), atomically with the idempotency check above. This is deliberate, not an oversight:
+  physical cash has the exact same concurrent-double-apply risk that `bank_accounts` was split
+  into its own ledger to avoid (two near-simultaneous earns both reading the same starting total
+  and racing to overwrite each other) — an absolute-set `save` on cash would just reintroduce that
+  risk without a ledger to catch it. See `applied_request_tokens` in `database/schema.sql`.
+- **Every other allowlisted field: `value` is the new absolute value.** These don't need the
+  token check — setting `cop_dept` or `civ_gear` to the same value twice in a row is harmless,
+  unlike money, so there's no duplication class to guard against here.
+
 One field per call, not the whole record — keeps this contract small and avoids ever reintroducing
 a wide positional array on the request side either.
 
 Response: plain string, one of `OK`, `ERROR`, or `DUPLICATE` (the idempotency-token-rejected
-case). No data payload — there's nothing to echo back for a single-field write.
+case, cash fields only). No data payload — there's nothing to echo back for a single-field write.
 
 ## Escaping
 
