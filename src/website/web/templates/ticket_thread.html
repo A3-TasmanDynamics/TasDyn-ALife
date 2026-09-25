@@ -12,71 +12,106 @@
 {{end}}
 
 {{define "ticket_body"}}
-<p class="hint">
-  <span class="badge badge-priority-{{.Ticket.Priority}}">{{.Ticket.Priority}}</span>
-  <span class="badge badge-status-{{.Ticket.Status}}">{{.Ticket.Status}}</span>
-  · {{.Ticket.Category}}
-  {{if .IsStaff}}· Requester: {{.Ticket.RequesterName}}{{end}}
-  {{if .Ticket.AssignedTo}} · Assigned to {{.Ticket.AssignedTo}}{{else}} · Unassigned{{end}}
-</p>
-
-{{if .IsStaff}}
-<section class="card">
-  <h2>Staff actions</h2>
-  <div class="button-row">
-    {{if not .Ticket.AssignedTo}}
-      <form method="post" action="/support/tickets/{{.Ticket.ID}}/claim"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="cta secondary" type="submit">Claim</button></form>
-    {{else}}
-      <form method="post" action="/support/tickets/{{.Ticket.ID}}/unassign"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="cta secondary" type="submit">Unassign</button></form>
-    {{end}}
-    {{if ne .Ticket.Status "closed"}}
-      <form method="post" action="/support/tickets/{{.Ticket.ID}}/close"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="cta secondary" type="submit">Close ticket</button></form>
-    {{else}}
-      <form method="post" action="/support/tickets/{{.Ticket.ID}}/reopen"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="cta secondary" type="submit">Reopen ticket</button></form>
-    {{end}}
-    <form method="post" action="/support/tickets/{{.Ticket.ID}}/priority" class="inline-form">
-      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-      <select name="priority" onchange="this.form.submit()">
-        <option value="low" {{if eq .Ticket.Priority "low"}}selected{{end}}>Low</option>
-        <option value="normal" {{if eq .Ticket.Priority "normal"}}selected{{end}}>Normal</option>
-        <option value="high" {{if eq .Ticket.Priority "high"}}selected{{end}}>High</option>
-        <option value="urgent" {{if eq .Ticket.Priority "urgent"}}selected{{end}}>Urgent</option>
-      </select>
-    </form>
-  </div>
-</section>
-{{end}}
-
-<section class="card">
-  <h2>Conversation</h2>
-  <div class="ticket-thread">
-    {{range .Messages}}
-      <div class="ticket-message {{if eq .Source "discord"}}from-discord{{end}} {{if .Internal}}internal-note{{end}}">
-        <div class="ticket-message-meta">
-          {{.AuthorName}} · {{.Source}} · {{.CreatedAt}}
-          {{if .Internal}}<span class="badge badge-internal">Internal Note</span>{{end}}
-        </div>
-        <div class="ticket-message-body">{{.Body}}</div>
+<div class="ticket-layout">
+  <div class="ticket-main">
+    <section class="card">
+      <h2>Conversation</h2>
+      <div class="ticket-thread">
+        {{range .Messages}}
+          <div class="ticket-message {{if eq .Source "discord"}}from-discord{{end}} {{if .Internal}}internal-note{{end}}">
+            <div class="ticket-message-meta">
+              {{.AuthorName}} · {{.Source}} · {{.CreatedAt}}
+              {{if .Internal}}<span class="badge badge-internal">Internal Note</span>{{end}}
+            </div>
+            <div class="ticket-message-body">{{.Body}}</div>
+          </div>
+        {{end}}
       </div>
-    {{end}}
+
+      {{if ne .Ticket.Status "closed"}}
+      <form method="post" action="/tickets/{{.Ticket.ID}}/reply">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <div class="field">
+          <textarea name="body" rows="3" required placeholder="Write a reply..."></textarea>
+        </div>
+        {{if .IsStaff}}
+        <div class="field row">
+          <input type="checkbox" name="internal" value="1" id="reply-internal" />
+          <label for="reply-internal">Internal note (staff only -- never shown to the requester or sent to Discord)</label>
+        </div>
+        {{end}}
+        <button class="cta" type="submit">Reply</button>
+      </form>
+      {{else}}
+      <p class="hint">This ticket is closed.</p>
+      {{end}}
+    </section>
   </div>
 
-  {{if ne .Ticket.Status "closed"}}
-  <form method="post" action="/tickets/{{.Ticket.ID}}/reply">
-    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-    <div class="field">
-      <textarea name="body" rows="3" required placeholder="Write a reply..."></textarea>
-    </div>
+  <div class="ticket-meta-panel">
+    <section class="card">
+      <h2>Ticket</h2>
+      <dl class="meta-list">
+        <dt>Status</dt>
+        <dd><span class="badge badge-status-{{.Ticket.Status}}">{{.Ticket.Status}}</span></dd>
+        <dt>Priority</dt>
+        <dd><span class="badge badge-priority-{{.Ticket.Priority}}">{{.Ticket.Priority}}</span></dd>
+        <dt>Category</dt>
+        <dd>{{.Ticket.Category}}</dd>
+        <dt>Assigned to</dt>
+        <dd>{{if .Ticket.AssignedTo}}{{.Ticket.AssignedTo}}{{else}}<span class="hint">Unassigned</span>{{end}}</dd>
+        <dt>Opened</dt>
+        <dd>{{.Ticket.CreatedAt}}</dd>
+        <dt>Last updated</dt>
+        <dd>{{.Ticket.UpdatedAt}}</dd>
+      </dl>
+    </section>
+
     {{if .IsStaff}}
-    <div class="field row">
-      <input type="checkbox" name="internal" value="1" id="reply-internal" />
-      <label for="reply-internal">Internal note (staff only -- never shown to the requester or sent to Discord)</label>
-    </div>
+    <section class="card">
+      <h2>Requester</h2>
+      <dl class="meta-list">
+        <dt>Name</dt>
+        <dd>{{.Ticket.RequesterName}}</dd>
+        <dt>Steam UID</dt>
+        <dd class="mono">{{.Ticket.RequesterUID}}</dd>
+        <dt>Discord</dt>
+        <dd>
+          {{if .Ticket.RequesterDiscordUsername}}
+            {{.Ticket.RequesterDiscordUsername}} <span class="hint mono">({{.Ticket.RequesterDiscordID}})</span>
+          {{else}}
+            <span class="hint">Not linked</span>
+          {{end}}
+        </dd>
+      </dl>
+    </section>
+
+    <section class="card">
+      <h2>Actions</h2>
+      <div class="button-row wrap">
+        {{if not .Ticket.AssignedTo}}
+          <form method="post" action="/support/tickets/{{.Ticket.ID}}/claim"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="cta secondary" type="submit">Claim</button></form>
+        {{else}}
+          <form method="post" action="/support/tickets/{{.Ticket.ID}}/unassign"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="cta secondary" type="submit">Unassign</button></form>
+        {{end}}
+        {{if ne .Ticket.Status "closed"}}
+          <form method="post" action="/support/tickets/{{.Ticket.ID}}/close"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="cta secondary" type="submit">Close</button></form>
+        {{else}}
+          <form method="post" action="/support/tickets/{{.Ticket.ID}}/reopen"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="cta secondary" type="submit">Reopen</button></form>
+        {{end}}
+      </div>
+      <form method="post" action="/support/tickets/{{.Ticket.ID}}/priority" class="field" style="margin-top:12px;">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <label>Priority</label>
+        <select name="priority" onchange="this.form.submit()">
+          <option value="low" {{if eq .Ticket.Priority "low"}}selected{{end}}>Low</option>
+          <option value="normal" {{if eq .Ticket.Priority "normal"}}selected{{end}}>Normal</option>
+          <option value="high" {{if eq .Ticket.Priority "high"}}selected{{end}}>High</option>
+          <option value="urgent" {{if eq .Ticket.Priority "urgent"}}selected{{end}}>Urgent</option>
+        </select>
+      </form>
+    </section>
     {{end}}
-    <button class="cta" type="submit">Reply</button>
-  </form>
-  {{else}}
-  <p class="hint">This ticket is closed.</p>
-  {{end}}
-</section>
+  </div>
+</div>
 {{end}}

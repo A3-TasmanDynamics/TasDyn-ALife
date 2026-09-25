@@ -280,9 +280,22 @@ The concrete features that distinguish this from a plain forum thread:
   (urgent → high → normal → low), then age within each tier.
 - **Queue stats** — Open, Unassigned, Assigned to Me, Urgent counts at the top of the panel, so
   triage priorities are visible before scrolling any list.
-- **Filters** — status (open+pending / open only / pending only / closed / all), priority, and
-  assignment (everyone / assigned to me / unassigned), via plain query-string GETs — no client-side
+- **Filters** — status (open+pending / open only / pending only / closed / all), priority,
+  category, and assignment (everyone / assigned to me / unassigned), plus a **search** box
+  (subject, player name, or Steam UID — one bound parameter reused across all three `ILIKE`
+  clauses, not three separately-trusted inputs), via plain query-string GETs — no client-side
   filtering, consistent with this app having no SPA framework anywhere else.
+- **Requester identity** — the queue, dashboard, and ticket detail page all show the requester's
+  Steam64 UID (`players.uid`) alongside their name; the ticket detail page additionally shows
+  their linked Discord (username + ID, or "Not linked") in a dedicated Requester panel — staff
+  need this to cross-reference bans, Discord reports, and in-game identity without leaving the
+  ticket.
+- **Ticket detail page** — a two-column layout for staff: conversation + reply on the left, a
+  metadata sidebar on the right (Status/Priority/Category/Assigned/timestamps, the Requester
+  identity block above, and the Claim/Unassign/Close/Reopen/priority actions) — the standard
+  layout real ticketing systems (Zendesk, Freshdesk, Jira Service Desk) use to keep a ticket's
+  properties visible without scrolling away from the conversation. A player viewing their own
+  ticket gets the conversation only, no metadata panel (staff-only information stays staff-only).
 - **Claim / Unassign** — `assigned_staff_id`, set and cleared; any staff member with Support Panel
   access can unassign any ticket (not just their own), same as any of them could claim an unclaimed
   one — reassignment coordination is a team/Discord problem, not something this app enforces.

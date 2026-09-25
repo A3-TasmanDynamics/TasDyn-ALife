@@ -271,3 +271,20 @@
   browser width (padding only, no `max-width`). Matters most for the Support Panel's sidebar+table
   layout and the ticket queue, which had noticeably wasted space on anything wider than a laptop
   screen.
+- `src/website`: reworked the ticket UI toward a fully-featured ticketing system per explicit
+  request -- requester identity, richer filtering, and a proper two-column ticket detail layout.
+  - **Requester identity everywhere**: the queue, dashboard, and ticket detail page now show the
+    requester's Steam64 UID next to their name; the ticket detail page additionally shows their
+    linked Discord (username + ID, or "Not linked") in a dedicated Requester panel.
+  - **Queue filters**: added category and a search box (subject / player name / Steam UID) to the
+    existing status/priority/assigned filters -- the search uses one bound parameter reused across
+    all three `ILIKE` clauses, not three separately-trusted inputs.
+  - **Ticket detail page redesigned** into the two-column layout real ticketing systems (Zendesk,
+    Freshdesk, Jira Service Desk) use: conversation + reply on the left, a metadata sidebar on the
+    right (status/priority/category/assigned/timestamps, the requester identity block, and the
+    claim/unassign/close/reopen/priority actions) -- ticket properties stay visible without
+    scrolling away from the conversation. A player viewing their own ticket still gets the
+    conversation only, no metadata panel.
+  - Verified end-to-end against the real dev DB: search matches on subject and on a Steam UID
+    fragment, a no-match search correctly shows the empty state, and the metadata/Requester panel
+    renders the real ticket's actual Steam UID. Disposable test account cleaned up afterward.

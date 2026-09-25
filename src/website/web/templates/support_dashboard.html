@@ -35,7 +35,7 @@
             <tr>
               <td><span class="badge badge-priority-{{.Priority}}">{{.Priority}}</span></td>
               <td>{{.Subject}}</td>
-              <td>{{.RequesterName}}</td>
+              <td>{{.RequesterName}}<div class="hint mono">{{.RequesterUID}}</div></td>
               <td><span class="badge badge-status-{{.Status}}">{{.Status}}</span></td>
               <td>{{.CreatedAt}}</td>
               <td><a href="/tickets/{{.ID}}">Open</a></td>
