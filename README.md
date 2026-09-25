@@ -1,12 +1,24 @@
-# TasDyn-ALife
+<div align="center">
 
-![Status](https://img.shields.io/badge/Status-Concept%20%2F%20Pre--Alpha-orange)
-![Category](https://img.shields.io/badge/Category-Roleplay%20Server-green)
-![Platform](https://img.shields.io/badge/Platform-Arma%203%20(Vanilla)-blue)
+<img src="docs/assets/banner.svg" alt="TasDyn-ALife — Arma 3 Roleplay, PostgreSQL-Backed, Vanilla Client" width="100%"/>
 
-*A high-performance Arma 3 Roleplay server for the Oceania/Australia region. Vanilla client (no mods required), PostgreSQL-backed, built on a custom C++ bridge instead of the traditional extDB3/MySQL stack.*
+[![Status: Concept / Pre-Alpha](https://img.shields.io/badge/status-concept%20%2F%20pre--alpha-f59e0b)](#status)
+[![Platform: Arma 3 (Vanilla)](https://img.shields.io/badge/platform-Arma%203%20(Vanilla)-0f172a)](https://arma3.com/)
+[![Backend: PostgreSQL](https://img.shields.io/badge/backend-PostgreSQL-0f172a)](https://www.postgresql.org/)
+[![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/Wt4ahmxVrs)
 
-TasDyn-ALife aims to recreate the "Golden Era" (2014–2017) Arma 3 Life experience with modern (2025+) server architecture — enterprise-grade data handling, server-authoritative game logic, and heuristic anti-cheat, without requiring players to install any client-side mods.
+</div>
+
+---
+
+**A Tasman Dynamics Roleplay Server**
+
+TasDyn-ALife is a high-performance Arma 3 Roleplay server for the Oceania/Australia region. Vanilla
+client (no mods required), PostgreSQL-backed, built on a custom C++ bridge instead of the
+traditional extDB3/MySQL stack. It aims to recreate the "Golden Era" (2014–2017) Arma 3 Life
+experience with modern (2025+) server architecture — enterprise-grade data handling,
+server-authoritative game logic, and heuristic anti-cheat, without requiring players to install any
+client-side mods.
 
 ---
 
@@ -68,6 +80,7 @@ Since client memory can't be scanned on a vanilla client:
 
 ```text
 TasDyn-ALife/
+├── .github/workflows/   # Delivery-board sync (org-standard CI)
 ├── database/            # PostgreSQL schema (single source of truth — see database/README.md)
 ├── src/
 │   ├── cpp_extension/   # C++ bridge (the DB extension DLL)
@@ -75,12 +88,15 @@ TasDyn-ALife/
 │   ├── web_dashboard/   # NuxtJS admin panel (planned)
 │   └── discord_bot/     # Node.js bot (planned)
 ├── docs/                # Design docs (data contracts, architecture decisions)
+│   └── assets/          # Banner and brand assets
 └── server_dist/         # Local server deploy target — git-ignored, never committed
 ```
 
 ---
 
 ## 5. Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for branching, PR, and data-contract conventions. In short:
 
 * Work happens on feature branches, merged via pull request — nothing is pushed directly to `main`.
 * Never commit real credentials. Copy `config.ini.example` to `config.ini` locally; `config.ini` is git-ignored.
@@ -91,3 +107,11 @@ TasDyn-ALife/
 ## 6. License
 
 Proprietary — © Tasman Dynamics. All rights reserved. Source is public for transparency; no reuse, redistribution, or derivative works without written permission.
+
+---
+
+<div align="center">
+
+Questions about the project? [Join the Tasman Dynamics Discord](https://discord.gg/Wt4ahmxVrs).
+
+</div>
