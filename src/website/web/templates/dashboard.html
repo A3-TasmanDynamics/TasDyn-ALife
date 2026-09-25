@@ -38,6 +38,76 @@
 </section>
 
 <section class="card">
+  <h2>Send Money</h2>
+
+  <div class="field-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px;">
+    <div>
+      <p class="hint">Move between your own faction accounts.</p>
+      <form method="post" action="/dashboard/transfer">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <input type="hidden" name="transfer_token" value="{{.TransferToken}}">
+        <input type="hidden" name="mode" value="own">
+        <div class="field">
+          <label>From</label>
+          <select name="from_faction">
+            <option value="civilian">Civilian</option>
+            <option value="police">Police</option>
+            <option value="medic">Medic</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>To</label>
+          <select name="to_faction">
+            <option value="police">Police</option>
+            <option value="civilian">Civilian</option>
+            <option value="medic">Medic</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Amount ($)</label>
+          <input type="number" name="amount" min="1" required />
+        </div>
+        <button class="cta secondary" type="submit">Move Money</button>
+      </form>
+    </div>
+
+    <div>
+      <p class="hint">Send to another player, by their exact in-game name.</p>
+      <form method="post" action="/dashboard/transfer">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <input type="hidden" name="transfer_token" value="{{.TransferToken}}">
+        <input type="hidden" name="mode" value="player">
+        <div class="field">
+          <label>From (your account)</label>
+          <select name="from_faction">
+            <option value="civilian">Civilian</option>
+            <option value="police">Police</option>
+            <option value="medic">Medic</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Recipient's name</label>
+          <input type="text" name="recipient_name" required />
+        </div>
+        <div class="field">
+          <label>Recipient's account</label>
+          <select name="recipient_faction">
+            <option value="civilian">Civilian</option>
+            <option value="police">Police</option>
+            <option value="medic">Medic</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Amount ($)</label>
+          <input type="number" name="amount" min="1" required />
+        </div>
+        <button class="cta secondary" type="submit">Send Money</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<section class="card">
   <h2>Connect Discord</h2>
   {{if .Player.DiscordUsername}}
     <p>Linked to <strong>{{.Player.DiscordUsername}}</strong>.</p>
@@ -45,6 +115,7 @@
     <p>Link your Discord account either way:</p>
     <a class="cta secondary" href="/auth/discord/connect">Connect with Discord</a>
     <form method="post" action="/dashboard/discord/link-code" class="inline-form">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
       <button class="cta secondary" type="submit">Generate a /link code instead</button>
     </form>
     {{if .DiscordLinkCode}}

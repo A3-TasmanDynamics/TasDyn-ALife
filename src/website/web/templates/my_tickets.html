@@ -4,6 +4,7 @@
 <section class="card">
   <h2>Open a new ticket</h2>
   <form method="post" action="/tickets">
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
     <div class="field">
       <label>Subject</label>
       <input type="text" name="subject" maxlength="200" required />

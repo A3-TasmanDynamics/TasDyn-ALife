@@ -20,7 +20,7 @@
         {{if .Session.AdminPanelAccess}}<a href="/admin">Admin Panel</a>{{end}}
         {{if .Session.SupportPanelAccess}}<a href="/support">Support Panel</a>{{end}}
         <span class="nav-user">{{.Session.Name}}</span>
-        <form method="post" action="/auth/logout" class="inline-form"><button class="link-button" type="submit">Sign out</button></form>
+        <form method="post" action="/auth/logout" class="inline-form"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="link-button" type="submit">Sign out</button></form>
       {{else}}
         <a class="steam-login" href="/auth/steam/login">Sign in with Steam</a>
       {{end}}

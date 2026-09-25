@@ -127,3 +127,22 @@
     applied for real to the local dev DB (not just a rolled-back dry run this time), with the two
     smoke-test player rows deleted afterward.
   - Additional schema: `players.discord_id`/`discord_username`, `discord_link_codes`.
+- `src/website`: member-portal bank transfers (`internal/bank`) -- both between a player's own
+  faction accounts and to another player by exact name, idempotency-tokened (a fresh token per
+  rendered form, so a double-click or back-button resubmit can't double-spend) and row-locked
+  (`SELECT ... FOR UPDATE`, fixed ascending-account-ID order to avoid deadlocking an opposite-
+  direction concurrent transfer) against races. Unblocked by actually checking the open question
+  `docs/WEBSITE.md` §5 flagged rather than leaving it flagged: `fn_save.sqf`'s field allowlist has
+  no `*_bank` entries at all (only `*_cash` is saveable), and the C++ extension's own `db.cpp`
+  confirms `bank_accounts` is only ever seeded and read, never written by `save` -- there is no
+  live in-game write path this could race against. Fixed a real gap the investigation surfaced
+  along the way: a player who signs up on the website before ever connecting in-game had no
+  `bank_accounts` rows at all (only the C++ extension's first-load path seeded them) --
+  `FindOrCreatePlayerBySteamUID` now seeds the same three rows the game does.
+- `src/website`: CSRF protection (`internal/csrf`, double-submit cookie pattern) wired into every
+  state-changing route before the money-moving feature above shipped, not after.
+- Verified the whole set end-to-end against the real local dev DB: own-account transfer, player-
+  to-player transfer, insufficient-funds rejection, unknown/ambiguous-recipient rejection, a
+  resubmitted-token replay (confirmed no double-apply), and a rejected request missing its CSRF
+  token -- ledger rows (signed amounts, `balance_after`, shared per-pair request tokens) checked
+  by hand against what the code should have produced. Smoke-test player rows deleted afterward.

@@ -7,12 +7,12 @@
   <h2>Staff actions</h2>
   <div class="button-row">
     {{if not .Ticket.AssignedTo}}
-      <form method="post" action="/support/tickets/{{.Ticket.ID}}/claim"><button class="cta secondary" type="submit">Claim</button></form>
+      <form method="post" action="/support/tickets/{{.Ticket.ID}}/claim"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="cta secondary" type="submit">Claim</button></form>
     {{end}}
     {{if ne .Ticket.Status "closed"}}
-      <form method="post" action="/support/tickets/{{.Ticket.ID}}/close"><button class="cta secondary" type="submit">Close ticket</button></form>
+      <form method="post" action="/support/tickets/{{.Ticket.ID}}/close"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="cta secondary" type="submit">Close ticket</button></form>
     {{else}}
-      <form method="post" action="/support/tickets/{{.Ticket.ID}}/reopen"><button class="cta secondary" type="submit">Reopen ticket</button></form>
+      <form method="post" action="/support/tickets/{{.Ticket.ID}}/reopen"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="cta secondary" type="submit">Reopen ticket</button></form>
     {{end}}
   </div>
 </section>
@@ -31,6 +31,7 @@
 
   {{if ne .Ticket.Status "closed"}}
   <form method="post" action="/tickets/{{.Ticket.ID}}/reply">
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
     <div class="field">
       <textarea name="body" rows="3" required placeholder="Write a reply..."></textarea>
     </div>
