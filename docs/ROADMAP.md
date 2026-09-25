@@ -98,7 +98,13 @@ fully closed out despite most of its individual tasks being checked off above.
 
 The biggest phase — this is what makes it a *Life* server rather than a database demo.
 
-- [ ] Faction spawn/selection: West (Police/APF), Independent (Medics/AMS), Civilian.
+- [x] Faction spawn/selection scaffolded ahead of schedule, during Phase 1's mission-scaffold work:
+      `spawnMenu.hpp` dialog, config-driven spawn points (`config/spawn_config.hpp`), and
+      `ALife_fnc_spawnPlayer` (server-authoritative — a player whose stored `<faction>_alive` is
+      `false` has their spawn-point request ignored and resumes at `<faction>_position` instead,
+      closing the loop on the disconnect-to-escape protection `database/schema.sql` was built
+      around). **Not yet tested in a running mission** (same `mission.sqm` blocker as Phase 1) —
+      and gear/loadout equipping is explicitly not wired in yet, see `src/mission/README.md`.
 - [ ] Civilian: 2–3 legal jobs at launch (pick the simplest to implement well — e.g. mining,
       trucking; defer fishing/uranium to post-launch).
 - [ ] Economy core: physical cash vs. digital bank, a basic buy/sell shop system, one dynamic
