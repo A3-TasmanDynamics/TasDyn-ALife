@@ -59,11 +59,11 @@ environment reproducible from a clean clone. ✅ **Phase 0 complete.**
       literals). `load` creates a blank record + one `bank_accounts` row per faction on first
       join; `save`'s cash fields are a delta with an idempotency-token check
       (`applied_request_tokens`), everything else is absolute-set. See `docs/DATA_CONTRACT.md`.
-- [x] SQF request/response framework skeleton: `src/mission/` scaffolded — `ALife_fnc_load`/
+- [x] SQF request/response framework skeleton: `src/ALife.altis/` scaffolded — `ALife_fnc_load`/
       `ALife_fnc_save` implementing `docs/DATA_CONTRACT.md` exactly, `initPlayerServer.sqf` as the
       join hook, `initServer.sqf`'s `HandleDisconnect` hook for the alive/position persistence.
       **Not yet tested inside a running Arma mission** (no Arma install on this dev machine,
-      `mission.sqm` itself also isn't generated here — see `src/mission/README.md`) — the
+      `mission.sqm` itself also isn't generated here — see `src/ALife.altis/README.md`) — the
       C++/DB side this calls into is separately verified (PR #57/#60).
 - [x] `CfgRemoteExec` allowlist: `CfgRemoteExec.hpp` — `mode = 1` (whitelist-only), the two
       Phase 1 functions listed, `allowedTargets = 2` (server-only). Grows with every new server
@@ -91,7 +91,7 @@ against a real Postgres instance, with no untested code path in the save/load co
 server-side function is network-callable unless it's on the `CfgRemoteExec` allowlist. **The
 C++/DB half of this is done and verified (PR #57/#60, #35's `CfgRemoteExec.hpp`); the disconnect/
 reconnect cycle itself hasn't been run inside an actual Arma mission yet** — `mission.sqm` doesn't
-exist (Eden editor output, not generated here — see `src/mission/README.md`), so this phase isn't
+exist (Eden editor output, not generated here — see `src/ALife.altis/README.md`), so this phase isn't
 fully closed out despite most of its individual tasks being checked off above.
 
 ## Phase 2 — Core Gameplay Loop *(2026-10-27 → 2026-11-23)*
@@ -104,7 +104,7 @@ The biggest phase — this is what makes it a *Life* server rather than a databa
       `false` has their spawn-point request ignored and resumes at `<faction>_position` instead,
       closing the loop on the disconnect-to-escape protection `database/schema.sql` was built
       around). **Not yet tested in a running mission** (same `mission.sqm` blocker as Phase 1) —
-      and gear/loadout equipping is explicitly not wired in yet, see `src/mission/README.md`.
+      and gear/loadout equipping is explicitly not wired in yet, see `src/ALife.altis/README.md`.
 - [ ] Civilian: 2–3 legal jobs at launch (pick the simplest to implement well — e.g. mining,
       trucking; defer fishing/uranium to post-launch).
 - [ ] Economy core: physical cash vs. digital bank, a basic buy/sell shop system, one dynamic
