@@ -208,6 +208,7 @@ property staff already expect from in-game kicks.
 | player_id | FK → players | who opened it |
 | subject | text | |
 | status | text, check | `open` / `pending` / `closed` |
+| priority | text, check, default `normal` | `low` / `normal` / `high` / `urgent` — §8 |
 | category | text | e.g. `billing`, `report`, `bug`, `appeal` — free-standing list, not FK'd to anything else |
 | assigned_staff_id | FK → players, nullable | claimed by, null = unclaimed |
 | discord_thread_id | text, nullable | Discord thread this ticket mirrors to, §9 |
@@ -224,6 +225,7 @@ property staff already expect from in-game kicks.
 | author_player_id | FK → players, nullable | null = system message (e.g. "ticket closed") |
 | body | text | |
 | source | text, check | `web` / `discord` — which side this message originated on |
+| internal | boolean, default false | staff-only note, never shown to the requester or mirrored to Discord — §8 |
 | discord_message_id | text, nullable | for edit/delete mirroring, if implemented |
 | created_at | timestamptz | |
 
@@ -256,9 +258,30 @@ whether the action happened in-game or on the web, not two logs staff have to cr
 
 ## 8. Support Panel
 
-- **Queue** — open/pending tickets, filterable by category, assigned/unassigned.
-- **Claim** — sets `assigned_staff_id`.
-- **Thread view** — `support_ticket_messages` for a ticket, reply box, close/reopen.
+Built out as a proper IT-support-portal, not a bare table — the concrete features that distinguish
+one from a plain forum thread:
+
+- **Priority** (`support_tickets.priority`: `low`/`normal`/`high`/`urgent`) — the submitter picks
+  one when opening a ticket (their own sense of urgency, not a locked-in SLA commitment); staff can
+  re-triage it from the ticket page once they've actually looked. The queue sorts by priority first
+  (urgent → high → normal → low), then age within each tier.
+- **Queue stats** — Open, Unassigned, Assigned to Me, Urgent counts at the top of the panel, so
+  triage priorities are visible before scrolling any list.
+- **Filters** — status (open+pending / open only / pending only / closed / all), priority, and
+  assignment (everyone / assigned to me / unassigned), via plain query-string GETs — no client-side
+  filtering, consistent with this app having no SPA framework anywhere else.
+- **Claim / Unassign** — `assigned_staff_id`, set and cleared; any staff member with Support Panel
+  access can unassign any ticket (not just their own), same as any of them could claim an unclaimed
+  one — reassignment coordination is a team/Discord problem, not something this app enforces.
+- **Internal notes** (`support_ticket_messages.internal`) — a staff-only comment on a ticket, never
+  shown to the requester and never mirrored to Discord. Filtered out **in the SQL query itself**
+  for a non-staff viewer (`WHERE ... AND (NOT internal OR $isStaff)`), not just hidden by the
+  template — the content never reaches the page as hidden markup a curious player could inspect.
+  Can only be created by a request that already has Support Panel access; a raw POST from a
+  player's own session can't set the flag no matter what it submits, since the handler re-derives
+  "is this submitter staff" from the session, not from the form.
+- **Thread view** — priority/status badges, requester name (staff only), reply box, close/reopen,
+  the internal-note toggle above.
 - A player's own **My Tickets** view lives in the member portal (§5), not here — a ticket is one
   row viewed from two different access levels (owner vs. staff), not two separate objects.
 

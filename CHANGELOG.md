@@ -208,3 +208,29 @@
   classname, so it's not yet confirmed as the actual cause rather than a coincidence. Flagged for
   the user rather than guessed at further; not something to unilaterally change in a
   user-authored `mission.sqm` without discussing it first.
+- Fixed a real login bug found while actually testing Steam sign-in end-to-end: `clientIP()`
+  (`src/website/internal/auth/session.go`) hand-rolled stripping the port off `r.RemoteAddr` by
+  finding the last colon, which breaks on IPv6 (`r.RemoteAddr` is `"[::1]:PORT"` for a local
+  browser hitting `localhost` -- exactly the common case) by leaving the brackets in, which
+  Postgres's `inet` column then rejects outright. Every local Steam login was failing with
+  "Something went wrong signing you in." until this was fixed -- replaced with `net.SplitHostPort`,
+  which handles IPv6 correctly. Verified against a real Steam login end-to-end after the fix.
+- `src/website`: reworked the Support Panel into a proper IT-support-portal, not a bare table --
+  priority (`support_tickets.priority`: `low`/`normal`/`high`/`urgent`, picked by the submitter
+  when opening a ticket, re-triageable by staff afterward; the queue sorts by priority first, then
+  age), queue stats (Open/Unassigned/Assigned to Me/Urgent counts), filters (status/priority/
+  assignment via plain query-string GETs, no client-side filtering), Claim/Unassign, and
+  staff-only **internal notes** (`support_ticket_messages.internal`) -- never shown to the
+  requester, never mirrored to Discord, filtered out in the SQL query itself for a non-staff
+  viewer rather than just hidden by the template, so the content never reaches the page as hidden
+  markup a curious player could inspect. A raw POST from a player's own session can't set the
+  internal flag either, since the handler re-derives "is this submitter staff" from the session,
+  not from the submitted form.
+  - Verified end-to-end with disposable test accounts against the real dev DB: priority-sorted
+    queue ordering (urgent → high → normal → low), all three filters (status/priority/assigned),
+    claim/unassign, priority re-triage, and internal-note visibility -- confirmed staff sees the
+    note and the ticket's own owner gets zero matches for it even in the raw HTTP response, not
+    just "the button to see it is missing" from their view.
+  - Also caught (during testing, not by inspection) that the real dev DB already had a ticket from
+    live use this session -- left untouched, only the disposable test accounts and their tickets
+    were cleaned up afterward.

@@ -147,6 +147,8 @@ func run() error {
 		r.Use(auth.RequireSupportPanel)
 		r.Get("/support", d.SupportQueue)
 		r.Post("/support/tickets/{id}/claim", d.ClaimTicket)
+		r.Post("/support/tickets/{id}/unassign", d.UnassignTicket)
+		r.Post("/support/tickets/{id}/priority", d.SetTicketPriority)
 		r.Post("/support/tickets/{id}/close", d.CloseTicket)
 		r.Post("/support/tickets/{id}/reopen", d.ReopenTicket)
 	})

@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"net"
 	"net/http"
 	"time"
 
@@ -256,18 +257,18 @@ func clientIP(r *http.Request) string {
 	// No reverse-proxy header trust (X-Forwarded-For) configured yet -- add
 	// that only once the real deployment topology (which proxy, if any) is
 	// known, since trusting it blindly lets a client spoof its own logged IP.
-	host := r.RemoteAddr
-	if i := lastColon(host); i >= 0 {
-		return host[:i]
+	//
+	// net.SplitHostPort, not a hand-rolled "find the last colon" -- that
+	// approach breaks on an IPv6 RemoteAddr like "[::1]:59271" (which is
+	// exactly what a local browser hitting localhost produces): the last
+	// colon sits before the port as intended, but the result still carries
+	// the "[...]" brackets net/http wraps IPv6 hosts in, and Postgres's
+	// `inet` column rejects bracketed input outright (invalid input syntax
+	// for type inet) -- SplitHostPort strips them correctly instead of
+	// needing that as a separate step.
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
 	}
 	return host
-}
-
-func lastColon(s string) int {
-	for i := len(s) - 1; i >= 0; i-- {
-		if s[i] == ':' {
-			return i
-		}
-	}
-	return -1
 }
