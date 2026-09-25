@@ -43,8 +43,9 @@ environment reproducible from a clean clone.
 
 ## Phase 1 — Core Bridge & Persistence *(2026-10-06 → 2026-10-26)*
 
-- [ ] C++ extension skeleton: `RVExtension`/`RVExtensionArgs` entry points, `libpqxx` connection
-      pool, config loading from `config.ini`.
+- [ ] C++ extension skeleton: `RVExtension`/`RVExtensionArgs` entry points, `libpq` (the C client
+      library — ships with the Postgres server install, no vcpkg needed) connection, config
+      loading from `config.ini`.
 - [ ] `cmd_save` / `cmd_load` implemented against the Phase 0 schema, **prepared statements
       only** — no hand-built SQL strings.
 - [ ] SQF request/response framework skeleton: the "Client Requests, Server Decides" pattern —

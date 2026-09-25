@@ -47,7 +47,10 @@ Unlike traditional vanilla servers that rely on slow SQF-based MySQL bridges (ex
 * **Database:** PostgreSQL 16+
   * Superior JSONB handling for inventory, stricter data types, enterprise reliability.
 * **Bridge:** Custom C++ extension (Windows DLL, `RVExtension`/`RVExtensionArgs`)
-  * Handles database I/O via `libpqxx` with **prepared statements only** — no hand-built SQL strings.
+  * Handles database I/O via raw **libpq** (the C client library, `PQprepare`/`PQexecPrepared`) with
+    **prepared statements only** — no hand-built SQL strings. Chosen over `libpqxx` because it ships
+    with every PostgreSQL server install (headers, import lib, and runtime DLL all included) —
+    no extra dependency-management tooling (vcpkg, etc.) needed to build the extension.
   * Offloads heavy calculation (anti-cheat distance checks, economy balancing) out of SQF.
 
 ### Frontend (Web & Admin) — planned
