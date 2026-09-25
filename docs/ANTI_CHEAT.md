@@ -82,6 +82,22 @@ Directly addresses Vector 1, and is where the prototype actually broke:
   lands.
 - Client never holds an authoritative balance — the displayed cash/bank figure is always a
   server push, never a value the client can locally mutate and have honored.
+- **Specific dupe patterns to test against** (the "toolless" methods that don't need an external
+  tool, just bad server-side assumptions — these are the concrete cases the layer above needs to
+  actually survive, not just a general promise of "transaction locking"):
+  - **Death-race dupe**: item transferred to a container in the same tick a player dies, so both
+    the death-drop logic and the transfer logic think they own the item.
+  - **Vehicle-exit dupe**: item moved into a vehicle cargo the same tick a player exits/the vehicle
+    despawns, similarly double-counted by two code paths that both think they're authoritative.
+  - **Trade-race dupe**: two players trade the same item simultaneously from two different client
+    requests before the first trade's DB write completes.
+  - **Container desync dupe**: client-side container UI state drifts from the server's actual
+    inventory record (e.g. after a reconnect mid-transaction), and the next action is built against
+    the stale client view instead of a fresh server-authoritative read.
+  - Idempotency tokens (above) catch the request-replay shape of these; the container/inventory
+    code additionally needs to re-read current state from the DB immediately before every mutation
+    rather than trusting whatever state the request implies — replay protection alone doesn't fix
+    a genuine race between two different legitimate-looking requests.
 
 ### Layer 3 — Movement & behavior heuristics
 
@@ -100,6 +116,17 @@ Directly addresses Vectors 3 and 4:
   to it is a near-zero-false-positive signal that a generic cheat menu is loaded and active.
 - Rate-limiting of suspicious action bursts (e.g. dozens of "sell" requests inside one second)
   feeds the same alerting path as the two checks above, even before a hard threshold trips.
+- **Continuous re-checks, not just on-join**: all of the above run on a recurring interval for the
+  whole session, not only at connect time — a client that cheats clean at join and goes hot later
+  is exactly the case a join-time-only check misses.
+- **Repeat-offense tracking**: flags accumulate per-UID across a session (and across sessions,
+  since they're DB-backed) rather than resetting on each individual check — a player who trips
+  three medium-confidence signals in an hour is a materially different case than one who trips one,
+  even though no single signal alone crossed the high-confidence bar.
+- **First-time player screening**: a UID's first session runs with a tighter movement-threshold
+  margin and a shorter idempotency debounce window than the tuned defaults — new accounts are
+  watched more closely by default, relaxing to normal thresholds after one clean session. Surfaced
+  to staff via [ADMIN_TOOLS.md §8](ADMIN_TOOLS.md#8-access-control-banlist-and-reporting).
 
 ### Layer 4 — Response & ops
 
@@ -118,23 +145,30 @@ All flags route through the audit-logging pattern already established for
 severity, one routed channel" shape, so admin alerting doesn't need a second bespoke system
 invented just for this server.
 
-Admin tooling (kick/ban, teleport-to, spectate — already tracked in Phase 3) is what turns a flag
-into an actual action.
+Admin tooling is what turns a flag into an actual action — [ADMIN_TOOLS.md §6's anti-cheat flag
+review panel](ADMIN_TOOLS.md#6-menu-sections) (Admin tier) is the concrete in-game surface for
+this table, not just a design intention.
 
 ### Layer 5 — Post-launch maturity
 
-Explicitly deferred past the 2026-12-26 launch (see
-[ROADMAP.md](ROADMAP.md#post-launch--fast-follow-explicitly-out-of-scope-for-the-3-month-target)):
+Explicitly deferred past launch (see
+[ROADMAP.md](ROADMAP.md#post-launch--fast-follow-explicitly-out-of-scope-for-launch)):
 tuning thresholds against real player data, expanding the honeypot variable set, reviewing
 flagged-event logs for patterns, and revisiting whatever Layer 3 margins turned out too
 tight/loose in practice.
 
-## 4. What ships for the 2026-12-26 launch
+## 4. What ships for launch
 
 Everything in Layers 0–4 above is launch-scope — none of it was in the original two-bullet
 version of this plan except the movement check and the honeypot variables. Layer 5 is the only
 part explicitly pushed post-launch, and that's a deliberate call, not an oversight: better to ship
 four solid layers than five half-tuned ones.
+
+The launch *date* itself is a separate question from this doc's scope. It already moved once —
+see [ROADMAP.md](ROADMAP.md) and [ADMIN_TOOLS.md §11](ADMIN_TOOLS.md#11-timeline-impact--the-honest-part)
+for why: the admin-tooling side of this project grew from "basic tooling" to feature parity with
+two commercial products, launch-critical, and that revised estimate is itself flagged as a
+proposal rather than a settled fact.
 
 ## 5. Explicitly out of scope
 
@@ -144,7 +178,13 @@ Said plainly, because pretending otherwise would be worse than admitting it:
   architecture can detect.** No purely server-side, no-required-client-mod design can. BattlEye
   (Layer 0) catches the known/signature-matched tools in this category; anything novel or
   undetected by BattlEye's filters gets through. This is a real, permanent limitation of the
-  vanilla-client premise, not a gap this doc's design closes.
+  vanilla-client premise, not a gap this doc's design closes. Worth noting: this isn't us falling
+  short of a bar commercial competitors clear either — [Fini Anti-Hack & Admin Tools' own product
+  page](https://bytex.market/products/item/7iclegb5zmytw3d22q3l/Fini%20Anti-Hack%20%26%20Admin%20Tools)
+  explicitly states it doesn't detect memory-based cheats like Aurora, and can't fix
+  framework-level exploits (e.g. jailing exploits) either — that second one is on this project's
+  own SQF framework correctness, covered by the data-contract discipline elsewhere in the roadmap,
+  not by an anti-cheat layer at all.
 - **Mitigation, not prevention**: the one thing actually in the framework's control is *what
   data the server sends in the first place*. Vector 5 (information leakage) is where this
   matters — prefer targeted `remoteExec` to the specific clients who need a piece of state over
