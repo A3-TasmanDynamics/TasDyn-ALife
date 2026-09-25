@@ -1,0 +1,55 @@
+{{define "content"}}
+<h1 class="page-title">Dashboard</h1>
+
+<section class="stat-grid">
+  <div class="card">
+    <h2>Civilian</h2>
+    <p>Cash: ${{.Player.CivCash}}</p>
+    <p>Bank: ${{.Player.CivBank}}</p>
+    <p>Playtime: {{.Player.CivPlaytimeHours}}h</p>
+  </div>
+  <div class="card">
+    <h2>Police</h2>
+    <p>Level: {{.Player.CopLevel}}</p>
+    <p>Cash: ${{.Player.CopCash}}</p>
+    <p>Bank: ${{.Player.CopBank}}</p>
+  </div>
+  <div class="card">
+    <h2>Medic</h2>
+    <p>Level: {{.Player.MedicLevel}}</p>
+    <p>Cash: ${{.Player.MedicCash}}</p>
+    <p>Bank: ${{.Player.MedicBank}}</p>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Gang</h2>
+  {{if .Gang}}
+    <p><strong>{{.Gang.Name}}</strong> [{{.Gang.Tag}}] — bank: ${{.Gang.Balance}}</p>
+    <table>
+      <thead><tr><th>Member</th><th>Rank</th></tr></thead>
+      <tbody>
+        {{range .Gang.Members}}<tr><td>{{.Name}}</td><td>{{.Rank}}</td></tr>{{end}}
+      </tbody>
+    </table>
+  {{else}}
+    <p class="empty-state">You're not in a gang.</p>
+  {{end}}
+</section>
+
+<section class="card">
+  <h2>Connect Discord</h2>
+  {{if .Player.DiscordUsername}}
+    <p>Linked to <strong>{{.Player.DiscordUsername}}</strong>.</p>
+  {{else}}
+    <p>Link your Discord account either way:</p>
+    <a class="cta secondary" href="/auth/discord/connect">Connect with Discord</a>
+    <form method="post" action="/dashboard/discord/link-code" class="inline-form">
+      <button class="cta secondary" type="submit">Generate a /link code instead</button>
+    </form>
+    {{if .DiscordLinkCode}}
+      <p class="hint">Run <code>/link {{.DiscordLinkCode}}</code> in the Discord server within 10 minutes.</p>
+    {{end}}
+  {{end}}
+</section>
+{{end}}

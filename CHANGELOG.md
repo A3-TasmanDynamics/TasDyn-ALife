@@ -99,3 +99,31 @@
   explicitly in ROADMAP.md as an estimate pending confirmation. README's Technical Stack and
   project-structure sections updated to match (the old "NuxtJS + Node.js bot, planned" placeholder
   is replaced by the actual Go decision).
+- `src/website/`: the Go website scaffold from `docs/WEBSITE.md`, built out with real working
+  functionality, not just routing stubs:
+  - "Sign in with Steam" (OpenID 2.0, verified against Steam's own docs before implementing, not
+    assumed) creates/resolves a `players` row; DB-backed sessions (`web_sessions`) so a ban or
+    rank change can revoke a session immediately by deleting its row, unlike a JWT.
+  - Admin Panel and Support Panel access resolved at login from
+    `staff_ranks.default_admin_panel`/`default_support_panel` plus per-player
+    `staff_permission_overrides` (`panel.admin`/`panel.support`) -- re-checked on every
+    panel-gated request, not just at login.
+  - Discord account linking, built both directions: OAuth2 "Connect Discord" from the website, and
+    a `/link <code>` slash command from Discord itself (`discordgo` bot), redeeming a short-lived
+    code the website generates (`discord_link_codes`). Either path sets the same
+    `players.discord_id`. A linked Discord account also becomes a valid *additional* login method
+    -- never the first one, since only Steam creates a `players` row.
+  - Full support-ticket lifecycle (create, claim, reply, close/reopen) shared between the member
+    portal's "My Tickets" and the Support Panel's queue -- one `support_tickets` row, two access
+    levels. New tickets post to Discord via webhook.
+  - Member dashboard (read-only faction stats, gang roster/balance) and an Admin Panel staff-log
+    viewer; both explicitly flagged in-code and in `docs/ROADMAP.md` as read-only for now --
+    write actions (bank transfers, gang management, bans, rank edits) are designed but not yet
+    built.
+  - Verified end-to-end against a real local Postgres instance: curl-driven checks of every
+    login-gate redirect, 403 on missing panel access, and the full ticket lifecycle; then
+    confirmed visually in a real browser (landing page, the login-required banner, panel
+    rendering) and alongside `server_manager`/pgAdmin4 open at the same time. Schema additions
+    applied for real to the local dev DB (not just a rolled-back dry run this time), with the two
+    smoke-test player rows deleted afterward.
+  - Additional schema: `players.discord_id`/`discord_username`, `discord_link_codes`.

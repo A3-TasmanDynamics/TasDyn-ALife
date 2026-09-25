@@ -81,6 +81,15 @@ CREATE TABLE players (
                        CHECK (status IN ('active', 'banned', 'whitelisted_pending')),
     last_seen      TIMESTAMPTZ,     -- cache, synced from player_sessions by trigger
 
+    -- Linked Discord account (docs/WEBSITE.md §3/§9) -- nullable, a player
+    -- can use the website without ever linking Discord. Linked either from
+    -- the member portal (OAuth2) or via a `/link <code>` Discord command
+    -- redeeming a code the portal generated -- see discord_link_codes
+    -- below. discord_username is a display cache, not identity; discord_id
+    -- is the durable key.
+    discord_id       TEXT UNIQUE,
+    discord_username TEXT,
+
     civ_cash       BIGINT NOT NULL DEFAULT 0,
     civ_bank       BIGINT NOT NULL DEFAULT 0,
     civ_licence    JSONB NOT NULL DEFAULT '[]'::jsonb,   -- array of licence keys, e.g. ["driver","boat"]
@@ -505,6 +514,25 @@ CREATE TABLE support_ticket_messages (
 );
 
 CREATE INDEX idx_support_ticket_messages_ticket_id ON support_ticket_messages(ticket_id);
+
+-- One-time codes for linking a Discord account from the Discord side (a
+-- `/link <code>` slash command), the mirror-image of the member portal's
+-- OAuth2 "Connect Discord" flow -- either proves the same thing (this
+-- Discord user and this player account belong to the same person), just
+-- starting from the opposite end. The website generates the code (proving
+-- portal-login/Steam identity); redeeming it in Discord proves Discord
+-- identity; matching the two links the account. Single-use and short-lived
+-- (expires_at, checked alongside used_at IS NULL on redemption) so a leaked
+-- code has a narrow window and can't be replayed.
+CREATE TABLE discord_link_codes (
+    code        TEXT PRIMARY KEY,
+    player_id   BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at  TIMESTAMPTZ NOT NULL,
+    used_at     TIMESTAMPTZ
+);
+
+CREATE INDEX idx_discord_link_codes_player_id ON discord_link_codes(player_id);
 
 -- ---------------------------------------------------------------------------
 -- Triggers: keep players.*_bank in sync with bank_accounts.balance

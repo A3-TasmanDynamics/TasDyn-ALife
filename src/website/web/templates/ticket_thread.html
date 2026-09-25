@@ -1,0 +1,43 @@
+{{define "content"}}
+<h1 class="page-title">{{.Ticket.Subject}}</h1>
+<p class="hint">Category: {{.Ticket.Category}} · Status: {{.Ticket.Status}}{{if .Ticket.AssignedTo}} · Claimed by {{.Ticket.AssignedTo}}{{end}}</p>
+
+{{if .IsStaff}}
+<section class="card">
+  <h2>Staff actions</h2>
+  <div class="button-row">
+    {{if not .Ticket.AssignedTo}}
+      <form method="post" action="/support/tickets/{{.Ticket.ID}}/claim"><button class="cta secondary" type="submit">Claim</button></form>
+    {{end}}
+    {{if ne .Ticket.Status "closed"}}
+      <form method="post" action="/support/tickets/{{.Ticket.ID}}/close"><button class="cta secondary" type="submit">Close ticket</button></form>
+    {{else}}
+      <form method="post" action="/support/tickets/{{.Ticket.ID}}/reopen"><button class="cta secondary" type="submit">Reopen ticket</button></form>
+    {{end}}
+  </div>
+</section>
+{{end}}
+
+<section class="card">
+  <h2>Conversation</h2>
+  <div class="ticket-thread">
+    {{range .Messages}}
+      <div class="ticket-message {{if eq .Source "discord"}}from-discord{{end}}">
+        <div class="ticket-message-meta">{{.AuthorName}} · {{.Source}} · {{.CreatedAt}}</div>
+        <div class="ticket-message-body">{{.Body}}</div>
+      </div>
+    {{end}}
+  </div>
+
+  {{if ne .Ticket.Status "closed"}}
+  <form method="post" action="/tickets/{{.Ticket.ID}}/reply">
+    <div class="field">
+      <textarea name="body" rows="3" required placeholder="Write a reply..."></textarea>
+    </div>
+    <button class="cta" type="submit">Reply</button>
+  </form>
+  {{else}}
+  <p class="hint">This ticket is closed.</p>
+  {{end}}
+</section>
+{{end}}

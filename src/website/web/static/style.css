@@ -1,0 +1,233 @@
+:root {
+  --bg: #0b1220;
+  --bg-elevated: #131b2e;
+  --bg-input: #0f172a;
+  --border: #232f47;
+  --border-soft: #1a2438;
+  --text: #f1f5f9;
+  --text-dim: #8b98b3;
+  --text-faint: #5a6785;
+  --amber: #f59e0b;
+  --amber-bright: #fbbf24;
+  --amber-soft: rgba(245, 158, 11, 0.12);
+  --green: #22c55e;
+  --red: #ef4444;
+  --red-soft: rgba(239, 68, 68, 0.12);
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.22);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI Variable", "Segoe UI", -apple-system, system-ui, Arial, sans-serif;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--amber-bright); }
+
+/* ---------- Header ---------- */
+
+.site-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 32px;
+  border-bottom: 1px solid var(--border-soft);
+  background: #060a14;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.brand-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--amber-bright), #ea580c);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 13px;
+  color: #1e1200;
+}
+
+.brand-text strong { color: var(--amber-bright); }
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-left: auto;
+  font-size: 13.5px;
+}
+
+.site-nav a { text-decoration: none; color: var(--text-dim); font-weight: 600; }
+.site-nav a:hover { color: var(--text); }
+
+.nav-user { color: var(--text-faint); font-size: 12.5px; }
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  padding: 0;
+}
+.link-button:hover { color: var(--amber-bright); }
+
+.inline-form { display: inline; }
+
+.steam-login {
+  background: linear-gradient(135deg, var(--amber-bright), var(--amber));
+  color: #1e1200 !important;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+/* ---------- Layout ---------- */
+
+.site-main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.site-footer {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-faint);
+  font-size: 11px;
+  letter-spacing: 1.4px;
+}
+
+/* ---------- Banners ---------- */
+
+.banner {
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 20px;
+  font-size: 13.5px;
+}
+.banner-error { background: var(--red-soft); border: 1px solid rgba(239, 68, 68, 0.35); color: #fca5a5; }
+.banner-notice { background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.35); color: #86efac; }
+
+/* ---------- Hero / landing ---------- */
+
+.hero { text-align: center; padding: 48px 0 32px; }
+.hero h1 { font-size: 40px; margin: 0 0 8px; letter-spacing: -0.5px; }
+.hero-sub { color: var(--text-dim); font-size: 16px; margin: 0 0 24px; }
+
+.cta {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--amber-bright), var(--amber));
+  color: #1e1200;
+  text-decoration: none;
+  font-weight: 700;
+  padding: 12px 24px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+}
+.cta.secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.cta.secondary:hover { border-color: var(--amber); color: var(--amber-bright); }
+
+.stat-strip { display: flex; justify-content: center; margin: 32px 0; }
+
+.stat-tile {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 28px;
+  box-shadow: var(--shadow-card);
+  text-align: center;
+}
+.stat-tile .label { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; }
+.stat-tile .value { font-size: 28px; font-weight: 700; color: var(--amber-bright); margin-top: 4px; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+
+/* ---------- Cards ---------- */
+
+.card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px 24px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow-card);
+}
+.card h2 {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  margin: 0 0 14px;
+  color: var(--text-dim);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.page-title { font-size: 24px; margin: 0 0 20px; }
+
+/* ---------- Forms ---------- */
+
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.field label { font-size: 12.5px; color: var(--text-dim); font-weight: 500; }
+.field input, .field select, .field textarea {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 9px 11px;
+  font-size: 13.5px;
+  font-family: inherit;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none;
+  border-color: var(--amber);
+  box-shadow: 0 0 0 3px var(--amber-soft);
+}
+
+.button-row { display: flex; gap: 10px; margin-top: 4px; }
+
+/* ---------- Tables ---------- */
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+table th, table td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border-soft); }
+table th { color: var(--text-faint); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+
+.empty-state { color: var(--text-faint); font-size: 13.5px; padding: 20px 0; text-align: center; }
+
+.hint { font-size: 12.5px; color: var(--text-faint); }
+code { background: var(--bg-input); padding: 2px 6px; border-radius: 4px; font-size: 12.5px; }
+
+/* ---------- Ticket thread ---------- */
+
+.ticket-thread { display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; }
+.ticket-message {
+  background: var(--bg-input);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+}
+.ticket-message.from-discord { border-left: 3px solid #5865f2; }
+.ticket-message-meta { font-size: 11px; color: var(--text-faint); margin-bottom: 4px; }
+.ticket-message-body { white-space: pre-wrap; font-size: 13.5px; }

@@ -1,0 +1,13 @@
+# Local secrets -- never commit real DB/Discord credentials (root .gitignore
+# already covers .env/*.env globally; repeated here so this directory reads
+# standalone, same reasoning as src/server_manager's local .gitignore).
+.env
+
+# go build output -- `go run .`/`go build ./...` with no -o produce a
+# platform binary named after the module in this directory.
+website
+website.exe
+
+# go test cache / coverage artifacts, if ever generated locally.
+*.test
+coverage.out

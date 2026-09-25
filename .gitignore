@@ -53,8 +53,3 @@ Profiles/
 .DS_Store
 Thumbs.db
 
-# --- Node (web_dashboard / discord_bot, once added) ---
-node_modules/
-.nuxt/
-.next/
-dist/

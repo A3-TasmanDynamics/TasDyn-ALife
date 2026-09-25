@@ -187,26 +187,36 @@ needs to exist first. Shares no SQF/C++ code with Phase 1–4, which is what mak
 its own phase instead of embedded piecemeal inside them.
 
 - [x] Design doc + schema additions (`web_sessions`, `support_tickets`,
-      `support_ticket_messages`, `staff_ranks.default_admin_panel`/`default_support_panel`) —
-      this PR.
-- [ ] Go project scaffold (`src/website`), Steam OpenID login, DB-backed sessions.
-- [ ] Public landing page + status strip (reuses `server_manager`'s dashboard queries).
-- [ ] Member portal: stats view, gang management (invite/remove/rank), bank transfers — the last
-      one through the *same* `bank_accounts`/`bank_transactions` idempotency path the C++
-      extension uses, per [WEBSITE.md §5](WEBSITE.md#5-public-site--member-portal)'s open
-      question about `fn_save.sqf` and the `*_bank` cache, which must be resolved before this
-      ships, not after.
-- [ ] Admin Panel: player lookup, ban/unban, rank + permission-override management (the actual web
-      UI for the DB-driven system Phase 3 built the data model for), anti-cheat flag review queue,
-      arsenal editor, staff log viewer.
-- [ ] Support Panel: ticket queue, claim, thread view; player-facing "My Tickets" in the member
-      portal.
-- [ ] Discord: one-way webhook logs (staff actions, bans, high-confidence anti-cheat flags, new
-      tickets) — the piece [ADMIN_TOOLS.md §8](ADMIN_TOOLS.md#8-access-control-banlist-and-reporting)
-      already assumed.
-- [ ] Discord: two-way ticket bot (`discordgo`, thread-per-ticket, mirrors replies both directions).
+      `support_ticket_messages`, `staff_ranks.default_admin_panel`/`default_support_panel`,
+      `players.discord_id`/`discord_username`, `discord_link_codes`).
+- [x] Go project scaffold (`src/website`), Steam OpenID login, DB-backed sessions,
+      admin/support panel-access resolution and gating. Verified end-to-end against a real local
+      Postgres instance (curl-driven: login-gate redirects, 403s for missing panel access, full
+      ticket create→claim→reply→close lifecycle) and visually in a real browser.
+- [x] Public landing page + status strip (reuses the same `player_sessions` query
+      `server_manager`'s dashboard uses, so the two never disagree from separate code paths).
+- [x] Discord OAuth2 login/account-linking (`internal/auth/discord.go`) **and** a Discord-bot
+      `/link <code>` command (`internal/discord/bot.go`) — players can link either from the
+      website or from Discord, not just one direction.
+- [x] Discord: one-way webhook logs — wired for new support tickets; staff-action/anti-cheat
+      webhooks await the Admin Panel features that produce those events (below).
+- [x] Support Panel + member-portal "My Tickets": full ticket lifecycle (create, claim, reply,
+      close/reopen), one `support_tickets` row shared between both access levels per
+      [WEBSITE.md §8](WEBSITE.md#8-support-panel).
+- [ ] Member portal: gang management (invite/remove/rank) and bank transfers — writes, not just
+      the read-only stats/gang view built so far. The last one goes through the *same*
+      `bank_accounts`/`bank_transactions` idempotency path the C++ extension uses, per
+      [WEBSITE.md §5](WEBSITE.md#5-public-site--member-portal)'s open question about
+      `fn_save.sqf` and the `*_bank` cache, which must be resolved before this ships, not after.
+- [ ] Admin Panel: currently a read-only staff-log viewer only. Player lookup, ban/unban, rank +
+      permission-override management (the actual web UI for the DB-driven system Phase 3 built
+      the data model for), anti-cheat flag review queue, and the arsenal editor are still to build.
+- [ ] Discord: two-way ticket-thread sync (`discordgo`, thread-per-ticket, mirrors replies both
+      directions) — the bot exists and handles account linking; ticket sync is the next piece
+      layered onto it, not a separate bot process.
 - [ ] Security pass: CSRF on every state-changing form, rate limiting on login and transfers,
-      server-side re-check of panel access on every write (not just at login).
+      server-side re-check of panel access on every write (not just at login) — needed before
+      this is internet-facing, not before continuing local development.
 
 **Milestone exit criteria:** a player can log in with Steam, view their stats, invite someone to
 their gang, and send money to another player, entirely from the website; a staff member holding

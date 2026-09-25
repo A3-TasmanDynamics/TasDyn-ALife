@@ -1,0 +1,24 @@
+{{define "content"}}
+<section class="hero">
+  <h1>TasDyn-ALife</h1>
+  <p class="hero-sub">An Oceania/Australia region Arma 3 roleplay server.</p>
+  {{if not .Session}}
+    <a class="cta" href="/auth/steam/login">Sign in with Steam to get started</a>
+  {{else}}
+    <a class="cta" href="/dashboard">Go to your Dashboard</a>
+  {{end}}
+</section>
+
+<section class="stat-strip">
+  <div class="stat-tile">
+    <div class="label">Players Online</div>
+    <div class="value">{{.OnlineCount}}</div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Connect</h2>
+  <p>Join our Discord for the connect IP, rules, and whitelist process.</p>
+  <a class="cta secondary" href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Join the Discord</a>
+</section>
+{{end}}
