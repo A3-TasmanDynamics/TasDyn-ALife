@@ -26,6 +26,10 @@ client-side mods.
 
 This project is in the **concept / architecture design phase**. An earlier prototype explored this idea end-to-end and surfaced real lessons about the save/load data contract, schema discipline, and repo hygiene — this repo is a deliberate clean start that applies those lessons rather than carrying the old code forward. Expect the structure below to fill in incrementally, tracked through PRs and the roadmap.
 
+**Target public launch: 2026-12-26.** See [docs/ROADMAP.md](docs/ROADMAP.md) for the phased plan,
+timeline, and what's deliberately cut from the launch scope. Day-to-day progress is tracked as
+issues on the [Delivery Board](https://github.com/orgs/A3-TasmanDynamics/projects/1).
+
 ---
 
 ## 1. Concept
