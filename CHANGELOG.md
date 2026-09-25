@@ -288,3 +288,25 @@
   - Verified end-to-end against the real dev DB: search matches on subject and on a Steam UID
     fragment, a no-match search correctly shows the empty state, and the metadata/Requester panel
     renders the real ticket's actual Steam UID. Disposable test account cleaned up afterward.
+- `database/schema.sql`: replaced `support_tickets.category` (a flat, free-text field) with a real
+  category/sub-category taxonomy per explicit request -- a new self-referential `ticket_categories`
+  table (`parent_id NULL` = top-level, set = a subcategory) rather than a hardcoded list, same
+  DB-driven reasoning as `staff_ranks`/`arsenal_item_pools`. Seeded with Gameplay, Discord, Panel,
+  TeamSpeak, and Other as top-level categories; Gameplay/Discord/Panel/TeamSpeak each get several
+  subcategories (Gameplay: Bug Report, Player Report, Ban Appeal, Whitelist Application, Economy
+  Issue, Vehicle/Property Issue; similar breakdowns for the other three). `support_tickets` now has
+  `category_id`/`subcategory_id` FKs instead of the old text column -- `category_id` must be a
+  top-level row and `subcategory_id`, if set, must be its child, both re-checked server-side on
+  every ticket creation (`internal/handlers/categories.go`'s `validateCategoryPair`) rather than
+  trusted from whatever the form's own `<select>` options happened to be.
+  - Migrated the one real ticket already in the dev DB (verified in a rolled-back dry run first,
+    then applied for real): its old free-text `category = 'other'` mapped correctly to the new
+    `Other` top-level category with no subcategory.
+  - The new-ticket form's category/sub-category selects cascade via a small inline script (no
+    framework, no page reload) -- picking a top-level category filters which subcategories show.
+  - Verified end-to-end: a valid category+subcategory pair creates correctly and displays
+    correctly everywhere (My Tickets, the queue, the dashboard, the ticket detail panel); a
+    subcategory-used-as-a-top-level-category submission is correctly rejected; a subcategory that
+    doesn't belong to the chosen category is correctly rejected; the category filter on the queue
+    correctly includes/excludes tickets by top-level category. Disposable test accounts cleaned up
+    afterward.

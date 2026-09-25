@@ -45,9 +45,11 @@ func (d *Deps) SupportDashboard(w http.ResponseWriter, r *http.Request) {
 	data.Stats = stats
 
 	rows, err := d.Pool.Query(r.Context(), `
-		SELECT st.id, st.subject, st.category, st.status, st.priority, COALESCE(assignee.name, ''),
+		SELECT st.id, st.subject, tc1.label, COALESCE(tc2.label, ''), st.status, st.priority, COALESCE(assignee.name, ''),
 		       COALESCE(NULLIF(requester.name, ''), 'Player #' || requester.id), requester.uid, st.created_at
 		FROM support_tickets st
+		JOIN ticket_categories tc1 ON tc1.id = st.category_id
+		LEFT JOIN ticket_categories tc2 ON tc2.id = st.subcategory_id
 		JOIN players requester ON requester.id = st.player_id
 		LEFT JOIN players assignee ON assignee.id = st.assigned_staff_id
 		ORDER BY st.created_at DESC
@@ -62,7 +64,7 @@ func (d *Deps) SupportDashboard(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var t ticketSummary
 		var createdAt time.Time
-		if err := rows.Scan(&t.ID, &t.Subject, &t.Category, &t.Status, &t.Priority, &t.AssignedTo, &t.RequesterName, &t.RequesterUID, &createdAt); err == nil {
+		if err := rows.Scan(&t.ID, &t.Subject, &t.CategoryLabel, &t.SubcategoryLabel, &t.Status, &t.Priority, &t.AssignedTo, &t.RequesterName, &t.RequesterUID, &createdAt); err == nil {
 			t.CreatedAt = createdAt.Format("2006-01-02 15:04")
 			data.RecentTickets = append(data.RecentTickets, t)
 		}
@@ -75,10 +77,11 @@ type supportQueueData struct {
 	Base
 	ActiveSupportTab string
 	Tickets          []ticketSummary
+	TopCategories    []categoryOption
 	FilterStatus     string
 	FilterPriority   string
 	FilterAssigned   string
-	FilterCategory   string
+	FilterCategory   string // a category_id as a string, or "all"
 	SearchQuery      string
 }
 
@@ -110,9 +113,17 @@ func (d *Deps) SupportQueue(w http.ResponseWriter, r *http.Request) {
 	}
 	searchQuery := r.URL.Query().Get("q")
 
+	topCats, _, err := fetchCategoryTree(r.Context(), d.Pool)
+	if err != nil {
+		slog.Error("support queue: category tree query failed", "error", err)
+		http.Error(w, "Failed to load the queue.", http.StatusInternalServerError)
+		return
+	}
+
 	data := supportQueueData{
 		Base:             baseFrom(r, "Support Panel · Tickets"),
 		ActiveSupportTab: "tickets",
+		TopCategories:    topCats,
 		FilterStatus:     filterStatus,
 		FilterPriority:   filterPriority,
 		FilterAssigned:   filterAssigned,
@@ -121,9 +132,11 @@ func (d *Deps) SupportQueue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := `
-		SELECT st.id, st.subject, st.category, st.status, st.priority, COALESCE(assignee.name, ''),
+		SELECT st.id, st.subject, tc1.label, COALESCE(tc2.label, ''), st.status, st.priority, COALESCE(assignee.name, ''),
 		       COALESCE(NULLIF(requester.name, ''), 'Player #' || requester.id), requester.uid, st.created_at
 		FROM support_tickets st
+		JOIN ticket_categories tc1 ON tc1.id = st.category_id
+		LEFT JOIN ticket_categories tc2 ON tc2.id = st.subcategory_id
 		JOIN players requester ON requester.id = st.player_id
 		LEFT JOIN players assignee ON assignee.id = st.assigned_staff_id
 		WHERE 1=1
@@ -148,7 +161,9 @@ func (d *Deps) SupportQueue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if filterCategory != "all" {
-		query += ` AND st.category = ` + nextArg(filterCategory)
+		if categoryID, err := strconv.Atoi(filterCategory); err == nil {
+			query += ` AND st.category_id = ` + nextArg(categoryID)
+		}
 	}
 
 	switch filterAssigned {
@@ -179,7 +194,7 @@ func (d *Deps) SupportQueue(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var t ticketSummary
 		var createdAt time.Time
-		if err := rows.Scan(&t.ID, &t.Subject, &t.Category, &t.Status, &t.Priority, &t.AssignedTo, &t.RequesterName, &t.RequesterUID, &createdAt); err == nil {
+		if err := rows.Scan(&t.ID, &t.Subject, &t.CategoryLabel, &t.SubcategoryLabel, &t.Status, &t.Priority, &t.AssignedTo, &t.RequesterName, &t.RequesterUID, &createdAt); err == nil {
 			t.CreatedAt = createdAt.Format("2006-01-02 15:04")
 			data.Tickets = append(data.Tickets, t)
 		}

@@ -57,7 +57,11 @@
         <dt>Priority</dt>
         <dd><span class="badge badge-priority-{{.Ticket.Priority}}">{{.Ticket.Priority}}</span></dd>
         <dt>Category</dt>
-        <dd>{{.Ticket.Category}}</dd>
+        <dd>{{.Ticket.CategoryLabel}}</dd>
+        {{if .Ticket.SubcategoryLabel}}
+        <dt>Sub-category</dt>
+        <dd>{{.Ticket.SubcategoryLabel}}</dd>
+        {{end}}
         <dt>Assigned to</dt>
         <dd>{{if .Ticket.AssignedTo}}{{.Ticket.AssignedTo}}{{else}}<span class="hint">Unassigned</span>{{end}}</dd>
         <dt>Opened</dt>

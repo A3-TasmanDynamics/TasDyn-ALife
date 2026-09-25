@@ -23,15 +23,16 @@ func normalizePriority(p string) string {
 }
 
 type ticketSummary struct {
-	ID            int64
-	Subject       string
-	Category      string
-	Status        string
-	Priority      string
-	AssignedTo    string
-	RequesterName string
-	RequesterUID  string
-	CreatedAt     string
+	ID               int64
+	Subject          string
+	CategoryLabel    string
+	SubcategoryLabel string
+	Status           string
+	Priority         string
+	AssignedTo       string
+	RequesterName    string
+	RequesterUID     string
+	CreatedAt        string
 }
 
 type ticketMessage struct {
@@ -44,7 +45,9 @@ type ticketMessage struct {
 
 type myTicketsData struct {
 	Base
-	Tickets []ticketSummary
+	Tickets       []ticketSummary
+	TopCategories []categoryOption
+	Subcategories []categoryOption
 }
 
 // MyTickets lists the logged-in player's own tickets and handles the "open
@@ -54,9 +57,21 @@ func (d *Deps) MyTickets(w http.ResponseWriter, r *http.Request) {
 	sess, _ := auth.FromContext(r.Context())
 	data := myTicketsData{Base: baseFrom(r, "My Tickets")}
 
+	topCats, subCats, err := fetchCategoryTree(r.Context(), d.Pool)
+	if err != nil {
+		slog.Error("my tickets: category tree query failed", "error", err)
+		http.Error(w, "Failed to load the ticket form.", http.StatusInternalServerError)
+		return
+	}
+	data.TopCategories = topCats
+	data.Subcategories = subCats
+
 	rows, err := d.Pool.Query(r.Context(), `
-		SELECT id, subject, category, status, priority FROM support_tickets
-		WHERE player_id = $1 ORDER BY created_at DESC
+		SELECT st.id, st.subject, tc1.label, COALESCE(tc2.label, ''), st.status, st.priority
+		FROM support_tickets st
+		JOIN ticket_categories tc1 ON tc1.id = st.category_id
+		LEFT JOIN ticket_categories tc2 ON tc2.id = st.subcategory_id
+		WHERE st.player_id = $1 ORDER BY st.created_at DESC
 	`, sess.PlayerID)
 	if err != nil {
 		slog.Error("my tickets: query failed", "error", err)
@@ -66,7 +81,7 @@ func (d *Deps) MyTickets(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 	for rows.Next() {
 		var t ticketSummary
-		if err := rows.Scan(&t.ID, &t.Subject, &t.Category, &t.Status, &t.Priority); err == nil {
+		if err := rows.Scan(&t.ID, &t.Subject, &t.CategoryLabel, &t.SubcategoryLabel, &t.Status, &t.Priority); err == nil {
 			data.Tickets = append(data.Tickets, t)
 		}
 	}
@@ -84,7 +99,6 @@ func (d *Deps) CreateTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	subject := r.FormValue("subject")
-	category := r.FormValue("category")
 	body := r.FormValue("body")
 	priority := normalizePriority(r.FormValue("priority"))
 	if subject == "" || body == "" {
@@ -92,7 +106,22 @@ func (d *Deps) CreateTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	categoryID, err := strconv.Atoi(r.FormValue("category_id"))
+	if err != nil {
+		http.Redirect(w, r, "/tickets?error="+errMsg("Please choose a category."), http.StatusSeeOther)
+		return
+	}
+	var subcategoryID int
+	if v := r.FormValue("subcategory_id"); v != "" {
+		subcategoryID, _ = strconv.Atoi(v) // 0 on parse failure -- validateCategoryPair below treats that as "none"
+	}
+	if err := validateCategoryPair(r.Context(), d.Pool, categoryID, subcategoryID); err != nil {
+		http.Redirect(w, r, "/tickets?error="+errMsg(err.Error()), http.StatusSeeOther)
+		return
+	}
+
 	var ticketID int64
+	var categoryLabel string
 	tx, err := d.Pool.Begin(r.Context())
 	if err != nil {
 		http.Redirect(w, r, "/tickets?error="+errMsg("Something went wrong."), http.StatusSeeOther)
@@ -100,9 +129,15 @@ func (d *Deps) CreateTicket(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback(r.Context())
 
+	var subcategoryArg any
+	if subcategoryID != 0 {
+		subcategoryArg = subcategoryID
+	}
+
 	err = tx.QueryRow(r.Context(), `
-		INSERT INTO support_tickets (player_id, subject, category, priority) VALUES ($1, $2, $3, $4) RETURNING id
-	`, sess.PlayerID, subject, category, priority).Scan(&ticketID)
+		INSERT INTO support_tickets (player_id, subject, category_id, subcategory_id, priority)
+		VALUES ($1, $2, $3, $4, $5) RETURNING id
+	`, sess.PlayerID, subject, categoryID, subcategoryArg, priority).Scan(&ticketID)
 	if err != nil {
 		slog.Error("create ticket: insert failed", "error", err)
 		http.Redirect(w, r, "/tickets?error="+errMsg("Something went wrong."), http.StatusSeeOther)
@@ -118,6 +153,10 @@ func (d *Deps) CreateTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := tx.QueryRow(r.Context(), `SELECT label FROM ticket_categories WHERE id = $1`, categoryID).Scan(&categoryLabel); err != nil {
+		categoryLabel = "?"
+	}
+
 	if err := tx.Commit(r.Context()); err != nil {
 		http.Redirect(w, r, "/tickets?error="+errMsg("Something went wrong."), http.StatusSeeOther)
 		return
@@ -125,7 +164,7 @@ func (d *Deps) CreateTicket(w http.ResponseWriter, r *http.Request) {
 
 	priorityTag := map[string]string{"low": "", "normal": "", "high": "⚠️ ", "urgent": "🔴 "}[priority]
 	discord.SendWebhook(r.Context(), d.Cfg.DiscordTicketLogWebhook,
-		"🎫 "+priorityTag+"New support ticket **#"+strconv.FormatInt(ticketID, 10)+"** ("+category+", "+priority+"): "+subject)
+		"🎫 "+priorityTag+"New support ticket **#"+strconv.FormatInt(ticketID, 10)+"** ("+categoryLabel+", "+priority+"): "+subject)
 
 	http.Redirect(w, r, "/tickets/"+strconv.FormatInt(ticketID, 10), http.StatusSeeOther)
 }
@@ -133,7 +172,8 @@ func (d *Deps) CreateTicket(w http.ResponseWriter, r *http.Request) {
 type ticketDetail struct {
 	ID                       int64
 	Subject                  string
-	Category                 string
+	CategoryLabel            string
+	SubcategoryLabel         string
 	Status                   string
 	Priority                 string
 	AssignedTo               string
@@ -174,15 +214,17 @@ func (d *Deps) TicketThread(w http.ResponseWriter, r *http.Request) {
 	var createdAt, updatedAt time.Time
 	t := ticketDetail{ID: ticketID}
 	err = d.Pool.QueryRow(r.Context(), `
-		SELECT st.player_id, st.subject, st.category, st.status, st.priority, p.name,
+		SELECT st.player_id, st.subject, tc1.label, COALESCE(tc2.label, ''), st.status, st.priority, p.name,
 		       COALESCE(NULLIF(requester.name, ''), 'Player #' || requester.id),
 		       requester.uid, requester.discord_id, requester.discord_username,
 		       st.created_at, st.updated_at
 		FROM support_tickets st
+		JOIN ticket_categories tc1 ON tc1.id = st.category_id
+		LEFT JOIN ticket_categories tc2 ON tc2.id = st.subcategory_id
 		LEFT JOIN players p ON p.id = st.assigned_staff_id
 		JOIN players requester ON requester.id = st.player_id
 		WHERE st.id = $1
-	`, ticketID).Scan(&ownerID, &t.Subject, &t.Category, &t.Status, &t.Priority, &assignedName,
+	`, ticketID).Scan(&ownerID, &t.Subject, &t.CategoryLabel, &t.SubcategoryLabel, &t.Status, &t.Priority, &assignedName,
 		&t.RequesterName, &t.RequesterUID, &discordID, &discordUsername, &createdAt, &updatedAt)
 	if err == pgx.ErrNoRows {
 		http.NotFound(w, r)
