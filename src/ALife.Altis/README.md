@@ -1,17 +1,17 @@
-# src/ALife.altis/
+# src/ALife.Altis/
 
 SQF mission source for the ALife gamemode. Client requests, server decides:
 gameplay code sends an intent to the server; the server is the only thing
 that reads or writes persistent state via `src/cpp_extension`.
 
-Named `ALife.altis` to follow Arma 3's own `<mission name>.<world>` mission-folder convention —
-`altis` because that's the terrain this is built against right now. If the terrain ever changes,
+Named `ALife.Altis` to follow Arma 3's own `<mission name>.<world>` mission-folder convention —
+`Altis` because that's the terrain this is built against right now. If the terrain ever changes,
 this folder gets renamed to match; the two are meant to stay in lockstep, not drift.
 
 ## What's here
 
 ```text
-src/ALife.altis/
+src/ALife.Altis/
 ├── description.ext        # Mission config — includes everything below
 ├── CfgFunctions.hpp        # Registers ALife_fnc_* from functions/
 ├── CfgRemoteExec.hpp       # The remoteExec allowlist — see docs/ANTI_CHEAT.md Layer 1
@@ -60,7 +60,7 @@ folder is already named to match Arma's own convention, the natural path is to m
 folder directly rather than building one elsewhere and copying files in afterward:
 
 1. Symlink (or copy) this folder into your Arma 3 install's `MPMissions/` (or into your dev
-   workspace's missions folder, if you use one) as `ALife.altis` — same name, so Eden recognizes
+   workspace's missions folder, if you use one) as `ALife.Altis` — same name, so Eden recognizes
    it as a mission for the Altis terrain.
 2. Open it in Eden (or start a new mission on Altis named `ALife` — Eden will create/use a folder
    by that same name) and save. This produces `mission.sqm` **directly alongside the files already
