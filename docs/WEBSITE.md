@@ -121,23 +121,34 @@ buried in settings) — this is the concrete answer to "switch between without p
   - **Invite a member** — writes `gang_members`, logs to `gang_log` (`action = 'member_added'`),
     same table the in-game gang system already writes.
   - **Remove a member** / **change rank** — same pattern.
-- **Send money** — bank transfer between the player's own faction accounts, or to another player.
-  Writes through `bank_accounts`/`bank_transactions` **exactly like the C++ extension does** — same
+- **Send money** — **built** (`internal/bank/transfer.go`). Bank transfer between the player's own
+  faction accounts, or to another player identified by exact (case-insensitive) name — ambiguous or
+  unknown names are rejected rather than guessed at, since routing real money to the wrong account
+  on a bad guess is exactly the mistake worth an extra rejection to prevent. Writes through
+  `bank_accounts`/`bank_transactions` **exactly like the C++ extension is designed to** — same
   idempotency-token pattern from [DATA_CONTRACT.md](DATA_CONTRACT.md) (a request token per
-  transfer, unique-indexed on `(account_id, request_token)`), so a double-click or a retried request
-  can't double-spend. The website is *another writer* against the same authoritative ledger, not a
-  parallel money system — this is why `bank_accounts.balance` being authoritative (not
-  `players.*_bank`) mattered in the original schema design; it's what makes a second writer safe at
-  all.
+  transfer, unique-indexed on `(account_id, request_token)`, generated fresh each time the transfer
+  form is rendered so a double-click or back-button resubmit can't double-spend), plus row-level
+  locking (`SELECT ... FOR UPDATE`, both accounts, fixed ascending-ID order to avoid deadlocking a
+  concurrent transfer touching the same two accounts in the opposite direction) so a concurrent
+  transfer against the same account can't read-then-overwrite a stale balance. The website is
+  *another writer* against the same authoritative ledger, not a parallel money system — this is why
+  `bank_accounts.balance` being authoritative (not `players.*_bank`) mattered in the original schema
+  design; it's what makes a second writer safe at all. Verified end-to-end (own-account transfer,
+  player-to-player transfer, insufficient-funds rejection, unknown-recipient rejection, and a
+  resubmitted-token replay all producing the correct ledger with no double-apply) against a real
+  local Postgres instance.
 - **Wanted status** — outstanding `wanted_crimes` for this player, read-only.
 
-**Open question, flag before this ships (§11):** while a player is actively connected in-game, does
-`fn_save.sqf` ever write `players.*_bank` directly? If it does, a web-initiated transfer landing
-between two in-game autosaves could get its effect overwritten on the next save, since `*_bank` is
-documented as a *cache* synced by trigger from `bank_accounts` (schema.sql line ~49), not something
-`save` should be setting absolutely. **Verify `fn_save.sqf` never treats `*_bank` as an
-absolute-set field before enabling web-initiated transfers against a live session** — this is a
-correctness check against the existing DATA_CONTRACT, not new design.
+**Resolved (was an open question):** does `fn_save.sqf` ever write `players.*_bank` directly, which
+would let a web-initiated transfer get overwritten by a later in-game autosave? **No** —
+`fn_save.sqf`'s field allowlist has no `civ_bank`/`cop_bank`/`medic_bank` entries at all (only
+`*_cash` is saveable), and `src/cpp_extension/src/db.cpp` confirms `bank_accounts` is only ever
+seeded to 0 at player creation and read at load, never written by "save". There is currently no
+live in-game write path this feature could race against. One thing this did surface and fix: a
+player who signs up on the website *before* ever connecting in-game had no `bank_accounts` rows at
+all (only the C++ extension's first-load path seeded them) — `FindOrCreatePlayerBySteamUID` now
+seeds the same three rows a new player gets in-game, so website-first signup works too.
 
 ## 6. New / changed schema
 
@@ -279,10 +290,12 @@ rule as the Postgres credentials already `.gitignore`d.
 
 ## 10. Security notes
 
-- CSRF token on every state-changing form (transfers, gang actions, admin/support writes) — this
-  app has real financial actions (bank transfers) reachable from a browser session, unlike the
-  in-game admin menu which has no cross-site attack surface at all.
-- Rate limiting on login and on money-moving endpoints, separate from
+- CSRF token on every state-changing form (transfers, gang actions, admin/support writes) — **built**
+  (`internal/csrf`, double-submit cookie pattern: a random token in an `HttpOnly` cookie, echoed into
+  every rendered form, required to match on every POST). This app has real financial actions (bank
+  transfers) reachable from a browser session, unlike the in-game admin menu which has no
+  cross-site attack surface at all.
+- Rate limiting on login and on money-moving endpoints — **not yet built**. Separate from
   [ANTI_CHEAT.md](ANTI_CHEAT.md)'s in-game rate limiting (different attack surface — this is HTTP
   requests, not `callExtension` calls) but the same *principle*: repeated identical requests in a
   short window are suspicious before they're proven legitimate.

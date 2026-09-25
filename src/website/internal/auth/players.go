@@ -13,6 +13,14 @@ import (
 // docs/DATA_CONTRACT.md -- so a player who has played before already has a
 // row here, and the website simply attaches to it rather than creating a
 // second, disconnected identity.
+//
+// A brand-new row also gets one bank_accounts row per faction, seeded to
+// 0 -- the same thing src/cpp_extension/src/db.cpp's EnsureBlankPlayer does
+// on a player's first in-game load. Without this, a player who signs up on
+// the website BEFORE ever connecting in-game would have no bank_accounts
+// rows at all, and internal/bank's transfers (which require one) would
+// fail for them -- website-first signup is a real path now, not
+// hypothetical, so it has to seed the same rows the game-first path does.
 func FindOrCreatePlayerBySteamUID(ctx context.Context, pool *pgxpool.Pool, uid string) (playerID int64, err error) {
 	err = pool.QueryRow(ctx, `SELECT id FROM players WHERE uid = $1`, uid).Scan(&playerID)
 	if err == nil {
@@ -22,10 +30,28 @@ func FindOrCreatePlayerBySteamUID(ctx context.Context, pool *pgxpool.Pool, uid s
 		return 0, err
 	}
 
-	err = pool.QueryRow(ctx, `
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback(ctx)
+
+	err = tx.QueryRow(ctx, `
 		INSERT INTO players (uid, status) VALUES ($1, 'active') RETURNING id
 	`, uid).Scan(&playerID)
-	return playerID, err
+	if err != nil {
+		return 0, err
+	}
+
+	_, err = tx.Exec(ctx, `
+		INSERT INTO bank_accounts (player_id, faction, balance)
+		SELECT $1, f, 0 FROM unnest(ARRAY['civilian', 'police', 'medic']) AS f
+	`, playerID)
+	if err != nil {
+		return 0, err
+	}
+
+	return playerID, tx.Commit(ctx)
 }
 
 // FindPlayerByDiscordID looks up a player who has already linked the given

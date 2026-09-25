@@ -12,6 +12,7 @@ import (
 
 	"website/internal/auth"
 	"website/internal/config"
+	"website/internal/csrf"
 	"website/internal/render"
 )
 
@@ -33,15 +34,16 @@ type Deps struct {
 // page's own data struct so layout.html's {{.Session}}/{{.Error}}/etc.
 // always resolve regardless of which page is rendering.
 type Base struct {
-	Title   string
-	Session *auth.Session
-	Error   string
-	Notice  string
+	Title     string
+	Session   *auth.Session
+	Error     string
+	Notice    string
+	CSRFToken string
 }
 
 func baseFrom(r *http.Request, title string) Base {
 	sess, _ := auth.FromContext(r.Context())
-	b := Base{Title: title, Session: sess}
+	b := Base{Title: title, Session: sess, CSRFToken: csrf.FromContext(r.Context())}
 	q := r.URL.Query()
 	if q.Get("login_required") == "1" {
 		b.Error = "Please sign in to continue."

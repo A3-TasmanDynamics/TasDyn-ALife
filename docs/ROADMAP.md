@@ -203,20 +203,25 @@ its own phase instead of embedded piecemeal inside them.
 - [x] Support Panel + member-portal "My Tickets": full ticket lifecycle (create, claim, reply,
       close/reopen), one `support_tickets` row shared between both access levels per
       [WEBSITE.md §8](WEBSITE.md#8-support-panel).
-- [ ] Member portal: gang management (invite/remove/rank) and bank transfers — writes, not just
-      the read-only stats/gang view built so far. The last one goes through the *same*
-      `bank_accounts`/`bank_transactions` idempotency path the C++ extension uses, per
-      [WEBSITE.md §5](WEBSITE.md#5-public-site--member-portal)'s open question about
-      `fn_save.sqf` and the `*_bank` cache, which must be resolved before this ships, not after.
+- [x] Member portal: bank transfers (`internal/bank`) — both between the player's own faction
+      accounts and to another player by exact name, idempotency-tokened and row-locked against
+      double-spend/races. Unblocked by confirming `fn_save.sqf` never writes `*_bank` (only
+      `*_cash` is in its save allowlist) — the open question in
+      [WEBSITE.md §5](WEBSITE.md#5-public-site--member-portal) is resolved, not just deferred.
+      Verified end-to-end (own transfer, player-to-player, insufficient funds, unknown recipient,
+      duplicate-token replay) against the real local dev DB, ledger rows checked by hand.
+- [x] Security: CSRF (`internal/csrf`, double-submit cookie) on every state-changing form, wired in
+      before shipping the money-moving feature above, not after.
+- [ ] Member portal: gang management (invite/remove/rank) — still read-only.
 - [ ] Admin Panel: currently a read-only staff-log viewer only. Player lookup, ban/unban, rank +
       permission-override management (the actual web UI for the DB-driven system Phase 3 built
       the data model for), anti-cheat flag review queue, and the arsenal editor are still to build.
 - [ ] Discord: two-way ticket-thread sync (`discordgo`, thread-per-ticket, mirrors replies both
       directions) — the bot exists and handles account linking; ticket sync is the next piece
       layered onto it, not a separate bot process.
-- [ ] Security pass: CSRF on every state-changing form, rate limiting on login and transfers,
-      server-side re-check of panel access on every write (not just at login) — needed before
-      this is internet-facing, not before continuing local development.
+- [ ] Rate limiting on login and transfer endpoints, and server-side re-check of panel access on
+      every write (not just at login) — needed before this is internet-facing, not before
+      continuing local development.
 
 **Milestone exit criteria:** a player can log in with Steam, view their stats, invite someone to
 their gang, and send money to another player, entirely from the website; a staff member holding

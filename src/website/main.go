@@ -15,6 +15,7 @@ import (
 
 	"website/internal/auth"
 	"website/internal/config"
+	"website/internal/csrf"
 	"website/internal/db"
 	"website/internal/discord"
 	"website/internal/handlers"
@@ -108,6 +109,7 @@ func run() error {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RealIP)
 	r.Use(d.Auth.Middleware)
+	r.Use(csrf.Middleware(cfg.CookieSecure))
 
 	fileServer := http.FileServer(http.Dir("web/static"))
 	r.Handle("/static/*", http.StripPrefix("/static/", fileServer))
@@ -124,6 +126,7 @@ func run() error {
 		r.Use(auth.RequireLogin)
 		r.Get("/dashboard", d.Dashboard)
 		r.Post("/dashboard/discord/link-code", d.GenerateDiscordLinkCode)
+		r.Post("/dashboard/transfer", d.Transfer)
 		r.Get("/auth/discord/connect", d.DiscordConnect)
 
 		r.Get("/tickets", d.MyTickets)
