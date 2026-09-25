@@ -1,6 +1,6 @@
 # Data Contract: Player Save/Load
 
-**Last changed: 2026-09-25.**
+**Last changed: 2026-09-26.**
 
 This is the single source of truth for the fields shared by the Postgres schema
 (`database/schema.sql`), the C++ extension's `RVExtensionArgs` output, and the SQF code that
@@ -60,6 +60,9 @@ On `OK`, every key below is present:
 | `cop_dept` / `medic_dept` | string or null | `players.cop_dept` / `players.medic_dept` | Civilian has no department |
 | `civ_licence` / `cop_licence` / `medic_licence` | array of strings | `players.<faction>_licence` (JSONB) | e.g. `["driver","boat"]` — a set, not a single value |
 | `civ_gear` / `cop_gear` / `medic_gear` | object | `players.<faction>_gear` (JSONB) | Full loadout + virtual items for that faction |
+| `civ_alive` / `cop_alive` / `medic_alive` | boolean | `players.<faction>_alive` | **Must be checked on spawn.** A player who disconnects dead/unconscious has to resume dead at `*_position`, not respawn fresh — see the comment on `players` in `database/schema.sql` for why this isn't optional (a well-known disconnect-to-escape exploit in this genre) |
+| `civ_position` / `cop_position` / `medic_position` | object or null | `players.<faction>_position` | World position to resume at when `*_alive` is `false`. `null` until the first death is ever recorded for that faction |
+| `civ_bounty` | number | `players.civ_bounty` | **Cache** — authoritative source is `wanted_crimes` (sum of outstanding, i.e. `cleared_at IS NULL`, rows), synced by trigger. No `cop_bounty`/`medic_bounty` — the wanted list is civilian-only |
 
 If no row exists for `uid`, the C++ side creates a blank record (all `*_cash`/`*_bank` = 0, empty
 `*_licence`/`*_gear`, `status = 'active'`, no staff rank, and a matching `bank_accounts` row per
@@ -68,8 +71,10 @@ response shape, never a different one for the "just created" case. That divergen
 is a classic place for this kind of contract to quietly drift.
 
 **Not returned by `load`**: `players.status` (account status — a `banned` player shouldn't reach
-this code path at all; that's enforced earlier, at connect time, not surfaced here) and anything
-from `bank_transactions`/`player_log`/etc. — this call is the live record only, not history.
+this code path at all; that's enforced earlier, at connect time, not surfaced here), `last_seen`
+and `*_playtime_seconds` (staff/stats-facing, not something the join flow needs to act on), and
+anything from `bank_transactions`/`player_log`/`wanted_crimes`/etc. — this call is the live record
+only, not history.
 
 ## `save` — persist one field
 
@@ -78,7 +83,7 @@ Request (SQF → C++): `"tasdyn_alife" callExtension ["save", [uid, field, value
 | Arg | Type | Notes |
 |---|---|---|
 | `uid` | string | Same as above. |
-| `field` | string | **An allowlist, not an arbitrary column name** — one of: `name`, `civ_cash`, `cop_cash`, `medic_cash`, `civ_licence`, `cop_licence`, `medic_licence`, `civ_gear`, `cop_gear`, `medic_gear`, `cop_level`, `medic_level`, `cop_dept`, `medic_dept`. Validated server-side against this known set before it ever reaches a query — the same "never trust client input as authoritative" principle as [ANTI_CHEAT.md Layer 1](ANTI_CHEAT.md#layer-1--api-surface-remoteexec-allowlist). |
+| `field` | string | **An allowlist, not an arbitrary column name** — one of: `name`, `civ_cash`, `cop_cash`, `medic_cash`, `civ_licence`, `cop_licence`, `medic_licence`, `civ_gear`, `cop_gear`, `medic_gear`, `cop_level`, `medic_level`, `cop_dept`, `medic_dept`, `civ_alive`, `cop_alive`, `medic_alive`, `civ_position`, `cop_position`, `medic_position`. Validated server-side against this known set before it ever reaches a query — the same "never trust client input as authoritative" principle as [ANTI_CHEAT.md Layer 1](ANTI_CHEAT.md#layer-1--api-surface-remoteexec-allowlist). |
 | `value` | string | Parsed and range/type-checked server-side against `field`'s real column type before use — never interpolated into SQL. |
 | `requestToken` | string | Idempotency token — see [ANTI_CHEAT.md Layer 2](ANTI_CHEAT.md#layer-2--economic-integrity). A token seen again for this `(account, token)` pair is rejected, not re-applied (enforced by `bank_transactions`' partial unique index, for the banking case). |
 
@@ -104,6 +109,8 @@ untrusted text enters the system — not on every subsequent read.
 ## What's deliberately not in this version
 
 - `bank_tx` (deposit/withdrawal/transfer) — noted above, needs Phase 2's economy design first.
+- `wanted_add`/`wanted_clear` (adding/clearing a `wanted_crimes` row) — same reasoning as `bank_tx`:
+  a ledger-style table needs its own command, not a `save` field write.
 - Vehicles, houses, gangs — all have their own tables in `database/schema.sql` already, but none
   of them have a documented C++/SQF contract yet. Same rule applies: write it here before writing
   either side of the code.

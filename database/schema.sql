@@ -40,6 +40,17 @@ INSERT INTO staff_ranks (key, display_name, level) VALUES
 -- No `active_faction` column: which faction a player is playing is chosen
 -- at spawn each session (runtime SQF state) and passed explicitly with
 -- every save/load call — it doesn't need to survive a restart.
+--
+-- *_alive/*_position ARE persisted, though, per faction -- reviewed
+-- AsYetUntitled/Framework (Tonic's Altis Life, a widely-deployed 7-year-old
+-- base) while designing this, and its `civ_alive`/`civ_position` columns
+-- exist for a specific, real reason: without persisting death state, a
+-- player who disconnects while dead/unconscious respawns fresh on
+-- reconnect instead of resuming dead at the same spot -- a well-known
+-- disconnect-to-escape-arrest/death exploit in this exact genre. Not
+-- optional given that precedent.
+--
+-- civ_bounty is a CACHE (see wanted_crimes below), same pattern as *_bank.
 -- ---------------------------------------------------------------------------
 CREATE TABLE players (
     id             BIGSERIAL PRIMARY KEY,
@@ -47,11 +58,16 @@ CREATE TABLE players (
     name           TEXT NOT NULL DEFAULT '',
     status         TEXT NOT NULL DEFAULT 'active'
                        CHECK (status IN ('active', 'banned', 'whitelisted_pending')),
+    last_seen      TIMESTAMPTZ,     -- cache, synced from player_sessions by trigger
 
     civ_cash       BIGINT NOT NULL DEFAULT 0,
     civ_bank       BIGINT NOT NULL DEFAULT 0,
     civ_licence    JSONB NOT NULL DEFAULT '[]'::jsonb,   -- array of licence keys, e.g. ["driver","boat"]
     civ_gear       JSONB NOT NULL DEFAULT '{}'::jsonb,   -- full loadout + virtual items
+    civ_alive      BOOLEAN NOT NULL DEFAULT true,
+    civ_position   JSONB,           -- last known world position; NULL until first save
+    civ_bounty     BIGINT NOT NULL DEFAULT 0,            -- cache of wanted_crimes, see below
+    civ_playtime_seconds BIGINT NOT NULL DEFAULT 0,
 
     cop_level      INTEGER NOT NULL DEFAULT 0,
     cop_dept       TEXT,
@@ -59,6 +75,9 @@ CREATE TABLE players (
     cop_bank       BIGINT NOT NULL DEFAULT 0,
     cop_licence    JSONB NOT NULL DEFAULT '[]'::jsonb,
     cop_gear       JSONB NOT NULL DEFAULT '{}'::jsonb,
+    cop_alive      BOOLEAN NOT NULL DEFAULT true,
+    cop_position   JSONB,
+    cop_playtime_seconds BIGINT NOT NULL DEFAULT 0,
 
     medic_level    INTEGER NOT NULL DEFAULT 0,
     medic_dept     TEXT,
@@ -66,6 +85,9 @@ CREATE TABLE players (
     medic_bank     BIGINT NOT NULL DEFAULT 0,
     medic_licence  JSONB NOT NULL DEFAULT '[]'::jsonb,
     medic_gear     JSONB NOT NULL DEFAULT '{}'::jsonb,
+    medic_alive    BOOLEAN NOT NULL DEFAULT true,
+    medic_position JSONB,
+    medic_playtime_seconds BIGINT NOT NULL DEFAULT 0,
 
     staff_rank_id  INTEGER REFERENCES staff_ranks(id) ON DELETE SET NULL,
 
@@ -88,6 +110,20 @@ CREATE TABLE player_log (
 
 CREATE INDEX idx_player_log_player_id ON player_log(player_id);
 
+-- Name history, not a single overwritten column -- lets staff spot a UID
+-- cycling through names (alt-account/evasion pattern) instead of only ever
+-- seeing whatever name happens to be current. One row per distinct name
+-- ever used; last_used_at bumps on repeat sightings rather than inserting
+-- a duplicate row.
+CREATE TABLE player_aliases (
+    id            BIGSERIAL PRIMARY KEY,
+    player_id     BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    name          TEXT NOT NULL,
+    first_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_seen_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (player_id, name)
+);
+
 -- Connect/disconnect tracking — backs ANTI_CHEAT.md's first-time player
 -- screening (a UID's first session gets tighter thresholds) and general
 -- moderation (IP visible to staff investigating a report).
@@ -100,6 +136,25 @@ CREATE TABLE player_sessions (
 );
 
 CREATE INDEX idx_player_sessions_player_id ON player_sessions(player_id);
+
+-- ---------------------------------------------------------------------------
+-- Wanted list (Police faction). players.civ_bounty is a CACHE of the sum of
+-- outstanding (cleared_at IS NULL) bounty_amount here, kept in sync by
+-- trigger -- same "ledger is authoritative, players.* is a cache" pattern
+-- as bank_accounts/bank_transactions above, not a separate design.
+-- ---------------------------------------------------------------------------
+CREATE TABLE wanted_crimes (
+    id             BIGSERIAL PRIMARY KEY,
+    player_id      BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    crime_key      TEXT NOT NULL,
+    bounty_amount  BIGINT NOT NULL,
+    issued_by      BIGINT REFERENCES players(id) ON DELETE SET NULL,  -- NULL = system-issued
+    cleared_at     TIMESTAMPTZ,     -- NULL = still outstanding
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_wanted_crimes_player_id ON wanted_crimes(player_id);
+CREATE INDEX idx_wanted_crimes_outstanding ON wanted_crimes(player_id) WHERE cleared_at IS NULL;
 
 -- ---------------------------------------------------------------------------
 -- Banking — bank_accounts.balance is authoritative; players.*_bank is kept
@@ -175,7 +230,8 @@ CREATE TABLE vehicles (
     plate            TEXT UNIQUE,
     faction_scope    TEXT CHECK (faction_scope IN ('civilian', 'police', 'medic')),
     fuel             REAL NOT NULL DEFAULT 1.0,
-    damage           REAL NOT NULL DEFAULT 0.0,
+    damage           JSONB NOT NULL DEFAULT '{}'::jsonb,  -- per-hitpoint map, e.g. {"hitengine": 0.4, "hitfuel": 0.0}
+                                                            -- not a single float -- see getAllHitPointsDamage
     status           TEXT NOT NULL DEFAULT 'garaged'
                          CHECK (status IN ('garaged', 'spawned', 'impounded', 'destroyed')),
     garage_id        BIGINT REFERENCES garages(id) ON DELETE SET NULL,
@@ -383,5 +439,39 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_bank_accounts_sync_players_cache
     AFTER UPDATE OF balance ON bank_accounts
     FOR EACH ROW EXECUTE FUNCTION sync_players_bank_cache();
+
+-- players.civ_bounty cache, synced from wanted_crimes the same way.
+CREATE OR REPLACE FUNCTION sync_civ_bounty_cache() RETURNS TRIGGER AS $$
+DECLARE
+    v_player_id BIGINT := COALESCE(NEW.player_id, OLD.player_id);
+BEGIN
+    UPDATE players
+    SET civ_bounty = (
+        SELECT COALESCE(SUM(bounty_amount), 0)
+        FROM wanted_crimes
+        WHERE player_id = v_player_id AND cleared_at IS NULL
+    )
+    WHERE id = v_player_id;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_wanted_crimes_sync_bounty
+    AFTER INSERT OR UPDATE OF cleared_at OR DELETE ON wanted_crimes
+    FOR EACH ROW EXECUTE FUNCTION sync_civ_bounty_cache();
+
+-- players.last_seen cache, synced from player_sessions on connect/disconnect.
+CREATE OR REPLACE FUNCTION sync_last_seen_cache() RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE players
+    SET last_seen = COALESCE(NEW.disconnected_at, NEW.connected_at)
+    WHERE id = NEW.player_id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_player_sessions_sync_last_seen
+    AFTER INSERT OR UPDATE OF disconnected_at ON player_sessions
+    FOR EACH ROW EXECUTE FUNCTION sync_last_seen_cache();
 
 COMMIT;
