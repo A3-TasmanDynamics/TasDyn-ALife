@@ -62,9 +62,13 @@ environment reproducible from a clean clone. ✅ **Phase 0 complete.**
 - [x] SQF request/response framework skeleton: `src/ALife.Altis/` scaffolded — `ALife_fnc_load`/
       `ALife_fnc_save` implementing `docs/DATA_CONTRACT.md` exactly, `initPlayerServer.sqf` as the
       join hook, `initServer.sqf`'s `HandleDisconnect` hook for the alive/position persistence.
-      **Not yet tested inside a running Arma mission** (no Arma install on this dev machine,
-      `mission.sqm` itself also isn't generated here — see `src/ALife.Altis/README.md`) — the
-      C++/DB side this calls into is separately verified (PR #57/#60).
+      `mission.sqm` now exists and the whole config stack (`description.ext`, `CfgFunctions.hpp`,
+      `CfgRemoteExec.hpp`, `config/spawn_config.hpp`, `dialog/spawnMenu.hpp`) was verified to load
+      cleanly on a real local Arma 3 dedicated server — zero errors, server reaches a stable,
+      listening, ready state — via `tools/test_local_server.ps1`. **Still not tested with a real
+      player connecting** (needs an interactive client, which that script can't drive), so
+      `load`/`save`/spawn triggered by an actual join remain unverified end-to-end — the C++/DB
+      side they call into is separately verified (PR #57/#60).
 - [x] `CfgRemoteExec` allowlist: `CfgRemoteExec.hpp` — `mode = 1` (whitelist-only), the two
       Phase 1 functions listed, `allowedTargets = 2` (server-only). Grows with every new server
       function, same as any allowlist — not a one-time task. Reviewed against
@@ -89,10 +93,10 @@ environment reproducible from a clean clone. ✅ **Phase 0 complete.**
 **Milestone exit criteria:** a player's cash/bank/rank survives a disconnect/reconnect cycle
 against a real Postgres instance, with no untested code path in the save/load contract, and no
 server-side function is network-callable unless it's on the `CfgRemoteExec` allowlist. **The
-C++/DB half of this is done and verified (PR #57/#60, #35's `CfgRemoteExec.hpp`); the disconnect/
-reconnect cycle itself hasn't been run inside an actual Arma mission yet** — `mission.sqm` doesn't
-exist (Eden editor output, not generated here — see `src/ALife.Altis/README.md`), so this phase isn't
-fully closed out despite most of its individual tasks being checked off above.
+C++/DB half is done and verified (PR #57/#60); the mission config is verified to load cleanly on
+a real dedicated server; the actual disconnect/reconnect cycle with a real player still hasn't
+been run** — that needs an interactive client connecting, not just the server hosting the mission,
+so this phase isn't fully closed out despite every individual task being checked off above.
 
 ## Phase 2 — Core Gameplay Loop *(2026-10-27 → 2026-11-23)*
 
@@ -103,8 +107,10 @@ The biggest phase — this is what makes it a *Life* server rather than a databa
       `ALife_fnc_spawnPlayer` (server-authoritative — a player whose stored `<faction>_alive` is
       `false` has their spawn-point request ignored and resumes at `<faction>_position` instead,
       closing the loop on the disconnect-to-escape protection `database/schema.sql` was built
-      around). **Not yet tested in a running mission** (same `mission.sqm` blocker as Phase 1) —
-      and gear/loadout equipping is explicitly not wired in yet, see `src/ALife.Altis/README.md`.
+      around). Config verified clean on a real dedicated server alongside the rest of Phase 1 (see
+      above); **the spawn flow itself still needs a real player to actually test** — the
+      civilian/medic markers (`civ_kavala_spawn`, etc.) also aren't all placed yet. Gear/loadout
+      equipping is explicitly not wired in yet, see `src/ALife.Altis/README.md`.
 - [ ] Civilian: 2–3 legal jobs at launch (pick the simplest to implement well — e.g. mining,
       trucking; defer fishing/uranium to post-launch).
 - [ ] Economy core: physical cash vs. digital bank, a basic buy/sell shop system, one dynamic

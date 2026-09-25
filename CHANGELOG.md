@@ -68,3 +68,12 @@
 - Reviewed Tonic's spawn-selection dialog and mission folder layout for structural ideas (a
   list-based spawn-point picker, config-driven definitions) — not used directly; built fresh
   against this project's own schema/contract.
+- `src/server_manager/`: a Go + Wails desktop app for actually running the dedicated server --
+  configure name/passwords/slots, launch/stop `arma3server_x64.exe`, watch its live log, and view
+  Postgres-backed graphs (players, economy, anti-cheat flags, staff actions). Distinct from
+  `tools/test_local_server.ps1` (a one-shot smoke test) -- this is for a real host, day to day.
+  Verified the dashboard SQL against a real local Postgres instance via an integration test
+  (`dashboard_test.go`), not just compiled. Caught and fixed a real gap while testing the built
+  app: every panel's Go call is now wrapped in try/catch with a visible error banner on failure --
+  previously a rejected promise failed silently, leaving a panel stuck on "Loading..." forever
+  with no indication anything had gone wrong.

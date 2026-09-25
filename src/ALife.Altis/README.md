@@ -45,30 +45,28 @@ Defined in `config/spawn_config.hpp`, not a database table — see the comment a
 file for why (short version: it's a mission-design decision made during development, not
 something staff need to hot-edit on a live server, unlike `arsenal_item_pools`).
 
-Each `CfgSpawnPoints` entry prefers a marker (`marker = "spawn_<faction>_<n>";`) placed visually in
-Eden over hand-typed coordinates. **Once `mission.sqm` exists, place a marker in Eden for every
-entry in `spawn_config.hpp`, named exactly what that entry's `marker` field says** — the three
-`*_example` entries currently there expect `spawn_civilian_0`, `spawn_police_0`, and
-`spawn_medic_0`. Add/rename/remove entries in `spawn_config.hpp` to match whatever markers you
-actually place — the example entries are placeholders, not a fixed set.
+Each `CfgSpawnPoints` entry references a marker by name (no fixed naming pattern required —
+whatever's actually in `mission.sqm` is what goes in the `marker` field). `mission.sqm` currently
+has one real marker placed: `police_kav_spawn` (Kavala), matching `spawn_config.hpp`'s
+`police_kavala_hq` entry. Civilian/medic markers aren't placed yet — `civilian_kavala`'s
+`civ_kavala_spawn` marker doesn't exist in `mission.sqm` yet. Add/rename/remove `CfgSpawnPoints`
+entries to match whatever markers actually exist as more get placed.
 
-## What's *not* here yet — `mission.sqm`
+## `mission.sqm`
 
-`mission.sqm` (the actual map layout — markers, spawn points, triggers) isn't generated here;
-it's Eden editor output and has to come from actually building the mission in-game. Because this
-folder is already named to match Arma's own convention, the natural path is to make it the mission
-folder directly rather than building one elsewhere and copying files in afterward:
+Exists — built in Eden and living directly in this folder (Arma's own `MPMissions/` naming
+convention meant no copy step was needed once the folder had the right name). Deploying it to an
+actual local dedicated server for testing:
 
-1. Symlink (or copy) this folder into your Arma 3 install's `MPMissions/` (or into your dev
-   workspace's missions folder, if you use one) as `ALife.Altis` — same name, so Eden recognizes
-   it as a mission for the Altis terrain.
-2. Open it in Eden (or start a new mission on Altis named `ALife` — Eden will create/use a folder
-   by that same name) and save. This produces `mission.sqm` **directly alongside the files already
-   here** — no copy step needed once the folder is in the right place under the right name.
-3. Place the spawn point markers described above.
-4. Point the mission's `config.ini` (see the repo root's `config.ini.example`) at a real Postgres
-   instance — the C++ extension side of this (Phases 0–1) is already built and verified; see
-   `src/cpp_extension/README.md`.
+- **`tools/test_local_server.ps1`** automates the deploy-run-check-cleanup cycle — see
+  `tools/README.md`. Verified clean against a real Arma 3 Server install: the entire config stack
+  here (`description.ext`, `CfgFunctions.hpp`, `CfgRemoteExec.hpp`, `config/spawn_config.hpp`,
+  `dialog/spawnMenu.hpp`) loads with zero errors and the server reaches a stable, ready state.
+  That script can't drive an actual player connecting, though — `load`/`save`/spawn triggered by a
+  real join are still unverified end-to-end.
+- Point the mission's `config.ini` (see the repo root's `config.ini.example`) at a real Postgres
+  instance — the C++ extension side of this (Phases 0–1) is already built and verified; see
+  `src/cpp_extension/README.md`.
 
 ## Open items
 

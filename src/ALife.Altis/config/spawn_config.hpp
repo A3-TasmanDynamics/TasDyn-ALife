@@ -28,20 +28,20 @@
 
 class CfgSpawnPoints
 {
-    class civilian_example
+    class civilian_kavala
     {
-        displayName = "Example Civilian Spawn";
+        displayName = "Kavala";
         faction = "civilian";
-        marker = "spawn_civilian_0";  // place this marker in Eden once mission.sqm exists
+        marker = "civ_kavala_spawn";  // place this marker in Eden once mission.sqm exists
         position[] = {};
         gang = "";
     };
 
-    class police_example
+    class police_kavala_hq
     {
-        displayName = "Example Police Spawn";
+        displayName = "Kavala Police HQ";
         faction = "police";
-        marker = "spawn_police_0";
+        marker = "police_kav_spawn";
         position[] = {};
         gang = "";
     };
