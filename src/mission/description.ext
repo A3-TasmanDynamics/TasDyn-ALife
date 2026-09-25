@@ -1,0 +1,12 @@
+// TasDyn-ALife — mission description.
+//
+// Deliberately minimal right now: just what Phase 1 (the C++/DB bridge)
+// needs to be reachable from SQF. Gameplay-facing settings (respawn type,
+// briefing, loadouts, ...) are Phase 2 territory and intentionally not
+// guessed at here — add them when that design actually exists, not before.
+
+#include "CfgFunctions.hpp"
+#include "CfgRemoteExec.hpp"
+
+author = "Tasman Dynamics";
+onLoadName = "TasDyn-ALife";

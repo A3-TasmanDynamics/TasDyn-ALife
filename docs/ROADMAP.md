@@ -59,11 +59,18 @@ environment reproducible from a clean clone. ✅ **Phase 0 complete.**
       literals). `load` creates a blank record + one `bank_accounts` row per faction on first
       join; `save`'s cash fields are a delta with an idempotency-token check
       (`applied_request_tokens`), everything else is absolute-set. See `docs/DATA_CONTRACT.md`.
-- [ ] SQF request/response framework skeleton: the "Client Requests, Server Decides" pattern —
-      one documented event name convention, one server-side dispatcher, one client-side
-      acknowledgement path.
-- [ ] `CfgRemoteExec` allowlist: only named, reviewed functions are network-callable at all — the
-      enforced version of "Server Decides," per [ANTI_CHEAT.md §3 Layer 1](ANTI_CHEAT.md#layer-1--api-surface-remoteexec-allowlist).
+- [x] SQF request/response framework skeleton: `src/mission/` scaffolded — `ALife_fnc_load`/
+      `ALife_fnc_save` implementing `docs/DATA_CONTRACT.md` exactly, `initPlayerServer.sqf` as the
+      join hook, `initServer.sqf`'s `HandleDisconnect` hook for the alive/position persistence.
+      **Not yet tested inside a running Arma mission** (no Arma install on this dev machine,
+      `mission.sqm` itself also isn't generated here — see `src/mission/README.md`) — the
+      C++/DB side this calls into is separately verified (PR #57/#60).
+- [x] `CfgRemoteExec` allowlist: `CfgRemoteExec.hpp` — `mode = 1` (whitelist-only), the two
+      Phase 1 functions listed, `allowedTargets = 2` (server-only). Grows with every new server
+      function, same as any allowlist — not a one-time task. Reviewed against
+      [Tonic's own `CfgRemoteExec.hpp`](https://github.com/AsYetUntitled/Framework/blob/master/Altis_Life.Altis/CfgRemoteExec.hpp)
+      for the real-world pattern (per-function `allowedTargets`/`jip`, separate client/server/HC
+      sections) before writing this one. Per [ANTI_CHEAT.md §3 Layer 1](ANTI_CHEAT.md#layer-1--api-surface-remoteexec-allowlist).
       Admin actions (Phase 3) reuse this same allowlist with an added `min_level` check per
       function — see [ADMIN_TOOLS.md §4](ADMIN_TOOLS.md#4-security-model--every-admin-action-is-a-layer-1-action-too).
 - [x] End-to-end smoke test (C++/DB side): a blank record is created on first `load`, `civ_cash`
@@ -71,13 +78,21 @@ environment reproducible from a clean clone. ✅ **Phase 0 complete.**
       double-applying, and an overspend is rejected without going negative — all verified against
       a real local Postgres instance via the native test harness. **Not yet tested from inside a
       running Arma mission** — that's the SQF-side half of this bullet, still open.
-- [ ] Transaction locking **and idempotent request tokens** on economy-affecting writes (prevents
-      both the concurrent-write and the double-submit duplication classes — see
-      [ANTI_CHEAT.md §3 Layer 2](ANTI_CHEAT.md#layer-2--economic-integrity)).
+- [x] Idempotent request tokens on economy-affecting writes: `applied_request_tokens`, verified
+      against replay (no double-apply) and overspend (no negative balance) — see PR #60. Full
+      transaction locking coverage for the four named dupe patterns
+      ([ANTI_CHEAT.md §3 Layer 2](ANTI_CHEAT.md#layer-2--economic-integrity)) still needs the
+      actual inventory/trading interactions those patterns describe, which don't exist as
+      gameplay features yet (Phase 2) — the mechanism they'll reuse is proven, the coverage isn't
+      complete until there's something to cover.
 
 **Milestone exit criteria:** a player's cash/bank/rank survives a disconnect/reconnect cycle
 against a real Postgres instance, with no untested code path in the save/load contract, and no
-server-side function is network-callable unless it's on the `CfgRemoteExec` allowlist.
+server-side function is network-callable unless it's on the `CfgRemoteExec` allowlist. **The
+C++/DB half of this is done and verified (PR #57/#60, #35's `CfgRemoteExec.hpp`); the disconnect/
+reconnect cycle itself hasn't been run inside an actual Arma mission yet** — `mission.sqm` doesn't
+exist (Eden editor output, not generated here — see `src/mission/README.md`), so this phase isn't
+fully closed out despite most of its individual tasks being checked off above.
 
 ## Phase 2 — Core Gameplay Loop *(2026-10-27 → 2026-11-23)*
 

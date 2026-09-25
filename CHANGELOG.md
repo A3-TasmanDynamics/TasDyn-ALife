@@ -51,3 +51,9 @@
   (`applied_request_tokens`), not an absolute-set field — an absolute `save` on physical cash had
   the same concurrent-double-apply risk `bank_accounts` was split out to avoid; caught before any
   save code was written against the original design.
+- `src/mission/` scaffolded: `description.ext`, `CfgFunctions.hpp`, `CfgRemoteExec.hpp`
+  (reviewed against Tonic's own `CfgRemoteExec.hpp` for the real-world pattern before writing
+  ours), `initPlayerServer.sqf`/`initServer.sqf` join and disconnect hooks, and
+  `ALife_fnc_load`/`ALife_fnc_save` implementing `docs/DATA_CONTRACT.md` exactly. `mission.sqm`
+  itself isn't generated here — it's Eden editor output — see `src/mission/README.md` for how to
+  wire this scaffold into an actual mission.
