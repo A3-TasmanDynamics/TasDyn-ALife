@@ -14,6 +14,7 @@ class CfgFunctions
         class Data
         {
             file = "functions\data";
+            class callExtension {};        // -> ALife_fnc_callExtension
             class load {};                 // -> ALife_fnc_load
             class save {};                 // -> ALife_fnc_save
             class parseStoredPosition {};  // -> ALife_fnc_parseStoredPosition

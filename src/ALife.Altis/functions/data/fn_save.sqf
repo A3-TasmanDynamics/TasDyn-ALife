@@ -48,4 +48,4 @@ if !(_field in _allowedFields) exitWith {
     "ERROR"
 };
 
-"tasdyn_alife" callExtension ["save", [_uid, _field, _value, _requestToken]]
+["save", [_uid, _field, _value, _requestToken]] call ALife_fnc_callExtension

@@ -24,6 +24,7 @@ src/ALife.Altis/
 │   └── spawnMenu.hpp       # Faction + spawn point selection dialog
 └── functions/
     ├── data/                          # DB-facing — implements docs/DATA_CONTRACT.md
+    │   ├── fn_callExtension.sqf         # The only place that calls "tasdyn_alife" directly
     │   ├── fn_load.sqf
     │   ├── fn_save.sqf
     │   ├── fn_parseStoredPosition.sqf  # Safely parses a loaded <faction>_position
@@ -75,8 +76,9 @@ translate at that boundary instead — not here.
 (guarded against the same function-compile race `initPlayerServer.sqf`'s `ALife_fnc_load` call
 needed — see the comment there). Every 60 seconds it:
 
-- **Pings the DB** (`"tasdyn_alife" callExtension ["ping", []]`) and logs on a state *change*
-  (lost/restored), not every tick. This exists because the C++ extension didn't used to reconnect
+- **Pings the DB** (`["ping", []] call ALife_fnc_callExtension`) and logs its connection state on
+  start unconditionally, then again on any later state *change* (lost/restored), not every tick.
+  This exists because the C++ extension didn't used to reconnect
   on its own at all — a Postgres restart or a network blip would silently fail every load/save for
   the rest of the server's uptime. `src/cpp_extension/src/db.cpp`'s `EnsureConnected` now recovers
   from that automatically (see that repo's README) — the ping here is what actually *triggers*

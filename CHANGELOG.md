@@ -509,3 +509,32 @@
   Verified via a live A2S query before/after: the server's reported status changed from a bare
   "Waiting" to the mission's actual briefing name and gametype once `-autoInit` was added --
   confirmed it's genuinely running, not just guessed from the docs.
+- `src/ALife.Altis`: `-autoInit` above had an immediate side effect -- it's what finally made the
+  server actually run `fn_load.sqf` for the first time in this whole project's history through
+  *real SQF*, rather than only ever through `test_harness.exe`'s direct `LoadLibrary`/
+  `GetProcAddress` calls (which never touch `callExtension`, `parseSimpleArray`, or
+  `createHashMapFromArray` at all). It immediately surfaced two real, previously-invisible syntax
+  bugs that had apparently existed since Phase 1:
+  - **`callExtension`'s array-args form returns an `Array`, not a `String`.** `"ext" callExtension
+    [command, args]` returns `[resultString, returnCode]` in this Arma version -- every direct call
+    site (`fn_load.sqf`, `fn_save.sqf`, `fn_sync.sqf`) had been comparing/parsing that whole array
+    as if it were the response string, producing a live `Error ==: Type Array, expected ... String`
+    the moment real SQF finally exercised it. Added `fn_callExtension.sqf` as the one place that
+    unwraps it (`select 0`), so no new call site can make the same mistake again -- every other
+    file now goes through `ALife_fnc_callExtension` instead of calling `"tasdyn_alife"
+    callExtension` directly.
+  - **`parseSimpleArray`/`createHashMapFromArray` were being called postfix
+    (`value call parseSimpleArray`, `value createHashMapFromArray`) instead of their actual unary
+    prefix syntax (`parseSimpleArray value`, `createHashMapFromArray value`)** -- confirmed against
+    real BIS wiki examples, since `docs/arma/arma3.db`'s own syntax field for both commands was
+    empty. This produced a parse-time "unexpected )" / "Invalid number in expression" the instant
+    they actually ran. Fixed in `fn_load.sqf` and `fn_parseStoredPosition.sqf`.
+  - Both bugs retroactively explain a chunk of the "undefined `_record`" mysteries chased earlier
+    in this project's history that were never fully root-caused at the time (only the extension-
+    deployment and function-compile-race issues found alongside them were) -- `fn_load.sqf` failing
+    silently on either bug leaves `_record` exactly that kind of undefined.
+  - Take-away for later: `test_harness.exe` proves the C++ extension itself works, but it can never
+    catch an SQF-side calling-convention mistake, since it bypasses `callExtension` entirely. A real
+    server actually running the mission's own SQF (which `-autoInit` finally forced) is the only
+    thing that exercises this path -- worth remembering before trusting "the extension test passes"
+    as proof the mission code that calls it is also correct.
