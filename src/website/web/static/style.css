@@ -21,6 +21,12 @@
 
 * { box-sizing: border-box; }
 
+/* Author rules like `.meta-list { display: grid }` outrank the browser's
+   default `[hidden] { display: none }` (author origin beats UA origin even
+   at equal specificity), so any hidden element with its own display rule
+   would otherwise stay visible. Force it back to the platform default. */
+[hidden] { display: none !important; }
+
 html, body {
   margin: 0;
   padding: 0;
@@ -147,6 +153,7 @@ a { color: var(--amber-bright); }
 }
 .cta.secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
 .cta.secondary:hover { border-color: var(--amber); color: var(--amber-bright); }
+.cta.small { padding: 5px 12px; font-size: 12px; font-weight: 600; flex-shrink: 0; }
 
 .stat-strip { display: flex; justify-content: center; margin: 32px 0; }
 
@@ -340,6 +347,9 @@ code { background: var(--bg-input); padding: 2px 6px; border-radius: 4px; font-s
 
 .edit-row { display: flex; gap: 8px; }
 .edit-row input { flex: 1; }
+
+#ticket-edit-mode { padding-top: 4px; }
+#ticket-edit-mode .field:last-child { margin-bottom: 0; }
 
 .button-row.wrap { flex-wrap: wrap; }
 

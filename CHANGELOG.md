@@ -345,3 +345,20 @@
   - Verified end-to-end against the real dev DB: the properties card renders in read-only mode by
     default (no inputs/selects present in the initial HTML), and the edit form markup is present
     but marked `hidden` until toggled. Disposable test session cleaned up afterward.
+- `src/website`: fixed a real bug in the edit-mode toggle above, caught from a screenshot showing
+  the read-only view and the edit form both visible at once after clicking Edit. Root cause: the
+  browser's default `[hidden] { display: none }` rule is *author*-origin-losing against any of our
+  own CSS with a competing `display` (e.g. `.meta-list { display: grid }`), since author rules
+  always outrank user-agent rules regardless of matching specificity -- so setting `.hidden = true`
+  on the properties `<dl>` silently did nothing. Added a global `[hidden] { display: none
+  !important; }` rule so `hidden` reliably hides an element site-wide, no matter what else targets
+  it.
+  - Also consolidated the two separate Edit/"Done editing" controls into one header button that
+    swaps its own label, and gave it a compact button style instead of a plain text link.
+  - While investigating, found and fixed a second real bug the same screenshot exposed: the ticket
+    detail page's "Assigned to" read-out used bare `assignee.name` (no blank-name fallback), so a
+    support staff member who signed up via the website first (empty `players.name`, the same gap
+    fixed elsewhere for requester names) showed as "Unassigned" everywhere -- ticket detail,
+    dashboard, and queue -- despite genuinely being assigned. Applied the same
+    `COALESCE(NULLIF(name, ''), 'Player #' || id)` pattern used for requester names, with an outer
+    `COALESCE(..., '')` fallback preserved for tickets with no assignee at all.
