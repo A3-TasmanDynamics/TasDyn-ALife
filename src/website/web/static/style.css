@@ -184,6 +184,16 @@ a { color: var(--amber-bright); }
   border-bottom: 1px solid var(--border-soft);
 }
 
+.card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.card-header-row h2 { margin: 0; padding: 0; border: none; }
+
 .page-title { font-size: 24px; margin: 0 0 20px; }
 
 /* ---------- Forms ---------- */

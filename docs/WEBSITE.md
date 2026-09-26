@@ -315,13 +315,18 @@ The concrete features that distinguish this from a plain forum thread:
   need this to cross-reference bans, Discord reports, and in-game identity without leaving the
   ticket.
 - **Ticket detail page** — a two-column layout for staff: conversation + reply on the left, a
-  metadata sidebar on the right — every field directly editable inline (NinjaOne-style properties
-  panel, not a separate "edit mode"), the Requester identity block, and Close/Reopen. A player
-  viewing their own ticket gets the conversation only, no metadata panel (staff-only information
-  and staff-only edits stay staff-only).
+  metadata sidebar on the right — a read-only properties view by default, an explicit **Edit**
+  button to reveal the editable form controls (see below), the Requester identity block, and
+  Close/Reopen. A player viewing their own ticket gets the conversation only, no metadata panel
+  (staff-only information and staff-only edits stay staff-only).
 - **Editable ticket data** — staff can correct/re-triage a ticket directly from the detail page,
   each field its own small form re-validated server-side (never trusting that the page's own
-  `<select>` options or JS were the ones a request actually came from):
+  `<select>` options or JS were the ones a request actually came from). The properties panel opens
+  in a read-only view (plain text/badges, matching what a requester sees); clicking **Edit** swaps
+  in the live controls below, and **Done editing** swaps back — a pure client-side visibility
+  toggle (`hidden` attribute, no page reload), so a staff member just reading a ticket can't change
+  its data with a stray click or keystroke. Close/Reopen stay outside the edit gate as one-click
+  workflow actions rather than field edits.
   - **Subject** — a text field + Save button, for when a player's own title doesn't actually
     describe the issue.
   - **Category / Sub-category** — the same cascading selects as ticket creation, pre-filled with

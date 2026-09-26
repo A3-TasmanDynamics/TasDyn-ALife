@@ -332,3 +332,16 @@
     unassign, and a rejected assignment attempt to a player without current Support Panel access.
     Disposable test accounts (including two real-rank test staff, to exercise reassignment
     properly) cleaned up afterward.
+- `src/website`: gated the ticket detail page's editable properties (Subject, Priority,
+  Assigned to, Category/Sub-category) behind an explicit **Edit** button instead of leaving them
+  live at all times -- per explicit request, so a staff member just reading a ticket can't change
+  its data with a stray click or keystroke.
+  - A read-only view (plain text/badges) now shows by default; clicking **Edit** swaps in the same
+    forms/selects that already existed, unchanged; **Done editing** swaps back. Pure client-side
+    visibility toggle (`hidden` attribute) -- no new backend routes, no change to how any of the
+    four existing save endpoints validate or persist.
+  - Status stayed as one-click Close/Reopen actions rather than being pulled behind the edit
+    gate -- treated as a workflow transition, not a field edit.
+  - Verified end-to-end against the real dev DB: the properties card renders in read-only mode by
+    default (no inputs/selects present in the initial HTML), and the edit form markup is present
+    but marked `hidden` until toggled. Disposable test session cleaned up afterward.

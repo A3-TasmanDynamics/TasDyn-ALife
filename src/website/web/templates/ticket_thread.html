@@ -50,35 +50,62 @@
 
   <div class="ticket-meta-panel">
     <section class="card">
-      <h2>Ticket</h2>
+      <div class="card-header-row">
+        <h2>Ticket</h2>
+        {{if .IsStaff}}<button type="button" class="link-button" id="btn-edit-ticket">Edit</button>{{end}}
+      </div>
 
       {{if .IsStaff}}
-      <form method="post" action="/support/tickets/{{.Ticket.ID}}/subject" class="field">
-        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-        <label>Subject</label>
-        <div class="edit-row">
-          <input type="text" name="subject" value="{{.Ticket.Subject}}" maxlength="200" required />
-          <button class="cta secondary" type="submit">Save</button>
-        </div>
-      </form>
-      {{end}}
-
-      <dl class="meta-list">
+      <!-- View mode: plain read-out, nothing here is interactive except the
+           Close/Reopen action links (a status transition, not a field edit)
+           -- everything else needs "Edit" clicked first, so a staff member
+           just looking at a ticket can't change data by an accidental
+           click/keystroke on a live control. -->
+      <dl class="meta-list" id="ticket-view-mode">
+        <dt>Subject</dt>
+        <dd>{{.Ticket.Subject}}</dd>
         <dt>Status</dt>
         <dd>
           <span class="badge badge-status-{{.Ticket.Status}}">{{.Ticket.Status}}</span>
-          {{if .IsStaff}}
-            {{if ne .Ticket.Status "closed"}}
-              <form method="post" action="/support/tickets/{{.Ticket.ID}}/close" class="inline-form"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="link-button" type="submit">Close</button></form>
-            {{else}}
-              <form method="post" action="/support/tickets/{{.Ticket.ID}}/reopen" class="inline-form"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="link-button" type="submit">Reopen</button></form>
-            {{end}}
+          {{if ne .Ticket.Status "closed"}}
+            <form method="post" action="/support/tickets/{{.Ticket.ID}}/close" class="inline-form"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="link-button" type="submit">Close</button></form>
+          {{else}}
+            <form method="post" action="/support/tickets/{{.Ticket.ID}}/reopen" class="inline-form"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="link-button" type="submit">Reopen</button></form>
           {{end}}
         </dd>
-
         <dt>Priority</dt>
-        <dd>
-          {{if .IsStaff}}
+        <dd><span class="badge badge-priority-{{.Ticket.Priority}}">{{.Ticket.Priority}}</span></dd>
+        <dt>Category</dt>
+        <dd>{{.Ticket.CategoryLabel}}</dd>
+        {{if .Ticket.SubcategoryLabel}}
+        <dt>Sub-category</dt>
+        <dd>{{.Ticket.SubcategoryLabel}}</dd>
+        {{end}}
+        <dt>Assigned to</dt>
+        <dd>{{if .Ticket.AssignedTo}}{{.Ticket.AssignedTo}}{{else}}<span class="hint">Unassigned</span>{{end}}</dd>
+        <dt>Opened</dt>
+        <dd>{{.Ticket.CreatedAt}}</dd>
+        <dt>Last updated</dt>
+        <dd>{{.Ticket.UpdatedAt}}</dd>
+      </dl>
+
+      <!-- Edit mode: the same fields, now as live controls -- hidden until
+           "Edit" is clicked. Each still saves independently (its own form,
+           its own endpoint, already re-validated server-side) -- this
+           toggle only gates visibility/interactivity, it doesn't change
+           how saving works. -->
+      <div id="ticket-edit-mode" hidden>
+        <form method="post" action="/support/tickets/{{.Ticket.ID}}/subject" class="field">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+          <label>Subject</label>
+          <div class="edit-row">
+            <input type="text" name="subject" value="{{.Ticket.Subject}}" maxlength="200" required />
+            <button class="cta secondary" type="submit">Save</button>
+          </div>
+        </form>
+
+        <div class="field">
+          <label>Priority</label>
           <form method="post" action="/support/tickets/{{.Ticket.ID}}/priority" class="inline-form">
             <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
             <select name="priority" onchange="this.form.submit()">
@@ -88,14 +115,10 @@
               <option value="urgent" {{if eq .Ticket.Priority "urgent"}}selected{{end}}>Urgent</option>
             </select>
           </form>
-          {{else}}
-            <span class="badge badge-priority-{{.Ticket.Priority}}">{{.Ticket.Priority}}</span>
-          {{end}}
-        </dd>
+        </div>
 
-        {{if .IsStaff}}
-        <dt>Assigned to</dt>
-        <dd>
+        <div class="field">
+          <label>Assigned to</label>
           <form method="post" action="/support/tickets/{{.Ticket.ID}}/assign" class="inline-form">
             <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
             <select name="staff_id" onchange="this.form.submit()">
@@ -106,41 +129,43 @@
               {{end}}
             </select>
           </form>
-        </dd>
-        {{else}}
-        <dt>Assigned to</dt>
-        <dd>{{if .Ticket.AssignedTo}}{{.Ticket.AssignedTo}}{{else}}<span class="hint">Unassigned</span>{{end}}</dd>
-        {{end}}
-
-        <dt>Opened</dt>
-        <dd>{{.Ticket.CreatedAt}}</dd>
-        <dt>Last updated</dt>
-        <dd>{{.Ticket.UpdatedAt}}</dd>
-      </dl>
-
-      {{if .IsStaff}}
-      <form method="post" action="/support/tickets/{{.Ticket.ID}}/category" class="field" style="margin-top:14px;">
-        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-        <label>Category</label>
-        <select name="category_id" id="edit-category">
-          {{range .TopCategories}}<option value="{{.ID}}">{{.Label}}</option>{{end}}
-        </select>
-        <label style="margin-top:6px;">Sub-category</label>
-        <select name="subcategory_id" id="edit-subcategory">
-          <option value="">— None —</option>
-        </select>
-        <div class="button-row">
-          <button class="cta secondary" type="submit">Save category</button>
         </div>
-      </form>
+
+        <form method="post" action="/support/tickets/{{.Ticket.ID}}/category" class="field">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+          <label>Category</label>
+          <select name="category_id" id="edit-category">
+            {{range .TopCategories}}<option value="{{.ID}}">{{.Label}}</option>{{end}}
+          </select>
+          <label style="margin-top:6px;">Sub-category</label>
+          <select name="subcategory_id" id="edit-subcategory">
+            <option value="">— None —</option>
+          </select>
+          <div class="button-row">
+            <button class="cta secondary" type="submit">Save category</button>
+          </div>
+        </form>
+
+        <button type="button" class="link-button" id="btn-done-editing">Done editing</button>
+      </div>
       {{else}}
-      <dl class="meta-list" style="margin-top:8px;">
+      <dl class="meta-list">
+        <dt>Status</dt>
+        <dd><span class="badge badge-status-{{.Ticket.Status}}">{{.Ticket.Status}}</span></dd>
+        <dt>Priority</dt>
+        <dd><span class="badge badge-priority-{{.Ticket.Priority}}">{{.Ticket.Priority}}</span></dd>
         <dt>Category</dt>
         <dd>{{.Ticket.CategoryLabel}}</dd>
         {{if .Ticket.SubcategoryLabel}}
         <dt>Sub-category</dt>
         <dd>{{.Ticket.SubcategoryLabel}}</dd>
         {{end}}
+        <dt>Assigned to</dt>
+        <dd>{{if .Ticket.AssignedTo}}{{.Ticket.AssignedTo}}{{else}}<span class="hint">Unassigned</span>{{end}}</dd>
+        <dt>Opened</dt>
+        <dd>{{.Ticket.CreatedAt}}</dd>
+        <dt>Last updated</dt>
+        <dd>{{.Ticket.UpdatedAt}}</dd>
       </dl>
       {{end}}
     </section>
@@ -199,6 +224,22 @@
   catSel.value = String(currentCategoryID);
   catSel.addEventListener('change', refreshSubcategories);
   refreshSubcategories();
+
+  var viewMode = document.getElementById('ticket-view-mode');
+  var editMode = document.getElementById('ticket-edit-mode');
+  var editBtn = document.getElementById('btn-edit-ticket');
+  var doneBtn = document.getElementById('btn-done-editing');
+
+  editBtn.addEventListener('click', function () {
+    viewMode.hidden = true;
+    editMode.hidden = false;
+    editBtn.hidden = true;
+  });
+  doneBtn.addEventListener('click', function () {
+    viewMode.hidden = false;
+    editMode.hidden = true;
+    editBtn.hidden = false;
+  });
 })();
 </script>
 {{end}}
