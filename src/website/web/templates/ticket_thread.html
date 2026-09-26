@@ -52,7 +52,7 @@
     <section class="card">
       <div class="card-header-row">
         <h2>Ticket</h2>
-        {{if .IsStaff}}<button type="button" class="link-button" id="btn-edit-ticket">Edit</button>{{end}}
+        {{if .IsStaff}}<button type="button" class="cta secondary small" id="btn-edit-ticket">Edit</button>{{end}}
       </div>
 
       {{if .IsStaff}}
@@ -145,8 +145,6 @@
             <button class="cta secondary" type="submit">Save category</button>
           </div>
         </form>
-
-        <button type="button" class="link-button" id="btn-done-editing">Done editing</button>
       </div>
       {{else}}
       <dl class="meta-list">
@@ -228,17 +226,12 @@
   var viewMode = document.getElementById('ticket-view-mode');
   var editMode = document.getElementById('ticket-edit-mode');
   var editBtn = document.getElementById('btn-edit-ticket');
-  var doneBtn = document.getElementById('btn-done-editing');
 
   editBtn.addEventListener('click', function () {
-    viewMode.hidden = true;
-    editMode.hidden = false;
-    editBtn.hidden = true;
-  });
-  doneBtn.addEventListener('click', function () {
-    viewMode.hidden = false;
-    editMode.hidden = true;
-    editBtn.hidden = false;
+    var editing = !editMode.hidden;
+    viewMode.hidden = editing;
+    editMode.hidden = !editing;
+    editBtn.textContent = editing ? 'Edit' : 'Done editing';
   });
 })();
 </script>

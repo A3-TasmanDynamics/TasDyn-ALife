@@ -45,7 +45,7 @@ func (d *Deps) SupportDashboard(w http.ResponseWriter, r *http.Request) {
 	data.Stats = stats
 
 	rows, err := d.Pool.Query(r.Context(), `
-		SELECT st.id, st.subject, tc1.label, COALESCE(tc2.label, ''), st.status, st.priority, COALESCE(assignee.name, ''),
+		SELECT st.id, st.subject, tc1.label, COALESCE(tc2.label, ''), st.status, st.priority, COALESCE(NULLIF(assignee.name, ''), 'Player #' || assignee.id, ''),
 		       COALESCE(NULLIF(requester.name, ''), 'Player #' || requester.id), requester.uid, st.created_at
 		FROM support_tickets st
 		JOIN ticket_categories tc1 ON tc1.id = st.category_id
@@ -132,7 +132,7 @@ func (d *Deps) SupportQueue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := `
-		SELECT st.id, st.subject, tc1.label, COALESCE(tc2.label, ''), st.status, st.priority, COALESCE(assignee.name, ''),
+		SELECT st.id, st.subject, tc1.label, COALESCE(tc2.label, ''), st.status, st.priority, COALESCE(NULLIF(assignee.name, ''), 'Player #' || assignee.id, ''),
 		       COALESCE(NULLIF(requester.name, ''), 'Player #' || requester.id), requester.uid, st.created_at
 		FROM support_tickets st
 		JOIN ticket_categories tc1 ON tc1.id = st.category_id
