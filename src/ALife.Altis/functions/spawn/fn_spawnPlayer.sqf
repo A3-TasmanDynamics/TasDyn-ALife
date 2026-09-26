@@ -50,14 +50,20 @@ if ((_record getOrDefault ["status", "ERROR"]) != "OK") exitWith {
     diag_log format ["[ALife] spawnPlayer: no valid loaded record for uid %1", _uid];
 };
 
-private _wasAlive = _record getOrDefault [_faction + "_alive", true];
+// docs/DATA_CONTRACT.md's players fields use "civ"/"cop"/"medic", not the
+// "civilian"/"police"/"medic" this mission uses for faction identity
+// everywhere else (spawn menu, spawn_config.hpp, bank_accounts.faction) --
+// see fn_factionDbPrefix.sqf for why both conventions are real and this is
+// the one place they need to meet.
+private _dbPrefix = [_faction] call ALife_fnc_factionDbPrefix;
+private _wasAlive = _record getOrDefault [_dbPrefix + "_alive", true];
 
 if (!_wasAlive) then {
     // Ignore the requested marker entirely -- resume at the stored
     // position instead. Not a full "resume unconscious" simulation (that
     // needs a revive system that doesn't exist yet); this at minimum
     // means their death/arrest still happened somewhere, not nowhere.
-    private _storedPositionPairs = _record getOrDefault [_faction + "_position", []];
+    private _storedPositionPairs = _record getOrDefault [_dbPrefix + "_position", []];
     if (count _storedPositionPairs > 0) then {
         private _positionMap = _storedPositionPairs createHashMapFromArray;
         private _pos = [

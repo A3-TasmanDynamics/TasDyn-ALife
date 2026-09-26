@@ -37,12 +37,17 @@ addMissionEventHandler ["HandleDisconnect", {
     private _activeFaction = _unit getVariable ["alife_activeFaction", ""];
     if (_activeFaction == "") exitWith { false };
 
+    // See fn_factionDbPrefix.sqf -- players.<faction>_alive/_position use
+    // "civ"/"cop"/"medic", not the "civilian"/"police"/"medic" this mission
+    // uses for faction identity everywhere else.
+    private _dbPrefix = [_activeFaction] call ALife_fnc_factionDbPrefix;
+
     private _pos = getPosATL _unit;
     private _positionValue = str [["x", _pos select 0], ["y", _pos select 1], ["z", _pos select 2]];
     private _token = (str serverTime) + "-" + _uid;
 
-    [_uid, _activeFaction + "_alive", str (alive _unit), _token] call ALife_fnc_save;
-    [_uid, _activeFaction + "_position", _positionValue, _token] call ALife_fnc_save;
+    [_uid, _dbPrefix + "_alive", str (alive _unit), _token] call ALife_fnc_save;
+    [_uid, _dbPrefix + "_position", _positionValue, _token] call ALife_fnc_save;
 
     false  // AI doesn't take over the body -- respawn handling is Phase 2
 }];
