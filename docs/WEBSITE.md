@@ -315,14 +315,26 @@ The concrete features that distinguish this from a plain forum thread:
   need this to cross-reference bans, Discord reports, and in-game identity without leaving the
   ticket.
 - **Ticket detail page** — a two-column layout for staff: conversation + reply on the left, a
-  metadata sidebar on the right (Status/Priority/Category/Assigned/timestamps, the Requester
-  identity block above, and the Claim/Unassign/Close/Reopen/priority actions) — the standard
-  layout real ticketing systems (Zendesk, Freshdesk, Jira Service Desk) use to keep a ticket's
-  properties visible without scrolling away from the conversation. A player viewing their own
-  ticket gets the conversation only, no metadata panel (staff-only information stays staff-only).
-- **Claim / Unassign** — `assigned_staff_id`, set and cleared; any staff member with Support Panel
-  access can unassign any ticket (not just their own), same as any of them could claim an unclaimed
-  one — reassignment coordination is a team/Discord problem, not something this app enforces.
+  metadata sidebar on the right — every field directly editable inline (NinjaOne-style properties
+  panel, not a separate "edit mode"), the Requester identity block, and Close/Reopen. A player
+  viewing their own ticket gets the conversation only, no metadata panel (staff-only information
+  and staff-only edits stay staff-only).
+- **Editable ticket data** — staff can correct/re-triage a ticket directly from the detail page,
+  each field its own small form re-validated server-side (never trusting that the page's own
+  `<select>` options or JS were the ones a request actually came from):
+  - **Subject** — a text field + Save button, for when a player's own title doesn't actually
+    describe the issue.
+  - **Category / Sub-category** — the same cascading selects as ticket creation, pre-filled with
+    the current values, re-checked through the identical `validateCategoryPair` the create path
+    uses.
+  - **Assigned to** (`assigned_staff_id`) — a single dropdown listing every player currently
+    resolved as Support-Panel-eligible (rank default + per-player override, the exact same
+    resolution `internal/auth/session.go` uses at login — re-derived fresh here, not cached),
+    replacing separate "claim for myself"/"unassign" actions with one control that covers
+    claiming, reassigning to someone else, and releasing back to the queue. Auto-submits on
+    change. Assigning bumps `open` → `pending` (an assigned ticket nobody's looked at yet reads
+    oddly as "open"); reassigning an already-`pending` ticket leaves its status alone.
+  - **Priority** — unchanged from before, a select that auto-submits.
 - **Internal notes** (`support_ticket_messages.internal`) — a staff-only comment on a ticket, never
   shown to the requester and never mirrored to Discord. Filtered out **in the SQL query itself**
   for a non-staff viewer (`WHERE ... AND (NOT internal OR $isStaff)`), not just hidden by the
