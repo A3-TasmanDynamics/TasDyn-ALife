@@ -369,3 +369,40 @@
     dashboard, and queue -- despite genuinely being assigned. Applied the same
     `COALESCE(NULLIF(name, ''), 'Player #' || id)` pattern used for requester names, with an outer
     `COALESCE(..., '')` fallback preserved for tickets with no assignee at all.
+- `src/ALife.Altis`: fixed two real bugs reproduced directly in Eden Editor preview.
+  - `dialog/spawnMenu.hpp`'s controls inherited from `RscText`/`RscButton`/`RscListbox` with no
+    forward declaration -- "Undefined base class 'RscText'". Standard Arma dialog requirement:
+    the mission config compiler needs these declared (`class RscText;`) before use as a base
+    class, even though the real classes exist in the engine at runtime.
+  - `initPlayerServer.sqf` called `ALife_fnc_load` before the `CfgFunctions` library was
+    guaranteed to have finished compiling -- "Undefined variable: alife_fnc_load". A real
+    dedicated server's lobby wait hides this; a fast-starting session (Eden preview,
+    locally-hosted MP) doesn't guarantee that gap. Added a `waitUntil { !isNil "..." }` guard.
+- `src/ALife.Altis`: fixed civilian/police death-position persistence being silently dropped.
+  This mission uses `"civilian"`/`"police"`/`"medic"` as its faction identifier everywhere (spawn
+  menu, `config/spawn_config.hpp`, matching `bank_accounts.faction`'s `CHECK` constraint) but
+  `docs/DATA_CONTRACT.md`'s `players.<faction>_alive` / `players.<faction>_position` fields use
+  the abbreviated `civ`/`cop` prefix -- two different, both-intentional conventions that
+  `fn_spawnPlayer.sqf` and `initServer.sqf`'s `HandleDisconnect` were conflating by building the
+  save/load field name directly from the faction identifier. `civilian_alive`/`police_position`
+  never matched any real `players` column, so `ALife_fnc_save` silently returned `"ERROR"` for
+  every civilian/police death-position save (`HandleDisconnect` never checks the return value) --
+  those two factions never actually got their alive/position state persisted on disconnect; only
+  medic worked, since it's spelled the same both ways. Added `functions/data/fn_factionDbPrefix.sqf`
+  as the one place that translates between the two conventions.
+- `src/ALife.Altis`: placed the first real mission content in Eden -- `police_kavala_spawn`,
+  `civilian_kavala_spawn`, `medic_kavala_spawn` marker objects, and 16 placeholder playable units
+  (`police_1..4`, `civilian_1..4`, `medic_1..8`; real per-faction models/uniforms are Phase 2
+  work). `config/spawn_config.hpp`'s marker names updated to match.
+- **Found via Eden preview, not a code bug**: `callExtension` resolves the extension DLL from the
+  *running executable's own directory* -- for `arma3server_x64.exe` that's the dedicated server
+  install (what `tools/test_local_server.ps1` / `server_manager`'s `deploy.go` already deploy the
+  extension into), but Eden Editor's "Play Scenario" preview runs `arma3_x64.exe` from the
+  regular **Arma 3 client** install -- a separate directory the extension had never been deployed
+  to. Missing this doesn't produce an obvious error; `callExtension` silently returns nothing
+  usable, which cascades into confusing SQF-side errors (`ALife_fnc_load`'s `_record` coming back
+  undefined, then garbage propagating into later checks) that look like mission-code bugs.
+  Confirmed via `test_harness.exe` run from both directories -- fails from the client install
+  without the extension present, succeeds identically once deployed there too. Documented in
+  `src/cpp_extension/README.md` under "Deploying for Eden Editor / local preview testing" so this
+  doesn't get rediscovered the hard way again.
