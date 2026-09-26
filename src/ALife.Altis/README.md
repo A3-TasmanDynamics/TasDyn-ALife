@@ -15,7 +15,7 @@ src/ALife.Altis/
 ├── description.ext        # Mission config — includes everything below
 ├── CfgFunctions.hpp        # Registers ALife_fnc_* from functions/
 ├── CfgRemoteExec.hpp       # The remoteExec allowlist — see docs/ANTI_CHEAT.md Layer 1
-├── initServer.sqf          # Mission-level init: the HandleDisconnect hook
+├── initServer.sqf          # Mission-level init: HandleDisconnect + starts fn_sync.sqf
 ├── initPlayerServer.sqf    # Per-player join hook: load, then open the spawn menu
 ├── config/
 │   └── spawn_config.hpp    # Spawn point definitions — see below
@@ -26,7 +26,9 @@ src/ALife.Altis/
     ├── data/                          # DB-facing — implements docs/DATA_CONTRACT.md
     │   ├── fn_load.sqf
     │   ├── fn_save.sqf
-    │   └── fn_parseStoredPosition.sqf  # Safely parses a loaded <faction>_position
+    │   ├── fn_parseStoredPosition.sqf  # Safely parses a loaded <faction>_position
+    │   ├── fn_savePlayerState.sqf      # Saves alive/position -- shared by disconnect + sync
+    │   └── fn_sync.sqf                 # Periodic pulse: DB keep-alive + autosave -- see below
     └── spawn/                # Faction/spawn-point selection
         ├── fn_getSpawnPoints.sqf  # Reads config/spawn_config.hpp
         ├── fn_spawnPlayer.sqf     # Authoritative spawn handling (server)
@@ -66,6 +68,30 @@ elsewhere in `database/schema.sql`), and that mismatch was a real, silent bug: `
 never matched the real `cop_position` column, so police/civilian death-position persistence
 silently no-opped. If gang/bank features ever get wired into this mission, they'll need to
 translate at that boundary instead — not here.
+
+## Sync / autosave
+
+`fn_sync.sqf` is spawned once from `initServer.sqf` and runs for the mission's whole lifetime
+(guarded against the same function-compile race `initPlayerServer.sqf`'s `ALife_fnc_load` call
+needed — see the comment there). Every 60 seconds it:
+
+- **Pings the DB** (`"tasdyn_alife" callExtension ["ping", []]`) and logs on a state *change*
+  (lost/restored), not every tick. This exists because the C++ extension didn't used to reconnect
+  on its own at all — a Postgres restart or a network blip would silently fail every load/save for
+  the rest of the server's uptime. `src/cpp_extension/src/db.cpp`'s `EnsureConnected` now recovers
+  from that automatically (see that repo's README) — the ping here is what actually *triggers*
+  that recovery on a schedule, rather than only ever discovering a dead connection the next time a
+  player happens to load/save.
+- **Autosaves** every connected, actively-playing player's alive/position state via
+  `fn_savePlayerState.sqf` — the same logic `initServer.sqf`'s `HandleDisconnect` uses for a clean
+  quit, factored out since `HandleDisconnect` never fires on an ungraceful server crash at all, and
+  that's exactly the case autosave exists to cover.
+
+Reviewed an old local prototype's `fn_autoSave.sqf`/`fn_serverPulse.sqf` for the general shape
+(spawn one loop, sleep, act) — not copied wholesale; nothing here needs a generic external-event
+poll the way that prototype's did, since this mission doesn't have a cross-system command queue
+(website/Discord → live server) yet. That's a real, separate feature for later, not something this
+pass builds.
 
 ## `mission.sqm`
 

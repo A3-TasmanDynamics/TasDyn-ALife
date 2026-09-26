@@ -440,3 +440,41 @@
     warnings, no function-compile errors anywhere in the RPT. Still needs a real Eden Editor
     playtest (actual player join, faction pick, spawn) to confirm end-to-end -- this environment
     can't drive an interactive client.
+- `src/ALife.Altis`: reviewed `initServer.sqf`/`initPlayerServer.sqf` against Bohemia's documented
+  Mission Event Handler / Initialization Order signatures rather than assuming.
+  `HandleDisconnect`'s `params ["_unit", "_id", "_uid", "_name"]` already matched the documented
+  `[unit, id, uid, name]` exactly. `initPlayerServer.sqf` only declared `params ["_player"]`, but
+  the engine actually calls it with `_this = [player, didJIP]` -- not a functional bug (load-then-
+  open-spawn-menu is correct for a JIP reconnect too), but the declaration now reflects the real
+  argument shape instead of silently dropping it.
+- `src/ALife.Altis`: consolidated the spawn menu's five one-function files
+  (`fn_spawnMenuOpen/SelectSide/SelectLocation/Spawn/Close.sqf`) into one mode-dispatched
+  `fn_spawnMenu.sqf` (`"open"`/`"onLoad"`/`"selectSide"`/`"selectLocation"`/`"spawn"`/`"onUnload"`)
+  -- all five were tightly coupled to the same dialog and its selection state, never meaningfully
+  called independently. `dialog/spawnMenu.hpp`'s actions/`onLoad`/`onUnload`/`onLBSelChanged`
+  updated to pass the mode; no behavior change. Verified via `tools/test_local_server.ps1`.
+- `src/cpp_extension` + `src/ALife.Altis`: added DB connection resilience and a periodic
+  autosave/keep-alive pulse.
+  - **`Database::EnsureConnected()`** (new, `db.cpp`): the extension had no reconnect logic at all
+    -- a Postgres restart or network blip would silently fail every load/save for the rest of the
+    server's uptime. Every public `Database` method now calls this first. Caught a real bug while
+    building it: trusting `PQstatus() == CONNECTION_OK` alone isn't enough, since that only
+    reflects libpq's cached belief and doesn't proactively notice a server-killed connection --
+    confirmed with a live `pg_terminate_backend` test where a naive status check let a dead
+    connection straight through to a failed query. Fixed by having `EnsureConnected` do a real
+    `SELECT 1` probe before trusting the cached status, only falling back to `PQreset()` when that
+    probe actually fails. Re-verified the same live-kill test afterward -- the connection now
+    self-heals within one call, no server restart needed.
+  - **`fn_sync.sqf`** (new): a periodic pulse spawned once from `initServer.sqf` (same
+    function-compile-race guard as `initPlayerServer.sqf`'s `ALife_fnc_load` call). Every 60s:
+    pings the DB (triggering `EnsureConnected`'s recovery on a schedule rather than only ever
+    discovering a dead connection the next time a player happens to load/save) and autosaves every
+    connected, actively-playing player's alive/position state.
+  - **`fn_savePlayerState.sqf`** (new): the alive/position-saving logic factored out of
+    `initServer.sqf`'s `HandleDisconnect` so `fn_sync.sqf`'s autosave can share it --
+    `HandleDisconnect` alone never covers an ungraceful server crash, exactly the gap autosave
+    exists to close.
+  - Reviewed an old local prototype's `fn_autoSave.sqf`/`fn_serverPulse.sqf` for the general "spawn
+    one loop, sleep, act" shape -- not copied wholesale. That prototype's DB event-polling loop
+    (website/Discord commands reaching the live server) is real, useful, separate future work, not
+    something this pass builds.
