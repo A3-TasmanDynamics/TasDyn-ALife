@@ -201,7 +201,7 @@ class Mission
 					{
 						name="police_1";
 						description="Police - Whitelisted #1";
-						isPlayable=1;
+						isPlayable=0;
 						class Inventory
 						{
 							map="ItemMap";
@@ -243,7 +243,7 @@ class Mission
 					{
 						name="police_2";
 						description="Police - Whitelisted #2";
-						isPlayable=1;
+						isPlayable=0;
 						class Inventory
 						{
 							map="ItemMap";
@@ -285,7 +285,7 @@ class Mission
 					{
 						name="police_3";
 						description="Police - Whitelisted #3";
-						isPlayable=1;
+						isPlayable=0;
 						class Inventory
 						{
 							map="ItemMap";
@@ -327,7 +327,7 @@ class Mission
 					{
 						name="police_4";
 						description="Police - Whitelisted #4";
-						isPlayable=1;
+						isPlayable=0;
 						class Inventory
 						{
 							map="ItemMap";
@@ -398,7 +398,7 @@ class Mission
 					class Attributes
 					{
 						name="civilian_1";
-						description="Civilian #1";
+						description="Connect";
 						isPlayable=1;
 						class Inventory
 						{
@@ -454,7 +454,7 @@ class Mission
 					{
 						name="civilian_2";
 						description="Civilian #2";
-						isPlayable=1;
+						isPlayable=0;
 						class Inventory
 						{
 							map="ItemMap";
@@ -509,7 +509,7 @@ class Mission
 					{
 						name="civilian_3";
 						description="Civilian #3";
-						isPlayable=1;
+						isPlayable=0;
 						class Inventory
 						{
 							map="ItemMap";
@@ -564,7 +564,7 @@ class Mission
 					{
 						name="civilian_4";
 						description="Civilian #4";
-						isPlayable=1;
+						isPlayable=0;
 						class Inventory
 						{
 							map="ItemMap";
@@ -649,7 +649,7 @@ class Mission
 					{
 						name="medic_1";
 						description="Medic - Whitelisted #1";
-						isPlayable=1;
+						isPlayable=0;
 						class Inventory
 						{
 							map="ItemMap";
@@ -704,7 +704,7 @@ class Mission
 					{
 						name="medic_2";
 						description="Medic - Whitelisted #2";
-						isPlayable=1;
+						isPlayable=0;
 						class Inventory
 						{
 							map="ItemMap";
@@ -759,7 +759,7 @@ class Mission
 					{
 						name="medic_3";
 						description="Medic - Whitelisted #3";
-						isPlayable=1;
+						isPlayable=0;
 						class Inventory
 						{
 							map="ItemMap";
@@ -814,7 +814,7 @@ class Mission
 					{
 						name="medic_4";
 						description="Medic - Whitelisted #4";
-						isPlayable=1;
+						isPlayable=0;
 						class Inventory
 						{
 							map="ItemMap";
@@ -869,7 +869,7 @@ class Mission
 					{
 						name="medic_5";
 						description="Medic - Whitelisted #5";
-						isPlayable=1;
+						isPlayable=0;
 						class Inventory
 						{
 							map="ItemMap";
@@ -924,7 +924,7 @@ class Mission
 					{
 						name="medic_6";
 						description="Medic - Whitelisted #6";
-						isPlayable=1;
+						isPlayable=0;
 						class Inventory
 						{
 							map="ItemMap";
@@ -979,7 +979,7 @@ class Mission
 					{
 						name="medic_8";
 						description="Medic - Whitelisted #8";
-						isPlayable=1;
+						isPlayable=0;
 						class Inventory
 						{
 							map="ItemMap";
@@ -1035,7 +1035,7 @@ class Mission
 					{
 						name="medic_7";
 						description="Medic - Whitelisted #7";
-						isPlayable=1;
+						isPlayable=0;
 						class Inventory
 						{
 							map="ItemMap";
