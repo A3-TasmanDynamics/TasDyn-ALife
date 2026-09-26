@@ -500,3 +500,12 @@
     web search couldn't confirm the coercion is actually guaranteed either. Rather than ship an
     unverified assumption, replaced every instance (including one already merged in `fn_sync.sqf`)
     with plain `if/then/else`, which needs no such assumption.
+- `src/server_manager` + `tools/test_local_server.ps1`: added `-autoInit` to the dedicated server's
+  launch arguments. `persistent = 1;` alone (already set, both places) only keeps a mission running
+  after every player has left -- it doesn't make it start "playing" on its own; without a real
+  client to trigger that transition, the mission sits in the pre-play lobby/briefing state
+  indefinitely. `-autoInit` initializes the mission at boot the same as the first client connecting
+  would (silently ignored unless `persistent=1`, which both call sites already set unconditionally).
+  Verified via a live A2S query before/after: the server's reported status changed from a bare
+  "Waiting" to the mission's actual briefing name and gametype once `-autoInit` was added --
+  confirmed it's genuinely running, not just guessed from the docs.

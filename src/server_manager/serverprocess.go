@@ -140,6 +140,13 @@ func (a *App) LaunchServer() (LaunchResult, error) {
 		fmt.Sprintf("-profiles=%s", profileDir),
 		"-name=alife_server",
 		"-port=2302",
+		// Initializes the mission immediately at boot, the same as the
+		// first client connecting would -- without it, a persistent
+		// mission with zero players sits in the pre-play lobby/briefing
+		// state indefinitely rather than actually "playing." Requires
+		// persistent=1 in server.cfg (always written above) or the
+		// engine silently ignores this flag.
+		"-autoInit",
 	)
 	cmd.Dir = settings.ArmaServerPath
 
