@@ -589,3 +589,26 @@
   itself still scrolling internally. Applied uniformly to all five tabs, not just Console --
   Launch/Logs/Performance/Settings render exactly as before since their content just stacks
   normally inside the same flex column.
+- `src/ALife.Altis` + `src/cpp_extension`: the `initPlayerLocal.sqf` fix above got real SQF
+  actually exercising `callExtension` for the first time with a genuine player object, and it
+  immediately surfaced two more quote-handling bugs on top of the array-return one found earlier --
+  same root cause (this whole boundary had only ever been tested through `test_harness.exe`'s
+  direct `argv`, never real SQF) wearing a different hat each time.
+  - **Outgoing STRING arguments arrive at the extension wrapped in an extra literal pair of double
+    quotes.** A real player's uid of `76561198127262076` showed up as a *second*, bogus `players`
+    row with `uid` literally `"76561198127262076"` (quotes included as part of the text) the
+    moment a real `[JIP]` reconnect ran `callExtension`'s array form for the first time. Fixed in
+    `fn_callExtension.sqf` -- the same centralized choke point already unwrapping the `[string,
+    code]` return shape now also strips this wrapping from every string argument before it goes
+    out, by Unicode code point rather than a literal `"` in the file's own source (avoids any
+    quote-escaping confusion in the fix itself).
+  - **`db.cpp`'s `EscapeStringLiteral` used backslash-escaping (`\"`) for embedded quotes -- C/JSON
+    convention, not SQF's.** SQF escapes an embedded quote by *doubling* it (`""`), confirmed
+    against Bohemia's own SQF Syntax page. This bug was latent from the start (only visible once a
+    free-text field's value actually contained a `"`) and only got exposed because the bogus
+    quoted-uid row above, once created, had its own uid re-embedded into `LoadPlayer`'s response
+    text -- producing a literal `\"` that `parseSimpleArray` doesn't understand at all, and it
+    failed with "parseSimpleArray format error" the instant that happened. Verified the fix
+    directly: set a field to a value containing a literal `"` and confirmed `test_harness.exe load`
+    now round-trips it as `te""st`, not `te\"st`.
+  - Cleaned up the bogus quoted-uid row from the dev DB afterward.

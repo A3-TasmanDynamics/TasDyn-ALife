@@ -6,15 +6,26 @@
 
 namespace {
 
-// Escapes a plain-text value for embedding inside a double-quoted SQF/JSON
+// Escapes a plain-text value for embedding inside a double-quoted SQF
 // string literal (only used for genuinely free-text fields -- name, dept,
 // staff_rank_key -- never for the JSONB array-of-pairs fields, which are
 // embedded verbatim since they're already valid array literals).
+//
+// SQF (unlike C/JSON) escapes an embedded quote by *doubling* it (`""`),
+// not with a backslash -- confirmed against Bohemia's own SQF Syntax page.
+// This used to backslash-escape, which parseSimpleArray doesn't
+// understand at all: a value that actually contained a `"` produced a
+// literal `\"` in the response text, and parseSimpleArray choked on it
+// with "parseSimpleArray format error" the first time a real value ever
+// exercised this path (a uid that had picked up a stray pair of quotes
+// from a separate bug -- see fn_callExtension.sqf -- when re-embedded in
+// the response's own uid field). Backslash isn't special in SQF string
+// literals at all, so it needs no escaping of its own.
 std::string EscapeStringLiteral(const std::string& raw) {
     std::string out;
     out.reserve(raw.size() + 8);
     for (char c : raw) {
-        if (c == '"' || c == '\\') out.push_back('\\');
+        if (c == '"') out.push_back('"');
         out.push_back(c);
     }
     return out;
