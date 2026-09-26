@@ -612,3 +612,10 @@
     directly: set a field to a value containing a literal `"` and confirmed `test_harness.exe load`
     now round-trips it as `te""st`, not `te\"st`.
   - Cleaned up the bogus quoted-uid row from the dev DB afterward.
+- `src/ALife.Altis`: with the fixes above, the spawn dialog actually opened for the first time --
+  and immediately hit `No entry '.../ALife_SpawnMenu/controls/SpawnMap.text'`, with the map control
+  rendering as a black rectangle covering the screen. The engine's dialog renderer reads `text`
+  unconditionally regardless of control type; `dialog/common_ui.hpp`'s `ALife_RscMap` was the one
+  self-contained base class that never defined one (every other class already had it). Added
+  `text = "";` there, and proactively to `ALife_RscListBox` too (same gap, not yet hit live but the
+  same class of bug) rather than waiting to find it the same way.

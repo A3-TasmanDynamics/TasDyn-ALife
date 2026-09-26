@@ -101,6 +101,9 @@ class ALife_RscListBox
     type = ALIFE_CT_LISTBOX;
     idc = -1;
     style = 0;
+    // Same gap as ALife_RscMap -- see the comment there. Fixed proactively
+    // here rather than waiting to hit the same error for this control.
+    text = "";
     font = "RobotoCondensed";
     sizeEx = 0.025;
     rowHeight = 0.04;
@@ -138,6 +141,13 @@ class ALife_RscMap
     type = ALIFE_CT_MAP_MAIN;
     idc = -1;
     style = 48; // ST_PICTURE
+    // The engine's own dialog renderer reads `text` unconditionally
+    // regardless of control type -- confirmed live: omitting it produced
+    // "No entry '.../ALife_SpawnMenu/controls/SpawnMap.text'" and the
+    // dialog rendering broken (map control filling the screen black)
+    // the moment a real client actually opened this dialog. Every other
+    // control here already had one; this class was the one gap.
+    text = "";
     colorBackground[] = { 0.1, 0.1, 0.1, 1 };
     colorOutside[] = { 0, 0, 0, 1 };
     colorText[] = { 0, 0, 0, 1 };
