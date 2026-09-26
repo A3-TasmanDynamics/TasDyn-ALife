@@ -3,9 +3,15 @@
 
     Runs server-side once per player, on connect and on JIP. This is the
     join hook for docs/DATA_CONTRACT.md's "load" — see fn_load.sqf.
+
+    The engine calls this with _this = [player, didJIP] -- _didJIP isn't
+    used yet (load + open-spawn-menu is the right flow either way: a JIP
+    player is still a fresh unit with no session state of its own to
+    resume), but it's declared so that's a deliberate choice, not a
+    silently-dropped argument.
 */
 
-params ["_player"];
+params ["_player", "_didJIP"];
 
 if (!isServer) exitWith {};
 
