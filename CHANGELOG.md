@@ -406,3 +406,37 @@
   without the extension present, succeeds identically once deployed there too. Documented in
   `src/cpp_extension/README.md` under "Deploying for Eden Editor / local preview testing" so this
   doesn't get rediscovered the hard way again.
+- `src/ALife.Altis`: rebuilt the spawn system after the "Invalid number in expression" crash kept
+  recurring at the same line through two narrower fixes. Reviewed a real framework's spawn dialog
+  and an old local prototype's `core/spawn/` structure for reference (not copied wholesale):
+  - **Faction naming unified to `"civ"`/`"cop"`/`"medic"`** everywhere in this mission (spawn menu,
+    `config/spawn_config.hpp`, `fn_spawnPlayer.sqf`, `initServer.sqf`'s `HandleDisconnect`) --
+    matching `docs/DATA_CONTRACT.md`'s `players.<faction>_*` field prefix directly, so a faction
+    string can be concatenated straight into a field name with no translation step. Removed
+    `fn_factionDbPrefix.sqf` (no longer needed) and its `"civilian"/"police"/"medic"` counterpart
+    naming, which was the source of the earlier civ/police persistence bug in the first place.
+  - **`fn_parseStoredPosition.sqf`** (new): validates a loaded `<faction>_position` value's shape
+    (real array, non-empty, all three coordinates actually numbers) before ever calling
+    `createHashMapFromArray` on it, returning `nil` instead of crashing on anything malformed --
+    `fn_spawnPlayer.sqf` had called that directly on untrusted data with zero validation, which is
+    exactly what "Invalid number in expression" turned out to mean once fed anything unexpected.
+    Falls back to the faction's first configured spawn point rather than leaving the player stuck.
+  - **`dialog/common_ui.hpp`** (new): self-contained `ALife_Rsc*` dialog base classes (explicit
+    `type = N` control-type constants, full property sets) instead of `class X : RscText`
+    inheriting from the engine's own UI config -- the exact thing that broke the dialog earlier
+    ("Undefined base class 'RscText'", needing a forward declaration easy to forget on every new
+    dialog). Sidesteps that whole class of bug permanently.
+  - **Spawn menu UI**: rebuilt as a proper multi-step flow matching the reference's shape -- side
+    buttons (civ/cop/medic) instead of a faction listbox, a spawn point list, and a live map
+    preview (marker + pan) of the selected point, replacing the original bare-bones two-listbox
+    dialog. Split into one function per responsibility (`fn_spawnMenuOpen`/`SelectSide`/
+    `SelectLocation`/`Spawn`/`Close`.sqf), wired via the dialog's own `onLoad`/`onUnload` rather
+    than being driven externally -- removed `fn_confirmSpawn.sqf` and
+    `fn_spawnMenuFactionChanged.sqf`, superseded by this split.
+  - Verified via `tools/test_local_server.ps1` against the real local Arma 3 Server install: the
+    entire config stack (`description.ext`, `CfgFunctions.hpp`, `CfgRemoteExec.hpp`,
+    `config/spawn_config.hpp`, `dialog/common_ui.hpp`, `dialog/spawnMenu.hpp`) and every new/changed
+    `.sqf` function compiles with zero errors -- no "Undefined base class" or "Missing Header"
+    warnings, no function-compile errors anywhere in the RPT. Still needs a real Eden Editor
+    playtest (actual player join, faction pick, spawn) to confirm end-to-end -- this environment
+    can't drive an interactive client.

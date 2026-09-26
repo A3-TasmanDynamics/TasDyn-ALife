@@ -20,17 +20,22 @@ src/ALife.Altis/
 ├── config/
 │   └── spawn_config.hpp    # Spawn point definitions — see below
 ├── dialog/
+│   ├── common_ui.hpp       # Shared ALife_Rsc* dialog base classes
 │   └── spawnMenu.hpp       # Faction + spawn point selection dialog
 └── functions/
-    ├── data/                # DB-facing — implements docs/DATA_CONTRACT.md
+    ├── data/                          # DB-facing — implements docs/DATA_CONTRACT.md
     │   ├── fn_load.sqf
-    │   └── fn_save.sqf
-    └── spawn/               # Faction/spawn-point selection
-        ├── fn_getSpawnPoints.sqf          # Reads config/spawn_config.hpp
-        ├── fn_spawnPlayer.sqf             # Authoritative spawn handling (server)
-        ├── fn_spawnMenu.sqf               # Opens the dialog (client)
-        ├── fn_spawnMenuFactionChanged.sqf # Repopulates spawn points on faction change (client)
-        └── fn_confirmSpawn.sqf            # Sends the spawn request to the server (client)
+    │   ├── fn_save.sqf
+    │   └── fn_parseStoredPosition.sqf  # Safely parses a loaded <faction>_position
+    └── spawn/                          # Faction/spawn-point selection
+        ├── fn_getSpawnPoints.sqf           # Reads config/spawn_config.hpp
+        ├── fn_spawnPlayer.sqf              # Authoritative spawn handling (server)
+        ├── fn_spawnMenu.sqf                # Opens the dialog (client)
+        ├── fn_spawnMenuOpen.sqf            # Dialog onLoad: default side + map center (client)
+        ├── fn_spawnMenuSelectSide.sqf      # Side button click: populate spawn list (client)
+        ├── fn_spawnMenuSelectLocation.sqf  # List selection: map marker + pan (client)
+        ├── fn_spawnMenuSpawn.sqf           # Spawn button: sends the request to the server (client)
+        └── fn_spawnMenuClose.sqf           # Dialog onUnload: map marker cleanup (client)
 ```
 
 One subfolder per area under `functions/` (`data/`, `spawn/`, more to come — `player/`, `admin/`,
@@ -46,11 +51,25 @@ file for why (short version: it's a mission-design decision made during developm
 something staff need to hot-edit on a live server, unlike `arsenal_item_pools`).
 
 Each `CfgSpawnPoints` entry references a marker by name (no fixed naming pattern required —
-whatever's actually in `mission.sqm` is what goes in the `marker` field). `mission.sqm` currently
-has one real marker placed: `police_kav_spawn` (Kavala), matching `spawn_config.hpp`'s
-`police_kavala_hq` entry. Civilian/medic markers aren't placed yet — `civilian_kavala`'s
-`civ_kavala_spawn` marker doesn't exist in `mission.sqm` yet. Add/rename/remove `CfgSpawnPoints`
-entries to match whatever markers actually exist as more get placed.
+whatever's actually in `mission.sqm` is what goes in the `marker` field). Three real markers are
+placed in Kavala: `civilian_kavala_spawn`, `police_kavala_spawn`, `medic_kavala_spawn`, matching
+`spawn_config.hpp`'s `civilian_kavala` / `police_kavala_hq` / `medic_kavala_hospital` entries.
+Each entry's `faction` value is `"civ"` / `"cop"` / `"medic"` — matching
+`docs/DATA_CONTRACT.md`'s `players.<faction>_*` field prefix directly (see "Faction naming"
+below) — not the `displayName`, which is free text. Add/rename/remove `CfgSpawnPoints` entries to
+match whatever markers actually exist as more get placed.
+
+## Faction naming
+
+The spawn menu, `config/spawn_config.hpp`, and `fn_spawnPlayer.sqf`/`initServer.sqf`'s
+`HandleDisconnect` all use `"civ"` / `"cop"` / `"medic"` as the faction identifier — matching
+`docs/DATA_CONTRACT.md`'s `players.<faction>_*` field prefix exactly, so a faction string can be
+concatenated straight into a field name (`_faction + "_alive"`) with no translation step. This
+used to be `"civilian"`/`"police"`/`"medic"` here (matching `bank_accounts.faction`'s naming
+elsewhere in `database/schema.sql`), and that mismatch was a real, silent bug: `"police_position"`
+never matched the real `cop_position` column, so police/civilian death-position persistence
+silently no-opped. If gang/bank features ever get wired into this mission, they'll need to
+translate at that boundary instead — not here.
 
 ## `mission.sqm`
 
@@ -79,6 +98,7 @@ actual local dedicated server for testing:
 - `spawn_config.hpp`'s `gang` field isn't enforced yet — gang membership isn't part of the loaded
   record (`docs/DATA_CONTRACT.md`), so `fn_spawnPlayer.sqf` has nothing to check it against until
   that exists.
-- The spawn menu dialog (`dialog/spawnMenu.hpp`) is a first pass — a simple list-based UI, not a
-  final design. Reviewed a real three-panel (list + map preview + confirm) spawn dialog for the
-  general shape while designing this, but didn't copy its layout or code.
+- Spawn point rank/department gating (a real framework's spawn config supports per-point
+  `minRank`/`departments`/arbitrary `conditions`) isn't implemented — there's no rank/department
+  data in the loaded record yet for it to check against. `config/spawn_config.hpp`'s shape doesn't
+  preclude adding it later.

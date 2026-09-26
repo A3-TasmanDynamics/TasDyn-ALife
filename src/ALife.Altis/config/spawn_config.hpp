@@ -9,7 +9,10 @@
 //
 // Each entry:
 //   displayName — shown in the spawn menu UI
-//   faction     — "civilian" / "police" / "medic"
+//   faction     — "civ" / "cop" / "medic" -- matches docs/DATA_CONTRACT.md's
+//                 players.<faction>_* field prefix (and the spawn menu's own
+//                 side identifier) directly; no translation needed anywhere
+//                 downstream of the menu.
 //   marker      — preferred: a marker name placed in Eden (visual, no
 //                 hand-typed coordinates). Position resolves from this if
 //                 set.
@@ -31,7 +34,7 @@ class CfgSpawnPoints
     class civilian_kavala
     {
         displayName = "Kavala";
-        faction = "civilian";
+        faction = "civ";
         marker = "civilian_kavala_spawn";  // place this marker in Eden once mission.sqm exists
         position[] = {};
         gang = "";
@@ -40,7 +43,7 @@ class CfgSpawnPoints
     class police_kavala_hq
     {
         displayName = "Kavala Police HQ";
-        faction = "police";
+        faction = "cop";
         marker = "police_kavala_spawn";
         position[] = {};
         gang = "";
