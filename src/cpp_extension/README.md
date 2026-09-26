@@ -49,3 +49,26 @@ exports exactly the way Arma's `callExtension` does — proves the extension wor
 ```powershell
 .\test_harness.exe ping
 ```
+
+### Deploying for Eden Editor / local preview testing
+
+`callExtension` resolves the DLL from **the running executable's own directory** — for
+`arma3server_x64.exe` that's the dedicated server install (what `tools/test_local_server.ps1` /
+`server_manager`'s `deploy.go` copy the extension into automatically), but for Eden Editor's
+"Play Scenario" preview, the running executable is `arma3_x64.exe` in the regular **Arma 3
+client** install — a different, separate directory. The extension being deployed to the
+dedicated server does nothing for Eden preview; it needs its own copy dropped next to
+`arma3_x64.exe`:
+
+```powershell
+Copy-Item build\tasdyn_alife_x64.dll, build\libpq.dll, build\libssl-3-x64.dll, `
+    build\libcrypto-3-x64.dll, build\libintl-9.dll, build\libwinpthread-1.dll, `
+    build\libiconv-2.dll, ..\..\config.ini `
+    "<path to Arma 3 client install>\"
+```
+
+Missing this deployment doesn't produce an obvious "DLL not found" error — `callExtension`
+silently returns nothing usable, which then cascades into confusing downstream SQF errors
+(`ALife_fnc_load`'s `_record` coming back undefined, or garbage propagating into later checks)
+that look like mission-code bugs rather than a missing file. If Eden preview throws errors
+tracing back to `ALife_fnc_load` or anything reading `alife_record`, check this first.
