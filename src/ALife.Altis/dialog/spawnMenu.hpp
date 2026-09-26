@@ -2,8 +2,8 @@
 // Side-select buttons (civ/cop/medic) -> spawn point list, filtered per side
 // via ALife_fnc_getSpawnPoints (config/spawn_config.hpp) -> a map preview of
 // the selected point -> Spawn. Reviewed a real framework's dialog for the
-// general "side buttons + list + map preview" shape and its self-contained
-// ALife_Rsc*-style base classes (common_ui.hpp) -- not copied wholesale,
+// general "side buttons + list + map preview" shape; ALife_Rsc*-style base
+// classes (common_ui.hpp) inherit from the engine's own Rsc* controls --
 // rebuilt against this mission's own data contract and spawn functions.
 
 #include "common_ui.hpp"

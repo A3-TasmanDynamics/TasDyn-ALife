@@ -619,3 +619,19 @@
   self-contained base class that never defined one (every other class already had it). Added
   `text = "";` there, and proactively to `ALife_RscListBox` too (same gap, not yet hit live but the
   same class of bug) rather than waiting to find it the same way.
+- `src/ALife.Altis/dialog/common_ui.hpp`: the `text` fix above immediately surfaced the next missing
+  property on the same control -- `No entry '.../ALife_SpawnMenu/controls/SpawnMap.widthRailWay'` --
+  confirming a whack-a-mole pattern rather than a one-off gap. `widthRailWay` is a real, known-
+  troublesome property of Arma's map control (there's a long-standing Bohemia forums thread on
+  exactly this error, "Dialog Map.widthRailWay issue since Arma 3 1.90 update"), and hand-maintaining
+  a property list for `ALife_RscMap` was always going to keep missing ones one at a time. Root cause:
+  this file's self-contained `ALife_Rsc*` classes were an unnecessary over-correction -- the
+  *original* "Undefined base class 'RscText'" bug (from before this file existed) was already
+  correctly solved by forward-declaring and inheriting from the engine's real `Rsc*` classes, which
+  provide every property automatically. Reverted to that approach for all of them: `common_ui.hpp`
+  now forward-declares `RscText`, `RscButton`, `RscListBox`, `RscStructuredText`, and `RscMapControl`
+  (confirmed as the real map-control class name, distinct from the `RscMap` guess the self-contained
+  version was named after) and each `ALife_Rsc*` class inherits from the matching real one, keeping
+  only the actual visual overrides (colors, fonts, sizes) instead of a full hand-rolled property set.
+  This removes the whole class of bug rather than patching `widthRailWay` and waiting for whatever's
+  missing next.
