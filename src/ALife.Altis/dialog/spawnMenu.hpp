@@ -5,6 +5,14 @@
 // then confirm" shape, didn't copy its layout or code) -- appropriately
 // scoped for a first pass, not the final word on this UI.
 
+// Forward declarations -- the engine's own RscText/RscButton/RscListbox
+// exist at runtime, but the mission config compiler needs them declared
+// before they're used as a base class here, or every `class X : RscText`
+// below fails with "Undefined base class 'RscText'".
+class RscText;
+class RscButton;
+class RscListbox;
+
 class ALife_SpawnMenu
 {
     idd = 4700;

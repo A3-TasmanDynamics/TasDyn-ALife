@@ -9,6 +9,15 @@ params ["_player"];
 
 if (!isServer) exitWith {};
 
+// The functions library (CfgFunctions) isn't guaranteed to have finished
+// compiling yet when initPlayerServer.sqf runs for the first/hosting
+// player in a fast-starting session (singleplayer preview, locally-hosted
+// MP) -- unlike a real dedicated server with a lobby wait, there's no
+// guaranteed gap between mission start and the first player being "in."
+// Confirmed via Eden Editor preview: ALife_fnc_load was still undefined at
+// this exact line without this guard.
+waitUntil { !isNil "ALife_fnc_load" };
+
 private _record = [_player] call ALife_fnc_load;
 
 if ((_record getOrDefault ["status", "ERROR"]) != "OK") exitWith {
