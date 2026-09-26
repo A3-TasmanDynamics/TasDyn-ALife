@@ -17,9 +17,9 @@ class EditorData
 	class Camera
 	{
 		pos[]={8571.0156,129.23074,25030.691};
-		dir[]={-0.49029317,-0.46128732,0.73949617};
-		up[]={-0.25490764,0.88724726,0.38447002};
-		aside[]={0.83346355,-1.2427336e-07,0.55259567};
+		dir[]={-0.49028644,-0.46128085,0.73948586};
+		up[]={-0.25489849,0.88725418,0.38445652};
+		aside[]={0.83345431,1.4901161e-08,0.55258852};
 	};
 };
 binarizationWanted=0;
@@ -53,12 +53,90 @@ class AddonsMetaData
 randomSeed=14442464;
 class ScenarioData
 {
-	author="GamingPanthers";
+	author="ALife Development";
+	briefing=0;
+	debriefing=0;
+	respawnDialog=0;
+	disabledAI=1;
+	respawn=3;
+	respawnDelay=5;
+	class Header
+	{
+		gameType="RPG";
+		minPlayers=1;
+		maxPlayers=126;
+	};
+};
+class CustomAttributes
+{
+	class Category0
+	{
+		name="Multiplayer";
+		class Attribute0
+		{
+			property="RespawnButton";
+			expression="true";
+			class Value
+			{
+				class data
+				{
+					singleType="SCALAR";
+					value=0;
+				};
+			};
+		};
+		class Attribute1
+		{
+			property="RespawnTemplates";
+			expression="true";
+			class Value
+			{
+				class data
+				{
+					singleType="ARRAY";
+				};
+			};
+		};
+		class Attribute2
+		{
+			property="ReviveMode";
+			expression="false";
+			class Value
+			{
+				class data
+				{
+					singleType="SCALAR";
+					value=0;
+				};
+			};
+		};
+		nAttributes=3;
+	};
+	class Category1
+	{
+		name="Scenario";
+		class Attribute0
+		{
+			property="EnableDebugConsole";
+			expression="true";
+			class Value
+			{
+				class data
+				{
+					singleType="SCALAR";
+					value=1;
+				};
+			};
+		};
+		nAttributes=1;
+	};
 };
 class Mission
 {
+	assetType="Free";
 	class Intel
 	{
+		briefingName="ALife | Altis Life";
 		timeOfChanges=1800.0002;
 		startWeather=0.30000001;
 		startWind=0.1;
@@ -111,6 +189,7 @@ class Mission
 					};
 					id=2;
 					type="B_RangeMaster_F";
+					atlOffset=-7.6293945e-06;
 					class CustomAttributes
 					{
 						class Attribute0
@@ -146,6 +225,7 @@ class Mission
 					};
 					id=4;
 					type="B_RangeMaster_F";
+					atlOffset=-7.6293945e-06;
 					class CustomAttributes
 					{
 						class Attribute0
@@ -181,7 +261,7 @@ class Mission
 					};
 					id=6;
 					type="B_RangeMaster_F";
-					atlOffset=7.6293945e-06;
+					atlOffset=1.5258789e-05;
 					class CustomAttributes
 					{
 						class Attribute0
@@ -240,6 +320,7 @@ class Mission
 			{
 			};
 			id=1;
+			atlOffset=-7.6293945e-06;
 			class CustomAttributes
 			{
 				class Attribute0
