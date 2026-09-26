@@ -37,20 +37,38 @@ if (!isServer) exitWith {};
 
 private _intervalSeconds = 60;
 
-// Logged unconditionally (not just on a later state change) -- otherwise a
-// DB that's dead from the very first tick never gets an explicit "this is
-// broken" line, only silence, same gap this whole file exists to close.
-private _wasConnected = ("tasdyn_alife" callExtension ["ping", []]) == "OK";
-diag_log format ["[ALife] sync: started, %1s interval -- DB connection: %2",
-    _intervalSeconds, if (_wasConnected) then {"OK"} else {"FAILED"}];
+// commands.cpp's HandlePing returns exactly "OK" or "ERROR:<short reason>"
+// (e.g. "ERROR:not connected") -- this turns that raw string into a log
+// line that actually carries the reason, instead of just "connected: true/
+// false" with the real detail thrown away.
+private _fnc_describePing = {
+    if (_this == "OK") exitWith { "connection successful" };
+    private _prefix = "ERROR:";
+    private _detail = if ((_this select [0, count _prefix]) == _prefix) then {
+        _this select [count _prefix, (count _this) - (count _prefix)]
+    } else {
+        _this
+    };
+    format ["FAILED -- %1", _detail]
+};
+
+// Logged unconditionally at startup (not just on a later state change) --
+// otherwise a DB that's dead from the very first tick never gets an
+// explicit "this is broken, here's why" line, only silence.
+private _initialPing = ["ping", []] call ALife_fnc_callExtension;
+private _wasConnected = (_initialPing == "OK");
+diag_log format ["[ALife] sync: started, %1s interval -- database %2",
+    _intervalSeconds, _initialPing call _fnc_describePing];
 
 while {true} do {
     sleep _intervalSeconds;
 
-    private _isConnected = ("tasdyn_alife" callExtension ["ping", []]) == "OK";
+    private _pingResult = ["ping", []] call ALife_fnc_callExtension;
+    private _isConnected = (_pingResult == "OK");
 
     if (_isConnected != _wasConnected) then {
-        diag_log format ["[ALife] sync: DB connection %1", if (_isConnected) then {"restored"} else {"lost"}];
+        diag_log format ["[ALife] sync: database connection %1 -- %2",
+            if (_isConnected) then {"restored"} else {"lost"}, _pingResult call _fnc_describePing];
         _wasConnected = _isConnected;
     };
 

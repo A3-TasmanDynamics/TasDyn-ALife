@@ -26,8 +26,8 @@ params ["_unit"];
 if (!isServer) exitWith { createHashMapFromArray [["status", "ERROR"]] };
 
 private _uid = getPlayerUID _unit;
-private _rawResponse = "tasdyn_alife" callExtension ["load", [_uid]];
-private _record = (_rawResponse call parseSimpleArray) createHashMapFromArray;
+private _rawResponse = ["load", [_uid]] call ALife_fnc_callExtension;
+private _record = createHashMapFromArray (parseSimpleArray _rawResponse);
 
 if ((_record getOrDefault ["status", "ERROR"]) != "OK") then {
     diag_log format ["[ALife] load failed for uid %1: %2", _uid, _rawResponse];

@@ -28,7 +28,7 @@ params ["_raw"];
 
 if (!(_raw isEqualType []) || { count _raw == 0 }) exitWith {};
 
-private _positionMap = _raw createHashMapFromArray;
+private _positionMap = createHashMapFromArray _raw;
 private _x = _positionMap getOrDefault ["x", ""];
 private _y = _positionMap getOrDefault ["y", ""];
 private _z = _positionMap getOrDefault ["z", ""];
