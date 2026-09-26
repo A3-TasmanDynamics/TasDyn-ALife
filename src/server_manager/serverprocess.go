@@ -255,13 +255,18 @@ func (m *serverProcessManager) tailLog(ctx context.Context, profileDir string, s
 
 		line, err := reader.ReadString('\n')
 		if line != "" {
-			runtime.EventsEmit(ctx, "server:log", line)
 			if match := fpsLogPattern.FindStringSubmatch(line); match != nil {
+				// Every 2s per initServer.sqf -- feeds the Performance tab's
+				// FPS graph, but at that rate it would otherwise drown out
+				// everything else in the live Console tab. Consumed here,
+				// not forwarded as a "server:log" event.
 				if fps, parseErr := strconv.ParseFloat(match[1], 64); parseErr == nil {
 					m.fpsMu.Lock()
 					m.lastFPS = fps
 					m.fpsMu.Unlock()
 				}
+			} else {
+				runtime.EventsEmit(ctx, "server:log", line)
 			}
 		}
 		if err != nil {
