@@ -16,7 +16,9 @@ src/ALife.Altis/
 ├── CfgFunctions.hpp        # Registers ALife_fnc_* from functions/
 ├── CfgRemoteExec.hpp       # The remoteExec allowlist — see docs/ANTI_CHEAT.md Layer 1
 ├── initServer.sqf          # Mission-level init: HandleDisconnect + starts fn_sync.sqf
-├── initPlayerServer.sqf    # Per-player join hook: load, then open the spawn menu
+├── initPlayerLocal.sqf     # Per-player join hook (client) -- welcome screen, remoteExecs
+│                           # fn_playerJoin.sqf -- see "Player join" below for why this is
+│                           # a client file, not initPlayerServer.sqf
 ├── config/
 │   └── spawn_config.hpp    # Spawn point definitions — see below
 ├── dialog/
@@ -29,7 +31,8 @@ src/ALife.Altis/
     │   ├── fn_save.sqf
     │   ├── fn_parseStoredPosition.sqf  # Safely parses a loaded <faction>_position
     │   ├── fn_savePlayerState.sqf      # Saves alive/position -- shared by disconnect + sync
-    │   └── fn_sync.sqf                 # Periodic pulse: DB keep-alive + autosave -- see below
+    │   ├── fn_sync.sqf                 # Periodic pulse: DB keep-alive + autosave -- see below
+    │   └── fn_playerJoin.sqf           # Server-side join handling -- see "Player join" below
     └── spawn/                # Faction/spawn-point selection
         ├── fn_getSpawnPoints.sqf  # Reads config/spawn_config.hpp
         ├── fn_spawnPlayer.sqf     # Authoritative spawn handling (server)
@@ -70,11 +73,29 @@ never matched the real `cop_position` column, so police/civilian death-position 
 silently no-opped. If gang/bank features ever get wired into this mission, they'll need to
 translate at that boundary instead — not here.
 
+## Player join
+
+`initPlayerLocal.sqf` (client), not `initPlayerServer.sqf`, is the join hook — that's a deliberate
+change, not the obvious default. `initPlayerServer.sqf` never actually fired for a real
+dedicated-server connection in this project: confirmed with an unconditional diagnostic log (no
+dependency on `params`/`isServer`/anything else) that never printed across multiple real test
+sessions, despite disconnect/autosave logging elsewhere proving the session was genuinely
+happening. Reviewed Tonic's AsYetUntitled/Framework for comparison — it has no
+`initPlayerServer.sqf` at all; its entire player-join flow starts from `initPlayerLocal.sqf`
+instead, matching Bohemia's own wiki guidance to avoid `initPlayerServer.sqf`.
+
+`initPlayerLocal.sqf` shows a brief "Welcome" screen (`cutText`) while it `remoteExec`s
+`fn_playerJoin.sqf` on the server — the load-then-open-spawn-menu logic that used to live directly
+in `initPlayerServer.sqf`, unchanged apart from where it's triggered from. The welcome screen
+clears in `fn_spawnMenu.sqf`'s `"open"` mode, right before the dialog actually appears, instead of
+leaving the player looking at whatever they happened to spawn next to with nothing visibly
+happening in between.
+
 ## Sync / autosave
 
 `fn_sync.sqf` is spawned once from `initServer.sqf` and runs for the mission's whole lifetime
-(guarded against the same function-compile race `initPlayerServer.sqf`'s `ALife_fnc_load` call
-needed — see the comment there). Every 60 seconds it:
+(guarded against the same function-compile race `fn_playerJoin.sqf`'s `ALife_fnc_load` call
+needs — see the comment there). Every 60 seconds it:
 
 - **Pings the DB** (`["ping", []] call ALife_fnc_callExtension`) and logs its connection state on
   start unconditionally, then again on any later state *change* (lost/restored), not every tick.
@@ -113,9 +134,10 @@ actual local dedicated server for testing:
 
 ## Open items
 
-- `initPlayerServer.sqf`'s failure policy for a `load` returning `ERROR` (DB down, extension not
+- `fn_playerJoin.sqf`'s failure policy for a `load` returning `ERROR` (DB down, extension not
   connected) isn't decided — see the `TODO` there. That's a product call (kick vs. retry vs. let
-  them in flagged), not a technical one.
+  them in flagged), not a technical one. Right now a failed load also leaves the player stuck
+  behind `initPlayerLocal.sqf`'s welcome screen forever, since nothing clears it on that path.
 - Gear/loadout equipping isn't wired into `fn_spawnPlayer.sqf` yet — `civ_gear`/`cop_gear`/
   `medic_gear` don't have a documented item-key contract (`docs/DATA_CONTRACT.md` only says "full
   loadout" generically). Write that contract before wiring gear application.
