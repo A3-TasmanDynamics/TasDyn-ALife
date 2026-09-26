@@ -556,3 +556,28 @@
   to the live Console tab -- at that rate it drowned out everything else. Still consumed internally
   to feed the Performance tab's FPS graph (unchanged); just no longer echoed as a `server:log`
   event.
+- `src/ALife.Altis`: root-caused "no spawn menu when loading into the server" for real this time --
+  the single-playable-slot fix in the previous entry wasn't the actual cause. Added an
+  unconditional diagnostic `diag_log` to the very first line of `initPlayerServer.sqf` (no
+  dependency on `params`/`isServer`/anything else) and confirmed, across multiple real connect
+  sessions, that it **never printed at all** -- despite `HandleDisconnect`'s "player disconnecting"
+  and `fn_sync.sqf`'s "autosaved 1 player(s)" both firing correctly for the same session, proving
+  the player was genuinely connected and playing. `initPlayerServer.sqf` was simply never running
+  for a real dedicated-server connection in this project, for reasons not fully understood
+  mechanistically even now.
+  - Per request, compared against Tonic's AsYetUntitled/Framework directly: it has **no
+    `initPlayerServer.sqf` at all** -- its entire player-join flow starts from
+    `initPlayerLocal.sqf` (client-side) instead, matching Bohemia's own wiki guidance to avoid
+    `initPlayerServer.sqf`.
+  - Ported that shape here. New `initPlayerLocal.sqf` (client) shows a brief "Welcome to
+    TasDyn-ALife" screen (`cutText`) and `remoteExec`s the new `fn_playerJoin.sqf` (server) --
+    the same load-then-open-spawn-menu logic that used to live directly in
+    `initPlayerServer.sqf`, unchanged apart from where it's triggered from. The welcome screen
+    clears in `fn_spawnMenu.sqf`'s `"open"` mode, right before the dialog appears, so the player
+    sees continuous feedback instead of a silent gap between connecting and the menu showing up.
+  - Deleted `initPlayerServer.sqf` entirely -- proven non-functional here, and Tonic's own
+    framework doesn't use one either.
+  - Verified the whole config stack (including the new files and `CfgFunctions.hpp`/
+    `CfgRemoteExec.hpp` registrations) compiles with zero errors via `tools/test_local_server.ps1`
+    on a separate port, run alongside the user's own live test session without disturbing it.
+    Still needs a real reconnect to confirm the spawn menu now actually opens end-to-end.
