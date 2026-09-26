@@ -197,17 +197,24 @@
   - Both verified against the local Arma 3 Server install via `tools/test_local_server.ps1` --
     which surfaced a separate, pre-existing issue while doing so (see below), not caused by this
     change.
-- **Found, not yet fixed**: `tools/test_local_server.ps1` (run to verify the FPS logging above)
-  shows the dedicated server stalling immediately after "Initializing Steam server failed" --
-  RPT logging stops dead at that point even after a 90-second wait, meaning `initServer.sqf` (and
-  therefore the new FPS logging, and everything else mission-side) never actually executes in this
-  local test environment. `mission.sqm` lists `A3_Characters_F`/`A3_Ui_F` as addon dependencies
-  (auto-added by Eden for the placed playable units), and the RPT logs a
-  "downloadable content that has been deleted" warning for `A3_Characters_F` moments before the
-  stall -- a commonly-reported, often-harmless warning on dedicated servers for that specific
-  classname, so it's not yet confirmed as the actual cause rather than a coincidence. Flagged for
-  the user rather than guessed at further; not something to unilaterally change in a
-  user-authored `mission.sqm` without discussing it first.
+- **Follow-up, resolved**: re-investigated the "dedicated server stalls after Initializing Steam
+  server" finding above. Two real things came out of it:
+  - `description.ext` was missing a `class Header { ... }` block, which the engine logged as
+    "Missing 'description.ext::Header'" -- a real (if minor) config gap. Added the minimum the
+    engine expects (`gameType`, `minPlayers`, `maxPlayers`); gameplay-specific Header settings
+    stay Phase 2 territory like the rest of this file.
+  - The "stall" itself was a false alarm caused by how the test was being read, not a real hang:
+    `tools/test_local_server.ps1` kills the server with `Stop-Process -Force` (`TerminateProcess`,
+    no flush) after a fixed wait and then reads the RPT file from disk -- but confirmed via a live
+    (not-yet-killed) test process that the server was fully up the whole time: it answered Steam
+    A2S_INFO queries correctly (right hostname, region, BattlEye state) reporting the normal
+    multiplayer-lobby "Waiting" status, its threads were parked in ordinary idle-wait states (no
+    deadlock signature), and it was still answering queries after ~9 minutes of RPT silence. RPT
+    writes are evidently buffered heavily enough that a forcibly-killed process's log can look
+    frozen at a mid-init line when the server was actually fine -- the `A3_Characters_F`/
+    `A3_Ui_F` warning was confirmed harmless (present in both the old and new runs, well before
+    the apparent "stall" point, with no other effect). No mission-side fix needed beyond the
+    Header addition above; `mission.sqm` was not touched.
 - Fixed a real login bug found while actually testing Steam sign-in end-to-end: `clientIP()`
   (`src/website/internal/auth/session.go`) hand-rolled stripping the port off `r.RemoteAddr` by
   finding the last colon, which breaks on IPv6 (`r.RemoteAddr` is `"[::1]:PORT"` for a local
