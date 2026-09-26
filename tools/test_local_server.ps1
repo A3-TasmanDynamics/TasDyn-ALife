@@ -94,8 +94,12 @@ difficulty = "Custom";
 
     # --- Run ---
     Write-Host "Launching arma3server_x64.exe..."
+    # -autoInit: initializes the mission at boot the same as the first
+    # client connecting would, so a persistent mission doesn't just sit in
+    # the pre-play lobby state for this whole test -- requires
+    # persistent=1 in server.cfg above, already set unconditionally.
     $proc = Start-Process -FilePath (Join-Path $ArmaServerPath "arma3server_x64.exe") `
-        -ArgumentList "-config=server.cfg", "-profiles=$profileDir", "-name=alife_test", "-port=2302", "-noSound" `
+        -ArgumentList "-config=server.cfg", "-profiles=$profileDir", "-name=alife_test", "-port=2302", "-noSound", "-autoInit" `
         -WorkingDirectory $ArmaServerPath -PassThru -WindowStyle Hidden
 
     Write-Host "Waiting $WaitSeconds seconds for mission init..."
