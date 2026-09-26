@@ -12,7 +12,7 @@
         player who disconnected mid-death/arrest doesn't get to pick a
         fresh spawn on reconnect and walk away from it.
 
-        Reuses the record initPlayerServer.sqf already loaded and stored on
+        Reuses the record fn_playerJoin.sqf already loaded and stored on
         the unit (alife_record) rather than re-querying the DB — that data
         is already known-fresh for this session.
 

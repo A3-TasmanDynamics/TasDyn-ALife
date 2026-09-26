@@ -5,7 +5,7 @@
     Description:
         Everything about the spawn dialog lives in this one file, dispatched
         by mode -- opening it (the server->client entry point from
-        initPlayerServer.sqf), its onLoad/onUnload handlers, and every
+        fn_playerJoin.sqf), its onLoad/onUnload handlers, and every
         control action (side button, spawn list, Spawn button). These were
         five separate one-function files; combined here since they're all
         tightly coupled to the same dialog and its two pieces of selection
@@ -19,7 +19,8 @@
     Parameter(s):
         0: STRING - mode:
            "open"           -- create the dialog (remoteExec'd to a specific
-                                client from initPlayerServer.sqf)
+                                client from fn_playerJoin.sqf), clearing
+                                initPlayerLocal.sqf's welcome screen first
            "onLoad"         -- dialog onLoad: default to civ, center the map
            "selectSide"     -- side button action, 1: STRING side ("civ"/"cop"/"medic")
            "selectLocation" -- spawn list onLBSelChanged, 1: CONTROL, 2: SCALAR index
@@ -35,6 +36,7 @@ private _args = _this select [1, (count _this) - 1];
 
 switch (_mode) do {
     case "open": {
+        cutText ["", "BLACK OUT"];
         closeDialog 0;
         createDialog "ALife_SpawnMenu";
     };

@@ -38,6 +38,10 @@ class CfgRemoteExec
         {
             allowedTargets = 1;
         };
+        class ALife_fnc_playerJoin
+        {
+            allowedTargets = 2;
+        };
     };
 
     class Commands

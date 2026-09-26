@@ -20,6 +20,8 @@ class CfgFunctions
             class parseStoredPosition {};  // -> ALife_fnc_parseStoredPosition
             class savePlayerState {};      // -> ALife_fnc_savePlayerState (server)
             class sync {};                 // -> ALife_fnc_sync (server, spawned once, loops forever)
+            class playerJoin {};           // -> ALife_fnc_playerJoin (server) -- remoteExec'd from
+                                            // initPlayerLocal.sqf, see CfgRemoteExec.hpp
         };
 
         class Spawn

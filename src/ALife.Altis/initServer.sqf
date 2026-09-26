@@ -32,7 +32,7 @@
     };
 };
 
-// Same function-library-compile race as initPlayerServer.sqf's
+// Same function-library-compile race as fn_playerJoin.sqf's
 // ALife_fnc_load guard -- initServer.sqf runs just as early, with no
 // guaranteed gap before this line executes.
 [] spawn {
