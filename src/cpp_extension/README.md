@@ -10,6 +10,14 @@ Rules for this extension:
   [docs/DATA_CONTRACT.md](../../docs/DATA_CONTRACT.md). The previous prototype lost rank data to
   exactly this kind of undocumented positional mismatch; don't add a new command here without
   updating that doc first.
+- Every public `Database` method calls `EnsureConnected()` first (`db.cpp`). `PQstatus()` alone
+  only reflects libpq's *last-known* state — it does not proactively notice a connection the
+  server side already killed (`pg_terminate_backend`, a restart, a network blip); the client only
+  finds out by actually trying something. Confirmed with a live kill-the-backend test during
+  development: trusting `PQstatus() == CONNECTION_OK` let a dead connection straight through, and
+  the real query failed right after with "server closed the connection unexpectedly." So
+  `EnsureConnected()` does a real `SELECT 1` probe when the cached status looks fine, and only
+  trusts a `PQreset()` reconnect after that probe actually fails — not the cached flag alone.
 
 ## Building
 

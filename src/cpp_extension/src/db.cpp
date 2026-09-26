@@ -118,10 +118,33 @@ bool Database::IsConnected() const {
     return conn_ != nullptr && PQstatus(conn_) == CONNECTION_OK;
 }
 
+bool Database::EnsureConnected() {
+    // Caller holds mutex_.
+    if (!conn_) return false;  // Connect() was never called successfully -- nothing to reset
+
+    // PQstatus() only reflects libpq's last-known state -- it does NOT
+    // proactively detect a connection the server side already killed
+    // (pg_terminate_backend, a restart, a network blip). The client only
+    // finds out by actually trying something. Confirmed with a live test:
+    // checking PQstatus() alone and trusting CONNECTION_OK let a killed
+    // connection straight through, and the real query failed right after
+    // with "server closed the connection unexpectedly" -- so this probes
+    // for real instead of trusting the cached flag.
+    if (PQstatus(conn_) == CONNECTION_OK) {
+        PGresult* probe = PQexec(conn_, "SELECT 1");
+        bool alive = (PQresultStatus(probe) == PGRES_TUPLES_OK);
+        PQclear(probe);
+        if (alive) return true;
+    }
+
+    PQreset(conn_);
+    return PQstatus(conn_) == CONNECTION_OK;
+}
+
 bool Database::Ping(std::string& outError) {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    if (!conn_ || PQstatus(conn_) != CONNECTION_OK) {
+    if (!EnsureConnected()) {
         outError = "not connected";
         return false;
     }
@@ -172,7 +195,7 @@ bool Database::EnsureBlankPlayer(const std::string& uid, std::string& outError) 
 bool Database::LoadPlayer(const std::string& uid, std::string& outResponse, std::string& outError) {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    if (!conn_ || PQstatus(conn_) != CONNECTION_OK) {
+    if (!EnsureConnected()) {
         outError = "not connected";
         return false;
     }
@@ -296,7 +319,7 @@ bool Database::SaveField(const std::string& uid, const std::string& field, const
                           const std::string& token, std::string& outStatus, std::string& outError) {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    if (!conn_ || PQstatus(conn_) != CONNECTION_OK) {
+    if (!EnsureConnected()) {
         outError = "not connected";
         return false;
     }

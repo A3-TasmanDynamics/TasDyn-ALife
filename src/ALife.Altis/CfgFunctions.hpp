@@ -17,6 +17,8 @@ class CfgFunctions
             class load {};                 // -> ALife_fnc_load
             class save {};                 // -> ALife_fnc_save
             class parseStoredPosition {};  // -> ALife_fnc_parseStoredPosition
+            class savePlayerState {};      // -> ALife_fnc_savePlayerState (server)
+            class sync {};                 // -> ALife_fnc_sync (server, spawned once, loops forever)
         };
 
         class Spawn

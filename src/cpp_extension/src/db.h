@@ -41,6 +41,15 @@ private:
     PGconn* conn_ = nullptr;
     mutable std::mutex mutex_;
 
+    // Caller must hold mutex_. Recovers from a dropped connection via
+    // PQreset (closes and reopens using the same parameters Connect()
+    // originally supplied -- libpq tracks those internally, nothing extra
+    // to store here). Every public method calls this first: without it, one
+    // network blip between the extension and Postgres would silently fail
+    // every load/save for the rest of the server's uptime, since nothing
+    // else here ever re-connects.
+    bool EnsureConnected();
+
     // Caller must hold mutex_.
     bool EnsureBlankPlayer(const std::string& uid, std::string& outError);
     bool SaveCashDelta(const std::string& uid, const std::string& faction, const std::string& value,
