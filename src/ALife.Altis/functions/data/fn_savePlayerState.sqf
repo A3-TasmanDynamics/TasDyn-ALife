@@ -34,5 +34,13 @@ private _pos = getPosATL _unit;
 private _positionValue = str [["x", _pos select 0], ["y", _pos select 1], ["z", _pos select 2]];
 private _token = (str serverTime) + "-" + _uid;
 
-[_uid, _activeFaction + "_alive", str (alive _unit), _token] call ALife_fnc_save;
-[_uid, _activeFaction + "_position", _positionValue, _token] call ALife_fnc_save;
+private _aliveResult = [_uid, _activeFaction + "_alive", str (alive _unit), _token] call ALife_fnc_save;
+private _positionResult = [_uid, _activeFaction + "_position", _positionValue, _token] call ALife_fnc_save;
+
+if (_aliveResult == "OK" && _positionResult == "OK") then {
+    diag_log format ["[ALife] savePlayerState: uid=%1 faction=%2 alive=%3 -- OK",
+        _uid, _activeFaction, alive _unit];
+} else {
+    diag_log format ["[ALife] savePlayerState: uid=%1 faction=%2 FAILED (alive save: %3, position save: %4)",
+        _uid, _activeFaction, _aliveResult, _positionResult];
+};

@@ -15,6 +15,9 @@ params ["_player", "_didJIP"];
 
 if (!isServer) exitWith {};
 
+diag_log format ["[ALife] player connecting: %1 (%2)%3",
+    name _player, getPlayerUID _player, if (_didJIP) then {" [JIP]"} else {""}];
+
 // The functions library (CfgFunctions) isn't guaranteed to have finished
 // compiling yet when initPlayerServer.sqf runs for the first/hosting
 // player in a fast-starting session (singleplayer preview, locally-hosted
@@ -35,6 +38,8 @@ if ((_record getOrDefault ["status", "ERROR"]) != "OK") exitWith {
     // call, not a technical one. Deliberately exitWith — a player with a
     // failed load does NOT get the spawn menu below.
 };
+
+diag_log format ["[ALife] player connected: %1 (%2) -- load OK", name _player, getPlayerUID _player];
 
 // Server-side only, deliberately NOT public — a full record (cash, gear,
 // position) broadcast to every client is exactly the kind of

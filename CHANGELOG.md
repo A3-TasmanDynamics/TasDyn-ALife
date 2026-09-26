@@ -478,3 +478,25 @@
     one loop, sleep, act" shape -- not copied wholesale. That prototype's DB event-polling loop
     (website/Discord commands reaching the live server) is real, useful, separate future work, not
     something this pass builds.
+- `src/ALife.Altis`: closed a real gap flagged by the user -- almost everything in the connect/
+  disconnect/spawn/sync lifecycle was **failure-only** logged, meaning a normal, working session
+  produced zero RPT output and there was no way to positively confirm any of it was actually
+  happening. Added the missing success-path lines:
+  - `initPlayerServer.sqf`: logs "player connecting" on join (noting `[JIP]` if applicable) and
+    "player connected ... load OK" once the record load succeeds -- previously only the failure
+    case logged anything at all.
+  - `initServer.sqf`'s `HandleDisconnect`: logs "player disconnecting" before the save now runs.
+  - `fn_savePlayerState.sqf`: previously logged nothing, success or failure. Now logs the actual
+    `ALife_fnc_save` result for both the alive and position writes -- a silent DB failure during a
+    disconnect-time save used to be completely invisible.
+  - `fn_spawnPlayer.sqf`: logs the actual outcome (resumed at a stored position / spawned fresh at
+    a location), not just rejections -- previously a *successful* spawn was silent.
+  - `fn_sync.sqf`: logs its initial DB connection state unconditionally on start (previously
+    assumed connected and only logged on a later state *change*, so a DB that was already dead at
+    boot never got an explicit line), and now logs a count when it actually autosaves someone.
+  - Caught and fixed a real bug surfaced while writing these: used `[falseVal, trueVal] select
+    someBoolean` (a common community idiom) for a couple of the new log lines, but
+    `docs/arma/arma3.db`'s own `select` entry documents its index as `Number`, not `Boolean`, and a
+    web search couldn't confirm the coercion is actually guaranteed either. Rather than ship an
+    unverified assumption, replaced every instance (including one already merged in `fn_sync.sqf`)
+    with plain `if/then/else`, which needs no such assumption.
