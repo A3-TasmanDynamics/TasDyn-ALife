@@ -42,6 +42,7 @@
 
 addMissionEventHandler ["HandleDisconnect", {
     params ["_unit", "_id", "_uid", "_name"];
+    diag_log format ["[ALife] player disconnecting: %1 (%2)", _name, _uid];
     [_unit, _uid] call ALife_fnc_savePlayerState;
     false  // AI doesn't take over the body -- respawn handling is Phase 2
 }];

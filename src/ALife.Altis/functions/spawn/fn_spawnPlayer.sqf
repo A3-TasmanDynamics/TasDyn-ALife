@@ -69,6 +69,7 @@ if (!_wasAlive) then {
 
     if (!isNil "_resumePos") then {
         _unit setPosATL _resumePos;
+        diag_log format ["[ALife] spawnPlayer: uid=%1 resumed at stored %2_position", _uid, _faction];
     } else {
         // Nothing valid stored (fresh account, or -- shouldn't happen, but
         // never crash over it -- malformed data) -- fall back to this
@@ -101,6 +102,8 @@ if (!_wasAlive) then {
     // -- currently unenforceable, see config/spawn_config.hpp.
 
     _unit setPosATL (_validSpawnPoints select _matchIndex select 2);
+    diag_log format ["[ALife] spawnPlayer: uid=%1 spawned fresh as %2 at %3",
+        _uid, _faction, _requestedSpawnKey];
 };
 
 _unit setVariable ["alife_activeFaction", _faction];

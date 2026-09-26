@@ -36,9 +36,13 @@
 if (!isServer) exitWith {};
 
 private _intervalSeconds = 60;
-private _wasConnected = true;
 
-diag_log format ["[ALife] sync: started, %1s interval", _intervalSeconds];
+// Logged unconditionally (not just on a later state change) -- otherwise a
+// DB that's dead from the very first tick never gets an explicit "this is
+// broken" line, only silence, same gap this whole file exists to close.
+private _wasConnected = ("tasdyn_alife" callExtension ["ping", []]) == "OK";
+diag_log format ["[ALife] sync: started, %1s interval -- DB connection: %2",
+    _intervalSeconds, if (_wasConnected) then {"OK"} else {"FAILED"}];
 
 while {true} do {
     sleep _intervalSeconds;
@@ -46,15 +50,22 @@ while {true} do {
     private _isConnected = ("tasdyn_alife" callExtension ["ping", []]) == "OK";
 
     if (_isConnected != _wasConnected) then {
-        diag_log format ["[ALife] sync: DB connection %1", ["lost", "restored"] select _isConnected];
+        diag_log format ["[ALife] sync: DB connection %1", if (_isConnected) then {"restored"} else {"lost"}];
         _wasConnected = _isConnected;
     };
 
     if (_isConnected) then {
+        private _saved = 0;
         {
             if (isPlayer _x) then {
                 [_x, getPlayerUID _x] call ALife_fnc_savePlayerState;
+                _saved = _saved + 1;
             };
         } forEach allPlayers;
+        // Only when there's actually something to report -- an empty server
+        // logging "autosaved 0 players" every 60s all night is just noise.
+        if (_saved > 0) then {
+            diag_log format ["[ALife] sync: autosaved %1 player(s)", _saved];
+        };
     };
 };
