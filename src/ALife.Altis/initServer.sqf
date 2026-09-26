@@ -34,20 +34,18 @@ addMissionEventHandler ["HandleDisconnect", {
     // doesn't exist yet (faction selection is Phase 2 gameplay work), so
     // there's nothing to read here until it does. Exits cleanly rather
     // than guessing.
+    // "civ"/"cop"/"medic" -- matches docs/DATA_CONTRACT.md's players.<faction>_*
+    // field prefix directly (fn_spawnPlayer.sqf sets this from the same
+    // faction identifier the spawn menu itself uses -- no translation step).
     private _activeFaction = _unit getVariable ["alife_activeFaction", ""];
     if (_activeFaction == "") exitWith { false };
-
-    // See fn_factionDbPrefix.sqf -- players.<faction>_alive/_position use
-    // "civ"/"cop"/"medic", not the "civilian"/"police"/"medic" this mission
-    // uses for faction identity everywhere else.
-    private _dbPrefix = [_activeFaction] call ALife_fnc_factionDbPrefix;
 
     private _pos = getPosATL _unit;
     private _positionValue = str [["x", _pos select 0], ["y", _pos select 1], ["z", _pos select 2]];
     private _token = (str serverTime) + "-" + _uid;
 
-    [_uid, _dbPrefix + "_alive", str (alive _unit), _token] call ALife_fnc_save;
-    [_uid, _dbPrefix + "_position", _positionValue, _token] call ALife_fnc_save;
+    [_uid, _activeFaction + "_alive", str (alive _unit), _token] call ALife_fnc_save;
+    [_uid, _activeFaction + "_position", _positionValue, _token] call ALife_fnc_save;
 
     false  // AI doesn't take over the body -- respawn handling is Phase 2
 }];

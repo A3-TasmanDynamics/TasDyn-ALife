@@ -14,19 +14,22 @@ class CfgFunctions
         class Data
         {
             file = "functions\data";
-            class load {};   // -> ALife_fnc_load
-            class save {};   // -> ALife_fnc_save
-            class factionDbPrefix {};   // -> ALife_fnc_factionDbPrefix
+            class load {};                 // -> ALife_fnc_load
+            class save {};                 // -> ALife_fnc_save
+            class parseStoredPosition {};  // -> ALife_fnc_parseStoredPosition
         };
 
         class Spawn
         {
             file = "functions\spawn";
-            class getSpawnPoints {};          // -> ALife_fnc_getSpawnPoints
+            class getSpawnPoints {};           // -> ALife_fnc_getSpawnPoints
             class spawnPlayer {};              // -> ALife_fnc_spawnPlayer (server)
-            class spawnMenu {};                 // -> ALife_fnc_spawnMenu (client)
-            class spawnMenuFactionChanged {};    // -> ALife_fnc_spawnMenuFactionChanged (client)
-            class confirmSpawn {};                // -> ALife_fnc_confirmSpawn (client)
+            class spawnMenu {};                // -> ALife_fnc_spawnMenu (client, opens the dialog)
+            class spawnMenuOpen {};            // -> ALife_fnc_spawnMenuOpen (client, dialog onLoad)
+            class spawnMenuSelectSide {};       // -> ALife_fnc_spawnMenuSelectSide (client)
+            class spawnMenuSelectLocation {};  // -> ALife_fnc_spawnMenuSelectLocation (client)
+            class spawnMenuSpawn {};           // -> ALife_fnc_spawnMenuSpawn (client)
+            class spawnMenuClose {};           // -> ALife_fnc_spawnMenuClose (client, dialog onUnload)
         };
     };
 };

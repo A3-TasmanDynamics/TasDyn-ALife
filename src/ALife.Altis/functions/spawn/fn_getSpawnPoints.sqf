@@ -15,12 +15,12 @@
         mission state, no privileged data here, unlike load/save.
 
     Parameter(s):
-        0: STRING - faction ("civilian" / "police" / "medic")
+        0: STRING - faction ("civ" / "cop" / "medic")
 
     Returns:
         ARRAY of ARRAY - one entry per matching spawn point:
         [configClassName, displayName, resolvedPosition, gangKey]
-        e.g. [["civilian_example", "Example Civilian Spawn", [1234,5678,0], ""]]
+        e.g. [["civ_kavala", "Kavala", [1234,5678,0], ""]]
         Empty array if none are defined for that faction.
 */
 

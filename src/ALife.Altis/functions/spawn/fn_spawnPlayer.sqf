@@ -16,6 +16,11 @@
         the unit (alife_record) rather than re-querying the DB — that data
         is already known-fresh for this session.
 
+        Faction is "civ"/"cop"/"medic" throughout the spawn menu and this
+        function -- matching docs/DATA_CONTRACT.md's players.<faction>_*
+        field prefix directly, so there's no translation step between "what
+        the player picked" and "what column that reads/writes."
+
         Gear/loadout equipping is deliberately NOT done here yet — civ_gear/
         cop_gear/medic_gear don't have a documented item-key contract yet
         (docs/DATA_CONTRACT.md only says "full loadout" in general terms).
@@ -27,7 +32,7 @@
     Parameter(s):
         0: OBJECT - the player's unit
         1: STRING - uid
-        2: STRING - faction ("civilian" / "police" / "medic")
+        2: STRING - faction ("civ" / "cop" / "medic")
         3: STRING - requested spawn point key (a CfgSpawnPoints class name,
                     a REQUEST, see above — not a marker name directly,
                     since config/spawn_config.hpp resolves that itself)
@@ -40,7 +45,7 @@ params ["_unit", "_uid", "_faction", "_requestedSpawnKey"];
 
 if (!isServer) exitWith {};
 
-if !(_faction in ["civilian", "police", "medic"]) exitWith {
+if !(_faction in ["civ", "cop", "medic"]) exitWith {
     diag_log format ["[ALife] spawnPlayer rejected -- invalid faction: %1", _faction];
 };
 
@@ -50,28 +55,31 @@ if ((_record getOrDefault ["status", "ERROR"]) != "OK") exitWith {
     diag_log format ["[ALife] spawnPlayer: no valid loaded record for uid %1", _uid];
 };
 
-// docs/DATA_CONTRACT.md's players fields use "civ"/"cop"/"medic", not the
-// "civilian"/"police"/"medic" this mission uses for faction identity
-// everywhere else (spawn menu, spawn_config.hpp, bank_accounts.faction) --
-// see fn_factionDbPrefix.sqf for why both conventions are real and this is
-// the one place they need to meet.
-private _dbPrefix = [_faction] call ALife_fnc_factionDbPrefix;
-private _wasAlive = _record getOrDefault [_dbPrefix + "_alive", true];
+private _wasAlive = _record getOrDefault [_faction + "_alive", true];
+
+diag_log format ["[ALife] spawnPlayer: uid=%1 faction=%2 wasAlive=%3 requestedSpawn=%4",
+    _uid, _faction, _wasAlive, _requestedSpawnKey];
 
 if (!_wasAlive) then {
     // Ignore the requested marker entirely -- resume at the stored
     // position instead. Not a full "resume unconscious" simulation (that
     // needs a revive system that doesn't exist yet); this at minimum
     // means their death/arrest still happened somewhere, not nowhere.
-    private _storedPositionPairs = _record getOrDefault [_dbPrefix + "_position", []];
-    if (count _storedPositionPairs > 0) then {
-        private _positionMap = _storedPositionPairs createHashMapFromArray;
-        private _pos = [
-            _positionMap getOrDefault ["x", 0],
-            _positionMap getOrDefault ["y", 0],
-            _positionMap getOrDefault ["z", 0]
-        ];
-        _unit setPosATL _pos;
+    private _resumePos = [_record getOrDefault [_faction + "_position", []]] call ALife_fnc_parseStoredPosition;
+
+    if (!isNil "_resumePos") then {
+        _unit setPosATL _resumePos;
+    } else {
+        // Nothing valid stored (fresh account, or -- shouldn't happen, but
+        // never crash over it -- malformed data) -- fall back to this
+        // faction's first configured spawn point rather than leaving the
+        // player wherever they happened to load in.
+        private _fallback = [_faction] call ALife_fnc_getSpawnPoints;
+        if (count _fallback > 0) then {
+            _unit setPosATL (_fallback select 0 select 2);
+        };
+        diag_log format ["[ALife] spawnPlayer: uid=%1 has no valid stored %2_position, used fallback spawn",
+            _uid, _faction];
     };
     _unit setDamage 1;
 } else {
