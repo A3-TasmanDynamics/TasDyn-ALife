@@ -538,3 +538,21 @@
     server actually running the mission's own SQF (which `-autoInit` finally forced) is the only
     thing that exercises this path -- worth remembering before trusting "the extension test passes"
     as proof the mission code that calls it is also correct.
+- `src/ALife.Altis`: fixed "no spawn menu when loading into the server" -- a real design conflict,
+  not a code bug. The RPT showed `Mission ALife.Altis: Number of roles (16) is different from
+  'description.ext::Header::maxPlayer' (64)`: all 16 placeholder units placed for the spawn-marker
+  work (`police_1..4`, `civilian_1..4`, `medic_1..8`) were marked `isPlayable=1`, so Arma treated
+  this as a classic fixed-role mission and sent connecting players through the *engine's own* role-
+  selection lobby -- which places them directly into one of those pre-made units, completely
+  bypassing `initPlayerServer.sqf` (confirmed nothing in the "player connecting"/"player connected"
+  logging added earlier ever fired for a real connection, despite disconnect/autosave logging
+  proving the player was genuinely in-game) and therefore the custom spawn menu it triggers.
+  Flipped 15 of the 16 to `isPlayable=0`, keeping `civilian_1` (relabeled "Connect") as the sole
+  entry slot -- matches how Altis Life-style servers avoid this exact conflict. **Known limitation
+  of a single slot**: Arma slots are 1:1, so only one player can be connected at a time until more
+  identical, non-faction-specific "Connect" units are added in Eden -- fine for solo testing right
+  now, not yet ready for concurrent multi-player testing.
+- `src/server_manager`: stopped forwarding `initServer.sqf`'s every-2-seconds `[ALife][FPS]` line
+  to the live Console tab -- at that rate it drowned out everything else. Still consumed internally
+  to feed the Performance tab's FPS graph (unchanged); just no longer echoed as a `server:log`
+  event.
