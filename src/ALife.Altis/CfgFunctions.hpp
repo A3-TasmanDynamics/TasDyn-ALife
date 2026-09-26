@@ -16,6 +16,7 @@ class CfgFunctions
             file = "functions\data";
             class load {};   // -> ALife_fnc_load
             class save {};   // -> ALife_fnc_save
+            class factionDbPrefix {};   // -> ALife_fnc_factionDbPrefix
         };
 
         class Spawn
