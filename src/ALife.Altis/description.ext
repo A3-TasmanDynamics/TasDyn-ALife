@@ -12,3 +12,14 @@
 
 author = "Tasman Dynamics";
 onLoadName = "TasDyn-ALife";
+
+// Without this, the engine logs "Missing 'description.ext::Header'" and
+// won't list the mission's game-type/player-count metadata (server browser,
+// mission-select). Not the roleplay-specific gameplay config (that's Phase
+// 2 territory) -- just the required minimum the engine expects to exist.
+class Header
+{
+	gameType = "RPG";
+	minPlayers = 1;
+	maxPlayers = 64;
+};
