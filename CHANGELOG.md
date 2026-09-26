@@ -581,3 +581,11 @@
     `CfgRemoteExec.hpp` registrations) compiles with zero errors via `tools/test_local_server.ps1`
     on a separate port, run alongside the user's own live test session without disturbing it.
     Still needs a real reconnect to confirm the spawn menu now actually opens end-to-end.
+- `src/server_manager`: made every page's layout responsive to the actual window size instead of
+  the Console tab's box being a fixed 440px regardless of how tall the window is. `main` and every
+  `.panel` are now a proper flex-column chain (`min-height: 0` throughout so children can shrink/
+  scroll instead of forcing the page to grow past the window); the Console page's card and its
+  `.console` box both use `flex: 1` to fill whatever's left after the header, with the console
+  itself still scrolling internally. Applied uniformly to all five tabs, not just Console --
+  Launch/Logs/Performance/Settings render exactly as before since their content just stacks
+  normally inside the same flex column.

@@ -217,6 +217,13 @@ main {
   max-width: 1080px;
   width: 100%;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  /* Without this, a flex child (the active .panel) can't shrink/scroll
+     properly inside main -- it would instead force main itself to grow
+     past the window, defeating the whole point of the console filling
+     available height and scrolling internally. */
+  min-height: 0;
 }
 
 .page-header {
@@ -243,7 +250,14 @@ main {
 }
 
 .panel.active {
-  display: block;
+  /* flex-column (not block) on every panel, uniformly, so any page that
+     wants a box growing to fill the window (the console) can do so with
+     flex: 1 -- pages that don't (Launch, Logs, Performance, Settings)
+     render exactly as before, since their content only stacks normally. */
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 @keyframes fadeIn {
@@ -434,12 +448,26 @@ button.action:disabled {
 
 /* ---------- Console ---------- */
 
+/* The console's card grows to fill whatever height main leaves free
+   (instead of sizing to its own content), and the console box itself
+   fills that card -- so resizing/maximizing the window changes how much
+   log is visible instead of leaving a fixed 440px box with empty space
+   below it, or the reverse: content trapped inside a box smaller than
+   the window. */
+#panel-console .card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .console {
   background: #05070d;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 14px;
-  height: 440px;
+  flex: 1;
+  min-height: 200px;
   overflow-y: auto;
   font-family: "Cascadia Code", "Consolas", monospace;
   font-size: 12px;
