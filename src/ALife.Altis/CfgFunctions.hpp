@@ -22,14 +22,10 @@ class CfgFunctions
         class Spawn
         {
             file = "functions\spawn";
-            class getSpawnPoints {};           // -> ALife_fnc_getSpawnPoints
-            class spawnPlayer {};              // -> ALife_fnc_spawnPlayer (server)
-            class spawnMenu {};                // -> ALife_fnc_spawnMenu (client, opens the dialog)
-            class spawnMenuOpen {};            // -> ALife_fnc_spawnMenuOpen (client, dialog onLoad)
-            class spawnMenuSelectSide {};       // -> ALife_fnc_spawnMenuSelectSide (client)
-            class spawnMenuSelectLocation {};  // -> ALife_fnc_spawnMenuSelectLocation (client)
-            class spawnMenuSpawn {};           // -> ALife_fnc_spawnMenuSpawn (client)
-            class spawnMenuClose {};           // -> ALife_fnc_spawnMenuClose (client, dialog onUnload)
+            class getSpawnPoints {};  // -> ALife_fnc_getSpawnPoints
+            class spawnPlayer {};     // -> ALife_fnc_spawnPlayer (server)
+            class spawnMenu {};       // -> ALife_fnc_spawnMenu (client) -- one file, mode-dispatched:
+                                      // open/onLoad/selectSide/selectLocation/spawn/onUnload
         };
     };
 };

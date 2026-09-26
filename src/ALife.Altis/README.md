@@ -27,15 +27,11 @@ src/ALife.Altis/
     │   ├── fn_load.sqf
     │   ├── fn_save.sqf
     │   └── fn_parseStoredPosition.sqf  # Safely parses a loaded <faction>_position
-    └── spawn/                          # Faction/spawn-point selection
-        ├── fn_getSpawnPoints.sqf           # Reads config/spawn_config.hpp
-        ├── fn_spawnPlayer.sqf              # Authoritative spawn handling (server)
-        ├── fn_spawnMenu.sqf                # Opens the dialog (client)
-        ├── fn_spawnMenuOpen.sqf            # Dialog onLoad: default side + map center (client)
-        ├── fn_spawnMenuSelectSide.sqf      # Side button click: populate spawn list (client)
-        ├── fn_spawnMenuSelectLocation.sqf  # List selection: map marker + pan (client)
-        ├── fn_spawnMenuSpawn.sqf           # Spawn button: sends the request to the server (client)
-        └── fn_spawnMenuClose.sqf           # Dialog onUnload: map marker cleanup (client)
+    └── spawn/                # Faction/spawn-point selection
+        ├── fn_getSpawnPoints.sqf  # Reads config/spawn_config.hpp
+        ├── fn_spawnPlayer.sqf     # Authoritative spawn handling (server)
+        └── fn_spawnMenu.sqf       # Everything about the dialog (client), mode-dispatched:
+                                   # open / onLoad / selectSide / selectLocation / spawn / onUnload
 ```
 
 One subfolder per area under `functions/` (`data/`, `spawn/`, more to come — `player/`, `admin/`,
