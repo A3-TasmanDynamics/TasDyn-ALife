@@ -24,8 +24,8 @@ class ALife_SpawnMenu
     idd = ALIFE_IDD_SPAWN_MENU;
     movingEnable = 0;
     enableSimulation = 1;
-    onLoad = "[] call ALife_fnc_spawnMenuOpen";
-    onUnload = "[] call ALife_fnc_spawnMenuClose";
+    onLoad = "['onLoad'] call ALife_fnc_spawnMenu";
+    onUnload = "['onUnload'] call ALife_fnc_spawnMenu";
 
     class controlsBackground
     {
@@ -60,7 +60,7 @@ class ALife_SpawnMenu
             text = "Civilian";
             x = 0.19; y = 0.2; w = 0.14; h = 0.04;
             colorBackground[] = { 0.2, 0.5, 0.2, 1 };
-            action = "['civ'] call ALife_fnc_spawnMenuSelectSide";
+            action = "['selectSide', 'civ'] call ALife_fnc_spawnMenu";
         };
 
         class SideCop: ALife_RscButton
@@ -69,7 +69,7 @@ class ALife_SpawnMenu
             text = "Police";
             x = 0.34; y = 0.2; w = 0.14; h = 0.04;
             colorBackground[] = { 0.2, 0.2, 0.6, 1 };
-            action = "['cop'] call ALife_fnc_spawnMenuSelectSide";
+            action = "['selectSide', 'cop'] call ALife_fnc_spawnMenu";
         };
 
         class SideMedic: ALife_RscButton
@@ -78,14 +78,14 @@ class ALife_SpawnMenu
             text = "Medic";
             x = 0.49; y = 0.2; w = 0.14; h = 0.04;
             colorBackground[] = { 0.6, 0.2, 0.2, 1 };
-            action = "['medic'] call ALife_fnc_spawnMenuSelectSide";
+            action = "['selectSide', 'medic'] call ALife_fnc_spawnMenu";
         };
 
         class SpawnList: ALife_RscListBox
         {
             idc = ALIFE_IDC_SPAWN_LIST;
             x = 0.19; y = 0.25; w = 0.29; h = 0.4;
-            onLBSelChanged = "_this call ALife_fnc_spawnMenuSelectLocation";
+            onLBSelChanged = "(['selectLocation'] + _this) call ALife_fnc_spawnMenu";
         };
 
         class SpawnMap: ALife_RscMap
@@ -107,7 +107,7 @@ class ALife_SpawnMenu
             text = "Spawn";
             x = 0.6; y = 0.73; w = 0.1; h = 0.045;
             colorBackground[] = { 0.2, 0.55, 0.2, 1 };
-            action = "[] call ALife_fnc_spawnMenuSpawn";
+            action = "['spawn'] call ALife_fnc_spawnMenu";
         };
 
         class BtnCancel: ALife_RscButton

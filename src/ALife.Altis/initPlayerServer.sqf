@@ -42,4 +42,4 @@ if ((_record getOrDefault ["status", "ERROR"]) != "OK") exitWith {
 _player setVariable ["alife_record", _record];
 
 // Targeted at this player specifically, not a broadcast -- same reasoning.
-[] remoteExec ["ALife_fnc_spawnMenu", _player];
+["open"] remoteExec ["ALife_fnc_spawnMenu", _player];
