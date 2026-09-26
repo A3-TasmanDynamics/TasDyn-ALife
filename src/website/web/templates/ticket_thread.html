@@ -51,24 +51,98 @@
   <div class="ticket-meta-panel">
     <section class="card">
       <h2>Ticket</h2>
+
+      {{if .IsStaff}}
+      <form method="post" action="/support/tickets/{{.Ticket.ID}}/subject" class="field">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <label>Subject</label>
+        <div class="edit-row">
+          <input type="text" name="subject" value="{{.Ticket.Subject}}" maxlength="200" required />
+          <button class="cta secondary" type="submit">Save</button>
+        </div>
+      </form>
+      {{end}}
+
       <dl class="meta-list">
         <dt>Status</dt>
-        <dd><span class="badge badge-status-{{.Ticket.Status}}">{{.Ticket.Status}}</span></dd>
+        <dd>
+          <span class="badge badge-status-{{.Ticket.Status}}">{{.Ticket.Status}}</span>
+          {{if .IsStaff}}
+            {{if ne .Ticket.Status "closed"}}
+              <form method="post" action="/support/tickets/{{.Ticket.ID}}/close" class="inline-form"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="link-button" type="submit">Close</button></form>
+            {{else}}
+              <form method="post" action="/support/tickets/{{.Ticket.ID}}/reopen" class="inline-form"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="link-button" type="submit">Reopen</button></form>
+            {{end}}
+          {{end}}
+        </dd>
+
         <dt>Priority</dt>
-        <dd><span class="badge badge-priority-{{.Ticket.Priority}}">{{.Ticket.Priority}}</span></dd>
+        <dd>
+          {{if .IsStaff}}
+          <form method="post" action="/support/tickets/{{.Ticket.ID}}/priority" class="inline-form">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+            <select name="priority" onchange="this.form.submit()">
+              <option value="low" {{if eq .Ticket.Priority "low"}}selected{{end}}>Low</option>
+              <option value="normal" {{if eq .Ticket.Priority "normal"}}selected{{end}}>Normal</option>
+              <option value="high" {{if eq .Ticket.Priority "high"}}selected{{end}}>High</option>
+              <option value="urgent" {{if eq .Ticket.Priority "urgent"}}selected{{end}}>Urgent</option>
+            </select>
+          </form>
+          {{else}}
+            <span class="badge badge-priority-{{.Ticket.Priority}}">{{.Ticket.Priority}}</span>
+          {{end}}
+        </dd>
+
+        {{if .IsStaff}}
+        <dt>Assigned to</dt>
+        <dd>
+          <form method="post" action="/support/tickets/{{.Ticket.ID}}/assign" class="inline-form">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+            <select name="staff_id" onchange="this.form.submit()">
+              <option value="">— Unassigned —</option>
+              {{$assignedID := .Ticket.AssignedStaffID}}
+              {{range .StaffOptions}}
+              <option value="{{.ID}}" {{if eq .ID $assignedID}}selected{{end}}>{{.Name}}</option>
+              {{end}}
+            </select>
+          </form>
+        </dd>
+        {{else}}
+        <dt>Assigned to</dt>
+        <dd>{{if .Ticket.AssignedTo}}{{.Ticket.AssignedTo}}{{else}}<span class="hint">Unassigned</span>{{end}}</dd>
+        {{end}}
+
+        <dt>Opened</dt>
+        <dd>{{.Ticket.CreatedAt}}</dd>
+        <dt>Last updated</dt>
+        <dd>{{.Ticket.UpdatedAt}}</dd>
+      </dl>
+
+      {{if .IsStaff}}
+      <form method="post" action="/support/tickets/{{.Ticket.ID}}/category" class="field" style="margin-top:14px;">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <label>Category</label>
+        <select name="category_id" id="edit-category">
+          {{range .TopCategories}}<option value="{{.ID}}">{{.Label}}</option>{{end}}
+        </select>
+        <label style="margin-top:6px;">Sub-category</label>
+        <select name="subcategory_id" id="edit-subcategory">
+          <option value="">— None —</option>
+        </select>
+        <div class="button-row">
+          <button class="cta secondary" type="submit">Save category</button>
+        </div>
+      </form>
+      {{else}}
+      <dl class="meta-list" style="margin-top:8px;">
         <dt>Category</dt>
         <dd>{{.Ticket.CategoryLabel}}</dd>
         {{if .Ticket.SubcategoryLabel}}
         <dt>Sub-category</dt>
         <dd>{{.Ticket.SubcategoryLabel}}</dd>
         {{end}}
-        <dt>Assigned to</dt>
-        <dd>{{if .Ticket.AssignedTo}}{{.Ticket.AssignedTo}}{{else}}<span class="hint">Unassigned</span>{{end}}</dd>
-        <dt>Opened</dt>
-        <dd>{{.Ticket.CreatedAt}}</dd>
-        <dt>Last updated</dt>
-        <dd>{{.Ticket.UpdatedAt}}</dd>
       </dl>
+      {{end}}
     </section>
 
     {{if .IsStaff}}
@@ -89,33 +163,43 @@
         </dd>
       </dl>
     </section>
-
-    <section class="card">
-      <h2>Actions</h2>
-      <div class="button-row wrap">
-        {{if not .Ticket.AssignedTo}}
-          <form method="post" action="/support/tickets/{{.Ticket.ID}}/claim"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="cta secondary" type="submit">Claim</button></form>
-        {{else}}
-          <form method="post" action="/support/tickets/{{.Ticket.ID}}/unassign"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="cta secondary" type="submit">Unassign</button></form>
-        {{end}}
-        {{if ne .Ticket.Status "closed"}}
-          <form method="post" action="/support/tickets/{{.Ticket.ID}}/close"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="cta secondary" type="submit">Close</button></form>
-        {{else}}
-          <form method="post" action="/support/tickets/{{.Ticket.ID}}/reopen"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="cta secondary" type="submit">Reopen</button></form>
-        {{end}}
-      </div>
-      <form method="post" action="/support/tickets/{{.Ticket.ID}}/priority" class="field" style="margin-top:12px;">
-        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-        <label>Priority</label>
-        <select name="priority" onchange="this.form.submit()">
-          <option value="low" {{if eq .Ticket.Priority "low"}}selected{{end}}>Low</option>
-          <option value="normal" {{if eq .Ticket.Priority "normal"}}selected{{end}}>Normal</option>
-          <option value="high" {{if eq .Ticket.Priority "high"}}selected{{end}}>High</option>
-          <option value="urgent" {{if eq .Ticket.Priority "urgent"}}selected{{end}}>Urgent</option>
-        </select>
-      </form>
-    </section>
     {{end}}
   </div>
 </div>
+
+{{if .IsStaff}}
+<script>
+(function () {
+  var subcats = [
+    {{range .Subcategories}}{ id: {{.ID}}, parent: {{.ParentID}}, label: {{.Label | js}} },
+    {{end}}
+  ];
+  var catSel = document.getElementById('edit-category');
+  var subSel = document.getElementById('edit-subcategory');
+  var currentCategoryID = {{.Ticket.CategoryID}};
+  var currentSubcategoryID = {{.Ticket.SubcategoryID}};
+
+  function refreshSubcategories() {
+    var parentId = parseInt(catSel.value, 10);
+    var previousValue = subSel.value;
+    subSel.innerHTML = '<option value="">— None —</option>';
+    subcats.filter(function (s) { return s.parent === parentId; }).forEach(function (s) {
+      var opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = s.label;
+      if (parentId === currentCategoryID && s.id === currentSubcategoryID) {
+        opt.selected = true;
+      } else if (String(s.id) === previousValue) {
+        opt.selected = true;
+      }
+      subSel.appendChild(opt);
+    });
+  }
+
+  catSel.value = String(currentCategoryID);
+  catSel.addEventListener('change', refreshSubcategories);
+  refreshSubcategories();
+})();
+</script>
+{{end}}
 {{end}}

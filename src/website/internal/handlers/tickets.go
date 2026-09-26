@@ -172,10 +172,13 @@ func (d *Deps) CreateTicket(w http.ResponseWriter, r *http.Request) {
 type ticketDetail struct {
 	ID                       int64
 	Subject                  string
+	CategoryID               int
 	CategoryLabel            string
+	SubcategoryID            int // 0 = none
 	SubcategoryLabel         string
 	Status                   string
 	Priority                 string
+	AssignedStaffID          int64 // 0 = unassigned
 	AssignedTo               string
 	RequesterName            string
 	RequesterUID             string
@@ -187,9 +190,12 @@ type ticketDetail struct {
 
 type ticketThreadData struct {
 	Base
-	Ticket   ticketDetail
-	Messages []ticketMessage
-	IsStaff  bool
+	Ticket        ticketDetail
+	Messages      []ticketMessage
+	IsStaff       bool
+	TopCategories []categoryOption // for the staff-only "edit category" form
+	Subcategories []categoryOption
+	StaffOptions  []staffOption // for the staff-only "assign to" dropdown
 }
 
 // TicketThread renders one ticket's conversation plus, for staff, a
@@ -210,11 +216,14 @@ func (d *Deps) TicketThread(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var ownerID int64
+	var assignedStaffID *int64
+	var subcategoryID *int
 	var assignedName, discordID, discordUsername *string
 	var createdAt, updatedAt time.Time
 	t := ticketDetail{ID: ticketID}
 	err = d.Pool.QueryRow(r.Context(), `
-		SELECT st.player_id, st.subject, tc1.label, COALESCE(tc2.label, ''), st.status, st.priority, p.name,
+		SELECT st.player_id, st.subject, st.category_id, tc1.label, st.subcategory_id, COALESCE(tc2.label, ''),
+		       st.status, st.priority, st.assigned_staff_id, p.name,
 		       COALESCE(NULLIF(requester.name, ''), 'Player #' || requester.id),
 		       requester.uid, requester.discord_id, requester.discord_username,
 		       st.created_at, st.updated_at
@@ -224,7 +233,8 @@ func (d *Deps) TicketThread(w http.ResponseWriter, r *http.Request) {
 		LEFT JOIN players p ON p.id = st.assigned_staff_id
 		JOIN players requester ON requester.id = st.player_id
 		WHERE st.id = $1
-	`, ticketID).Scan(&ownerID, &t.Subject, &t.CategoryLabel, &t.SubcategoryLabel, &t.Status, &t.Priority, &assignedName,
+	`, ticketID).Scan(&ownerID, &t.Subject, &t.CategoryID, &t.CategoryLabel, &subcategoryID, &t.SubcategoryLabel,
+		&t.Status, &t.Priority, &assignedStaffID, &assignedName,
 		&t.RequesterName, &t.RequesterUID, &discordID, &discordUsername, &createdAt, &updatedAt)
 	if err == pgx.ErrNoRows {
 		http.NotFound(w, r)
@@ -234,6 +244,12 @@ func (d *Deps) TicketThread(w http.ResponseWriter, r *http.Request) {
 		slog.Error("ticket thread: load failed", "error", err)
 		http.Error(w, "Failed to load ticket.", http.StatusInternalServerError)
 		return
+	}
+	if subcategoryID != nil {
+		t.SubcategoryID = *subcategoryID
+	}
+	if assignedStaffID != nil {
+		t.AssignedStaffID = *assignedStaffID
 	}
 	if assignedName != nil {
 		t.AssignedTo = *assignedName
@@ -254,6 +270,25 @@ func (d *Deps) TicketThread(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := ticketThreadData{Base: baseFrom(r, t.Subject), Ticket: t, IsStaff: isStaff}
+
+	if isStaff {
+		topCats, subCats, err := fetchCategoryTree(r.Context(), d.Pool)
+		if err != nil {
+			slog.Error("ticket thread: category tree query failed", "error", err)
+			http.Error(w, "Failed to load ticket.", http.StatusInternalServerError)
+			return
+		}
+		data.TopCategories = topCats
+		data.Subcategories = subCats
+
+		staffOpts, err := fetchSupportStaff(r.Context(), d.Pool)
+		if err != nil {
+			slog.Error("ticket thread: staff list query failed", "error", err)
+			http.Error(w, "Failed to load ticket.", http.StatusInternalServerError)
+			return
+		}
+		data.StaffOptions = staffOpts
+	}
 
 	rows, err := d.Pool.Query(r.Context(), `
 		SELECT COALESCE(p.name, 'System'), stm.source, stm.body, stm.internal, stm.created_at

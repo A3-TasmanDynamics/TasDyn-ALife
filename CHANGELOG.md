@@ -310,3 +310,25 @@
     doesn't belong to the chosen category is correctly rejected; the category filter on the queue
     correctly includes/excludes tickets by top-level category. Disposable test accounts cleaned up
     afterward.
+- `src/website`: made ticket data directly editable from the detail page, NinjaOne-style (an
+  inline-editable properties panel, not a separate edit mode) -- per explicit request.
+  - **Subject** and **Category/Sub-category** are now editable (text field + Save; the same
+    cascading selects as ticket creation, pre-filled and re-validated through the same
+    `validateCategoryPair`).
+  - Replaced the separate Claim/Unassign buttons with a single **Assign to** dropdown listing
+    every currently Support-Panel-eligible player (resolved fresh via the same rank+override logic
+    `internal/auth/session.go` uses at login, not cached) -- covers claiming, reassigning to
+    someone else, and releasing back to the queue in one control. Assigning bumps `open` ->
+    `pending`; reassigning an already-`pending` ticket leaves its status alone.
+  - Every new endpoint re-validates server-side rather than trusting the form: an assignee must
+    currently resolve as support-eligible or the request is rejected with a specific error, not
+    silently accepted.
+  - Caught and fixed a real routing bug before it shipped: the new Subject/Category edit forms
+    initially posted to `/tickets/{id}/subject`\`/category` (404 -- those routes were registered
+    under `/support/tickets/{id}/...`, matching every other staff-only ticket action). Found by
+    actually submitting the forms and checking the real HTTP response, not by inspection.
+  - Verified end-to-end against the real dev DB: subject edit, category+subcategory edit, assign,
+    reassign to a second staff member (status correctly stays `pending`, not reset to `open`),
+    unassign, and a rejected assignment attempt to a player without current Support Panel access.
+    Disposable test accounts (including two real-rank test staff, to exercise reassignment
+    properly) cleaned up afterward.
