@@ -1,5 +1,13 @@
 // TasDyn-ALife — shared dialog base classes.
 //
+// Include-guarded: both spawnMenu.hpp and loadingScreen.hpp #include this
+// file, and Arma's config preprocessor has no automatic include guards --
+// without one, every class here (including ALife_RscMap's ~35 nested
+// icon-legend subclasses) would be defined twice in the compiled config,
+// the moment both dialogs are #included into the same description.ext.
+#ifndef __ALIFE_COMMON_UI_HPP
+#define __ALIFE_COMMON_UI_HPP
+//
 // These are self-contained (explicit `type = N` control-type constants,
 // full property sets) rather than `class Foo : RscText` inheriting from the
 // engine's own UI config. That inheritance approach is what broke
@@ -550,3 +558,5 @@ class ALife_RscProgress
     colorBar[] = { 0.114, 0.914, 0.714, 1 };
     x = 0; y = 0; w = 0.3; h = 0.02;
 };
+
+#endif // __ALIFE_COMMON_UI_HPP

@@ -674,3 +674,9 @@
   leaves the loading screen showing "failed to load" instead of hanging silently -- the underlying
   failure *policy* (`fn_playerJoin.sqf`'s `TODO(#10)`) still isn't decided, this only makes the
   existing stuck state visible.
+- `src/ALife.Altis/dialog/common_ui.hpp`: added an include guard (`#ifndef`/`#define`/`#endif`).
+  Both `spawnMenu.hpp` and `loadingScreen.hpp` `#include` this file, and Arma's config preprocessor
+  has no automatic include guards -- once both dialogs were `#include`d into `description.ext` (the
+  loading-screen PR above), every class in `common_ui.hpp` (including `ALife_RscMap`'s ~35 nested
+  icon-legend subclasses) was being defined twice in the compiled config. Caught before it caused a
+  live "already defined" error.
