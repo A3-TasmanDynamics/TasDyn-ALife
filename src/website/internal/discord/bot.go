@@ -61,7 +61,7 @@ func (b *Bot) Start(ctx context.Context) error {
 			{
 				Type:        discordgo.ApplicationCommandOptionString,
 				Name:        "code",
-				Description: "The code shown on the website's Settings page",
+				Description: "The code shown on the website's Dashboard",
 				Required:    true,
 			},
 		},

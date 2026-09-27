@@ -21,6 +21,14 @@
         field prefix directly, so there's no translation step between "what
         the player picked" and "what column that reads/writes."
 
+        Faction is derived here from `side _unit` (via ALife_fnc_sideToFaction)
+        -- the player's actual Arma-assigned side, set by which Editor-placed
+        playable slot they connected as (mission.sqm) -- never from a
+        client-supplied value. "Client Requests, Server Decides" applied to
+        faction itself, not just the spawn point: a client could otherwise
+        remoteExec this directly with an arbitrary faction string regardless
+        of which slot they're actually in. See docs/TONIC_REFERENCE.md §3.
+
         Gear/loadout equipping is deliberately NOT done here yet — civ_gear/
         cop_gear/medic_gear don't have a documented item-key contract yet
         (docs/DATA_CONTRACT.md only says "full loadout" in general terms).
@@ -32,8 +40,7 @@
     Parameter(s):
         0: OBJECT - the player's unit
         1: STRING - uid
-        2: STRING - faction ("civ" / "cop" / "medic")
-        3: STRING - requested spawn point key (a CfgSpawnPoints class name,
+        2: STRING - requested spawn point key (a CfgSpawnPoints class name,
                     a REQUEST, see above — not a marker name directly,
                     since config/spawn_config.hpp resolves that itself)
 
@@ -41,13 +48,11 @@
         Nothing
 */
 
-params ["_unit", "_uid", "_faction", "_requestedSpawnKey"];
+params ["_unit", "_uid", "_requestedSpawnKey"];
 
 if (!isServer) exitWith {};
 
-if !(_faction in ["civ", "cop", "medic"]) exitWith {
-    diag_log format ["[ALife] spawnPlayer rejected -- invalid faction: %1", _faction];
-};
+private _faction = [side _unit] call ALife_fnc_sideToFaction;
 
 private _record = _unit getVariable ["alife_record", createHashMapFromArray [["status", "ERROR"]]];
 

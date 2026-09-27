@@ -1,5 +1,5 @@
 // Package db wraps the Postgres connection pool. A pool, not a fresh
-// connection per call like src/server_manager/dashboard.go -- that pattern
+// connection per call like src/server_manager/logs.go -- that pattern
 // was correct for a desktop app doing one dashboard refresh at a time, but
 // this is a web server handling concurrent requests, which is exactly what
 // pgxpool exists for.

@@ -35,7 +35,7 @@ class CfgSpawnPoints
     {
         displayName = "Kavala";
         faction = "civ";
-        marker = "civilian_kavala_spawn";  // place this marker in Eden once mission.sqm exists
+        marker = "civilian_kavala_spawn";
         position[] = {};
         gang = "";
     };

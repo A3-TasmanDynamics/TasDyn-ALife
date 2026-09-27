@@ -27,20 +27,21 @@ called out inline in `internal/handlers/admin.go` and `internal/discord/bot.go`.
   portal (`/tickets`) and the Support Panel (`/support`) -- one `support_tickets` row, two access
   levels, per `docs/WEBSITE.md` §8. New tickets post to Discord via `internal/discord/webhook.go`
   if `DISCORD_TICKET_LOG_WEBHOOK` is configured.
-- **Member dashboard**: read-only faction stats and gang info.
+- **Member dashboard**: faction stats and gang info, plus interactive bank transfers
+  (`internal/bank`) and gang invite/remove/rank-change actions (`internal/gang`) -- both
+  idempotency-tokened and row-locked against double-spend/races.
 - **Admin Panel**: currently a read-only `staff_log` viewer plus the access-gated route itself --
   player lookup, ban/unban, rank management, anti-cheat review, and the arsenal editor are designed
   in `docs/WEBSITE.md` §7 but not yet built.
+- **CSRF**: double-submit-cookie tokens (`internal/csrf`) on every state-changing form, wired in
+  before the money-moving features above shipped, not after.
 
 ## Not yet built
 
-- Member-portal bank transfers and gang invite/remove/rank actions (`docs/WEBSITE.md` §5) -- the
-  `fn_save.sqf`/`*_bank` cache question flagged there needs resolving first.
 - Two-way Discord ticket-thread sync (a thread per ticket, mirrored replies) -- `internal/discord/bot.go`
   has the account-linking half of the bot; ticket sync is the documented next piece.
-- CSRF tokens on state-changing forms (`docs/WEBSITE.md` §10) -- needed before this is
-  internet-facing, not needed to develop against locally.
-- Rate limiting on login/money-moving endpoints.
+- Rate limiting on login/money-moving endpoints -- needed before this is internet-facing, not
+  needed to develop against locally.
 
 ## Running locally
 

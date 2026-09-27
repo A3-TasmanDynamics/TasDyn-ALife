@@ -632,3 +632,18 @@
   stub here, not the real engine class. Reverted; added `widthRailWay = 4;` to the existing
   self-contained `ALife_RscMap` instead, verified against the real class's documented defaults rather
   than guessed.
+- `src/ALife.Altis`: switched faction selection from a custom in-dialog picker to Arma's own
+  multiplayer role-selection screen, matching Tonic's AsYetUntitled/Framework -- confirmed via a full
+  read-through of that framework (`docs/TONIC_REFERENCE.md`) that this, not the single-generic-slot
+  workaround shipped earlier this session, was always the intended design. The earlier "16 roles"
+  RPT warning and no-spawn-menu bug came from having `mission.sqm` built for this pattern (16
+  per-side playable roles) while the dialog/SQF was accidentally built for the other one (one generic
+  slot, side chosen in-dialog) -- not from "too many slots." Restored `mission.sqm`'s 16 roles to
+  `isPlayable=1` (west=police, civilian, independent=medic), removed `spawnMenu.hpp`'s
+  `SideCivilian`/`SideCop`/`SideMedic` buttons (it's spawn-point-only now), and added
+  `ALife_fnc_sideToFaction` (`functions/spawn/fn_sideToFaction.sqf`) as the one place the Arma-side-
+  to-`"civ"/"cop"/"medic"` mapping lives. `fn_spawnPlayer.sqf` now derives faction from `side _unit`
+  itself rather than trusting a client-supplied faction string -- closes a real gap the old design
+  had, where a direct `remoteExec` could claim any faction regardless of which slot the player
+  actually connected as. Cop/medic whitelisting (Tonic gates this with a post-spawn kick, not a slot
+  restriction) doesn't exist yet -- flagged as a new open item for Phase 3.

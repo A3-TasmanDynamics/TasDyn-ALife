@@ -39,7 +39,7 @@ no runtime to install on a host, straightforward Postgres access via `pgx`.
 | Language | Go | Consistent with [server_manager](../src/server_manager); single static binary to deploy. |
 | Router | [chi](https://github.com/go-chi/chi) | Thin stdlib-compatible router with clean middleware groups — exactly what per-panel access control needs. |
 | Rendering | `html/template`, server-rendered | No SPA build pipeline for content that's mostly forms and tables; matches "don't add abstraction the task doesn't need." Auto-escapes by default (`text/template` does not — this distinction matters, this app touches user-supplied ticket text and player names). |
-| DB access | `pgx/v5`, same driver as server_manager's dashboard queries | Already proven against this schema in `src/server_manager/dashboard.go`. |
+| DB access | `pgx/v5`, same driver as server_manager's dashboard queries | Already proven against this schema in `src/server_manager/logs.go`. |
 | Sessions | DB-backed (`web_sessions` table, §6), opaque token in an `HttpOnly`, `Secure`, `SameSite=Lax` cookie | Not JWT — a ban or staff demotion must invalidate a session **immediately**, not wait for token expiry. A DB row can be deleted on the spot; a signed JWT can't be revoked without a blocklist, which is a DB table anyway — so just use the DB table directly. |
 | Styling | Hand-written CSS, navy/amber tokens ported from `server_manager/frontend/src/style.css` | Same brand, no CDN dependency for an internet-facing production site (a CDN outage shouldn't take login styling down). |
 | Discord | [discordgo](https://github.com/bwmarrin/discordgo) for the ticket bot; plain webhook POSTs for one-way logs | See §9 — two different integration shapes for two different needs. |
