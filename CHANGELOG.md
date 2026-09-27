@@ -647,3 +647,8 @@
   had, where a direct `remoteExec` could claim any faction regardless of which slot the player
   actually connected as. Cop/medic whitelisting (Tonic gates this with a post-spawn kick, not a slot
   restriction) doesn't exist yet -- flagged as a new open item for Phase 3.
+- `src/ALife.Altis/dialog/common_ui.hpp`: with the role-selection screen now working, a real client
+  reached the spawn dialog and immediately hit `No entry '.../ALife_SpawnMenu/controls/InfoText.style'`
+  -- the same class of bug as the map control's missing `text`/`widthRailWay`, this time on
+  `ALife_RscStructuredText` (used by `InfoText`). Verified the real `RscStructuredText`'s default
+  (`style = ST_LEFT`, i.e. `0`) against Bohemia's wiki and added it, rather than guessing.
