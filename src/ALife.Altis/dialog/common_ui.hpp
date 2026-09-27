@@ -9,8 +9,9 @@
 // sidesteps that whole class of bug permanently, and gives every dialog in
 // this mission a single, consistent look instead of the engine's default
 // styling. Reviewed a real framework's equivalent file for the general
-// shape (control-type constants, an ALife_Rsc* naming scheme) — not copied
-// wholesale, adapted to only what this mission's dialogs actually need.
+// shape (control-type constants, an ALife_Rsc* naming scheme) — mostly
+// adapted to only what this mission's dialogs actually need, except
+// ALife_RscMap (see below).
 //
 // Tried switching to `class RscText;` (etc.) forward-declare + inherit
 // instead, on the theory that it would pull in every real engine property
@@ -19,8 +20,16 @@
 // its `type` entirely ("no type entry inside class .../SpawnMap" etc. for
 // *every* control, not just the map) -- the forward declaration resolves
 // to an empty stub, not the real engine class. Reverted. Stick to
-// self-contained classes and add real properties (verified against
-// Bohemia's own RscMapControl defaults) as they're actually needed.
+// self-contained classes.
+//
+// ALife_RscMap specifically went through three rounds of live "No entry"
+// errors patching one missing property/subclass at a time (`text`, then
+// `widthRailWay`, then the `Tree` legend subclass) before it became clear
+// that control's real property surface (including a few dozen nested
+// icon-legend classes) is too large to hand-maintain piecemeal. It's now
+// ported wholesale from Tonic's AsYetUntitled/Framework's
+// Life_RscMapControl (a real, live, currently-deployed mission), with only
+// our own color theme overridden on top -- see docs/TONIC_REFERENCE.md.
 
 #define ALIFE_CT_STATIC    0
 #define ALIFE_CT_BUTTON    1
@@ -151,21 +160,29 @@ class ALife_RscListBox
     x = 0; y = 0; w = 0.2; h = 0.3;
 };
 
+// Map control. The engine's dialog renderer reads a long list of
+// RscMapControl properties -- including whole nested legend/icon
+// subclasses (Tree, Bunker, Hospital, ...) -- unconditionally, regardless
+// of whether the dialog ever actually shows those icons. Three rounds of
+// live "No entry" errors (missing `text`, then `widthRailWay`, then the
+// `Tree` subclass) proved that patching one property/class at a time
+// against this control specifically doesn't converge. Ported wholesale
+// from Tonic's AsYetUntitled/Framework's Life_RscMapControl
+// (dialog/common.hpp, a real, live, currently-deployed mission) instead --
+// a complete, proven-correct structure -- keeping only our own dark color
+// theme as overrides on top of it. See docs/TONIC_REFERENCE.md §3/§4.
 class ALife_RscMap
 {
+    access = 0;
     type = ALIFE_CT_MAP_MAIN;
     idc = -1;
     style = 48; // ST_PICTURE
-    // The engine's own dialog renderer reads `text` unconditionally
-    // regardless of control type -- confirmed live: omitting it produced
-    // "No entry '.../ALife_SpawnMenu/controls/SpawnMap.text'" and the
-    // dialog rendering broken (map control filling the screen black)
-    // the moment a real client actually opened this dialog. Every other
-    // control here already had one; this class was the one gap.
     text = "";
     colorBackground[] = { 0.1, 0.1, 0.1, 1 };
     colorOutside[] = { 0, 0, 0, 1 };
     colorText[] = { 0, 0, 0, 1 };
+    font = "TahomaB";
+    sizeEx = 0.025;
     colorSea[] = { 0.467, 0.631, 0.851, 0.5 };
     colorForest[] = { 0.624, 0.78, 0.388, 0.5 };
     colorRocks[] = { 0, 0, 0, 0.3 };
@@ -188,25 +205,331 @@ class ALife_RscMap
     colorMainRoadsFill[] = { 1, 0.6, 0.4, 1 };
     colorGrid[] = { 0.1, 0.1, 0.1, 0.6 };
     colorGridMap[] = { 0.1, 0.1, 0.1, 0.6 };
-    font = "TahomaB";
-    fontLabel = "TahomaB"; fontGrid = "TahomaB"; fontUnits = "TahomaB";
-    fontNames = "TahomaB"; fontInfo = "TahomaB"; fontLevel = "TahomaB";
-    sizeEx = 0.025;
-    sizeExLabel = 0.025; sizeExGrid = 0.02; sizeExUnits = 0.025;
-    sizeExNames = 0.025; sizeExInfo = 0.025; sizeExLevel = 0.02;
     stickX[] = { 0.2, { "Gamma", 1, 1.5 } };
     stickY[] = { 0.2, { "Gamma", 1, 1.5 } };
+    widthRailWay = 4;
+    class Legend
+    {
+        colorBackground[] = { 1, 1, 1, 0.5 };
+        color[] = { 0, 0, 0, 1 };
+        x = "SafeZoneX + (((safezoneW / safezoneH) min 1.2) / 40)";
+        y = "SafeZoneY + safezoneH - 4.5 * ((((safezoneW / safezoneH) min 1.2) / 1.2) / 25)";
+        w = "10 * (((safezoneW / safezoneH) min 1.2) / 40)";
+        h = "3.5 * ((((safezoneW / safezoneH) min 1.2) / 1.2) / 25)";
+        font = "RobotoCondensed";
+        sizeEx = "(((((safezoneW / safezoneH) min 1.2) / 1.2) / 25) * 0.8)";
+    };
+    class ActiveMarker
+    {
+        color[] = { 0.3, 0.1, 0.9, 1 };
+        size = 50;
+    };
+    class Command
+    {
+        color[] = { 1, 1, 1, 1 };
+        icon = "\A3\ui_f\data\map\mapcontrol\waypoint_ca.paa";
+        size = 18;
+        importance = 1;
+        coefMin = 1;
+        coefMax = 1;
+    };
+    class Task
+    {
+        colorCreated[] = { 1, 1, 1, 1 };
+        colorCanceled[] = { 0.7, 0.7, 0.7, 1 };
+        colorDone[] = { 0.7, 1, 0.3, 1 };
+        colorFailed[] = { 1, 0.3, 0.2, 1 };
+        color[] = { "(profilenamespace getvariable ['IGUI_TEXT_RGB_R',0])", "(profilenamespace getvariable ['IGUI_TEXT_RGB_G',1])", "(profilenamespace getvariable ['IGUI_TEXT_RGB_B',1])", "(profilenamespace getvariable ['IGUI_TEXT_RGB_A',0.8])" };
+        icon = "\A3\ui_f\data\map\mapcontrol\taskIcon_CA.paa";
+        iconCreated = "\A3\ui_f\data\map\mapcontrol\taskIconCreated_CA.paa";
+        iconCanceled = "\A3\ui_f\data\map\mapcontrol\taskIconCanceled_CA.paa";
+        iconDone = "\A3\ui_f\data\map\mapcontrol\taskIconDone_CA.paa";
+        iconFailed = "\A3\ui_f\data\map\mapcontrol\taskIconFailed_CA.paa";
+        size = 27;
+        importance = 1;
+        coefMin = 1;
+        coefMax = 1;
+    };
+    class CustomMark
+    {
+        color[] = { 0, 0, 0, 1 };
+        icon = "\A3\ui_f\data\map\mapcontrol\custommark_ca.paa";
+        size = 24;
+        importance = 1;
+        coefMin = 1;
+        coefMax = 1;
+    };
+    class Tree
+    {
+        color[] = { 0.45, 0.64, 0.33, 0.4 };
+        icon = "\A3\ui_f\data\map\mapcontrol\bush_ca.paa";
+        size = 12;
+        importance = "0.9 * 16 * 0.05";
+        coefMin = 0.25;
+        coefMax = 4;
+    };
+    class SmallTree
+    {
+        color[] = { 0.45, 0.64, 0.33, 0.4 };
+        icon = "\A3\ui_f\data\map\mapcontrol\bush_ca.paa";
+        size = 12;
+        importance = "0.6 * 12 * 0.05";
+        coefMin = 0.25;
+        coefMax = 4;
+    };
+    class Bush
+    {
+        color[] = { 0.45, 0.64, 0.33, 0.4 };
+        icon = "\A3\ui_f\data\map\mapcontrol\bush_ca.paa";
+        size = "14/2";
+        importance = "0.2 * 14 * 0.05 * 0.05";
+        coefMin = 0.25;
+        coefMax = 4;
+    };
+    class Church
+    {
+        color[] = { 1, 1, 1, 1 };
+        icon = "\A3\ui_f\data\map\mapcontrol\church_CA.paa";
+        size = 24;
+        importance = 1;
+        coefMin = 0.85;
+        coefMax = 1;
+    };
+    class Chapel
+    {
+        color[] = { 0, 0, 0, 1 };
+        icon = "\A3\ui_f\data\map\mapcontrol\Chapel_CA.paa";
+        size = 24;
+        importance = 1;
+        coefMin = 0.85;
+        coefMax = 1;
+    };
+    class Cross
+    {
+        color[] = { 0, 0, 0, 1 };
+        icon = "\A3\ui_f\data\map\mapcontrol\Cross_CA.paa";
+        size = 24;
+        importance = 1;
+        coefMin = 0.85;
+        coefMax = 1;
+    };
+    class Rock
+    {
+        color[] = { 0.1, 0.1, 0.1, 0.8 };
+        icon = "\A3\ui_f\data\map\mapcontrol\rock_ca.paa";
+        size = 12;
+        importance = "0.5 * 12 * 0.05";
+        coefMin = 0.25;
+        coefMax = 4;
+    };
+    class Bunker
+    {
+        color[] = { 0, 0, 0, 1 };
+        icon = "\A3\ui_f\data\map\mapcontrol\bunker_ca.paa";
+        size = 14;
+        importance = "1.5 * 14 * 0.05";
+        coefMin = 0.25;
+        coefMax = 4;
+    };
+    class Fortress
+    {
+        color[] = { 0, 0, 0, 1 };
+        icon = "\A3\ui_f\data\map\mapcontrol\bunker_ca.paa";
+        size = 16;
+        importance = "2 * 16 * 0.05";
+        coefMin = 0.25;
+        coefMax = 4;
+    };
+    class Fountain
+    {
+        color[] = { 0, 0, 0, 1 };
+        icon = "\A3\ui_f\data\map\mapcontrol\fountain_ca.paa";
+        size = 11;
+        importance = "1 * 12 * 0.05";
+        coefMin = 0.25;
+        coefMax = 4;
+    };
+    class ViewTower
+    {
+        color[] = { 0, 0, 0, 1 };
+        icon = "\A3\ui_f\data\map\mapcontrol\viewtower_ca.paa";
+        size = 16;
+        importance = "2.5 * 16 * 0.05";
+        coefMin = 0.5;
+        coefMax = 4;
+    };
+    class Lighthouse
+    {
+        color[] = { 1, 1, 1, 1 };
+        icon = "\A3\ui_f\data\map\mapcontrol\lighthouse_CA.paa";
+        size = 24;
+        importance = 1;
+        coefMin = 0.85;
+        coefMax = 1;
+    };
+    class Quay
+    {
+        color[] = { 1, 1, 1, 1 };
+        icon = "\A3\ui_f\data\map\mapcontrol\quay_CA.paa";
+        size = 24;
+        importance = 1;
+        coefMin = 0.85;
+        coefMax = 1;
+    };
+    class Fuelstation
+    {
+        color[] = { 1, 1, 1, 1 };
+        icon = "\A3\ui_f\data\map\mapcontrol\fuelstation_CA.paa";
+        size = 24;
+        importance = 1;
+        coefMin = 0.85;
+        coefMax = 1;
+    };
+    class Hospital
+    {
+        color[] = { 1, 1, 1, 1 };
+        icon = "\A3\ui_f\data\map\mapcontrol\hospital_CA.paa";
+        size = 24;
+        importance = 1;
+        coefMin = 0.85;
+        coefMax = 1;
+    };
+    class BusStop
+    {
+        color[] = { 1, 1, 1, 1 };
+        icon = "\A3\ui_f\data\map\mapcontrol\busstop_CA.paa";
+        size = 24;
+        importance = 1;
+        coefMin = 0.85;
+        coefMax = 1;
+    };
+    class Transmitter
+    {
+        color[] = { 1, 1, 1, 1 };
+        icon = "\A3\ui_f\data\map\mapcontrol\transmitter_CA.paa";
+        size = 24;
+        importance = 1;
+        coefMin = 0.85;
+        coefMax = 1;
+    };
+    class Stack
+    {
+        color[] = { 0, 0, 0, 1 };
+        icon = "\A3\ui_f\data\map\mapcontrol\stack_ca.paa";
+        size = 20;
+        importance = "2 * 16 * 0.05";
+        coefMin = 0.9;
+        coefMax = 4;
+    };
+    class Ruin
+    {
+        color[] = { 0, 0, 0, 1 };
+        icon = "\A3\ui_f\data\map\mapcontrol\ruin_ca.paa";
+        size = 16;
+        importance = "1.2 * 16 * 0.05";
+        coefMin = 1;
+        coefMax = 4;
+    };
+    class Tourism
+    {
+        color[] = { 0, 0, 0, 1 };
+        icon = "\A3\ui_f\data\map\mapcontrol\tourism_ca.paa";
+        size = 16;
+        importance = "1 * 16 * 0.05";
+        coefMin = 0.7;
+        coefMax = 4;
+    };
+    class Watertower
+    {
+        color[] = { 1, 1, 1, 1 };
+        icon = "\A3\ui_f\data\map\mapcontrol\watertower_CA.paa";
+        size = 24;
+        importance = 1;
+        coefMin = 0.85;
+        coefMax = 1;
+    };
+    class Waypoint
+    {
+        color[] = { 0, 0, 0, 1 };
+        size = 24;
+        importance = 1;
+        coefMin = 1;
+        coefMax = 1;
+        icon = "\A3\ui_f\data\map\mapcontrol\waypoint_ca.paa";
+    };
+    class WaypointCompleted
+    {
+        color[] = { 0, 0, 0, 1 };
+        size = 24;
+        importance = 1;
+        coefMin = 1;
+        coefMax = 1;
+        icon = "\A3\ui_f\data\map\mapcontrol\waypointCompleted_ca.paa";
+    };
+    class power
+    {
+        icon = "\A3\ui_f\data\map\mapcontrol\power_CA.paa";
+        size = 24;
+        importance = 1;
+        coefMin = 0.85;
+        coefMax = 1;
+        color[] = { 1, 1, 1, 1 };
+    };
+    class powersolar
+    {
+        icon = "\A3\ui_f\data\map\mapcontrol\powersolar_CA.paa";
+        size = 24;
+        importance = 1;
+        coefMin = 0.85;
+        coefMax = 1;
+        color[] = { 1, 1, 1, 1 };
+    };
+    class powerwave
+    {
+        icon = "\A3\ui_f\data\map\mapcontrol\powerwave_CA.paa";
+        size = 24;
+        importance = 1;
+        coefMin = 0.85;
+        coefMax = 1;
+        color[] = { 1, 1, 1, 1 };
+    };
+    class powerwind
+    {
+        icon = "\A3\ui_f\data\map\mapcontrol\powerwind_CA.paa";
+        size = 24;
+        importance = 1;
+        coefMin = 0.85;
+        coefMax = 1;
+        color[] = { 1, 1, 1, 1 };
+    };
+    class shipwreck
+    {
+        icon = "\A3\ui_f\data\map\mapcontrol\shipwreck_CA.paa";
+        size = 24;
+        importance = 1;
+        coefMin = 0.85;
+        coefMax = 1;
+        color[] = { 1, 1, 1, 1 };
+    };
+    class LineMarker
+    {
+        lineDistanceMin = 3e-005;
+        lineLengthMin = 5;
+        lineWidthThick = 0.014;
+        lineWidthThin = 0.008;
+        textureComboBoxColor = "#(argb,8,8,3)color(1,1,1,1)";
+    };
+    moveOnEdges = 1;
+    fontLabel = "TahomaB"; fontGrid = "TahomaB"; fontUnits = "TahomaB";
+    fontNames = "TahomaB"; fontInfo = "TahomaB"; fontLevel = "TahomaB";
+    sizeExLabel = 0.025; sizeExGrid = 0.02; sizeExUnits = 0.025;
+    sizeExNames = 0.025; sizeExInfo = 0.025; sizeExLevel = 0.02;
     ptsPerSquareSea = 5; ptsPerSquareTxt = 20; ptsPerSquareCLn = 10;
     ptsPerSquareExp = 10; ptsPerSquareCost = 10; ptsPerSquareFor = 9;
     ptsPerSquareForEdge = 15; ptsPerSquareRoad = 6; ptsPerSquareObj = 10;
     showCountourInterval = 0;
     scaleMin = 0.001; scaleMax = 1; scaleDefault = 0.16;
     maxSatelliteAlpha = 0.85; alphaFadeStartScale = 0.35; alphaFadeEndScale = 0.4;
-    moveOnEdges = 1;
-    // Confirmed live: after `text` was added, the very next connect hit
-    // "No entry '.../SpawnMap.widthRailWay'". Real, documented RscMapControl
-    // property (default 4 per Bohemia's own defaults and a long-standing
-    // forums thread on this exact error since the Arma 3 1.90 update).
-    widthRailWay = 4;
+    shadow = 0;
     x = 0; y = 0; w = 0.4; h = 0.4;
 };

@@ -652,3 +652,13 @@
   -- the same class of bug as the map control's missing `text`/`widthRailWay`, this time on
   `ALife_RscStructuredText` (used by `InfoText`). Verified the real `RscStructuredText`'s default
   (`style = ST_LEFT`, i.e. `0`) against Bohemia's wiki and added it, rather than guessing.
+- `src/ALife.Altis/dialog/common_ui.hpp`: the very next connect after the fix above hit a third
+  missing-property error on `ALife_RscMap` -- `No entry '.../SpawnMap.Tree'` -- but this time not a
+  scalar property, a whole nested legend/icon subclass (`Tree`, alongside dozens of siblings like
+  `Bunker`/`Hospital`/`Church` the real `RscMapControl` also carries). Three rounds of patching one
+  property/class at a time (`text`, `widthRailWay`, now `Tree`) confirmed this control's real
+  property surface is too large to hand-maintain piecemeal. Replaced `ALife_RscMap` wholesale with
+  Tonic's AsYetUntitled/Framework's `Life_RscMapControl` (`dialog/common.hpp` in that framework) --
+  a complete, proven-correct, currently-deployed definition -- keeping only this project's own dark
+  color theme as overrides on top of it, rather than continuing to guess which property is missing
+  next.
