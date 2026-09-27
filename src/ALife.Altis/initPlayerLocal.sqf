@@ -23,6 +23,16 @@
 
 if (!hasInterface) exitWith {};
 
+// Tonic's AsYetUntitled/Framework waits for the game's own HUD display to
+// exist (`waitUntil {!isNull (findDisplay 46)}`) before doing ANYTHING
+// else in its client init -- confirmed by reading core/init.sqf directly.
+// Our own init was missing this: creating ALife_LoadingScreen before the
+// engine's own display system is ready is exactly the kind of thing that
+// can silently fail rather than error, depending on connection timing --
+// a real, structural difference from a proven-working framework, not
+// something caught by a config-compile smoke test.
+waitUntil { !isNull (findDisplay 46) };
+
 ["open"] call ALife_fnc_loadingScreen;
 ["setProgress", 10, "Connecting to server..."] call ALife_fnc_loadingScreen;
 

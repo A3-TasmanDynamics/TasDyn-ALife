@@ -695,3 +695,15 @@
   closed once `setPosATL` has actually run in every code path (fresh spawn, alive-resume, and the
   rejected-request/no-valid-record edge cases, which previously would have left the client stuck
   behind the loading screen forever with nothing ever telling it to close).
+- `src/ALife.Altis/initPlayerLocal.sqf`: added `waitUntil {!isNull (findDisplay 46)}` as the very
+  first thing after the `hasInterface` guard, before any dialog/UI work. Found by reading Tonic's
+  AsYetUntitled/Framework's `core/init.sqf` line by line after another "no loading screen, no spawn
+  menu, straight into the playable" report -- Tonic waits for the game's own HUD display to exist
+  before doing anything else in client init; our own init was missing this, a real structural gap
+  from a proven-working framework rather than something a config-compile smoke test would catch.
+- `src/ALife.Altis`: moved `functions/` under a new `core/` folder (`core/functions/data`,
+  `core/functions/spawn`, `core/functions/ui`), matching Tonic's own top-level `core/` convention.
+  Updated `CfgFunctions.hpp`'s `file =` paths and every stale path reference in comments/docs to
+  match -- `CfgFunctions.hpp` pointing at the old path would have meant every single `ALife_fnc_*`
+  function silently failing to register, which independently could also explain a "nothing our
+  scripts do" symptom like the one above.

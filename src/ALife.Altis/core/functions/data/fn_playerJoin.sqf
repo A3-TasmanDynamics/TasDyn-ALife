@@ -24,7 +24,7 @@
         ALife_fnc_playerJoin.
 
         Also pushes real progress milestones back to this specific client's
-        loading screen (ALife_fnc_loadingScreen, functions/ui/) as the
+        loading screen (ALife_fnc_loadingScreen, core/functions/ui/) as the
         actual DB load happens -- initPlayerLocal.sqf owns the client-side
         milestones before this function is even called; this is the
         server-side half of the same real (not simulated) progress bar.

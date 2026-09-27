@@ -1,6 +1,6 @@
 // TasDyn-ALife — connection loading screen.
 // Shown from the moment a client connects until the spawn menu is ready to
-// open (functions/ui/fn_loadingScreen.sqf, mode-dispatched like
+// open (core/functions/ui/fn_loadingScreen.sqf, mode-dispatched like
 // spawnMenu.hpp). The status text and progress bar reflect the ACTUAL join
 // sequence -- initPlayerLocal.sqf and fn_playerJoin.sqf push real
 // milestones to it (player object ready, join request sent, DB record

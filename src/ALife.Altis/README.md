@@ -13,7 +13,7 @@ this folder gets renamed to match; the two are meant to stay in lockstep, not dr
 ```text
 src/ALife.Altis/
 ├── description.ext        # Mission config — includes everything below
-├── CfgFunctions.hpp        # Registers ALife_fnc_* from functions/
+├── CfgFunctions.hpp        # Registers ALife_fnc_* from core/functions/
 ├── CfgRemoteExec.hpp       # The remoteExec allowlist — see docs/ANTI_CHEAT.md Layer 1
 ├── initServer.sqf          # Mission-level init: HandleDisconnect + starts fn_sync.sqf
 ├── initPlayerLocal.sqf     # Per-player join hook (client) -- opens the loading screen,
@@ -26,28 +26,29 @@ src/ALife.Altis/
 │   ├── loadingScreen.hpp   # Connection loading screen, real (not simulated) progress -- see below
 │   └── spawnMenu.hpp       # Spawn point selection dialog (faction comes from the engine's own
 │                           # role-selection screen, not this dialog -- see below)
-└── functions/
-    ├── data/                          # DB-facing — implements docs/DATA_CONTRACT.md
-    │   ├── fn_callExtension.sqf         # The only place that calls "tasdyn_alife" directly
-    │   ├── fn_load.sqf
-    │   ├── fn_save.sqf
-    │   ├── fn_parseStoredPosition.sqf  # Safely parses a loaded <faction>_position
-    │   ├── fn_savePlayerState.sqf      # Saves alive/position -- shared by disconnect + sync
-    │   ├── fn_sync.sqf                 # Periodic pulse: DB keep-alive + autosave -- see below
-    │   └── fn_playerJoin.sqf           # Server-side join handling -- see "Player join" below
-    ├── spawn/                # Faction/spawn-point selection
-    │   ├── fn_getSpawnPoints.sqf  # Reads config/spawn_config.hpp
-    │   ├── fn_sideToFaction.sqf   # Maps an Arma side to "civ"/"cop"/"medic" -- one source of truth
-    │   ├── fn_spawnPlayer.sqf     # Authoritative spawn handling (server)
-    │   └── fn_spawnMenu.sqf       # Everything about the dialog (client), mode-dispatched:
-    │                              # open / onLoad / selectLocation / spawn / onUnload
-    └── ui/
-        └── fn_loadingScreen.sqf  # Everything about the loading screen (client), mode-dispatched:
-                                   # open / onLoad / setProgress / onUnload -- see below
+└── core/
+    └── functions/
+        ├── data/                          # DB-facing — implements docs/DATA_CONTRACT.md
+        │   ├── fn_callExtension.sqf         # The only place that calls "tasdyn_alife" directly
+        │   ├── fn_load.sqf
+        │   ├── fn_save.sqf
+        │   ├── fn_parseStoredPosition.sqf  # Safely parses a loaded <faction>_position
+        │   ├── fn_savePlayerState.sqf      # Saves alive/position -- shared by disconnect + sync
+        │   ├── fn_sync.sqf                 # Periodic pulse: DB keep-alive + autosave -- see below
+        │   └── fn_playerJoin.sqf           # Server-side join handling -- see "Player join" below
+        ├── spawn/                # Faction/spawn-point selection
+        │   ├── fn_getSpawnPoints.sqf  # Reads config/spawn_config.hpp
+        │   ├── fn_sideToFaction.sqf   # Maps an Arma side to "civ"/"cop"/"medic" -- one source of truth
+        │   ├── fn_spawnPlayer.sqf     # Authoritative spawn handling (server)
+        │   └── fn_spawnMenu.sqf       # Everything about the dialog (client), mode-dispatched:
+        │                              # open / onLoad / selectLocation / spawn / onUnload
+        └── ui/
+            └── fn_loadingScreen.sqf  # Everything about the loading screen (client), mode-dispatched:
+                                       # open / onLoad / setProgress / onUnload -- see below
 ```
 
-One subfolder per area under `functions/` (`data/`, `spawn/`, more to come — `player/`, `admin/`,
-etc. as those systems get built) — an idea taken from how Tonic's framework splits its `core/`
+One subfolder per area under `core/functions/` (`data/`, `spawn/`, `ui/`, more to come — `player/`,
+`admin/`, etc. as those systems get built) — matching how Tonic's framework splits its own `core/`
 folder by area, not a copy of its actual structure. `CfgFunctions.hpp`'s `class` nesting mirrors
 this 1:1 — add a new subfolder and a matching `CfgFunctions.hpp` category together, not one
 without the other.
@@ -164,7 +165,7 @@ actual local dedicated server for testing:
   `civilian_1-4` = civilian, `medic_1-8` = independent), matching Tonic's AsYetUntitled/Framework
   exactly (`docs/TONIC_REFERENCE.md` §3). `dialog/spawnMenu.hpp` only picks WHERE to spawn within the
   side already assigned by the role screen; `ALife_fnc_sideToFaction`
-  (`functions/spawn/fn_sideToFaction.sqf`) is the one place the Arma-side-to-`"civ"/"cop"/"medic"`
+  (`core/functions/spawn/fn_sideToFaction.sqf`) is the one place the Arma-side-to-`"civ"/"cop"/"medic"`
   mapping lives, used both to populate the spawn list and, server-side, to authoritatively determine
   a connecting player's faction (`fn_spawnPlayer.sqf` derives it from `side _unit`, never trusts a
   client-supplied value).
