@@ -57,17 +57,25 @@ switch (_mode) do {
         _display setVariable ["alife_spawn_side", _faction];
         _display setVariable ["alife_spawn_point", []];
 
+        // Icon + title "card" rows (ALife_RscListNBox, a 2D listbox) rather
+        // than plain single-line text -- column 0 is a narrow icon slot
+        // (a generic location pin; no per-point custom icon asset exists
+        // yet), column 1 is the display name. The key is stored as
+        // invisible row data on column 0, same role lbSetData played on
+        // the old plain listbox.
         private _listCtrl = _display displayCtrl 4720;
-        lbClear _listCtrl;
+        lnbClear _listCtrl;
+        _listCtrl lnbSetColumnsPos [0, 0.22];
 
         {
             _x params ["_key", "_displayName"];
-            private _index = _listCtrl lbAdd _displayName;
-            _listCtrl lbSetData [_index, _key];
+            private _index = _listCtrl lnbAddRow ["", _displayName];
+            _listCtrl lnbSetPicture [[_index, 0], "\A3\ui_f\data\map\mapcontrol\waypoint_ca.paa"];
+            _listCtrl lnbSetData [[_index, 0], _key];
         } forEach ([_faction] call ALife_fnc_getSpawnPoints);
 
         private _infoCtrl = _display displayCtrl 4740;
-        _infoCtrl ctrlSetStructuredText parseText "Select a spawn point from the list.";
+        _infoCtrl ctrlSetStructuredText parseText "<t size='1.1' color='#8b949e'>Select a spawn point from the list.</t>";
 
         private _mapCtrl = _display displayCtrl 4730;
         _mapCtrl ctrlMapAnimAdd [0, 0.15, [14000, 15000, 0]];
@@ -83,7 +91,7 @@ switch (_mode) do {
 
         if (_index == -1) exitWith {};
 
-        private _key = _ctrl lbData _index;
+        private _key = _ctrl lnbData [_index, 0];
         private _side = _display getVariable ["alife_spawn_side", "civ"];
 
         private _match = ([_side] call ALife_fnc_getSpawnPoints) select { (_x select 0) == _key };
@@ -109,7 +117,7 @@ switch (_mode) do {
         ctrlMapAnimCommit _mapCtrl;
 
         private _infoCtrl = _display displayCtrl 4740;
-        _infoCtrl ctrlSetStructuredText parseText format ["<t size='1.4' color='#3be2b3'>%1</t><br/>Click Spawn to deploy here.", _displayName];
+        _infoCtrl ctrlSetStructuredText parseText format ["<t size='2.2' color='#ffffff'>%1</t><br/><t size='1' color='#8b949e'>Click Spawn to deploy here.</t>", toUpper _displayName];
     };
 
     case "spawn": {

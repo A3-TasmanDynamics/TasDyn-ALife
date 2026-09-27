@@ -707,3 +707,30 @@
   match -- `CfgFunctions.hpp` pointing at the old path would have meant every single `ALife_fnc_*`
   function silently failing to register, which independently could also explain a "nothing our
   scripts do" symptom like the one above.
+- `src/ALife.Altis/core/functions/spawn/fn_getSpawnPoints.sqf`: fixed "no spawn points listed" in
+  the spawn dialog -- a real, live bug, not a deploy/timing issue. `CfgSpawnPoints` is defined in
+  this mission's own `description.ext` (via `config/spawn_config.hpp`), but the function looked it
+  up via `configFile >> "CfgSpawnPoints"` -- `configFile` is the engine/addon config root (CfgVehicles,
+  CfgWeapons, ...), which never contains mission-specific classes at all. The correct root for a
+  mission's own `description.ext` entries is `missionConfigFile`; `configFile` was silently
+  resolving to nothing, so `configClasses` always returned `[]` for every faction. Verified the
+  distinction against `docs/arma/arma3.db` before fixing, not guessed.
+- `src/ALife.Altis/dialog/common_ui.hpp`: fixed the spawn map visibly losing content when zoomed
+  out. `ALife_RscMap`'s `alphaFadeStartScale`/`alphaFadeEndScale`/`maxSatelliteAlpha` (ported
+  verbatim from Tonic's `Life_RscMapControl` in an earlier fix) fade the satellite imagery layer out
+  between a zoom-scale range -- sensible for a gameplay mini-map with the 3D world visible behind it,
+  wrong for a full-screen spawn-selection map with nothing behind it. Pushed the fade range entirely
+  outside the reachable `scaleMin`..`scaleMax` window so it can never trigger, matching how Tonic's
+  own spawn-selection map instance (`dialog/spawnSelection.hpp`) overrides the exact same properties
+  for the exact same reason.
+- `src/ALife.Altis`: reworked the spawn point list from a plain single-line listbox to icon+title
+  "card" rows, matching the mockup design more closely per the project owner's request to get it
+  "one to one from the html." Added `ALife_RscListNBox` (a 2D listbox, `CT_LISTNBOX`) and
+  `ALife_RscScrollBar` to `common_ui.hpp`, ported from Tonic's `Life_RscListNBox`/`Life_RscScrollBar`
+  rather than hand-guessed. `fn_spawnMenu.sqf` now uses `lnbAddRow`/`lnbSetPicture`/`lnbSetData`/
+  `lnbData` instead of `lbAdd`/`lbSetData`/`lbData` -- every command verified against
+  `docs/arma/arma3.db` (and Tonic's own real usage in `dialog/function/fn_spawnPointSelected.sqf`
+  for the `onLBSelChanged` event shape, which is identical between `RscListBox` and `RscListNBox`)
+  before use. No per-point custom icon asset exists yet, so every row uses the same generic
+  waypoint icon rather than the mockup's per-location icons. Also enlarged and re-styled the
+  selected-point title (`InfoText`) to match the mockup's bold preview-title treatment.
