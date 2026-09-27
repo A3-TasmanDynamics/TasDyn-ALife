@@ -109,7 +109,7 @@ switch (_mode) do {
         ctrlMapAnimCommit _mapCtrl;
 
         private _infoCtrl = _display displayCtrl 4740;
-        _infoCtrl ctrlSetStructuredText parseText format ["<t color='#55ff55'>%1</t><br/>Click Spawn to deploy here.", _displayName];
+        _infoCtrl ctrlSetStructuredText parseText format ["<t size='1.4' color='#3be2b3'>%1</t><br/>Click Spawn to deploy here.", _displayName];
     };
 
     case "spawn": {
