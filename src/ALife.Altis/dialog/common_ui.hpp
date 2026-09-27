@@ -65,6 +65,11 @@ class ALife_RscStructuredText
 {
     type = ALIFE_CT_STRUCTURED_TEXT;
     idc = -1;
+    // Confirmed live: the real RscStructuredText sets `style = ST_LEFT` (0)
+    // -- omitting it produced "No entry '.../InfoText.style'" the moment a
+    // real client actually opened a dialog using this class, same class of
+    // bug as the map control's missing `text`/`widthRailWay` above.
+    style = 0; // ST_LEFT
     colorBackground[] = { 0, 0, 0, 0 };
     colorText[] = { 1, 1, 1, 1 };
     size = 0.025;
