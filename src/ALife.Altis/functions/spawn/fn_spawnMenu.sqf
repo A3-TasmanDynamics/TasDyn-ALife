@@ -126,10 +126,25 @@ switch (_mode) do {
 
         private _spawnKey = _point select 0;
 
+        // Don't reveal the world yet -- ALife_fnc_spawnPlayer's remoteExec
+        // below is fire-and-forget, and the player's unit is still sitting
+        // wherever mission.sqm placed their Editor slot until the server
+        // actually runs setPosATL. Closing straight to the 3D world here
+        // was the exact cause of "spawning straight into the playable":
+        // there's a real, visible window between this closing and the
+        // server's positioning actually landing. Tonic's own framework
+        // keeps a persistent black overlay up through this entire gap and
+        // only reveals the world once the server confirms positioning is
+        // done (docs/TONIC_REFERENCE.md §2/§4) -- same idea here, just with
+        // our loading screen instead of a raw cutText.
         closeDialog 0;
+        ["open"] call ALife_fnc_loadingScreen;
+        ["setProgress", 95, "Spawning you in..."] call ALife_fnc_loadingScreen;
 
         // Faction isn't sent -- fn_spawnPlayer.sqf derives it authoritatively
         // from `side _unit` server-side rather than trusting a client value.
+        // fn_spawnPlayer.sqf remoteExecs ALife_fnc_loadingScreen's "close"
+        // mode back to this same client once positioning actually lands.
         [player, getPlayerUID player, _spawnKey] remoteExec ["ALife_fnc_spawnPlayer", 2];
     };
 

@@ -674,3 +674,18 @@
   leaves the loading screen showing "failed to load" instead of hanging silently -- the underlying
   failure *policy* (`fn_playerJoin.sqf`'s `TODO(#10)`) still isn't decided, this only makes the
   existing stuck state visible.
+- `src/ALife.Altis`: fixed "spawning straight into the playable" -- reported live right after role
+  selection and the spawn dialog both started working. Root cause: `fn_spawnMenu.sqf`'s `"spawn"`
+  case closed the spawn dialog and revealed the raw 3D world immediately, but `ALife_fnc_spawnPlayer`
+  is a fire-and-forget `remoteExec` -- there was a real, visible window between the reveal and the
+  server's `setPosATL` actually landing, during which the player saw themselves standing wherever
+  `mission.sqm` placed their Editor slot. Read Tonic's AsYetUntitled/Framework's `core/init.sqf` to
+  see how a real, working framework avoids this: a persistent `cutText [..., "BLACK FADED", ...]`
+  overlay stays up continuously from connect all the way through spawn-point confirmation, and only
+  fades in (`cutText ["", "BLACK IN"]`) after positioning is already done -- the black screen is never
+  lifted early. Ported the same idea onto our own loading screen instead of a raw `cutText`:
+  `fn_spawnMenu.sqf`'s `"spawn"` case now closes the spawn dialog and immediately reopens the loading
+  screen (no frame where the raw world is exposed), and `fn_spawnPlayer.sqf` only remoteExecs it
+  closed once `setPosATL` has actually run in every code path (fresh spawn, alive-resume, and the
+  rejected-request/no-valid-record edge cases, which previously would have left the client stuck
+  behind the loading screen forever with nothing ever telling it to close).
