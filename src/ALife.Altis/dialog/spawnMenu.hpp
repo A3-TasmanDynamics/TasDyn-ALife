@@ -81,20 +81,23 @@ class ALife_SpawnMenu
             colorBackground[] = { 0, 0, 0, 0 };
         };
 
-        class SpawnList: ALife_RscListBox
+        // Icon + title "card" rows, matching the mockup's location list
+        // more closely than a plain single-line listbox -- see
+        // common_ui.hpp's ALife_RscListNBox.
+        class SpawnList: ALife_RscListNBox
         {
             idc = ALIFE_IDC_SPAWN_LIST;
             x = 0.03; y = 0.13; w = 0.26; h = 0.55;
-            colorBackground[] = { 0.082, 0.09, 0.102, 0.75 };
-            colorSelectBackground[] = { 0.231, 0.886, 0.702, 1 };
-            colorSelectBackground2[] = { 0.231, 0.886, 0.702, 1 };
             onLBSelChanged = "(['selectLocation'] + _this) call ALife_fnc_spawnMenu";
         };
 
+        // Big "selected point" title, positioned like the mockup's floating
+        // preview title just above the bottom bar (no location photo --
+        // no such asset exists yet, see fn_spawnMenu.sqf's onLoad comment).
         class InfoText: ALife_RscStructuredText
         {
             idc = ALIFE_IDC_SPAWN_INFO;
-            x = 0.03; y = 0.82; w = 0.3; h = 0.07;
+            x = 0.03; y = 0.8; w = 0.4; h = 0.09;
             text = "";
         };
 

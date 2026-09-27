@@ -26,7 +26,12 @@
 
 params ["_faction"];
 
-private _allEntries = "true" configClasses (configFile >> "CfgSpawnPoints");
+// missionConfigFile, not configFile -- CfgSpawnPoints is defined in this
+// mission's own description.ext (via config/spawn_config.hpp), not in the
+// engine/addon config tree. configFile only sees the latter, so it would
+// silently resolve to an empty config path here and return [] for every
+// faction -- confirmed live as "no spawn points listed" in the dialog.
+private _allEntries = "true" configClasses (missionConfigFile >> "CfgSpawnPoints");
 private _matching = _allEntries select { getText (_x >> "faction") == _faction };
 
 _matching apply {

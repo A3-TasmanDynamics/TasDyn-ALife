@@ -45,6 +45,7 @@
 #define ALIFE_CT_PROGRESS  8
 #define ALIFE_CT_STRUCTURED_TEXT 13
 #define ALIFE_CT_MAP_MAIN  101
+#define ALIFE_CT_LISTNBOX  102
 
 class ALife_RscBackground
 {
@@ -538,7 +539,14 @@ class ALife_RscMap
     ptsPerSquareForEdge = 15; ptsPerSquareRoad = 6; ptsPerSquareObj = 10;
     showCountourInterval = 0;
     scaleMin = 0.001; scaleMax = 1; scaleDefault = 0.16;
-    maxSatelliteAlpha = 0.85; alphaFadeStartScale = 0.35; alphaFadeEndScale = 0.4;
+    // Tonic's own values (0.85 / 0.35 / 0.4) fade the satellite layer out
+    // between those zoom scales -- sensible for a gameplay mini-map, but
+    // this control is a full-screen spawn-selection map, not a HUD map, so
+    // there's nothing behind it that should show through. Confirmed live:
+    // zooming out crossed that fade range and the map visibly lost content.
+    // maxSatelliteAlpha = 1 plus a fade range entirely outside scaleMin..
+    // scaleMax (0..1) means the fade transition can never actually trigger.
+    maxSatelliteAlpha = 1; alphaFadeStartScale = 2; alphaFadeEndScale = 2;
     shadow = 0;
     x = 0; y = 0; w = 0.4; h = 0.4;
 };
@@ -557,6 +565,66 @@ class ALife_RscProgress
     colorBackground[] = { 0.11, 0.13, 0.16, 1 };
     colorBar[] = { 0.114, 0.914, 0.714, 1 };
     x = 0; y = 0; w = 0.3; h = 0.02;
+};
+
+// Scrollbar used by ALife_RscListNBox below. Property set ported from
+// Tonic's Life_RscScrollBar (same reasoning as ALife_RscMap/RscProgress).
+class ALife_RscScrollBar
+{
+    color[] = { 1, 1, 1, 0.6 };
+    colorActive[] = { 0.231, 0.886, 0.702, 1 };
+    colorDisabled[] = { 1, 1, 1, 0.3 };
+    thumb = "\A3\ui_f\data\gui\cfg\scrollbar\thumb_ca.paa";
+    arrowEmpty = "\A3\ui_f\data\gui\cfg\scrollbar\arrowEmpty_ca.paa";
+    arrowFull = "\A3\ui_f\data\gui\cfg\scrollbar\arrowFull_ca.paa";
+    border = "\A3\ui_f\data\gui\cfg\scrollbar\border_ca.paa";
+    shadow = 0;
+    scrollSpeed = 0.06;
+    width = 0;
+    height = 0;
+    autoScrollEnabled = 1;
+    autoScrollSpeed = -1;
+    autoScrollDelay = 5;
+    autoScrollRewind = 0;
+};
+
+// Multi-column list (icon + title per row) -- needed to get closer to a
+// mockup design's per-row icon+text "cards" rather than plain single-line
+// text rows. Property set ported from Tonic's Life_RscListNBox rather than
+// hand-guessed (same reasoning as ALife_RscMap above); our own color theme
+// applied on top.
+class ALife_RscListNBox
+{
+    type = ALIFE_CT_LISTNBOX;
+    style = 16;
+    idc = -1;
+    shadow = 0;
+    font = "RobotoCondensed";
+    sizeEx = 0.025;
+    rowHeight = 0.045;
+    color[] = { 1, 1, 1, 1 };
+    colorText[] = { 1, 1, 1, 1 };
+    colorDisabled[] = { 1, 1, 1, 0.25 };
+    colorScrollbar[] = { 1, 1, 1, 1 };
+    colorSelect[] = { 0.04, 0.047, 0.055, 1 };
+    colorSelect2[] = { 0.04, 0.047, 0.055, 1 };
+    colorSelectBackground[] = { 0.231, 0.886, 0.702, 1 };
+    colorSelectBackground2[] = { 0.231, 0.886, 0.702, 0.6 };
+    colorPicture[] = { 1, 1, 1, 1 };
+    colorPictureSelected[] = { 0.04, 0.047, 0.055, 1 };
+    colorPictureDisabled[] = { 1, 1, 1, 0.5 };
+    colorBackground[] = { 0.082, 0.09, 0.102, 0.75 };
+    soundSelect[] = { "", 0.1, 1 };
+    soundExpand[] = { "", 0.1, 1 };
+    soundCollapse[] = { "", 0.1, 1 };
+    period = 1.2;
+    maxHistoryDelay = 0.5;
+    autoScrollSpeed = -1;
+    autoScrollDelay = 5;
+    autoScrollRewind = 0;
+    class ListScrollBar: ALife_RscScrollBar {};
+    class ScrollBar: ALife_RscScrollBar {};
+    x = 0; y = 0; w = 0.26; h = 0.55;
 };
 
 #endif // __ALIFE_COMMON_UI_HPP
