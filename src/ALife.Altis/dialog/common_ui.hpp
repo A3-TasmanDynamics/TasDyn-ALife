@@ -188,5 +188,12 @@ class ALife_RscMap
     scaleMin = 0.001; scaleMax = 1; scaleDefault = 0.16;
     maxSatelliteAlpha = 0.85; alphaFadeStartScale = 0.35; alphaFadeEndScale = 0.4;
     moveOnEdges = 1;
+    // Confirmed live: after `text` was added, the very next connect hit
+    // "No entry '.../SpawnMap.widthRailWay'". Real, documented RscMapControl
+    // property (default 4 per Bohemia's own defaults and a long-standing
+    // forums thread on this exact error since the Arma 3 1.90 update). Also
+    // fixed on PR #100 -- included here too so this branch is correct
+    // regardless of merge order between the two.
+    widthRailWay = 4;
     x = 0; y = 0; w = 0.4; h = 0.4;
 };
