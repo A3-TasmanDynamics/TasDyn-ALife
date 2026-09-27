@@ -1,31 +1,38 @@
 // TasDyn-ALife — shared dialog base classes.
 //
-// Forward-declares and lightly customizes the engine's own Rsc* UI base
-// classes (RscText, RscButton, RscListBox, RscMapControl, ...) rather than
-// hand-rolling self-contained replacements. Two real bugs already came
-// from that: the original "Undefined base class 'RscText'" (fixed by
-// forward-declaring, in an earlier version of this mission before this
-// file existed), then an over-correction into fully self-contained
-// classes here that turned out to be missing dozens of properties the
-// real engine classes carry -- confirmed live, one missing property at a
-// time ("No entry '.../SpawnMap.text'", then "'.../SpawnMap.widthRailWay'"
-// once `text` was added) -- exactly the "Dialog Map.widthRailWay" issue
-// reported on Bohemia's own forums since Arma 3 1.90, for the same reason:
-// a custom map-control base missing properties the real RscMapControl
-// always carries. Forward-declaring and inheriting from the real classes
-// gives every property automatically and correctly; this file only needs
-// to override what should actually look different from the engine
-// defaults.
+// These are self-contained (explicit `type = N` control-type constants,
+// full property sets) rather than `class Foo : RscText` inheriting from the
+// engine's own UI config. That inheritance approach is what broke
+// dialog/spawnMenu.hpp earlier ("Undefined base class 'RscText'" — the
+// mission config compiler needs those forward-declared, and it's easy to
+// forget on every new dialog). Defining our own base classes from scratch
+// sidesteps that whole class of bug permanently, and gives every dialog in
+// this mission a single, consistent look instead of the engine's default
+// styling. Reviewed a real framework's equivalent file for the general
+// shape (control-type constants, an ALife_Rsc* naming scheme) — not copied
+// wholesale, adapted to only what this mission's dialogs actually need.
+//
+// Tried switching to `class RscText;` (etc.) forward-declare + inherit
+// instead, on the theory that it would pull in every real engine property
+// automatically (no more hand-maintained lists). Confirmed live via RPT
+// that this is wrong in this mission's compile context: every control lost
+// its `type` entirely ("no type entry inside class .../SpawnMap" etc. for
+// *every* control, not just the map) -- the forward declaration resolves
+// to an empty stub, not the real engine class. Reverted. Stick to
+// self-contained classes and add real properties (verified against
+// Bohemia's own RscMapControl defaults) as they're actually needed.
 
-class RscText;
-class RscButton;
-class RscListBox;
-class RscStructuredText;
-class RscMapControl;
+#define ALIFE_CT_STATIC    0
+#define ALIFE_CT_BUTTON    1
+#define ALIFE_CT_LISTBOX   5
+#define ALIFE_CT_STRUCTURED_TEXT 13
+#define ALIFE_CT_MAP_MAIN  101
 
-class ALife_RscBackground: RscText
+class ALife_RscBackground
 {
+    type = ALIFE_CT_STATIC;
     idc = -1;
+    style = 0;
     colorBackground[] = { 0, 0, 0, 0.85 };
     colorText[] = { 1, 1, 1, 1 };
     font = "RobotoCondensed";
@@ -34,9 +41,11 @@ class ALife_RscBackground: RscText
     x = 0; y = 0; w = 0; h = 0;
 };
 
-class ALife_RscText: RscText
+class ALife_RscText
 {
+    type = ALIFE_CT_STATIC;
     idc = -1;
+    style = 0;
     colorBackground[] = { 0, 0, 0, 0 };
     colorText[] = { 1, 1, 1, 1 };
     font = "RobotoCondensed";
@@ -52,8 +61,9 @@ class ALife_RscTitle: ALife_RscText
     colorBackground[] = { 0.1, 0.1, 0.1, 1 };
 };
 
-class ALife_RscStructuredText: RscStructuredText
+class ALife_RscStructuredText
 {
+    type = ALIFE_CT_STRUCTURED_TEXT;
     idc = -1;
     colorBackground[] = { 0, 0, 0, 0 };
     colorText[] = { 1, 1, 1, 1 };
@@ -69,36 +79,129 @@ class ALife_RscStructuredText: RscStructuredText
     };
 };
 
-class ALife_RscButton: RscButton
+class ALife_RscButton
 {
+    type = ALIFE_CT_BUTTON;
     idc = -1;
+    style = 2; // ST_CENTER
     colorBackground[] = { 0.15, 0.15, 0.15, 1 };
     colorBackgroundActive[] = { 0.25, 0.25, 0.25, 1 };
     colorBackgroundDisabled[] = { 0.1, 0.1, 0.1, 1 };
+    colorBorder[] = { 0, 0, 0, 1 };
+    colorDisabled[] = { 0.5, 0.5, 0.5, 1 };
+    colorFocused[] = { 0.25, 0.25, 0.25, 1 };
+    colorShadow[] = { 0, 0, 0, 1 };
     colorText[] = { 1, 1, 1, 1 };
     font = "RobotoCondensed";
     sizeEx = 0.025;
+    borderSize = 0;
+    offsetPressedX = 0.001; offsetPressedY = 0.001;
+    offsetX = 0; offsetY = 0;
+    soundClick[] = { "\A3\ui_f\data\sound\RscButton\soundClick", 0.09, 1 };
+    soundEnter[] = { "\A3\ui_f\data\sound\RscButton\soundEnter", 0.09, 1 };
+    soundEscape[] = { "\A3\ui_f\data\sound\RscButton\soundEscape", 0.09, 1 };
+    soundPush[] = { "\A3\ui_f\data\sound\RscButton\soundPush", 0.09, 1 };
     text = "";
     action = "";
     x = 0; y = 0; w = 0.1; h = 0.04;
 };
 
-class ALife_RscListBox: RscListBox
+class ALife_RscListBox
 {
+    type = ALIFE_CT_LISTBOX;
     idc = -1;
+    style = 0;
+    // Same gap as ALife_RscMap -- see the comment there. Fixed proactively
+    // here rather than waiting to hit the same error for this control.
+    text = "";
     font = "RobotoCondensed";
     sizeEx = 0.025;
     rowHeight = 0.04;
     colorBackground[] = { 0.1, 0.1, 0.1, 0.9 };
+    colorSelect[] = { 1, 1, 1, 1 };
+    colorSelect2[] = { 1, 1, 1, 1 };
     colorSelectBackground[] = { 0.2, 0.4, 0.6, 1 };
     colorSelectBackground2[] = { 0.2, 0.4, 0.6, 1 };
     colorText[] = { 1, 1, 1, 1 };
+    colorDisabled[] = { 0.5, 0.5, 0.5, 1 };
+    colorScrollbar[] = { 1, 1, 1, 1 };
+    soundSelect[] = { "\A3\ui_f\data\sound\RscListbox\soundSelect", 0.09, 1 };
+    period = 0;
+    maxHistoryDelay = 1;
+    autoScrollSpeed = -1; autoScrollDelay = 5; autoScrollRewind = 0;
+    arrowEmpty = "#(argb,8,8,3)color(1,1,1,1)";
+    arrowFull = "#(argb,8,8,3)color(1,1,1,1)";
+    shadow = 0;
+    class ListScrollBar
+    {
+        color[] = { 1, 1, 1, 0.6 };
+        colorActive[] = { 1, 1, 1, 1 };
+        colorDisabled[] = { 1, 1, 1, 0.3 };
+        thumb = "\A3\ui_f\data\gui\cfg\scrollbar\thumb_ca.paa";
+        arrowEmpty = "\A3\ui_f\data\gui\cfg\scrollbar\arrowEmpty_ca.paa";
+        arrowFull = "\A3\ui_f\data\gui\cfg\scrollbar\arrowFull_ca.paa";
+        border = "\A3\ui_f\data\gui\cfg\scrollbar\border_ca.paa";
+        autoScrollEnabled = 1; autoScrollDelay = 5; autoScrollRewind = 0; autoScrollSpeed = -1;
+    };
     x = 0; y = 0; w = 0.2; h = 0.3;
 };
 
-class ALife_RscMap: RscMapControl
+class ALife_RscMap
 {
+    type = ALIFE_CT_MAP_MAIN;
     idc = -1;
+    style = 48; // ST_PICTURE
+    // The engine's own dialog renderer reads `text` unconditionally
+    // regardless of control type -- confirmed live: omitting it produced
+    // "No entry '.../ALife_SpawnMenu/controls/SpawnMap.text'" and the
+    // dialog rendering broken (map control filling the screen black)
+    // the moment a real client actually opened this dialog. Every other
+    // control here already had one; this class was the one gap.
+    text = "";
     colorBackground[] = { 0.1, 0.1, 0.1, 1 };
+    colorOutside[] = { 0, 0, 0, 1 };
+    colorText[] = { 0, 0, 0, 1 };
+    colorSea[] = { 0.467, 0.631, 0.851, 0.5 };
+    colorForest[] = { 0.624, 0.78, 0.388, 0.5 };
+    colorRocks[] = { 0, 0, 0, 0.3 };
+    colorCountlines[] = { 0.572, 0.354, 0.188, 0.25 };
+    colorMainCountlines[] = { 0.572, 0.354, 0.188, 0.5 };
+    colorCountlinesWater[] = { 0.491, 0.577, 0.702, 0.3 };
+    colorMainCountlinesWater[] = { 0.491, 0.577, 0.702, 0.6 };
+    colorForestBorder[] = { 0, 0, 0, 0 };
+    colorRocksBorder[] = { 0, 0, 0, 0 };
+    colorPowerLines[] = { 0.1, 0.1, 0.1, 1 };
+    colorRailWay[] = { 0.8, 0.2, 0, 1 };
+    colorNames[] = { 0.1, 0.1, 0.1, 0.9 };
+    colorInactive[] = { 1, 1, 1, 0.5 };
+    colorLevels[] = { 0.286, 0.177, 0.094, 0.5 };
+    colorTracks[] = { 0.84, 0.76, 0.65, 0.15 };
+    colorRoads[] = { 0.7, 0.7, 0.7, 1 };
+    colorMainRoads[] = { 0.9, 0.5, 0.3, 1 };
+    colorTracksFill[] = { 0.84, 0.76, 0.65, 1 };
+    colorRoadsFill[] = { 1, 1, 1, 1 };
+    colorMainRoadsFill[] = { 1, 0.6, 0.4, 1 };
+    colorGrid[] = { 0.1, 0.1, 0.1, 0.6 };
+    colorGridMap[] = { 0.1, 0.1, 0.1, 0.6 };
+    font = "TahomaB";
+    fontLabel = "TahomaB"; fontGrid = "TahomaB"; fontUnits = "TahomaB";
+    fontNames = "TahomaB"; fontInfo = "TahomaB"; fontLevel = "TahomaB";
+    sizeEx = 0.025;
+    sizeExLabel = 0.025; sizeExGrid = 0.02; sizeExUnits = 0.025;
+    sizeExNames = 0.025; sizeExInfo = 0.025; sizeExLevel = 0.02;
+    stickX[] = { 0.2, { "Gamma", 1, 1.5 } };
+    stickY[] = { 0.2, { "Gamma", 1, 1.5 } };
+    ptsPerSquareSea = 5; ptsPerSquareTxt = 20; ptsPerSquareCLn = 10;
+    ptsPerSquareExp = 10; ptsPerSquareCost = 10; ptsPerSquareFor = 9;
+    ptsPerSquareForEdge = 15; ptsPerSquareRoad = 6; ptsPerSquareObj = 10;
+    showCountourInterval = 0;
+    scaleMin = 0.001; scaleMax = 1; scaleDefault = 0.16;
+    maxSatelliteAlpha = 0.85; alphaFadeStartScale = 0.35; alphaFadeEndScale = 0.4;
+    moveOnEdges = 1;
+    // Confirmed live: after `text` was added, the very next connect hit
+    // "No entry '.../SpawnMap.widthRailWay'". Real, documented RscMapControl
+    // property (default 4 per Bohemia's own defaults and a long-standing
+    // forums thread on this exact error since the Arma 3 1.90 update).
+    widthRailWay = 4;
     x = 0; y = 0; w = 0.4; h = 0.4;
 };

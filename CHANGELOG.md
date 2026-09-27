@@ -621,17 +621,14 @@
   same class of bug) rather than waiting to find it the same way.
 - `src/ALife.Altis/dialog/common_ui.hpp`: the `text` fix above immediately surfaced the next missing
   property on the same control -- `No entry '.../ALife_SpawnMenu/controls/SpawnMap.widthRailWay'` --
-  confirming a whack-a-mole pattern rather than a one-off gap. `widthRailWay` is a real, known-
-  troublesome property of Arma's map control (there's a long-standing Bohemia forums thread on
-  exactly this error, "Dialog Map.widthRailWay issue since Arma 3 1.90 update"), and hand-maintaining
-  a property list for `ALife_RscMap` was always going to keep missing ones one at a time. Root cause:
-  this file's self-contained `ALife_Rsc*` classes were an unnecessary over-correction -- the
-  *original* "Undefined base class 'RscText'" bug (from before this file existed) was already
-  correctly solved by forward-declaring and inheriting from the engine's real `Rsc*` classes, which
-  provide every property automatically. Reverted to that approach for all of them: `common_ui.hpp`
-  now forward-declares `RscText`, `RscButton`, `RscListBox`, `RscStructuredText`, and `RscMapControl`
-  (confirmed as the real map-control class name, distinct from the `RscMap` guess the self-contained
-  version was named after) and each `ALife_Rsc*` class inherits from the matching real one, keeping
-  only the actual visual overrides (colors, fonts, sizes) instead of a full hand-rolled property set.
-  This removes the whole class of bug rather than patching `widthRailWay` and waiting for whatever's
-  missing next.
+  a real, known-troublesome property of Arma's map control (there's a long-standing Bohemia forums
+  thread on exactly this error, "Dialog Map.widthRailWay issue since Arma 3 1.90 update", and a
+  community reference dump of `RscMapControl`'s real defaults confirms `widthRailWay = 4`, the only
+  `width*` property it has). Tried switching `ALife_RscMap` (and the other `ALife_Rsc*` classes) to
+  forward-declare + inherit from the real engine classes instead, on the theory it would provide every
+  property automatically -- confirmed live via RPT that this is wrong in this mission's compile
+  context: every single control lost its `type` entirely ("no type entry inside class .../SpawnMap"
+  etc. for *every* control, not just the map), meaning the forward declaration resolves to an empty
+  stub here, not the real engine class. Reverted; added `widthRailWay = 4;` to the existing
+  self-contained `ALife_RscMap` instead, verified against the real class's documented defaults rather
+  than guessed.
