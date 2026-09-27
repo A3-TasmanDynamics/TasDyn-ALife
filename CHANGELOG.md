@@ -619,3 +619,16 @@
   self-contained base class that never defined one (every other class already had it). Added
   `text = "";` there, and proactively to `ALife_RscListBox` too (same gap, not yet hit live but the
   same class of bug) rather than waiting to find it the same way.
+- `src/ALife.Altis/dialog/common_ui.hpp`: the `text` fix above immediately surfaced the next missing
+  property on the same control -- `No entry '.../ALife_SpawnMenu/controls/SpawnMap.widthRailWay'` --
+  a real, known-troublesome property of Arma's map control (there's a long-standing Bohemia forums
+  thread on exactly this error, "Dialog Map.widthRailWay issue since Arma 3 1.90 update", and a
+  community reference dump of `RscMapControl`'s real defaults confirms `widthRailWay = 4`, the only
+  `width*` property it has). Tried switching `ALife_RscMap` (and the other `ALife_Rsc*` classes) to
+  forward-declare + inherit from the real engine classes instead, on the theory it would provide every
+  property automatically -- confirmed live via RPT that this is wrong in this mission's compile
+  context: every single control lost its `type` entirely ("no type entry inside class .../SpawnMap"
+  etc. for *every* control, not just the map), meaning the forward declaration resolves to an empty
+  stub here, not the real engine class. Reverted; added `widthRailWay = 4;` to the existing
+  self-contained `ALife_RscMap` instead, verified against the real class's documented defaults rather
+  than guessed.

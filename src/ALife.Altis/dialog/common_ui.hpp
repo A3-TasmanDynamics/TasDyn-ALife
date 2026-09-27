@@ -11,6 +11,16 @@
 // styling. Reviewed a real framework's equivalent file for the general
 // shape (control-type constants, an ALife_Rsc* naming scheme) — not copied
 // wholesale, adapted to only what this mission's dialogs actually need.
+//
+// Tried switching to `class RscText;` (etc.) forward-declare + inherit
+// instead, on the theory that it would pull in every real engine property
+// automatically (no more hand-maintained lists). Confirmed live via RPT
+// that this is wrong in this mission's compile context: every control lost
+// its `type` entirely ("no type entry inside class .../SpawnMap" etc. for
+// *every* control, not just the map) -- the forward declaration resolves
+// to an empty stub, not the real engine class. Reverted. Stick to
+// self-contained classes and add real properties (verified against
+// Bohemia's own RscMapControl defaults) as they're actually needed.
 
 #define ALIFE_CT_STATIC    0
 #define ALIFE_CT_BUTTON    1
@@ -188,5 +198,10 @@ class ALife_RscMap
     scaleMin = 0.001; scaleMax = 1; scaleDefault = 0.16;
     maxSatelliteAlpha = 0.85; alphaFadeStartScale = 0.35; alphaFadeEndScale = 0.4;
     moveOnEdges = 1;
+    // Confirmed live: after `text` was added, the very next connect hit
+    // "No entry '.../SpawnMap.widthRailWay'". Real, documented RscMapControl
+    // property (default 4 per Bohemia's own defaults and a long-standing
+    // forums thread on this exact error since the Arma 3 1.90 update).
+    widthRailWay = 4;
     x = 0; y = 0; w = 0.4; h = 0.4;
 };
