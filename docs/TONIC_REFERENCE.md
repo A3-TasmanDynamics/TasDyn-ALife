@@ -80,7 +80,7 @@ per-side-slots topology itself.
 
 **Fix applied:** `mission.sqm`'s 16 roles are back to `isPlayable=1` (police=west, civilian, medic=
 independent — matching Tonic's own side mapping), `spawnMenu.hpp`'s side buttons are removed, and a
-new `ALife_fnc_sideToFaction` (`functions/spawn/fn_sideToFaction.sqf`) maps `side player`/`side _unit`
+new `ALife_fnc_sideToFaction` (`core/functions/spawn/fn_sideToFaction.sqf`) maps `side player`/`side _unit`
 to `"civ"`/`"cop"`/`"medic"` — the one place that mapping lives, used both client-side
 (`fn_spawnMenu.sqf`'s `onLoad`, to populate the right spawn-point list) and, critically,
 **server-side** in `fn_spawnPlayer.sqf`, which now derives faction from the unit's actual `side`

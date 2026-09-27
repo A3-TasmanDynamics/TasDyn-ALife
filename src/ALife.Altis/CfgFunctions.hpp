@@ -1,11 +1,11 @@
 // TasDyn-ALife — function library registration.
 //
-// One category per functions/<name>/ subfolder — mirrors how Tonic's
-// framework splits core/ by area (civilian, cop, session, admin, ...),
-// used as an organizing idea rather than copied structure. Add a new
-// category+folder as new systems get built (player, admin, economy, ...)
-// rather than dumping everything in one flat folder — every function must
-// be registered here before it can be referenced in CfgRemoteExec.hpp.
+// One category per core/functions/<name>/ subfolder — mirrors how Tonic's
+// framework splits everything under core/ by area (civilian, cop, session,
+// admin, ...). Add a new category+folder as new systems get built (player,
+// admin, economy, ...) rather than dumping everything in one flat folder —
+// every function must be registered here before it can be referenced in
+// CfgRemoteExec.hpp.
 
 class CfgFunctions
 {
@@ -13,7 +13,7 @@ class CfgFunctions
     {
         class Data
         {
-            file = "functions\data";
+            file = "core\functions\data";
             class callExtension {};        // -> ALife_fnc_callExtension
             class load {};                 // -> ALife_fnc_load
             class save {};                 // -> ALife_fnc_save
@@ -26,7 +26,7 @@ class CfgFunctions
 
         class Spawn
         {
-            file = "functions\spawn";
+            file = "core\functions\spawn";
             class getSpawnPoints {};  // -> ALife_fnc_getSpawnPoints
             class sideToFaction {};   // -> ALife_fnc_sideToFaction -- maps an Arma side to
                                       // "civ"/"cop"/"medic"; the one source of truth for that,
@@ -38,7 +38,7 @@ class CfgFunctions
 
         class UI
         {
-            file = "functions\ui";
+            file = "core\functions\ui";
             class loadingScreen {};  // -> ALife_fnc_loadingScreen (client) -- one file, mode-
                                      // dispatched: open/onLoad/setProgress/onUnload -- see
                                      // initPlayerLocal.sqf and fn_playerJoin.sqf for the real
