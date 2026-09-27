@@ -7,6 +7,9 @@ Design docs and architecture decisions.
 | [ROADMAP.md](ROADMAP.md) | Phased plan and timeline toward public launch |
 | [ANTI_CHEAT.md](ANTI_CHEAT.md) | Threat model, defense layers, and what's explicitly out of scope |
 | [ADMIN_TOOLS.md](ADMIN_TOOLS.md) | In-game staff menu spec and the DB-backed staff rank system |
+| [DATA_CONTRACT.md](DATA_CONTRACT.md) | The save/load field contract shared by the Postgres schema, the C++ extension, and the SQF side |
+| [WEBSITE.md](WEBSITE.md) | Public site, member portal, Admin/Support Panel, and Discord integration design |
+| [TONIC_REFERENCE.md](TONIC_REFERENCE.md) | Architecture reference from reading Tonic's AsYetUntitled/Framework, compared section-by-section against our own plan |
 
 Most importantly, this is also where the **data contract** between the database schema, the
 C++ extension's return formats, and the SQF functions that parse them belongs (`DATA_CONTRACT.md`,

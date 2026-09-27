@@ -66,8 +66,10 @@ environment reproducible from a clean clone. ✅ **Phase 0 complete.**
       join; `save`'s cash fields are a delta with an idempotency-token check
       (`applied_request_tokens`), everything else is absolute-set. See `docs/DATA_CONTRACT.md`.
 - [x] SQF request/response framework skeleton: `src/ALife.Altis/` scaffolded — `ALife_fnc_load`/
-      `ALife_fnc_save` implementing `docs/DATA_CONTRACT.md` exactly, `initPlayerServer.sqf` as the
-      join hook, `initServer.sqf`'s `HandleDisconnect` hook for the alive/position persistence.
+      `ALife_fnc_save` implementing `docs/DATA_CONTRACT.md` exactly, `initPlayerLocal.sqf` +
+      `ALife_fnc_playerJoin` as the join hook (see `src/ALife.Altis/README.md`'s "Player join"
+      section for why it's client-driven, not `initPlayerServer.sqf`), `initServer.sqf`'s
+      `HandleDisconnect` hook for the alive/position persistence.
       `mission.sqm` now exists and the whole config stack (`description.ext`, `CfgFunctions.hpp`,
       `CfgRemoteExec.hpp`, `config/spawn_config.hpp`, `dialog/spawnMenu.hpp`) was verified to load
       cleanly on a real local Arma 3 dedicated server — zero errors, server reaches a stable,

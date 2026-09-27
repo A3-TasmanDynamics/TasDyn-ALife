@@ -4,8 +4,8 @@ The C++ bridge between Arma 3 (`callExtension`) and PostgreSQL, built on raw **l
 client library that ships with the PostgreSQL server install — no vcpkg/extra tooling needed).
 
 Rules for this extension:
-- All queries use `PQprepare` + `PQexecPrepared` (prepared statements). Never build SQL by
-  concatenating strings from `callExtension` input.
+- All queries use `PQexecParams` against fixed, compile-time SQL strings (parameterized). Never
+  build SQL by concatenating strings from `callExtension` input.
 - Any string returned to SQF has a fixed, documented field order — see
   [docs/DATA_CONTRACT.md](../../docs/DATA_CONTRACT.md). The previous prototype lost rank data to
   exactly this kind of undocumented positional mismatch; don't add a new command here without

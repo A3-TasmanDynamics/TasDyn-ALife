@@ -11,7 +11,7 @@ type landingData struct {
 
 // Landing renders the public landing page -- no login required. OnlineCount
 // comes straight from player_sessions, the same table
-// src/server_manager/dashboard.go already reads, so the public page and the
+// src/server_manager/logs.go already reads, so the public page and the
 // operator's desktop dashboard never disagree from two separate code paths.
 func (d *Deps) Landing(w http.ResponseWriter, r *http.Request) {
 	data := landingData{Base: baseFrom(r, "")}
