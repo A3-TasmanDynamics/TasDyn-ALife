@@ -30,6 +30,9 @@
                             -- remoteExec'd to a specific client from
                             fn_playerJoin.sqf, or called locally from
                             initPlayerLocal.sqf
+           "close"       -- close the dialog -- remoteExec'd to a specific
+                            client from fn_spawnPlayer.sqf once the player
+                            has actually been positioned, or called locally
            "onUnload"    -- dialog onUnload: nothing to clean up, the tip
                             loop stops itself once the display is gone
 
@@ -80,6 +83,11 @@ switch (_mode) do {
         (_display displayCtrl 4611) ctrlSetText _statusText;
         (_display displayCtrl 4612) ctrlSetText format ["%1%2", round _pct, "%"];
         (_display displayCtrl 4613) progressSetPosition (_pct / 100);
+    };
+
+    case "close": {
+        if (isNull (findDisplay 4600)) exitWith {};
+        closeDialog 0;
     };
 
     case "onUnload": {};

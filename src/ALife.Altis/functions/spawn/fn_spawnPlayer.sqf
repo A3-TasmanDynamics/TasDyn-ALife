@@ -35,6 +35,18 @@
         Write that contract before wiring gear application, same rule as
         everywhere else in this project.
 
+        Remotes ALife_fnc_loadingScreen's "close" mode back to this specific
+        client once (and only once) positioning has actually happened --
+        fn_spawnMenu.sqf's "spawn" case keeps the loading screen up rather
+        than revealing the 3D world immediately, since the remoteExec that
+        calls this function is fire-and-forget and the unit is still sitting
+        wherever mission.sqm placed their Editor slot until this function
+        actually runs setPosATL. Matches Tonic's AsYetUntitled/Framework,
+        which keeps its own black overlay up through this exact gap and only
+        fades in once positioning is confirmed done (docs/TONIC_REFERENCE.md
+        §2/§4) -- this was the real cause of "spawning straight into the
+        playable," not a config or deploy issue.
+
         Server-only — allowlisted in CfgRemoteExec.hpp as ALife_fnc_spawnPlayer.
 
     Parameter(s):
@@ -58,6 +70,7 @@ private _record = _unit getVariable ["alife_record", createHashMapFromArray [["s
 
 if ((_record getOrDefault ["status", "ERROR"]) != "OK") exitWith {
     diag_log format ["[ALife] spawnPlayer: no valid loaded record for uid %1", _uid];
+    ["setProgress", 100, "Spawn request rejected -- please reconnect"] remoteExec ["ALife_fnc_loadingScreen", _unit];
 };
 
 private _wasAlive = _record getOrDefault [_faction + "_alive", true];
@@ -99,6 +112,11 @@ if (!_wasAlive) then {
     if (_matchIndex == -1) exitWith {
         diag_log format ["[ALife] spawnPlayer rejected -- %1 is not a valid %2 spawn point for uid %3",
             _requestedSpawnKey, _faction, _uid];
+        // Otherwise the client is left stuck behind the "Spawning you in..."
+        // loading screen forever, since nothing would ever tell it to close
+        // -- same class of stuck-forever gap as fn_playerJoin.sqf's load
+        // failure, same interim fix (at least make it visible).
+        ["setProgress", 100, "Spawn request rejected -- please reconnect"] remoteExec ["ALife_fnc_loadingScreen", _unit];
     };
 
     // TODO: once gangs.gang_members exists in the loaded record, a
@@ -112,3 +130,8 @@ if (!_wasAlive) then {
 };
 
 _unit setVariable ["alife_activeFaction", _faction];
+
+// Positioning is done -- safe to reveal the world now. See the file header
+// comment for why this can't just happen client-side right after the
+// "spawn" button click.
+["close"] remoteExec ["ALife_fnc_loadingScreen", _unit];

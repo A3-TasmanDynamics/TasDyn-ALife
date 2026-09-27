@@ -101,6 +101,16 @@ record loading, load finished) back to that same client via a targeted `remoteEx
 leaving the player looking at whatever they happened to spawn next to with nothing visibly
 happening in between.
 
+The loading screen also comes back up between picking a spawn point and actually being placed there
+— `fn_spawnMenu.sqf`'s `"spawn"` case closes the spawn dialog and immediately reopens the loading
+screen (never revealing the raw 3D world in between), and `fn_spawnPlayer.sqf` only remoteExecs it
+closed once `setPosATL` has actually run. `ALife_fnc_spawnPlayer`'s remoteExec is fire-and-forget, so
+closing straight to the world right after the Spawn button click would show the player standing
+wherever `mission.sqm` placed their Editor slot for a real, visible window before the server's
+positioning landed — confirmed live as "spawning straight into the playable." Matches Tonic's
+AsYetUntitled/Framework, which keeps its own persistent black overlay up through this exact gap and
+only fades in once positioning is confirmed done (`docs/TONIC_REFERENCE.md` §2/§4).
+
 If `ALife_fnc_load` returns an error, the loading screen is left showing a "failed to load" message
 rather than hanging silently — see `fn_playerJoin.sqf`'s `TODO(#10)` and the Open Items below; the
 actual failure *policy* (kick vs. retry vs. let them in flagged) still isn't decided, this only
