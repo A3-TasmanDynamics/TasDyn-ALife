@@ -35,5 +35,14 @@ class CfgFunctions
             class spawnMenu {};       // -> ALife_fnc_spawnMenu (client) -- one file, mode-dispatched:
                                       // open/onLoad/selectLocation/spawn/onUnload
         };
+
+        class UI
+        {
+            file = "functions\ui";
+            class loadingScreen {};  // -> ALife_fnc_loadingScreen (client) -- one file, mode-
+                                     // dispatched: open/onLoad/setProgress/onUnload -- see
+                                     // initPlayerLocal.sqf and fn_playerJoin.sqf for the real
+                                     // join-progress milestones that drive it
+        };
     };
 };

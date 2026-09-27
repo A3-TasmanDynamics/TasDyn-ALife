@@ -8,6 +8,7 @@
 #include "CfgFunctions.hpp"
 #include "CfgRemoteExec.hpp"
 #include "config\spawn_config.hpp"
+#include "dialog\loadingScreen.hpp"
 #include "dialog\spawnMenu.hpp"
 
 author = "Tasman Dynamics";

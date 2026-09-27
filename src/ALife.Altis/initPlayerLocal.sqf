@@ -12,17 +12,24 @@
     initPlayerLocal.sqf, matching Bohemia's own wiki guidance to avoid
     initPlayerServer.sqf.
 
-    Shows a brief "Welcome" screen while the load round-trip to the
-    server completes (fn_playerJoin.sqf, remoteExec'd below), instead of
-    leaving the player looking at whatever they happened to spawn next to
-    with nothing visibly happening. Cleared once the spawn menu actually
-    opens -- see fn_spawnMenu.sqf's "open" mode.
+    Shows the connection loading screen (dialog/loadingScreen.hpp) while
+    the load round-trip to the server completes, with its progress bar
+    driven by the ACTUAL join sequence -- not a simulated timer. This file
+    owns the client-side milestones (player object ready, join request
+    sent); fn_playerJoin.sqf remoteExecs the server-side ones (DB record
+    loading, load finished) back to this same client. Closed once the
+    spawn menu actually opens -- see fn_spawnMenu.sqf's "open" mode.
 */
 
 if (!hasInterface) exitWith {};
 
-cutText ["Welcome to TasDyn-ALife\nLoading your data...", "BLACK IN"];
+["open"] call ALife_fnc_loadingScreen;
+["setProgress", 10, "Connecting to server..."] call ALife_fnc_loadingScreen;
 
 waitUntil { !isNull player };
 
+["setProgress", 25, "Player instance ready..."] call ALife_fnc_loadingScreen;
+
 [player, getPlayerUID player, didJIP] remoteExec ["ALife_fnc_playerJoin", 2];
+
+["setProgress", 40, "Requesting character data..."] call ALife_fnc_loadingScreen;

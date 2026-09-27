@@ -652,3 +652,25 @@
   -- the same class of bug as the map control's missing `text`/`widthRailWay`, this time on
   `ALife_RscStructuredText` (used by `InfoText`). Verified the real `RscStructuredText`'s default
   (`style = ST_LEFT`, i.e. `0`) against Bohemia's wiki and added it, rather than guessing.
+- `src/ALife.Altis/dialog/common_ui.hpp`: the very next connect after the fix above hit a third
+  missing-property error on `ALife_RscMap` -- `No entry '.../SpawnMap.Tree'` -- but this time not a
+  scalar property, a whole nested legend/icon subclass (`Tree`, alongside dozens of siblings like
+  `Bunker`/`Hospital`/`Church` the real `RscMapControl` also carries). Three rounds of patching one
+  property/class at a time (`text`, `widthRailWay`, now `Tree`) confirmed this control's real
+  property surface is too large to hand-maintain piecemeal. Replaced `ALife_RscMap` wholesale with
+  Tonic's AsYetUntitled/Framework's `Life_RscMapControl` (`dialog/common.hpp` in that framework) --
+  a complete, proven-correct, currently-deployed definition -- keeping only this project's own dark
+  color theme as overrides on top of it, rather than continuing to guess which property is missing
+  next.
+- `src/ALife.Altis`: added a connection loading screen (`dialog/loadingScreen.hpp`,
+  `functions/ui/fn_loadingScreen.sqf`), replacing `initPlayerLocal.sqf`'s plain `cutText` welcome
+  message, based on a mockup design. Its status text and progress bar reflect the ACTUAL join
+  sequence, not a simulated timer -- `initPlayerLocal.sqf` pushes the client-side milestones (player
+  object ready, join request sent) and `fn_playerJoin.sqf` pushes the server-side ones (DB record
+  loading, load finished) back to that same client via a targeted `remoteExec`, closing in
+  `fn_spawnMenu.sqf`'s `"open"` mode right before the spawn dialog appears. Added `ALife_RscProgress`
+  to `common_ui.hpp`, ported from Tonic's `Life_RscProgress` (same reasoning as `ALife_RscMap` above
+  -- a verified-correct property set instead of guessing at a new control type). A failed `load` now
+  leaves the loading screen showing "failed to load" instead of hanging silently -- the underlying
+  failure *policy* (`fn_playerJoin.sqf`'s `TODO(#10)`) still isn't decided, this only makes the
+  existing stuck state visible.
