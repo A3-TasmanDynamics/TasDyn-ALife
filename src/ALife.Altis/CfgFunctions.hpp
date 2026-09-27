@@ -28,9 +28,12 @@ class CfgFunctions
         {
             file = "functions\spawn";
             class getSpawnPoints {};  // -> ALife_fnc_getSpawnPoints
+            class sideToFaction {};   // -> ALife_fnc_sideToFaction -- maps an Arma side to
+                                      // "civ"/"cop"/"medic"; the one source of truth for that,
+                                      // client or server (see docs/TONIC_REFERENCE.md §3)
             class spawnPlayer {};     // -> ALife_fnc_spawnPlayer (server)
             class spawnMenu {};       // -> ALife_fnc_spawnMenu (client) -- one file, mode-dispatched:
-                                      // open/onLoad/selectSide/selectLocation/spawn/onUnload
+                                      // open/onLoad/selectLocation/spawn/onUnload
         };
     };
 };

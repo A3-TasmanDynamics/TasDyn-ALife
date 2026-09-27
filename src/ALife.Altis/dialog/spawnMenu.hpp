@@ -1,18 +1,17 @@
 // TasDyn-ALife — spawn menu dialog.
-// Side-select buttons (civ/cop/medic) -> spawn point list, filtered per side
-// via ALife_fnc_getSpawnPoints (config/spawn_config.hpp) -> a map preview of
-// the selected point -> Spawn. Reviewed a real framework's dialog for the
-// general "side buttons + list + map preview" shape and its self-contained
-// ALife_Rsc*-style base classes (common_ui.hpp) -- not copied wholesale,
-// rebuilt against this mission's own data contract and spawn functions.
+// Spawn point list (filtered by the player's actual engine side, resolved
+// via ALife_fnc_sideToFaction -- see fn_spawnMenu.sqf) -> a map preview of
+// the selected point -> Spawn. Matches Tonic's AsYetUntitled/Framework:
+// faction is chosen via Arma's own multiplayer role-selection screen
+// (multiple playable slots per side in mission.sqm), not a custom in-dialog
+// picker -- this dialog only ever picks WHERE to spawn within the side
+// you already are. See docs/TONIC_REFERENCE.md §3 for why the earlier
+// custom side-button version was replaced.
 
 #include "common_ui.hpp"
 
 #define ALIFE_IDD_SPAWN_MENU 4700
 
-#define ALIFE_IDC_SPAWN_SIDE_CIV   4710
-#define ALIFE_IDC_SPAWN_SIDE_COP   4711
-#define ALIFE_IDC_SPAWN_SIDE_MEDIC 4712
 #define ALIFE_IDC_SPAWN_LIST       4720
 #define ALIFE_IDC_SPAWN_MAP        4730
 #define ALIFE_IDC_SPAWN_INFO       4740
@@ -49,49 +48,22 @@ class ALife_SpawnMenu
         class Title: ALife_RscTitle
         {
             idc = -1;
-            text = "Select Faction & Spawn Point";
+            text = "Select Spawn Point";
             x = 0.18; y = 0.14; w = 0.64; h = 0.05;
             colorBackground[] = { 0, 0, 0, 0 };
-        };
-
-        class SideCivilian: ALife_RscButton
-        {
-            idc = ALIFE_IDC_SPAWN_SIDE_CIV;
-            text = "Civilian";
-            x = 0.19; y = 0.2; w = 0.14; h = 0.04;
-            colorBackground[] = { 0.2, 0.5, 0.2, 1 };
-            action = "['selectSide', 'civ'] call ALife_fnc_spawnMenu";
-        };
-
-        class SideCop: ALife_RscButton
-        {
-            idc = ALIFE_IDC_SPAWN_SIDE_COP;
-            text = "Police";
-            x = 0.34; y = 0.2; w = 0.14; h = 0.04;
-            colorBackground[] = { 0.2, 0.2, 0.6, 1 };
-            action = "['selectSide', 'cop'] call ALife_fnc_spawnMenu";
-        };
-
-        class SideMedic: ALife_RscButton
-        {
-            idc = ALIFE_IDC_SPAWN_SIDE_MEDIC;
-            text = "Medic";
-            x = 0.49; y = 0.2; w = 0.14; h = 0.04;
-            colorBackground[] = { 0.6, 0.2, 0.2, 1 };
-            action = "['selectSide', 'medic'] call ALife_fnc_spawnMenu";
         };
 
         class SpawnList: ALife_RscListBox
         {
             idc = ALIFE_IDC_SPAWN_LIST;
-            x = 0.19; y = 0.25; w = 0.29; h = 0.4;
+            x = 0.19; y = 0.2; w = 0.29; h = 0.45;
             onLBSelChanged = "(['selectLocation'] + _this) call ALife_fnc_spawnMenu";
         };
 
         class SpawnMap: ALife_RscMap
         {
             idc = ALIFE_IDC_SPAWN_MAP;
-            x = 0.5; y = 0.25; w = 0.3; h = 0.4;
+            x = 0.5; y = 0.2; w = 0.3; h = 0.45;
         };
 
         class InfoText: ALife_RscStructuredText

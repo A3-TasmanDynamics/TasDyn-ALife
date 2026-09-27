@@ -23,7 +23,8 @@ src/ALife.Altis/
 │   └── spawn_config.hpp    # Spawn point definitions — see below
 ├── dialog/
 │   ├── common_ui.hpp       # Shared ALife_Rsc* dialog base classes
-│   └── spawnMenu.hpp       # Faction + spawn point selection dialog
+│   └── spawnMenu.hpp       # Spawn point selection dialog (faction comes from the engine's own
+│                           # role-selection screen, not this dialog -- see below)
 └── functions/
     ├── data/                          # DB-facing — implements docs/DATA_CONTRACT.md
     │   ├── fn_callExtension.sqf         # The only place that calls "tasdyn_alife" directly
@@ -35,9 +36,10 @@ src/ALife.Altis/
     │   └── fn_playerJoin.sqf           # Server-side join handling -- see "Player join" below
     └── spawn/                # Faction/spawn-point selection
         ├── fn_getSpawnPoints.sqf  # Reads config/spawn_config.hpp
+        ├── fn_sideToFaction.sqf   # Maps an Arma side to "civ"/"cop"/"medic" -- one source of truth
         ├── fn_spawnPlayer.sqf     # Authoritative spawn handling (server)
         └── fn_spawnMenu.sqf       # Everything about the dialog (client), mode-dispatched:
-                                   # open / onLoad / selectSide / selectLocation / spawn / onUnload
+                                   # open / onLoad / selectLocation / spawn / onUnload
 ```
 
 One subfolder per area under `functions/` (`data/`, `spawn/`, more to come — `player/`, `admin/`,
@@ -134,16 +136,19 @@ actual local dedicated server for testing:
 
 ## Open items
 
-- **Only one player can connect at a time right now.** `mission.sqm` has a single playable slot
-  (`civilian_1`, relabeled "Connect") — faction is chosen via the spawn menu's dialog buttons, not by
-  which Editor slot a player picks (see `dialog/spawnMenu.hpp`'s `SideCivilian`/`SideCop`/`SideMedic`).
-  To support more concurrent players, add more copies of that **same generic** "Connect" slot in
-  Eden — do **not** add more per-faction slots (`police_2`, `civilian_2`, etc.); that reintroduces the
-  exact "Number of roles is different from maxPlayer" engine role-selection conflict this setup was
-  built to avoid (see CHANGELOG). Confirmed against Tonic's AsYetUntitled/Framework
-  (`docs/TONIC_REFERENCE.md` §3) that this is a real, valid alternative to Tonic's own approach
-  (multiple per-side Editor slots + the engine's native role screen) — just a different one, with a
-  different fix for "more players."
+- **Faction is chosen via Arma's own multiplayer role-selection screen**, not a custom dialog —
+  `mission.sqm` has 16 playable slots across the three real Arma sides (`police_1-4` = west,
+  `civilian_1-4` = civilian, `medic_1-8` = independent), matching Tonic's AsYetUntitled/Framework
+  exactly (`docs/TONIC_REFERENCE.md` §3). `dialog/spawnMenu.hpp` only picks WHERE to spawn within the
+  side already assigned by the role screen; `ALife_fnc_sideToFaction`
+  (`functions/spawn/fn_sideToFaction.sqf`) is the one place the Arma-side-to-`"civ"/"cop"/"medic"`
+  mapping lives, used both to populate the spawn list and, server-side, to authoritatively determine
+  a connecting player's faction (`fn_spawnPlayer.sqf` derives it from `side _unit`, never trusts a
+  client-supplied value).
+- **No cop/medic whitelisting yet.** Anyone can currently pick a Police/Medic slot in the role screen
+  with no gate at all. Tonic handles this with a post-spawn in-script kick
+  (`life_coplevel==0 && life_adminlevel==0` → kick), not a slot restriction — scope the equivalent
+  into Phase 3's anti-cheat/admin work (`docs/TONIC_REFERENCE.md` §3).
 - `fn_playerJoin.sqf` always opens the spawn menu on join, even for an already-alive reconnect.
   Tonic's framework skips the dialog entirely and silently repositions an already-alive player instead
   (`docs/TONIC_REFERENCE.md` §2) — `fn_playerJoin.sqf` should branch on the loaded record's

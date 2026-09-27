@@ -64,25 +64,39 @@ within the side the engine already assigned. Cop/medic slots additionally get an
 kick (`life_coplevel==0 && life_adminlevel==0` → `BIS_fnc_endMission`) *after* the engine already let
 them into that slot, since the engine's role screen has no concept of a DB-backed whitelist.
 
-**TasDyn-ALife's model:** faction is chosen via **custom in-dialog buttons**
-(`SideCivilian`/`SideCop`/`SideMedic` in `spawnMenu.hpp`), which only makes sense with a single
-generic, faction-agnostic playable slot — which is exactly the "1 generic 'Connect' slot" fix already
-shipped this session (`mission.sqm`, 15 of 16 roles set `isPlayable=0`).
+**TasDyn-ALife's plan matches Tonic's exactly: engine-native role selection (west/civilian/
+independent), not a custom in-dialog faction picker.** The dialog's `SideCivilian`/`SideCop`/
+`SideMedic` buttons (`spawnMenu.hpp`) and the single-generic-slot `mission.sqm` fix from earlier this
+session were a wrong turn, not the intended design — corrected below, not just documented as a
+"valid alternative."
 
 **This is the real root cause of the "16 roles" RPT warning and the no-spawn-menu bug**: the original
-`mission.sqm` had 16 pre-placed *per-faction* playable roles (`police_1-4`/`civilian_1-4`/`medic_1-8`)
-— Tonic's pattern (many slots, engine picks your side) — while the SQF/dialog code was already built
-for the *other* pattern (one generic slot, side chosen in-dialog). Having one foot in each pattern is
-what actually broke role selection, not simply "too many slots."
+`mission.sqm` already had the *correct* topology for the intended design — 16 pre-placed per-faction
+playable roles (`police_1-4`/`civilian_1-4`/`medic_1-8`, one group per real Arma side) — but the
+SQF/dialog code was accidentally built for a *different* pattern (one generic slot, side chosen
+in-dialog), which nothing had actually decided on. Having the mission built for one pattern and the
+code built for the other is what broke role selection, not "too many slots," and not a defect in the
+per-side-slots topology itself.
 
-**DELIBERATE DIVERGENCE (recommended: keep it, but fix the actual limitation correctly):**
-TasDyn-ALife's single-generic-slot + in-dialog-faction-pick approach is valid and arguably simpler to
-maintain in Eden (no per-faction slot count to keep in sync with roster size). The **only** real
-limitation is concurrent player count, and the fix is **more copies of the same generic "Connect"
-slot** in Eden — not per-faction slots, since faction assignment happens in SQF after connect, not by
-which Editor slot was clicked. `src/ALife.Altis/README.md`'s existing "Open items" note about this
-limitation should be updated to say this explicitly, so it isn't misread later as "add more
-police/civ/medic slots" (which would silently reintroduce the exact conflict just fixed).
+**Fix applied:** `mission.sqm`'s 16 roles are back to `isPlayable=1` (police=west, civilian, medic=
+independent — matching Tonic's own side mapping), `spawnMenu.hpp`'s side buttons are removed, and a
+new `ALife_fnc_sideToFaction` (`functions/spawn/fn_sideToFaction.sqf`) maps `side player`/`side _unit`
+to `"civ"`/`"cop"`/`"medic"` — the one place that mapping lives, used both client-side
+(`fn_spawnMenu.sqf`'s `onLoad`, to populate the right spawn-point list) and, critically,
+**server-side** in `fn_spawnPlayer.sqf`, which now derives faction from the unit's actual `side`
+rather than trusting whatever a client claims. That closes a real gap the old design had: a client
+could previously `remoteExec` `ALife_fnc_spawnPlayer` directly with an arbitrary faction string,
+since the only server-side check was "is this one of the three known strings," not "does this match
+who you actually are." The dialog itself (`spawnMenu.hpp`) is now spawn-point-only, matching Tonic's
+`life_spawn_selection` shape.
+
+**Still open, matching Tonic's own pattern:** cop/medic whitelisting. Tonic lets the engine's role
+screen put anyone into a west/independent slot, then kicks non-whitelisted players via a post-spawn
+in-script check (`life_coplevel==0 && life_adminlevel==0` → `BIS_fnc_endMission`) rather than
+restricting the slot itself. TasDyn-ALife doesn't have this check yet — anyone can currently pick a
+Police/Medic slot in the role screen with no whitelist gate at all. Worth scoping into
+[ANTI_CHEAT.md](ANTI_CHEAT.md)/[ROADMAP.md Phase 3](ROADMAP.md#phase-3--anti-cheat--admin-tooling-2026-11-24--2026-12-29-revised--was-2026-11-24--2026-12-04)
+rather than left implicit.
 
 ## 4. Dialog base classes — direct validation of this session's revert
 
@@ -184,12 +198,17 @@ Also confirmed: `CfgRemoteExec.hpp`'s `mode = 1` whitelist-only pattern with exp
 1. **Redeploy and retest now** — the "black screen, no spawn menu, no errors" symptom just reported
    matches exactly what the (already-fixed, already-pushed) forward-declare regression in PR #100
    would produce; likely already resolved.
-2. Update `src/ALife.Altis/README.md`'s single-slot limitation note to say explicitly: add more
-   copies of the *same generic* "Connect" slot for more concurrent players, not per-faction slots —
-   the actual lesson from §3 above.
+2. **Done (§3):** `mission.sqm` restored to 16 per-side playable slots (west/civilian/independent),
+   `spawnMenu.hpp`'s side-selection buttons removed, and a new `ALife_fnc_sideToFaction` makes
+   `fn_spawnPlayer.sqf` derive faction from `side _unit` server-side instead of trusting a
+   client-supplied value.
 3. `fn_playerJoin.sqf`: branch on the loaded record's `<faction>_alive` and skip the spawn dialog
    entirely (silent reposition) for an already-alive reconnect, matching Tonic's `fn_initCiv.sqf`
    (§2).
 4. Consider a `CONST`/`compileFinal`-style wrapper for `life_adminlevel`-equivalent values once
    rank/admin-level start reaching the client (§7) — flag for Phase 3's anti-cheat work.
-5. Confirm `fn_getSpawnPoints.sqf` doesn't use a raw `call compile` on config text (§6).
+5. Confirmed: `fn_getSpawnPoints.sqf` doesn't use a raw `call compile` on config text (§6) — no
+   action needed.
+6. **New, from §3:** cop/medic whitelisting doesn't exist yet — anyone can currently pick a
+   Police/Medic slot in the engine's role screen. Tonic gates this with a post-spawn in-script kick,
+   not a slot restriction; scope the equivalent into Phase 3.

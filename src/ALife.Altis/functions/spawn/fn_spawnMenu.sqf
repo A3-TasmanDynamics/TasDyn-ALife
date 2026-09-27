@@ -6,11 +6,18 @@
         Everything about the spawn dialog lives in this one file, dispatched
         by mode -- opening it (the server->client entry point from
         fn_playerJoin.sqf), its onLoad/onUnload handlers, and every
-        control action (side button, spawn list, Spawn button). These were
-        five separate one-function files; combined here since they're all
-        tightly coupled to the same dialog and its two pieces of selection
-        state (never meaningfully called independently of each other or of
-        that dialog being open).
+        control action (spawn list, Spawn button). These were originally
+        several separate one-function files; combined here since they're all
+        tightly coupled to the same dialog and its selection state (never
+        meaningfully called independently of each other or of that dialog
+        being open).
+
+        Faction is NOT chosen here -- it's derived from the player's actual
+        Arma side (`side player`, assigned by which Editor-placed playable
+        slot they connected as) via ALife_fnc_sideToFaction, matching
+        Tonic's AsYetUntitled/Framework rather than a custom side-picker.
+        See docs/TONIC_REFERENCE.md §3. This dialog only ever picks WHERE to
+        spawn within that side.
 
         Selection state lives on the display itself (setVariable), not a
         mission-namespace global -- it only matters while this dialog is
@@ -21,8 +28,8 @@
            "open"           -- create the dialog (remoteExec'd to a specific
                                 client from fn_playerJoin.sqf), clearing
                                 initPlayerLocal.sqf's welcome screen first
-           "onLoad"         -- dialog onLoad: default to civ, center the map
-           "selectSide"     -- side button action, 1: STRING side ("civ"/"cop"/"medic")
+           "onLoad"         -- dialog onLoad: resolve faction from side
+                                player, populate the spawn list, center map
            "selectLocation" -- spawn list onLBSelChanged, 1: CONTROL, 2: SCALAR index
            "spawn"          -- Spawn button action: send the request to the server
            "onUnload"       -- dialog onUnload: clean up the map marker
@@ -46,36 +53,9 @@ switch (_mode) do {
         private _display = findDisplay 4700;
         if (isNull _display) exitWith {};
 
-        ["selectSide", "civ"] call ALife_fnc_spawnMenu;
-
-        private _mapCtrl = _display displayCtrl 4730;
-        _mapCtrl ctrlMapAnimAdd [0, 0.15, [14000, 15000, 0]];
-        ctrlMapAnimCommit _mapCtrl;
-    };
-
-    case "selectSide": {
-        _args params [["_side", "civ", [""]]];
-
-        disableSerialization;
-        private _display = findDisplay 4700;
-        if (isNull _display) exitWith {};
-
-        _display setVariable ["alife_spawn_side", _side];
+        private _faction = [side player] call ALife_fnc_sideToFaction;
+        _display setVariable ["alife_spawn_side", _faction];
         _display setVariable ["alife_spawn_point", []];
-
-        private _btnCiv = _display displayCtrl 4710;
-        private _btnCop = _display displayCtrl 4711;
-        private _btnMedic = _display displayCtrl 4712;
-
-        _btnCiv ctrlSetBackgroundColor [0.2, 0.5, 0.2, 1];
-        _btnCop ctrlSetBackgroundColor [0.2, 0.2, 0.6, 1];
-        _btnMedic ctrlSetBackgroundColor [0.6, 0.2, 0.2, 1];
-
-        switch (_side) do {
-            case "civ": { _btnCiv ctrlSetBackgroundColor [0.3, 0.75, 0.3, 1]; };
-            case "cop": { _btnCop ctrlSetBackgroundColor [0.3, 0.3, 0.85, 1]; };
-            case "medic": { _btnMedic ctrlSetBackgroundColor [0.85, 0.3, 0.3, 1]; };
-        };
 
         private _listCtrl = _display displayCtrl 4720;
         lbClear _listCtrl;
@@ -84,14 +64,14 @@ switch (_mode) do {
             _x params ["_key", "_displayName"];
             private _index = _listCtrl lbAdd _displayName;
             _listCtrl lbSetData [_index, _key];
-        } forEach ([_side] call ALife_fnc_getSpawnPoints);
-
-        {
-            deleteMarkerLocal _x;
-        } forEach (allMapMarkers select { _x find "alife_spawn_marker" == 0 });
+        } forEach ([_faction] call ALife_fnc_getSpawnPoints);
 
         private _infoCtrl = _display displayCtrl 4740;
         _infoCtrl ctrlSetStructuredText parseText "Select a spawn point from the list.";
+
+        private _mapCtrl = _display displayCtrl 4730;
+        _mapCtrl ctrlMapAnimAdd [0, 0.15, [14000, 15000, 0]];
+        ctrlMapAnimCommit _mapCtrl;
     };
 
     case "selectLocation": {
@@ -141,14 +121,16 @@ switch (_mode) do {
         private _point = _display getVariable ["alife_spawn_point", []];
 
         if (_side == "" || { _point isEqualTo [] }) exitWith {
-            hint "Select a faction and a spawn point first.";
+            hint "Select a spawn point first.";
         };
 
         private _spawnKey = _point select 0;
 
         closeDialog 0;
 
-        [player, getPlayerUID player, _side, _spawnKey] remoteExec ["ALife_fnc_spawnPlayer", 2];
+        // Faction isn't sent -- fn_spawnPlayer.sqf derives it authoritatively
+        // from `side _unit` server-side rather than trusting a client value.
+        [player, getPlayerUID player, _spawnKey] remoteExec ["ALife_fnc_spawnPlayer", 2];
     };
 
     case "onUnload": {

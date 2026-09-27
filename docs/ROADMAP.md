@@ -110,15 +110,25 @@ so this phase isn't fully closed out despite every individual task being checked
 
 The biggest phase — this is what makes it a *Life* server rather than a database demo.
 
-- [x] Faction spawn/selection scaffolded ahead of schedule, during Phase 1's mission-scaffold work:
-      `spawnMenu.hpp` dialog, config-driven spawn points (`config/spawn_config.hpp`), and
-      `ALife_fnc_spawnPlayer` (server-authoritative — a player whose stored `<faction>_alive` is
-      `false` has their spawn-point request ignored and resumes at `<faction>_position` instead,
-      closing the loop on the disconnect-to-escape protection `database/schema.sql` was built
-      around). Config verified clean on a real dedicated server alongside the rest of Phase 1 (see
-      above); **the spawn flow itself still needs a real player to actually test** — the
-      civilian/medic markers (`civ_kavala_spawn`, etc.) also aren't all placed yet. Gear/loadout
-      equipping is explicitly not wired in yet, see `src/ALife.Altis/README.md`.
+- [x] Faction + spawn-point selection scaffolded ahead of schedule, during Phase 1's mission-scaffold
+      work. Faction is assigned by Arma's own multiplayer role-selection screen (multiple
+      Editor-placed playable slots per side in `mission.sqm` — west/civilian/independent), matching
+      Tonic's AsYetUntitled/Framework exactly rather than a custom in-dialog faction picker (see
+      `docs/TONIC_REFERENCE.md` §3 for why that's the plan). `spawnMenu.hpp`'s dialog only picks
+      WHERE to spawn within the side the player already is, backed by config-driven spawn points
+      (`config/spawn_config.hpp`) and `ALife_fnc_spawnPlayer` (server-authoritative — it re-derives
+      the player's faction from `side _unit` itself, never trusts a client-supplied value; a player
+      whose stored `<faction>_alive` is `false` has their spawn-point request ignored and resumes at
+      `<faction>_position` instead, closing the loop on the disconnect-to-escape protection
+      `database/schema.sql` was built around). Config is verified clean on a real dedicated server;
+      the join flow reaches a real player and loads their record correctly (confirmed via RPT across
+      multiple real sessions — see `CHANGELOG.md`), but the spawn dialog itself has gone through
+      several rounds of live rendering bugs (missing `text`/`widthRailWay` on the map control, a
+      since-reverted dialog-base-class experiment) and **isn't yet confirmed rendering correctly
+      end-to-end** — the markers (`civilian_kavala_spawn` etc.) are placed and `fn_getSpawnPoints.sqf`
+      is wired up, but a real player successfully seeing and using the dialog hasn't been confirmed
+      since the latest fix. Gear/loadout equipping is explicitly not wired in yet, see
+      `src/ALife.Altis/README.md`.
 - [ ] Civilian: 2–3 legal jobs at launch (pick the simplest to implement well — e.g. mining,
       trucking; defer fishing/uranium to post-launch).
 - [ ] Economy core: physical cash vs. digital bank, a basic buy/sell shop system, one dynamic
