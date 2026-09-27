@@ -134,6 +134,20 @@ actual local dedicated server for testing:
 
 ## Open items
 
+- **Only one player can connect at a time right now.** `mission.sqm` has a single playable slot
+  (`civilian_1`, relabeled "Connect") — faction is chosen via the spawn menu's dialog buttons, not by
+  which Editor slot a player picks (see `dialog/spawnMenu.hpp`'s `SideCivilian`/`SideCop`/`SideMedic`).
+  To support more concurrent players, add more copies of that **same generic** "Connect" slot in
+  Eden — do **not** add more per-faction slots (`police_2`, `civilian_2`, etc.); that reintroduces the
+  exact "Number of roles is different from maxPlayer" engine role-selection conflict this setup was
+  built to avoid (see CHANGELOG). Confirmed against Tonic's AsYetUntitled/Framework
+  (`docs/TONIC_REFERENCE.md` §3) that this is a real, valid alternative to Tonic's own approach
+  (multiple per-side Editor slots + the engine's native role screen) — just a different one, with a
+  different fix for "more players."
+- `fn_playerJoin.sqf` always opens the spawn menu on join, even for an already-alive reconnect.
+  Tonic's framework skips the dialog entirely and silently repositions an already-alive player instead
+  (`docs/TONIC_REFERENCE.md` §2) — `fn_playerJoin.sqf` should branch on the loaded record's
+  `<faction>_alive` the same way once that's wired up.
 - `fn_playerJoin.sqf`'s failure policy for a `load` returning `ERROR` (DB down, extension not
   connected) isn't decided — see the `TODO` there. That's a product call (kick vs. retry vs. let
   them in flagged), not a technical one. Right now a failed load also leaves the player stuck
