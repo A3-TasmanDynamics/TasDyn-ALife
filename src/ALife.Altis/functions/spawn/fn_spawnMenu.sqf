@@ -26,8 +26,8 @@
     Parameter(s):
         0: STRING - mode:
            "open"           -- create the dialog (remoteExec'd to a specific
-                                client from fn_playerJoin.sqf), clearing
-                                initPlayerLocal.sqf's welcome screen first
+                                client from fn_playerJoin.sqf), closing the
+                                connection loading screen first
            "onLoad"         -- dialog onLoad: resolve faction from side
                                 player, populate the spawn list, center map
            "selectLocation" -- spawn list onLBSelChanged, 1: CONTROL, 2: SCALAR index
@@ -43,7 +43,7 @@ private _args = _this select [1, (count _this) - 1];
 
 switch (_mode) do {
     case "open": {
-        cutText ["", "BLACK OUT"];
+        ["setProgress", 100, "Ready."] call ALife_fnc_loadingScreen;
         closeDialog 0;
         createDialog "ALife_SpawnMenu";
     };

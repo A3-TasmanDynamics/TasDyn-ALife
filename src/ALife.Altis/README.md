@@ -16,13 +16,14 @@ src/ALife.Altis/
 ├── CfgFunctions.hpp        # Registers ALife_fnc_* from functions/
 ├── CfgRemoteExec.hpp       # The remoteExec allowlist — see docs/ANTI_CHEAT.md Layer 1
 ├── initServer.sqf          # Mission-level init: HandleDisconnect + starts fn_sync.sqf
-├── initPlayerLocal.sqf     # Per-player join hook (client) -- welcome screen, remoteExecs
-│                           # fn_playerJoin.sqf -- see "Player join" below for why this is
-│                           # a client file, not initPlayerServer.sqf
+├── initPlayerLocal.sqf     # Per-player join hook (client) -- opens the loading screen,
+│                           # remoteExecs fn_playerJoin.sqf -- see "Player join" below for why
+│                           # this is a client file, not initPlayerServer.sqf
 ├── config/
 │   └── spawn_config.hpp    # Spawn point definitions — see below
 ├── dialog/
 │   ├── common_ui.hpp       # Shared ALife_Rsc* dialog base classes
+│   ├── loadingScreen.hpp   # Connection loading screen, real (not simulated) progress -- see below
 │   └── spawnMenu.hpp       # Spawn point selection dialog (faction comes from the engine's own
 │                           # role-selection screen, not this dialog -- see below)
 └── functions/
@@ -34,12 +35,15 @@ src/ALife.Altis/
     │   ├── fn_savePlayerState.sqf      # Saves alive/position -- shared by disconnect + sync
     │   ├── fn_sync.sqf                 # Periodic pulse: DB keep-alive + autosave -- see below
     │   └── fn_playerJoin.sqf           # Server-side join handling -- see "Player join" below
-    └── spawn/                # Faction/spawn-point selection
-        ├── fn_getSpawnPoints.sqf  # Reads config/spawn_config.hpp
-        ├── fn_sideToFaction.sqf   # Maps an Arma side to "civ"/"cop"/"medic" -- one source of truth
-        ├── fn_spawnPlayer.sqf     # Authoritative spawn handling (server)
-        └── fn_spawnMenu.sqf       # Everything about the dialog (client), mode-dispatched:
-                                   # open / onLoad / selectLocation / spawn / onUnload
+    ├── spawn/                # Faction/spawn-point selection
+    │   ├── fn_getSpawnPoints.sqf  # Reads config/spawn_config.hpp
+    │   ├── fn_sideToFaction.sqf   # Maps an Arma side to "civ"/"cop"/"medic" -- one source of truth
+    │   ├── fn_spawnPlayer.sqf     # Authoritative spawn handling (server)
+    │   └── fn_spawnMenu.sqf       # Everything about the dialog (client), mode-dispatched:
+    │                              # open / onLoad / selectLocation / spawn / onUnload
+    └── ui/
+        └── fn_loadingScreen.sqf  # Everything about the loading screen (client), mode-dispatched:
+                                   # open / onLoad / setProgress / onUnload -- see below
 ```
 
 One subfolder per area under `functions/` (`data/`, `spawn/`, more to come — `player/`, `admin/`,
@@ -86,12 +90,21 @@ happening. Reviewed Tonic's AsYetUntitled/Framework for comparison — it has no
 `initPlayerServer.sqf` at all; its entire player-join flow starts from `initPlayerLocal.sqf`
 instead, matching Bohemia's own wiki guidance to avoid `initPlayerServer.sqf`.
 
-`initPlayerLocal.sqf` shows a brief "Welcome" screen (`cutText`) while it `remoteExec`s
-`fn_playerJoin.sqf` on the server — the load-then-open-spawn-menu logic that used to live directly
-in `initPlayerServer.sqf`, unchanged apart from where it's triggered from. The welcome screen
-clears in `fn_spawnMenu.sqf`'s `"open"` mode, right before the dialog actually appears, instead of
+`initPlayerLocal.sqf` opens the connection loading screen (`dialog/loadingScreen.hpp`,
+`ALife_fnc_loadingScreen`) while it `remoteExec`s `fn_playerJoin.sqf` on the server — the
+load-then-open-spawn-menu logic that used to live directly in `initPlayerServer.sqf`, unchanged
+apart from where it's triggered from. The loading screen's status text and progress bar reflect the
+actual join sequence, not a simulated timer: `initPlayerLocal.sqf` pushes the client-side milestones
+(player object ready, join request sent) and `fn_playerJoin.sqf` pushes the server-side ones (DB
+record loading, load finished) back to that same client via a targeted `remoteExec`. It closes in
+`fn_spawnMenu.sqf`'s `"open"` mode, right before the spawn dialog actually appears, instead of
 leaving the player looking at whatever they happened to spawn next to with nothing visibly
 happening in between.
+
+If `ALife_fnc_load` returns an error, the loading screen is left showing a "failed to load" message
+rather than hanging silently — see `fn_playerJoin.sqf`'s `TODO(#10)` and the Open Items below; the
+actual failure *policy* (kick vs. retry vs. let them in flagged) still isn't decided, this only
+makes the current stuck state visible instead of silent.
 
 ## Sync / autosave
 
@@ -155,8 +168,9 @@ actual local dedicated server for testing:
   `<faction>_alive` the same way once that's wired up.
 - `fn_playerJoin.sqf`'s failure policy for a `load` returning `ERROR` (DB down, extension not
   connected) isn't decided — see the `TODO` there. That's a product call (kick vs. retry vs. let
-  them in flagged), not a technical one. Right now a failed load also leaves the player stuck
-  behind `initPlayerLocal.sqf`'s welcome screen forever, since nothing clears it on that path.
+  them in flagged), not a technical one. Right now a failed load leaves the player stuck behind the
+  loading screen forever (now at least showing a "failed to load" message instead of hanging
+  silently — see "Player join" above), since nothing implements an actual recovery path.
 - Gear/loadout equipping isn't wired into `fn_spawnPlayer.sqf` yet — `civ_gear`/`cop_gear`/
   `medic_gear` don't have a documented item-key contract (`docs/DATA_CONTRACT.md` only says "full
   loadout" generically). Write that contract before wiring gear application.

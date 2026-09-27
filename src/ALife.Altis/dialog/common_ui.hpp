@@ -34,6 +34,7 @@
 #define ALIFE_CT_STATIC    0
 #define ALIFE_CT_BUTTON    1
 #define ALIFE_CT_LISTBOX   5
+#define ALIFE_CT_PROGRESS  8
 #define ALIFE_CT_STRUCTURED_TEXT 13
 #define ALIFE_CT_MAP_MAIN  101
 
@@ -532,4 +533,20 @@ class ALife_RscMap
     maxSatelliteAlpha = 0.85; alphaFadeStartScale = 0.35; alphaFadeEndScale = 0.4;
     shadow = 0;
     x = 0; y = 0; w = 0.4; h = 0.4;
+};
+
+// Progress bar. Property set ported from Tonic's AsYetUntitled/Framework's
+// Life_RscProgress (a real, live, currently-deployed mission) rather than
+// hand-guessed, matching the same reasoning as ALife_RscMap above.
+class ALife_RscProgress
+{
+    type = ALIFE_CT_PROGRESS;
+    style = 0;
+    idc = -1;
+    texture = "";
+    shadow = 2;
+    colorFrame[] = { 0, 0, 0, 1 };
+    colorBackground[] = { 0.11, 0.13, 0.16, 1 };
+    colorBar[] = { 0.114, 0.914, 0.714, 1 };
+    x = 0; y = 0; w = 0.3; h = 0.02;
 };

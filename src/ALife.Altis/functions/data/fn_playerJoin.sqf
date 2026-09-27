@@ -23,6 +23,12 @@
         Server-only -- allowlisted in CfgRemoteExec.hpp as
         ALife_fnc_playerJoin.
 
+        Also pushes real progress milestones back to this specific client's
+        loading screen (ALife_fnc_loadingScreen, functions/ui/) as the
+        actual DB load happens -- initPlayerLocal.sqf owns the client-side
+        milestones before this function is even called; this is the
+        server-side half of the same real (not simulated) progress bar.
+
     Parameter(s):
         0: OBJECT - the player's unit
         1: STRING - uid
@@ -39,6 +45,8 @@ if (!isServer) exitWith {};
 diag_log format ["[ALife] player connecting: %1 (%2)%3",
     name _player, _uid, if (_didJIP) then {" [JIP]"} else {""}];
 
+["setProgress", 60, "Loading character profile from database..."] remoteExec ["ALife_fnc_loadingScreen", _player];
+
 waitUntil { !isNil "ALife_fnc_load" };
 
 private _record = [_player] call ALife_fnc_load;
@@ -50,10 +58,17 @@ if ((_record getOrDefault ["status", "ERROR"]) != "OK") exitWith {
     // session), retry once, or let them in flagged as "unsaved" and retry
     // in the background. Not decided here on purpose; this is a product
     // call, not a technical one. Deliberately exitWith — a player with a
-    // failed load does NOT get the spawn menu below.
+    // failed load does NOT get the spawn menu below. At minimum the
+    // loading screen now says so, rather than hanging silently forever on
+    // "Loading character profile..." with no visible sign anything is
+    // wrong (the underlying stuck-behind-the-loading-screen problem is
+    // still open -- see src/ALife.Altis/README.md's Open Items).
+    ["setProgress", 100, "Failed to load your character data -- please reconnect"] remoteExec ["ALife_fnc_loadingScreen", _player];
 };
 
 diag_log format ["[ALife] player connected: %1 (%2) -- load OK", name _player, _uid];
+
+["setProgress", 90, "Preparing spawn point selection..."] remoteExec ["ALife_fnc_loadingScreen", _player];
 
 // Server-side only, deliberately NOT public — a full record (cash, gear,
 // position) broadcast to every client is exactly the kind of

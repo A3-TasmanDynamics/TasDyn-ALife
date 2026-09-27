@@ -662,3 +662,15 @@
   a complete, proven-correct, currently-deployed definition -- keeping only this project's own dark
   color theme as overrides on top of it, rather than continuing to guess which property is missing
   next.
+- `src/ALife.Altis`: added a connection loading screen (`dialog/loadingScreen.hpp`,
+  `functions/ui/fn_loadingScreen.sqf`), replacing `initPlayerLocal.sqf`'s plain `cutText` welcome
+  message, based on a mockup design. Its status text and progress bar reflect the ACTUAL join
+  sequence, not a simulated timer -- `initPlayerLocal.sqf` pushes the client-side milestones (player
+  object ready, join request sent) and `fn_playerJoin.sqf` pushes the server-side ones (DB record
+  loading, load finished) back to that same client via a targeted `remoteExec`, closing in
+  `fn_spawnMenu.sqf`'s `"open"` mode right before the spawn dialog appears. Added `ALife_RscProgress`
+  to `common_ui.hpp`, ported from Tonic's `Life_RscProgress` (same reasoning as `ALife_RscMap` above
+  -- a verified-correct property set instead of guessing at a new control type). A failed `load` now
+  leaves the loading screen showing "failed to load" instead of hanging silently -- the underlying
+  failure *policy* (`fn_playerJoin.sqf`'s `TODO(#10)`) still isn't decided, this only makes the
+  existing stuck state visible.
