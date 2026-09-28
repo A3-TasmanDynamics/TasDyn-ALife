@@ -23,6 +23,7 @@ import (
 	"website/internal/discord"
 	"website/internal/handlers"
 	"website/internal/render"
+	"website/internal/staff"
 	"website/internal/status"
 	"website/internal/steam"
 )
@@ -138,6 +139,15 @@ func run() error {
 	d.Steam = &steam.Refresher{Pool: pool, Client: steam.NewClient(cfg.SteamWebAPIKey)}
 	go d.Steam.Run(ctx)
 
+	// Return staff whose LOA end date has passed to active.
+	go staff.RunLOASweep(ctx, pool, func(n int64, err error) {
+		if err != nil {
+			slog.Error("staff: LOA sweep failed", "error", err)
+		} else if n > 0 {
+			slog.Info("staff: LOAs ended", "count", n)
+		}
+	})
+
 	// Every staff_log row (from any source) -> #staff-log (internal/audit).
 	go (&audit.Poster{Pool: pool, WebhookURL: cfg.DiscordStaffLogWebhook}).Run(ctx)
 	if cfg.GameQueryAddr == "" {
@@ -197,6 +207,20 @@ func run() error {
 		r.Get("/admin", d.AdminHome)
 		r.Get("/admin/devlog/new", d.DevlogNewForm)
 		r.Post("/admin/devlog/new", d.DevlogCreate)
+
+		// Staff directory (GAMEPANEL_PARITY §2.2-2.3). Viewing needs
+		// staff.view; each action checks its own permission inside, and
+		// internal/staff enforces the seniority rules.
+		r.Group(func(r chi.Router) {
+			r.Use(d.Auth.RequirePermission("staff.view"))
+			r.Get("/admin/staff", d.StaffList)
+			r.Post("/admin/staff/add", d.StaffAdd)
+			r.Get("/admin/staff/{id}", d.StaffProfile)
+			r.Post("/admin/staff/{id}/rank", d.StaffSetRank)
+			r.Post("/admin/staff/{id}/status", d.StaffSetStatus)
+			r.Post("/admin/staff/{id}/team", d.StaffSetTeam)
+			r.Post("/admin/staff/{id}/notes", d.StaffAddNote)
+		})
 	})
 
 	r.Group(func(r chi.Router) {

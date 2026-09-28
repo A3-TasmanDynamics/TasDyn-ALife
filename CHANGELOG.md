@@ -877,3 +877,13 @@
   guild permissions, warns if the bot has Administrator). New `discord_outbox` table + worker for reliable DMs/
   channel posts: queued in the action's transaction, de-duplicated, retried with backoff, given up on when DMs
   are closed or after 24h, mentions always disabled. Integration tests for `auth.Can` and the outbox.
+- **Staff directory & profiles (Wave 1, GAMEPANEL_PARITY §2.2–2.3).** `/admin/staff` lists staff grouped by team
+  (counts, on-leave, unlinked Discord), with an *Add a staff member* form by Steam64 ID. `/admin/staff/{id}`
+  shows details, rank history (from `rank_changes`, with who/why/via) and append-only notes, plus controls
+  for rank, LOA/suspend/reinstate (optional end date; LOAs end automatically via a 5-minute sweep, suspensions
+  only by hand), team/region, and removal. New `internal/staff` service holds the rules for both the website
+  and future bot commands: no changes to yourself, you must outrank the target and can only assign ranks below
+  your own (Head Admins may appoint Head Admins), a reason is required. Each control is shown only with its
+  permission and re-checked on submit; new `auth.RequirePermission` middleware checks live on every request.
+  New `staff.notes` / `staff.team` permissions, `players.staff_team` / `staff_region` columns (team
+  changes are captured by the change trigger for role sync), `staff_notes` table.

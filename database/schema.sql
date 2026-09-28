@@ -129,6 +129,8 @@ CREATE TABLE players (
                              CHECK (staff_status IN ('active', 'suspended', 'loa')),
     staff_status_reason  TEXT,
     staff_status_until   TIMESTAMPTZ,  -- LOA/suspension end date; NULL = indefinite
+    staff_team           TEXT,         -- e.g. 'Moderation', 'Support'; NULL = unassigned (GAMEPANEL_PARITY §2.2)
+    staff_region         TEXT,         -- e.g. 'AU-East', 'NZ'
 
     -- BattlEye GUID, derived from uid (src/website/internal/steam/guid.go).
     -- Set on website signup or by the website's backfill for game-created rows.
@@ -394,8 +396,20 @@ CREATE TABLE staff_permission_overrides (
     UNIQUE (player_id, command_key)
 );
 
--- Every admin action — see docs/ADMIN_TOOLS.md §9.
-CREATE TABLE staff_log (
+-- Append-only notes about a staff member (GAMEPANEL_PARITY §2.2) --
+-- never edited or deleted, so the history can't be quietly rewritten.
+CREATE TABLE staff_notes (
+    id          BIGSERIAL PRIMARY KEY,
+    player_id   BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    author_id   BIGINT REFERENCES players(id) ON DELETE SET NULL,
+    kind        TEXT NOT NULL CHECK (kind IN ('note', 'promotion')),
+    body        TEXT NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_staff_notes_player_id ON staff_notes(player_id, created_at DESC);
+
+-- Every admin action — see docs/ADMIN_TOOLS.md §9.CREATE TABLE staff_log (
     id                BIGSERIAL PRIMARY KEY,
     staff_player_id   BIGINT REFERENCES players(id) ON DELETE SET NULL,
     target_player_id  BIGINT REFERENCES players(id) ON DELETE SET NULL,  -- NULL: no target (e.g. announcement)
@@ -780,7 +794,7 @@ CREATE INDEX idx_discord_outbox_due ON discord_outbox(next_attempt) WHERE sent_a
 CREATE TABLE rank_changes (
     id           BIGSERIAL PRIMARY KEY,
     player_id    BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
-    field        TEXT NOT NULL,          -- 'staff_rank_id', 'staff_status', 'cop_level', 'medic_level', 'discord_id'
+    field        TEXT NOT NULL,          -- 'staff_rank_id', 'staff_status', 'staff_team', 'cop_level', 'medic_level', 'discord_id'
     old_value    TEXT,
     new_value    TEXT,
     source       TEXT NOT NULL CHECK (source IN ('website', 'discord', 'game', 'manual')),
@@ -824,6 +838,7 @@ BEGIN
         SELECT * FROM (VALUES
             ('staff_rank_id', OLD.staff_rank_id::text, NEW.staff_rank_id::text),
             ('staff_status',  OLD.staff_status,        NEW.staff_status),
+            ('staff_team',    OLD.staff_team,          NEW.staff_team),
             ('cop_level',     OLD.cop_level::text,     NEW.cop_level::text),
             ('medic_level',   OLD.medic_level::text,   NEW.medic_level::text),
             ('discord_id',    OLD.discord_id,          NEW.discord_id)
@@ -852,7 +867,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_players_log_changes
-    AFTER UPDATE OF staff_rank_id, staff_status, cop_level, medic_level, discord_id ON players
+    AFTER UPDATE OF staff_rank_id, staff_status, staff_team, cop_level, medic_level, discord_id ON players
     FOR EACH ROW EXECUTE FUNCTION log_player_changes();
 
 -- Wakes internal/audit's poster so new staff_log rows reach #staff-log

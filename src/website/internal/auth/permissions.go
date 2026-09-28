@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -52,6 +53,8 @@ var Catalogue = []Permission{
 
 	{Key: "staff.view", Label: "View staff directory", Group: "Staff", MinLevel: LevelTrialMod},
 	{Key: "staff.loa", Label: "Put staff on LOA / reinstate", Group: "Staff", MinLevel: LevelAdmin},
+	{Key: "staff.notes", Label: "Read and add staff notes", Group: "Staff", MinLevel: LevelAdmin},
+	{Key: "staff.team", Label: "Assign staff teams and regions", Group: "Staff", MinLevel: LevelAdmin},
 	{Key: "staff.edit", Label: "Promote / demote staff", Group: "Staff", MinLevel: LevelHeadAdmin, NoOverride: true},
 	{Key: "staff.suspend", Label: "Suspend staff", Group: "Staff", MinLevel: LevelHeadAdmin, NoOverride: true},
 	{Key: "staff.remove", Label: "Remove from staff", Group: "Staff", MinLevel: LevelHeadAdmin, NoOverride: true},
@@ -90,6 +93,38 @@ const (
 	DenyInactive Denial = "inactive" // suspended / LOA
 	DenyLevel    Denial = "level"
 )
+
+// RequirePermission gates a route on one Catalogue key, checked live on
+// every request (not cached in the session), so a demotion, suspension or
+// revoked override takes effect immediately.
+func (a *Authenticator) RequirePermission(key string) func(http.Handler) http.Handler {
+	if _, ok := catalogueByKey[key]; !ok {
+		panic("auth: RequirePermission with unknown key " + key) // a wiring bug; fail at startup
+	}
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			sess, ok := FromContext(r.Context())
+			if !ok {
+				http.Redirect(w, r, "/?login_required=1", http.StatusSeeOther)
+				return
+			}
+			denial, err := Can(r.Context(), a.Pool, sess.PlayerID, key)
+			if err != nil {
+				http.Error(w, "Couldn't check your permissions. Please try again.", http.StatusInternalServerError)
+				return
+			}
+			if denial != Allowed {
+				msg := "403 Forbidden: you don't have permission for this page"
+				if reason := a.denialReason(r.Context(), sess.PlayerID); reason != "" {
+					msg = reason
+				}
+				http.Error(w, msg, http.StatusForbidden)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
 
 // Can reports whether playerID may perform key right now. Suspended/LOA
 // staff are denied everything, overrides included -- same rule as panel

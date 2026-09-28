@@ -91,6 +91,7 @@ func jsonOrNil(v any) ([]byte, error) {
 var fieldNames = map[string]string{
 	"staff_rank_id": "staff rank",
 	"staff_status":  "staff status",
+	"staff_team":    "staff team",
 	"cop_level":     "police level",
 	"medic_level":   "EMS level",
 }
