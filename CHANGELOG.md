@@ -808,3 +808,14 @@
   staff log; unbuilt tools (Player Lookup, Bans, Anti-Cheat Flags, Database, Arsenal Editor) show
   as "Soon", not dead links. The devlog composer uses the same shell. Verified by rendering the
   pages against the dev database (a temporary staff session for /admin, deleted afterwards).
+- `src/website`: public **status page** (`/status`, linked from the header and footer). A
+  background checker (`internal/status`) probes each component once a minute and records the
+  result in a new `status_checks` table (pruned after 90 days): **Website** (HTTP request to
+  itself), **Database** (pool ping), **Discord Bot** (gateway session ready), and **Game Server**
+  via a Steam A2S_INFO query (with the post-2020 challenge handshake) against `GAME_QUERY_ADDR` --
+  a real "is arma3server answering" signal, including player count. Components without a
+  configured check show "Not monitored yet" instead of a guessed status. 60 daily bars per
+  component, bucketed on Australia/Sydney days; days before monitoring began show as "no data",
+  never assumed uptime. A2S reply parsing is unit-tested; verified live against the dev database.
+  Not built (unlike the old Mommers Co status page it's modelled on): an incident history feed and
+  email subscriptions -- both need admin tooling / mail infrastructure first.

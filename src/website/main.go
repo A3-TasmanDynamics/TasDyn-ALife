@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -20,6 +21,7 @@ import (
 	"website/internal/discord"
 	"website/internal/handlers"
 	"website/internal/render"
+	"website/internal/status"
 )
 
 // loadDotEnv applies KEY=VALUE lines from .env (if present) to the process
@@ -91,6 +93,7 @@ func run() error {
 	// Discord bot (account linking via `/link`) -- optional. Its absence
 	// must never stop the website from serving HTTP; see
 	// internal/discord/bot.go and docs/WEBSITE.md §9.
+	var discordHealth func() (bool, time.Duration)
 	if cfg.DiscordBotToken != "" {
 		bot, err := discord.NewBot(cfg.DiscordBotToken, pool, cfg.DiscordGuildID)
 		if err != nil {
@@ -99,9 +102,22 @@ func run() error {
 			slog.Error("discord bot: failed to start, continuing without it", "error", err)
 		} else {
 			defer bot.Stop()
+			discordHealth = bot.Health
 		}
 	} else {
 		slog.Info("discord bot: DISCORD_BOT_TOKEN not set, /link command disabled")
+	}
+
+	// Public status page checks (internal/status) -- one probe per
+	// component per minute, recorded to status_checks.
+	d.StatusMonitor = status.New(pool, status.Options{
+		ListenAddr:    cfg.ListenAddr,
+		GameQueryAddr: cfg.GameQueryAddr,
+		DiscordHealth: discordHealth,
+	})
+	go d.StatusMonitor.Run(ctx)
+	if cfg.GameQueryAddr == "" {
+		slog.Info("status: GAME_QUERY_ADDR not set, game server shown as not monitored")
 	}
 
 	r := chi.NewRouter()
@@ -128,6 +144,7 @@ func run() error {
 	r.Get("/", d.Landing)
 	r.Get("/devlog", d.DevlogList)
 	r.Get("/devlog/{slug}", d.DevlogPost)
+	r.Get("/status", d.Status)
 
 	r.Get("/auth/steam/login", d.SteamLogin)
 	r.Get("/auth/steam/callback", d.SteamCallback)
