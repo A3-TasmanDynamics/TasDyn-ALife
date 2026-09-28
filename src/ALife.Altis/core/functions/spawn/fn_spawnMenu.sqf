@@ -29,13 +29,23 @@
                                 client from fn_playerJoin.sqf), closing the
                                 connection loading screen first
            "onLoad"         -- dialog onLoad: resolve faction from side
-                                player, populate the spawn list, center map
+                                player, populate the spawn list, center map,
+                                install the Escape-blocking key handler
            "selectLocation" -- spawn list onLBSelChanged, 1: CONTROL, 2: SCALAR index
            "spawn"          -- Spawn button action: send the request to the server
+           "keyDown"        -- display KeyDown event, 1: DISPLAY, 2: SCALAR key
+                                code, 3/4/5: shift/ctrl/alt -- blocks Escape
+                                (returns true) and routes it to "escape"
+                                instead of letting the engine close the
+                                dialog; every other key returns false
+           "escape"         -- Escape was pressed: kick to the server
+                                browser rather than leave the player
+                                unspawned with no valid position
            "onUnload"       -- dialog onUnload: clean up the map marker
 
     Returns:
-        Nothing
+        Nothing (except "keyDown", which returns a Boolean the engine
+        requires to decide whether it should still process that key)
 */
 
 params ["_mode"];
@@ -52,6 +62,22 @@ switch (_mode) do {
         disableSerialization;
         private _display = findDisplay 4700;
         if (isNull _display) exitWith {};
+
+        // Selecting a spawn point is mandatory, not optional -- there's no
+        // valid "cancelled out of it" state once the engine's role screen
+        // has already assigned a side (unlike the old single-generic-slot
+        // design). Escape closing this dialog via the engine's own default
+        // handling would leave the player's unit sitting wherever
+        // mission.sqm placed their Editor slot with nothing ever
+        // repositioning them -- the exact "spawning straight into the
+        // playable" bug through a different door. Block it and kick back
+        // to the server browser instead, matching Tonic's own technique
+        // (a KeyDown handler returning true suppresses the engine's
+        // default handling for that key -- confirmed via
+        // fn_displayHandler.sqf, though Tonic's own version just swallows
+        // Escape with no further action; kicking to the lobby here is this
+        // project's own, stricter choice).
+        _display displaySetEventHandler ["KeyDown", "(['keyDown'] + _this) call ALife_fnc_spawnMenu"];
 
         private _faction = [side player] call ALife_fnc_sideToFaction;
         _display setVariable ["alife_spawn_side", _faction];
@@ -154,6 +180,22 @@ switch (_mode) do {
         // fn_spawnPlayer.sqf remoteExecs ALife_fnc_loadingScreen's "close"
         // mode back to this same client once positioning actually lands.
         [player, getPlayerUID player, _spawnKey] remoteExec ["ALife_fnc_spawnPlayer", 2];
+    };
+
+    case "keyDown": {
+        // _args here is the KeyDown event's own [displayOrControl, key,
+        // shift, ctrl, alt] -- 1 is DIK_Escape. Returning true tells the
+        // engine this key was handled, suppressing its default action
+        // (closing the dialog); every other key returns false so normal
+        // input (map pan/zoom, list navigation, ...) keeps working.
+        _args params ["", "_key"];
+        if (_key != 1) exitWith { false };
+        ["escape"] call ALife_fnc_spawnMenu;
+        true
+    };
+
+    case "escape": {
+        [worldName, 1, "You must select a spawn point to join the server.", false] call BIS_fnc_endMission;
     };
 
     case "onUnload": {
