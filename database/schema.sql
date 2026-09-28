@@ -465,7 +465,8 @@ CREATE TABLE staff_notes (
 
 CREATE INDEX idx_staff_notes_player_id ON staff_notes(player_id, created_at DESC);
 
--- Every admin action — see docs/ADMIN_TOOLS.md §9.CREATE TABLE staff_log (
+-- Every admin action — see docs/ADMIN_TOOLS.md §9.
+CREATE TABLE staff_log (
     id                BIGSERIAL PRIMARY KEY,
     staff_player_id   BIGINT REFERENCES players(id) ON DELETE SET NULL,
     target_player_id  BIGINT REFERENCES players(id) ON DELETE SET NULL,  -- NULL: no target (e.g. announcement)

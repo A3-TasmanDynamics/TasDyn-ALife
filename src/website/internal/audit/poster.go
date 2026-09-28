@@ -8,7 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"website/internal/discord"
+	"website/internal/discord/webhook"
 )
 
 // Poster sends staff_log rows to the #staff-log webhook. It wakes on the
@@ -115,7 +115,7 @@ func (p *Poster) postPending(ctx context.Context) {
 	rows.Close()
 
 	for _, r := range pending {
-		if err := discord.PostWebhook(ctx, p.WebhookURL, Format(r.staff, r.target, r.action, r.reason, r.before, r.after, r.source)); err != nil {
+		if err := webhook.Post(ctx, p.WebhookURL, Format(r.staff, r.target, r.action, r.reason, r.before, r.after, r.source)); err != nil {
 			slog.Warn("audit: posting to #staff-log failed, will retry", "staff_log_id", r.id, "error", err)
 			return // keep order; retry from this row next time
 		}
@@ -128,9 +128,9 @@ func (p *Poster) postPending(ctx context.Context) {
 
 // Format renders one staff_log row as a #staff-log line. Names and reasons
 // are player/staff-supplied, so they're markdown-escaped (mentions are
-// already disabled by discord.PostWebhook).
+// already disabled by webhook.Post).
 func Format(staff, target, action, reason string, before, after []byte, source string) string {
-	who := "**" + discord.Escape(staff) + "**"
+	who := "**" + webhook.Escape(staff) + "**"
 	switch {
 	case staff != "":
 	case source == SourceGame:
@@ -140,12 +140,12 @@ func Format(staff, target, action, reason string, before, after []byte, source s
 	default:
 		who = "**System**"
 	}
-	msg := who + " " + discord.Escape(Describe(action, before, after))
+	msg := who + " " + webhook.Escape(Describe(action, before, after))
 	if target != "" {
-		msg += " for **" + discord.Escape(target) + "**"
+		msg += " for **" + webhook.Escape(target) + "**"
 	}
 	if reason != "" {
-		msg += " — " + discord.Escape(reason)
+		msg += " — " + webhook.Escape(reason)
 	}
 	return fmt.Sprintf("%s · _via %s_", msg, source)
 }
