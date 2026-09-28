@@ -123,7 +123,43 @@ func Describe(action string, before, after []byte) string {
 	if action == "rank_reorder" {
 		return "reordered ranks"
 	}
+	if verb, ok := discordModeration[action]; ok {
+		var v struct {
+			User string `json:"user"`
+		}
+		_ = json.Unmarshal(after, &v)
+		if v.User != "" {
+			return verb + " " + v.User + " in Discord"
+		}
+		return verb + " someone in Discord"
+	}
+	if action == "discord.settings" {
+		return "updated the Discord bot settings"
+	}
 	return action
+}
+
+// discordModeration are the staff_log actions the bot writes for
+// moderation done directly in Discord (DISCORD_BOT.md §5.3). after_value
+// holds {"user": target's Discord name, "by": moderator's Discord name}.
+var discordModeration = map[string]string{
+	"discord.kick":        "kicked",
+	"discord.ban":         "banned",
+	"discord.unban":       "unbanned",
+	"discord.timeout":     "timed out",
+	"discord.timeout_end": "removed the timeout on",
+}
+
+// discordActor is the moderator's Discord name from a discord.* row, used
+// when the moderator hasn't linked a website account.
+func discordActor(after []byte) string {
+	var v struct {
+		By string `json:"by"`
+	}
+	if len(after) == 0 || json.Unmarshal(after, &v) != nil {
+		return ""
+	}
+	return v.By
 }
 
 func label(raw []byte) string {

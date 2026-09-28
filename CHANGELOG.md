@@ -934,3 +934,20 @@
   24-hour failure count and a *Sync everyone now* button. The mapping page only offers roles the bot can assign
   (not integration-managed, below the bot's own role) and warns if the bot lacks **Manage Roles**, which `/bot health`
   now also checks. Saving the mapping is logged (`roles.sync_mapping`). TeamSpeak plugs into the same engine later.
+- **Discord bot: stages B0-B2 (DISCORD_BOT.md §11).** *Framework:* buttons, select menus, modals, context
+  menus and autocomplete are routed through the registry, and every click re-checks the clicker's linked-account
+  permission. *Settings:* new `/admin/discord` page (`bot.admin`, new `discord_settings` table) with channel pickers
+  from the real guild for #welcome, #server-status, #staff-log and #bot-admin, toggles for logging Discord-side
+  moderation and reverting role drift, and a *Post welcome message* button. Saves are logged (`discord.settings`).
+  *Players:* `/unlink` (confirm button; synced roles are removed first), `/profile`, `/players` (online total only,
+  per decision 3). `/status` links the status page. *Staff:* `/whois @user` plus a right-click *Whois* menu,
+  `/lookup <steam64|GUID|name|#id>`, `/promote` and `/demote` (rank autocomplete limited to ranks below the caller;
+  demote can remove from staff with `staff.remove`), `/loa [days]`, `/reinstate` and `/sync user|all`. These call the
+  same `staff` functions as the Admin Panel, so seniority rules, Staff Log rows (`via discord`) and role sync are
+  identical. *Events:* members who rejoin get their roles back. A hand-edited synced role is put back within ~5s and
+  reported to #bot-admin. Kicks, bans, unbans and timeouts done directly in Discord become Staff Log rows (Moderation
+  category), attributed to the linked moderator or their Discord name. *Status:* one live #server-status message
+  edited every minute, a notifying post when a component goes down or comes back, and the bot's presence ("Watching
+  12/64 on Altis"). *Other:* #staff-log posts go through the bot when that channel is set (webhook otherwise).
+  `/bot health` also checks View Audit Log. The webhook helper moved to `internal/discord/webhook` to break an import
+  cycle. Intents: Server Members (privileged, already enabled for the app) and Guild Moderation.

@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"website/internal/auth"
-	"website/internal/discord"
+	"website/internal/discord/webhook"
 )
 
 var validPriorities = map[string]bool{"low": true, "normal": true, "high": true, "urgent": true}
@@ -163,7 +163,7 @@ func (d *Deps) CreateTicket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	priorityTag := map[string]string{"low": "", "normal": "", "high": "⚠️ ", "urgent": "🔴 "}[priority]
-	discord.SendWebhook(r.Context(), d.Cfg.DiscordTicketLogWebhook,
+	webhook.Send(r.Context(), d.Cfg.DiscordTicketLogWebhook,
 		"🎫 "+priorityTag+"New support ticket **#"+strconv.FormatInt(ticketID, 10)+"** ("+categoryLabel+", "+priority+"): "+subject)
 
 	http.Redirect(w, r, "/tickets/"+strconv.FormatInt(ticketID, 10), http.StatusSeeOther)

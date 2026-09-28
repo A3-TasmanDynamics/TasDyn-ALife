@@ -1,8 +1,8 @@
-// Package discord covers this app's two Discord integrations, deliberately
-// kept separate (docs/WEBSITE.md §9): one-way webhook logs (this file, no
-// bot needed) and the two-way bot (bot.go, a persistent gateway
-// connection).
-package discord
+// Package webhook posts one-way log messages to Discord webhooks (no bot
+// needed; docs/WEBSITE.md §9). It has no dependencies on the rest of the
+// app, so any package can import it; the bot itself lives in the parent
+// package, internal/discord.
+package webhook
 
 import (
 	"bytes"
@@ -15,25 +15,25 @@ import (
 	"time"
 )
 
-// SendWebhook posts a plain-content message to a Discord webhook URL.
+// Send posts a plain-content message to a Discord webhook URL.
 // Fire-and-forget by design: a webhook failure is logged, never returned to
 // the caller as something that should block or undo the action that
 // triggered it (a ban still applies even if Discord is unreachable) -- see
 // docs/WEBSITE.md §9.
-func SendWebhook(ctx context.Context, webhookURL, content string) {
-	if err := PostWebhook(ctx, webhookURL, content); err != nil {
+func Send(ctx context.Context, webhookURL, content string) {
+	if err := Post(ctx, webhookURL, content); err != nil {
 		slog.Error("discord webhook: post failed", "error", err)
 	}
 }
 
-// PostWebhook is SendWebhook that reports failure, for callers that retry
+// Post is Send that reports failure, for callers that retry
 // (internal/audit's staff-log poster marks a row posted only on success).
 // An empty webhookURL is a no-op success: the category isn't configured.
 //
 // Mentions are always disabled (allowed_mentions.parse = []): content here
 // includes player-chosen text -- names, ticket subjects -- and without this
 // a ticket titled "@everyone" would ping the whole server.
-func PostWebhook(ctx context.Context, webhookURL, content string) error {
+func Post(ctx context.Context, webhookURL, content string) error {
 	if webhookURL == "" {
 		return nil
 	}

@@ -5,7 +5,12 @@ order. [INTEGRATIONS.md](INTEGRATIONS.md) covers *what* each website feature sen
 (and TeamSpeak). This doc covers the bot itself: its commands, buttons, events, channel layout,
 reliability and security.
 
-Today the bot does one thing: `/link <code>` (`src/website/internal/discord/bot.go`).
+**Built so far (stages B0-B2, §11):** the command registry and button routing, `/admin/discord`
+settings, `/link` `/unlink` `/profile` `/status` `/players`, staff `/whois` (and the *Whois* context
+menu) `/lookup` `/promote` `/demote` `/loa` `/reinstate` `/sync`, `/bot health`, the #welcome
+message, rejoin and drift handling, logging of moderation done in Discord, and the live
+#server-status message with presence. Not yet: `/rules` (the site has no rules pages yet) and
+everything from B3 on (tickets, discipline, applications, factions).
 
 ## 1. Principles
 
@@ -267,9 +272,9 @@ command ships with its feature's wave, never ahead of the website feature it cal
 
 | Stage | Contents | Ships with |
 |---|---|---|
-| **B0. Bot core** | Registry + bulk command registration (fixes `/link` vanishing on restart), the permission helper, component routing, the outbox worker, the `discord_settings` table + admin settings page, `/bot health`. | Wave 1 foundations |
-| **B1. Identity & roles** | Onboarding + Link button, `/unlink`, `/profile`, the role-sync adapter, drift detection, audit-log logging, `/whois`, `/lookup`, `/promote` `/demote` `/loa` `/reinstate`, `/sync`. | Wave 1 |
-| **B2. Status & public** | Live status message, up/down posts, presence, `/status`, `/players`, `/rules`. | Wave 1 (status page already exists) |
+| **B0. Bot core** ✅ | Registry + bulk command registration (fixes `/link` vanishing on restart), the permission helper, component routing, the outbox worker, the `discord_settings` table + admin settings page, `/bot health`. | Wave 1 foundations |
+| **B1. Identity & roles** ✅ | Onboarding + Link button, `/unlink`, `/profile`, the role-sync adapter, drift detection, audit-log logging, `/whois`, `/lookup`, `/promote` `/demote` `/loa` `/reinstate`, `/sync`. | Wave 1 |
+| **B2. Status & public** ✅ | Live status message, up/down posts, presence, `/status`, `/players`, `/rules` *(waits for rules pages)*. | Wave 1 (status page already exists) |
 | **B3. Tickets** | Forum sync both ways, `/ticket`, "Report message", `/tickets`. | Wave 2 |
 | **B4. Discipline** | `/case`, `/warn`, `/ban`, `/unban`, `#bans`/`#cases` posts with buttons, DM notices through the outbox. | Wave 2 |
 | **B5. Pipeline** | `#applications` buttons, `/apply`, decision DMs, interview reminders + scheduled events. | Wave 3 |

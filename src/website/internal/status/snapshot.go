@@ -19,6 +19,7 @@ type DayBar struct {
 }
 
 type ComponentView struct {
+	Key         string // "game", "website", "database", "discord"
 	Name        string
 	Description string
 	State       string // "up", "down", "unknown", "unmonitored"
@@ -109,7 +110,7 @@ func (m *Monitor) Snapshot(ctx context.Context, loc *time.Location) (Snapshot, e
 	uptimeN := 0
 
 	for _, c := range m.Components {
-		v := ComponentView{Name: c.Name, Description: c.Description}
+		v := ComponentView{Key: c.Key, Name: c.Name, Description: c.Description}
 		l, has := latestBy[c.Key]
 		switch {
 		case !has || now.Sub(l.checkedAt) > staleAfter:
@@ -185,7 +186,7 @@ func (m *Monitor) Snapshot(ctx context.Context, loc *time.Location) (Snapshot, e
 
 	for _, c := range m.Unmonitored {
 		snap.Components = append(snap.Components, ComponentView{
-			Name: c.Name, Description: c.Description,
+			Key: c.Key, Name: c.Name, Description: c.Description,
 			State: "unmonitored", StateText: "Not monitored yet",
 		})
 	}

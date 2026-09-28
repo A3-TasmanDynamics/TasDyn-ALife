@@ -3,6 +3,7 @@ package discord
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -19,7 +20,73 @@ var requiredPermissions = []permission{
 	{discordgo.PermissionViewChannel, "View Channels"},
 	{discordgo.PermissionSendMessages, "Send Messages"},
 	{discordgo.PermissionEmbedLinks, "Embed Links"},
-	{discordgo.PermissionManageRoles, "Manage Roles"}, // role sync
+	{discordgo.PermissionManageRoles, "Manage Roles"},     // role sync
+	{discordgo.PermissionViewAuditLogs, "View Audit Log"}, // logging moderation done in Discord
+}
+
+// MissingPermissions is the list /bot health shows, for the settings page.
+func (b *Bot) MissingPermissions() ([]string, error) { return b.missingPermissions() }
+
+// Channel is a text channel offered on the settings page.
+type Channel struct {
+	ID       string
+	Name     string
+	Category string
+}
+
+// TextChannels lists the guild's text and announcement channels, in the
+// order Discord shows them (by category, then position).
+func (b *Bot) TextChannels() ([]Channel, error) {
+	if b.guildID == "" {
+		return nil, fmt.Errorf("no DISCORD_GUILD_ID configured")
+	}
+	all, err := b.session.GuildChannels(b.guildID)
+	if err != nil {
+		return nil, err
+	}
+	cats := map[string]*discordgo.Channel{}
+	for _, c := range all {
+		if c.Type == discordgo.ChannelTypeGuildCategory {
+			cats[c.ID] = c
+		}
+	}
+	type sortable struct {
+		Channel
+		catPos, pos int
+	}
+	var list []sortable
+	for _, c := range all {
+		if c.Type != discordgo.ChannelTypeGuildText && c.Type != discordgo.ChannelTypeGuildNews {
+			continue
+		}
+		s := sortable{Channel: Channel{ID: c.ID, Name: c.Name}, catPos: -1, pos: c.Position}
+		if cat := cats[c.ParentID]; cat != nil {
+			s.Category, s.catPos = cat.Name, cat.Position
+		}
+		list = append(list, s)
+	}
+	sort.Slice(list, func(i, j int) bool {
+		if list[i].catPos != list[j].catPos {
+			return list[i].catPos < list[j].catPos
+		}
+		return list[i].pos < list[j].pos
+	})
+	out := make([]Channel, len(list))
+	for i, s := range list {
+		out[i] = s.Channel
+	}
+	return out, nil
+}
+
+// Identity is the bot's own name and the guild's, for the settings page.
+func (b *Bot) Identity() (botName, guildName string) {
+	if u := b.session.State.User; u != nil {
+		botName = u.Username
+	}
+	if g, err := b.session.State.Guild(b.guildID); err == nil {
+		guildName = g.Name
+	}
+	return
 }
 
 func botCommand() *Command {

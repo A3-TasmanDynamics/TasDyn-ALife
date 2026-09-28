@@ -103,13 +103,14 @@ func run() error {
 		botDeps := discord.Deps{
 			// Lazy: the status monitor is created below, after the bot,
 			// because it in turn checks the bot's health.
-			Status: func(ctx context.Context) (string, []string, error) {
+			Status: func(ctx context.Context) (status.Snapshot, error) {
 				if d.StatusMonitor == nil {
-					return "", nil, errors.New("status monitor not running")
+					return status.Snapshot{}, errors.New("status monitor not running")
 				}
-				return d.StatusMonitor.Summary(ctx)
+				return d.StatusMonitor.Snapshot(ctx, time.UTC)
 			},
 			OutboxBacklog: func(ctx context.Context) (int, error) { return discord.Backlog(ctx, pool) },
+			SiteBaseURL:   cfg.SiteBaseURL,
 		}
 		bot, err := discord.NewBot(cfg.DiscordBotToken, pool, cfg.DiscordGuildID, botDeps)
 		if err != nil {
@@ -126,7 +127,10 @@ func run() error {
 			// are mapped on /admin/role-sync.
 			d.Bot = bot
 			d.RoleSyncEngine = &rolesync.Engine{Pool: pool, Adapters: []rolesync.Adapter{discord.RoleSyncAdapter{Bot: bot}}}
+			bot.SetRoleSync(d.RoleSyncEngine)
 			go d.RoleSyncEngine.Run(ctx)
+			// Live #server-status message, up/down posts and presence (§7).
+			go bot.RunStatus(ctx)
 		}
 	} else {
 		slog.Info("discord bot: DISCORD_BOT_TOKEN not set, /link command disabled")
@@ -155,7 +159,13 @@ func run() error {
 	})
 
 	// Every staff_log row (from any source) -> #staff-log (internal/audit).
-	go (&audit.Poster{Pool: pool, WebhookURL: cfg.DiscordStaffLogWebhook}).Run(ctx)
+	// Posts through the bot when a #staff-log channel is set on
+	// /admin/discord, otherwise through DISCORD_STAFF_LOG_WEBHOOK.
+	poster := &audit.Poster{Pool: pool, WebhookURL: cfg.DiscordStaffLogWebhook}
+	if d.Bot != nil {
+		poster.Via = d.Bot.StaffLogPoster
+	}
+	go poster.Run(ctx)
 	if cfg.GameQueryAddr == "" {
 		slog.Info("status: GAME_QUERY_ADDR not set, game server shown as not monitored")
 	}
@@ -258,6 +268,15 @@ func run() error {
 			r.Get("/admin/role-sync", d.RoleSync)
 			r.Post("/admin/role-sync/save", d.RoleSyncSave)
 			r.Post("/admin/role-sync/run", d.RoleSyncRun)
+		})
+
+		// Discord bot settings: channels, toggles, welcome message
+		// (DISCORD_BOT.md §3).
+		r.Group(func(r chi.Router) {
+			r.Use(d.Auth.RequirePermission("bot.admin"))
+			r.Get("/admin/discord", d.DiscordSettings)
+			r.Post("/admin/discord/save", d.DiscordSettingsSave)
+			r.Post("/admin/discord/welcome", d.DiscordPostWelcome)
 		})
 	})
 

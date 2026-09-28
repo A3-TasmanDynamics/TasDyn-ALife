@@ -44,7 +44,6 @@ type Adapter interface {
 	RemoveGroup(ctx context.Context, identity, group string) error
 }
 
-
 var nonSlug = regexp.MustCompile(`[^a-z0-9]+`)
 
 // Slug normalises free text (team names) for entitlement keys.
@@ -252,6 +251,36 @@ func (e *Engine) log(ctx context.Context, playerID int64, platform, action, grou
 		playerID, platform, action, group, causeID, err == nil, errText); lerr != nil {
 		slog.Error("rolesync: writing sync_log failed", "error", lerr)
 	}
+}
+
+// Strip removes every mapped group from one identity -- used just before an
+// account is unlinked, so synced roles don't outlive the link. Unmapped
+// groups are left alone, as always. Returns the groups removed.
+func (e *Engine) Strip(ctx context.Context, playerID int64, platform, identity string) ([]string, error) {
+	for _, a := range e.Adapters {
+		if a.Platform() != platform {
+			continue
+		}
+		maps, err := Mappings(ctx, e.Pool, platform)
+		if err != nil || len(maps) == 0 {
+			return nil, err
+		}
+		current, present, err := a.CurrentGroups(ctx, identity)
+		if err != nil || !present {
+			return nil, err
+		}
+		_, remove := Plan(maps, nil, current)
+		var removed []string
+		for _, g := range remove {
+			err := a.RemoveGroup(ctx, identity, g)
+			e.log(ctx, playerID, platform, "remove", g, 0, err)
+			if err == nil {
+				removed = append(removed, g)
+			}
+		}
+		return removed, nil
+	}
+	return nil, nil
 }
 
 // SyncAll reconciles every player who has linked any platform.
