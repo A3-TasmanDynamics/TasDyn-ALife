@@ -414,3 +414,127 @@ func RunLOASweep(ctx context.Context, pool *pgxpool.Pool, logf func(n int64, err
 		}
 	}
 }
+
+// Profile extras shown in the layout plan's staff profile header.
+type Extras struct {
+	InGameName string     // players.name, "" if never in-game
+	StaffSince *time.Time // most recent time they were given a rank from none
+	Overrides  []string   // "+key" / "-key" from staff_permission_overrides
+}
+
+func ProfileExtras(ctx context.Context, pool *pgxpool.Pool, playerID int64) (Extras, error) {
+	var e Extras
+	err := pool.QueryRow(ctx, `
+		SELECT COALESCE(p.name, ''),
+		       (SELECT max(changed_at) FROM rank_changes
+		        WHERE player_id = p.id AND field = 'staff_rank_id' AND old_value IS NULL AND new_value IS NOT NULL)
+		FROM players p WHERE p.id = $1`, playerID).Scan(&e.InGameName, &e.StaffSince)
+	if err != nil {
+		return e, err
+	}
+	rows, err := pool.Query(ctx, `
+		SELECT CASE WHEN allow THEN '+' ELSE '-' END || command_key
+		FROM staff_permission_overrides WHERE player_id = $1 ORDER BY command_key`, playerID)
+	if err != nil {
+		return e, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var s string
+		if err := rows.Scan(&s); err != nil {
+			return e, err
+		}
+		e.Overrides = append(e.Overrides, s)
+	}
+	return e, rows.Err()
+}
+
+// TimelineEntry is one row of the profile's combined "Notes & history":
+// notes plus rank/status/team changes, newest first.
+type TimelineEntry struct {
+	When time.Time
+	Kind string // "note", "promotion", "status"
+	Body string
+	By   string
+}
+
+var statusWords = map[string]string{"active": "Reinstated to active", "loa": "Put on LOA", "suspended": "Suspended"}
+
+// Timeline merges Notes and History into one list.
+func Timeline(ctx context.Context, pool *pgxpool.Pool, playerID int64) ([]TimelineEntry, error) {
+	notes, err := Notes(ctx, pool, playerID)
+	if err != nil {
+		return nil, err
+	}
+	changes, err := History(ctx, pool, playerID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]TimelineEntry, 0, len(notes)+len(changes))
+	for _, n := range notes {
+		out = append(out, TimelineEntry{When: n.CreatedAt, Kind: n.Kind, Body: n.Body, By: n.Author})
+	}
+	for _, c := range changes {
+		var body string
+		switch c.Field {
+		case "staff_rank_id":
+			switch {
+			case c.Old == "none":
+				body = "Added to staff as " + c.New
+			case c.New == "none":
+				body = "Removed from staff (was " + c.Old + ")"
+			default:
+				body = "Rank: " + c.Old + " → " + c.New
+			}
+		case "staff_status":
+			body = statusWords[c.New]
+			if body == "" {
+				body = "Status: " + c.New
+			}
+		case "staff_team":
+			body = "Team: " + c.Old + " → " + c.New
+		default:
+			body = c.Field + ": " + c.Old + " → " + c.New
+		}
+		if c.Reason != "" {
+			body += ": " + c.Reason
+		}
+		if c.Source != audit.SourceWebsite {
+			body += " (via " + c.Source + ")"
+		}
+		out = append(out, TimelineEntry{When: c.ChangedAt, Kind: "status", Body: body, By: c.Actor})
+	}
+	// Newest first; both inputs are already sorted, so a simple insertion
+	// sort over ~200 rows is plenty.
+	for i := 1; i < len(out); i++ {
+		for j := i; j > 0 && out[j].When.After(out[j-1].When); j-- {
+			out[j], out[j-1] = out[j-1], out[j]
+		}
+	}
+	return out, nil
+}
+
+// Suggestions returns the team and region values already in use, for the
+// placement form's suggestion lists.
+func Suggestions(ctx context.Context, pool *pgxpool.Pool) (teams, regions []string, err error) {
+	rows, err := pool.Query(ctx, `
+		SELECT 't', staff_team FROM players WHERE staff_team IS NOT NULL
+		UNION SELECT 'r', staff_region FROM players WHERE staff_region IS NOT NULL
+		ORDER BY 1, 2`)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var kind, v string
+		if err := rows.Scan(&kind, &v); err != nil {
+			return nil, nil, err
+		}
+		if kind == "t" {
+			teams = append(teams, v)
+		} else {
+			regions = append(regions, v)
+		}
+	}
+	return teams, regions, rows.Err()
+}

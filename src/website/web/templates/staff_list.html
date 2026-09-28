@@ -2,41 +2,43 @@
 <div class="admin-shell">
   {{template "admin_sidebar" .}}
   <div class="admin-content">
-    <h1 class="page-title admin-title">Staff</h1>
-    <p class="admin-sub">Everyone with a staff rank, grouped by team.</p>
+    <h1 class="page-title admin-title">Staff Directory</h1>
+    <p class="admin-sub">Everyone with a staff rank, grouped by team. New staff will join through Applications once that's built.</p>
 
     <section class="admin-stats">
       <div class="admin-stat"><div class="label">Staff</div><div class="value">{{.Total}}</div></div>
-      <div class="admin-stat"><div class="label">On leave / suspended</div><div class="value {{if .OnLeave}}value-amber{{end}}">{{.OnLeave}}</div></div>
-      <div class="admin-stat"><div class="label">Discord not linked</div><div class="value {{if .Unlinked}}value-amber{{end}}">{{.Unlinked}}</div></div>
-      <div class="admin-stat"><div class="label">Teams</div><div class="value">{{len .Teams}}</div></div>
+      <div class="admin-stat"><div class="label">Active</div><div class="value value-green">{{.Active}}</div></div>
+      <div class="admin-stat"><div class="label">On leave (LOA)</div><div class="value value-blue">{{.LOA}}</div></div>
+      <div class="admin-stat"><div class="label">Suspended</div><div class="value value-red">{{.Suspended}}</div></div>
     </section>
 
+    <nav class="filter-pills" aria-label="Filter by status">
+      {{range .Pills}}<a class="filter-pill {{if .Active}}active{{end}}" href="/admin/staff{{if .Value}}?status={{.Value}}{{end}}" {{if .Active}}aria-current="true"{{end}}>{{.Label}}</a>{{end}}
+    </nav>
+
     {{range .Teams}}
-    <h2 class="admin-section-title">{{.Name}} <span class="muted">· {{len .Members}}</span></h2>
-    <section class="card admin-table-card">
-      <table>
-        <thead><tr><th>Name</th><th>Rank</th><th>Status</th><th>Region</th><th>Discord</th></tr></thead>
-        <tbody>
-          {{range .Members}}
-          <tr>
-            <td><a class="staff-name" href="/admin/staff/{{.ID}}">{{if .AvatarURL}}<img class="staff-avatar" src="{{.AvatarURL}}" alt="">{{end}}{{.Name}}</a></td>
-            <td>{{.RankName}}</td>
-            <td><span class="badge badge-staff-{{.Status}}">{{if eq .Status "loa"}}LOA{{else}}{{.Status}}{{end}}</span></td>
-            <td>{{if .Region}}{{.Region}}{{else}}<span class="muted">—</span>{{end}}</td>
-            <td>{{if .DiscordUsername}}{{.DiscordUsername}}{{else}}<span class="badge badge-warn">Not linked</span>{{end}}</td>
-          </tr>
-          {{end}}
-        </tbody>
-      </table>
+    <section class="staff-team">
+      <div class="staff-team-head"><h2>{{.Name}}</h2><span>{{.Count}} {{if eq .Count 1}}member{{else}}members{{end}}</span></div>
+      <div class="staff-rows">
+        {{range .Members}}
+        <a class="staff-row" href="/admin/staff/{{.ID}}">
+          {{if .AvatarURL}}<img class="staff-initials" src="{{.AvatarURL}}" alt="">{{else}}<span class="staff-initials" aria-hidden="true">{{.Initials}}</span>{{end}}
+          <span class="staff-row-name">{{.Name}}</span>
+          <span class="staff-row-rank">{{.RankName}} <span class="muted">&middot; {{.RankLevel}}</span></span>
+          <span class="staff-row-region">{{if .Region}}{{.Region}}{{else}}<span class="muted">—</span>{{end}}</span>
+          <span><span class="status-pill status-pill-{{.Status}}">{{if eq .Status "loa"}}LOA{{else if eq .Status "suspended"}}Suspended{{else}}Active{{end}}</span></span>
+          <span class="staff-row-note">{{.StatusNote}}{{if not .DiscordUsername}}{{if .StatusNote}} · {{end}}Discord not linked{{end}}</span>
+        </a>
+        {{end}}
+      </div>
     </section>
     {{else}}
-    <p class="empty-state">No staff yet.</p>
+    <p class="empty-state">{{if .Filter}}No staff with that status.{{else}}No staff yet.{{end}}</p>
     {{end}}
 
     {{if .CanAdd}}
-    <h2 class="admin-section-title">Add a staff member</h2>
-    <section class="card">
+    <details class="card staff-add">
+      <summary>Add a staff member manually</summary>
       <form method="post" action="/admin/staff/add">
         <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
         <div class="field-grid">
@@ -48,7 +50,7 @@
             <label for="rank_id">Rank</label>
             <select id="rank_id" name="rank_id" required>
               <option value="">Choose…</option>
-              {{range .Ranks}}<option value="{{.ID}}">{{.Name}}</option>{{end}}
+              {{range .Ranks}}<option value="{{.ID}}">{{.Name}} ({{.Level}})</option>{{end}}
             </select>
           </div>
         </div>
@@ -56,10 +58,10 @@
           <label for="add_reason">Reason</label>
           <input id="add_reason" name="reason" maxlength="500" required placeholder="e.g. Application #12 accepted">
         </div>
-        <p class="hint">You can only assign ranks below your own. The change is logged and posted to #staff-log.</p>
-        <button class="cta" type="submit">Add to staff</button>
+        <p class="hint">Until Applications exist, this is how staff are added. You can only assign ranks below your own; the change is logged and posted to #staff-log.</p>
+        <button class="cta small" type="submit">Add to staff</button>
       </form>
-    </section>
+    </details>
     {{end}}
   </div>
 </div>

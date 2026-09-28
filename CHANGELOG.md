@@ -887,3 +887,12 @@
   permission and re-checked on submit; new `auth.RequirePermission` middleware checks live on every request.
   New `staff.notes` / `staff.team` permissions, `players.staff_team` / `staff_region` columns (team
   changes are captured by the change trigger for role sync), `staff_notes` table.
+- **Staff pages match the updated layout plan.** The admin sidebar now follows the plan's sections (Overview,
+  Moderation, Players, Staff, Server) on every admin page, with unbuilt pages marked *Soon*. Staff Directory: Staff /
+  Active / On leave / Suspended counts, status filter pills, one row-link per member (avatar or initials, rank ·
+  level, region, status pill, note such as *Back 12 Oct · exams*), LOA shown in blue; manual add moved into a
+  collapsed section until Applications exist. Staff profile: header card (status pill, rank · level · team ·
+  region, staff-since, in-game name, Steam64, Discord) with *Put on LOA* / *Suspend* / *Reinstate* dialogs,
+  one *Placement* form for rank/team/region (shows permission overrides), a combined *Notes & history* timeline,
+  and a *Remove from staff* strip with a confirmation dialog. Dialog behaviour lives in `/static/admin.js`. Not
+  yet shown (their features aren't built): case activity, notifications bell, sidebar search.
