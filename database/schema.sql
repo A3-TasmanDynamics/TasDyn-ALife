@@ -751,6 +751,26 @@ CREATE TRIGGER trg_player_sessions_sync_last_seen
     AFTER INSERT OR UPDATE OF disconnected_at ON player_sessions
     FOR EACH ROW EXECUTE FUNCTION sync_last_seen_cache();
 
+-- Discord outbox (docs/DISCORD_BOT.md §8): messages a person must receive,
+-- queued in the same transaction as the action; internal/discord delivers
+-- them with retries. gave_up_at = permanently undeliverable (DMs closed,
+-- unknown channel) or still failing after 24h.
+CREATE TABLE discord_outbox (
+    id            BIGSERIAL PRIMARY KEY,
+    kind          TEXT NOT NULL CHECK (kind IN ('dm', 'channel_post')),
+    target        TEXT NOT NULL,            -- user ID (dm) or channel ID
+    payload       JSONB NOT NULL,
+    dedupe_key    TEXT UNIQUE,
+    attempts      INTEGER NOT NULL DEFAULT 0,
+    next_attempt  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    sent_at       TIMESTAMPTZ,
+    gave_up_at    TIMESTAMPTZ,
+    last_error    TEXT,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_discord_outbox_due ON discord_outbox(next_attempt) WHERE sent_at IS NULL AND gave_up_at IS NULL;
+
 -- ---------------------------------------------------------------------------
 -- Change capture: every rank/role change is logged once, here, whichever
 -- tool made it (website, Discord bot, game server, or a manual psql edit).

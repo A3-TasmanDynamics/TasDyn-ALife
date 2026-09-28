@@ -28,7 +28,7 @@ func TestPosterPostsAndMarksOnce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer pool.Close()
+	t.Cleanup(pool.Close) // registered first so it runs last, after the other cleanups
 
 	var mu sync.Mutex
 	var bodies []map[string]any

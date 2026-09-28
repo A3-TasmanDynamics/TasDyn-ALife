@@ -4,35 +4,43 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"website/internal/auth"
 )
 
-// Bot is the two-way Discord integration (docs/WEBSITE.md §9) -- a
-// persistent gateway connection, unlike webhook.go's fire-and-forget HTTP
-// POSTs. Currently implements account linking (`/link <code>`, the
-// Discord-side counterpart to the member portal's OAuth "Connect Discord"
-// button). Ticket thread creation/mirroring is designed in WEBSITE.md §9
-// but not yet wired here -- see the TODO at the bottom of this file; do not
-// assume ticket sync is live just because the bot process is running.
+// Bot is the Discord bot (docs/DISCORD_BOT.md). It runs inside the website
+// process and calls the same code the website does; commands live in
+// cmd_*.go and are registered through registry.go.
+//
+// Ticket thread sync (DISCORD_BOT.md §6) is not built yet -- do not assume
+// it's live just because the bot process is running.
 type Bot struct {
 	session *discordgo.Session
 	pool    *pgxpool.Pool
 	guildID string
+	deps    Deps
 
-	registeredCommandID string
+	commands map[string]*Command
+}
+
+// Deps are website capabilities the bot's commands use, passed in from
+// main.go so this package doesn't import the handlers.
+type Deps struct {
+	// Status returns the public status page's current summary lines, or
+	// nil if status monitoring isn't running.
+	Status func(ctx context.Context) (headline string, lines []string, err error)
+	// OutboxBacklog reports undelivered outbox messages for /bot health.
+	OutboxBacklog func(ctx context.Context) (int, error)
 }
 
 // NewBot constructs a Bot. Returns an error only for a malformed token --
 // actually connecting happens in Start, so main.go can decide what "the bot
-// failed to start" should mean (currently: log and keep serving HTTP,
-// same "Discord being unconfigured/unreachable must never take the site
-// down" rule as webhook.go).
-func NewBot(token string, pool *pgxpool.Pool, guildID string) (*Bot, error) {
+// failed to start" should mean (currently: log and keep serving HTTP --
+// Discord being unconfigured/unreachable must never take the site down).
+func NewBot(token string, pool *pgxpool.Pool, guildID string, deps Deps) (*Bot, error) {
 	if token == "" {
 		return nil, fmt.Errorf("discord: bot token is empty")
 	}
@@ -40,14 +48,20 @@ func NewBot(token string, pool *pgxpool.Pool, guildID string) (*Bot, error) {
 	if err != nil {
 		return nil, fmt.Errorf("discord: creating session: %w", err)
 	}
-	return &Bot{session: session, pool: pool, guildID: guildID}, nil
+	session.Identify.Intents = discordgo.IntentsGuilds
+	b := &Bot{session: session, pool: pool, guildID: guildID, deps: deps}
+	b.commands = b.registry()
+	return b, nil
 }
 
-// Start opens the gateway connection and registers the /link command.
-// guildID scopes the command to one server for near-instant availability in
-// dev/staging; an empty guildID registers it globally instead, which can
-// take up to an hour to propagate on Discord's side -- expected, not a bug,
-// if a freshly-registered global command doesn't show up right away.
+// Start opens the gateway connection and registers every command in one
+// bulk overwrite. That's idempotent: removed commands disappear, changed
+// ones update, and nothing is deleted on shutdown -- the old behaviour
+// (delete /link in Stop) made the command vanish during every restart.
+//
+// guildID scopes commands to one server so they update instantly; an empty
+// guildID registers them globally, which Discord can take up to an hour to
+// propagate.
 func (b *Bot) Start(ctx context.Context) error {
 	b.session.AddHandler(b.handleInteraction)
 
@@ -55,25 +69,20 @@ func (b *Bot) Start(ctx context.Context) error {
 		return fmt.Errorf("discord: opening gateway session: %w", err)
 	}
 
-	cmd, err := b.session.ApplicationCommandCreate(b.session.State.User.ID, b.guildID, &discordgo.ApplicationCommand{
-		Name:        "link",
-		Description: "Link your Discord account to your TasDyn-ALife player account",
-		Options: []*discordgo.ApplicationCommandOption{
-			{
-				Type:        discordgo.ApplicationCommandOptionString,
-				Name:        "code",
-				Description: "The code shown on the website's Dashboard",
-				Required:    true,
-			},
-		},
-	})
-	if err != nil {
-		_ = b.session.Close()
-		return fmt.Errorf("discord: registering /link command: %w", err)
+	defs := make([]*discordgo.ApplicationCommand, 0, len(b.commands))
+	for _, c := range b.commands {
+		defs = append(defs, c.Def)
 	}
-	b.registeredCommandID = cmd.ID
+	if _, err := b.session.ApplicationCommandBulkOverwrite(b.session.State.User.ID, b.guildID, defs); err != nil {
+		_ = b.session.Close()
+		return fmt.Errorf("discord: registering commands: %w", err)
+	}
 
-	slog.Info("discord bot: connected and /link registered", "guild_id", b.guildID)
+	names := make([]string, 0, len(defs))
+	for _, d := range defs {
+		names = append(names, "/"+d.Name)
+	}
+	slog.Info("discord bot: connected", "guild_id", b.guildID, "commands", strings.Join(names, " "))
 	return nil
 }
 
@@ -84,72 +93,9 @@ func (b *Bot) Health() (bool, time.Duration) {
 }
 
 func (b *Bot) Stop() {
-	if b.registeredCommandID != "" && b.session.State.User != nil {
-		_ = b.session.ApplicationCommandDelete(b.session.State.User.ID, b.guildID, b.registeredCommandID)
-	}
 	_ = b.session.Close()
 }
 
-func (b *Bot) handleInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	if i.Type != discordgo.InteractionApplicationCommand {
-		return
-	}
-	data := i.ApplicationCommandData()
-	if data.Name != "link" {
-		return
-	}
-
-	var code string
-	for _, opt := range data.Options {
-		if opt.Name == "code" {
-			code = opt.StringValue()
-		}
-	}
-
-	// The invoking user's Discord identity comes from Discord itself
-	// (i.Member.User over a guild interaction, i.User over a DM) -- never
-	// taken from anything the command's own arguments could claim, which is
-	// exactly the property that makes this flow trustworthy without a
-	// second OAuth round-trip.
-	discordUser := i.User
-	if discordUser == nil && i.Member != nil {
-		discordUser = i.Member.User
-	}
-	if discordUser == nil {
-		b.reply(s, i, "Couldn't determine your Discord identity -- try again in a server channel or DM.")
-		return
-	}
-
-	_, err := auth.ConsumeLinkCode(context.Background(), b.pool, code, discordUser.ID, discordUser.Username)
-	switch {
-	case err == nil:
-		b.reply(s, i, "✅ Linked! Your website account is now connected to this Discord account.")
-	case err == auth.ErrLinkCodeInvalid:
-		b.reply(s, i, "That code is invalid or has expired. Generate a new one from the website's Settings page.")
-	case err == auth.ErrDiscordAlreadyLinked:
-		b.reply(s, i, "This Discord account is already linked to a different player account.")
-	default:
-		slog.Error("discord bot: /link failed", "error", err)
-		b.reply(s, i, "Something went wrong linking your account -- please try again shortly.")
-	}
-}
-
-func (b *Bot) reply(s *discordgo.Session, i *discordgo.InteractionCreate, content string) {
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: content,
-			Flags:   discordgo.MessageFlagsEphemeral, // only the invoking user sees the result -- it's not chat content
-		},
-	})
-	if err != nil {
-		slog.Error("discord bot: replying to interaction failed", "error", err)
-	}
-}
-
-// TODO(WEBSITE.md §9, Phase W): two-way support-ticket sync --
-// CreateThreadForTicket(ticketID) on new ticket, PostMessageToThread(...)
-// on new web reply, and a MessageCreate handler here mirroring a staff
-// reply from the thread back into support_ticket_messages. Not built yet;
-// account linking above was the concretely-requested, self-contained piece
-// to ship first.
+// Session exposes the gateway session to other parts of the website that
+// send through the bot (the outbox worker).
+func (b *Bot) Session() *discordgo.Session { return b.session }

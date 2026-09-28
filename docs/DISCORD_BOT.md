@@ -209,13 +209,14 @@ database outbox:
 ```sql
 CREATE TABLE discord_outbox (
     id            BIGSERIAL PRIMARY KEY,
-    kind          TEXT NOT NULL CHECK (kind IN ('dm', 'channel_post', 'thread_post', 'role_sync')),
+    kind          TEXT NOT NULL CHECK (kind IN ('dm', 'channel_post')),  -- more kinds added as features need them
     target        TEXT NOT NULL,            -- user ID, channel ID or thread ID
     payload       JSONB NOT NULL,           -- message content / embed / buttons
     dedupe_key    TEXT UNIQUE,              -- e.g. 'ban-notice:9123' so a retry never double-sends
     attempts      INTEGER NOT NULL DEFAULT 0,
     next_attempt  TIMESTAMPTZ NOT NULL DEFAULT now(),
     sent_at       TIMESTAMPTZ,
+    gave_up_at    TIMESTAMPTZ,              -- permanently undeliverable, or still failing after 24h
     last_error    TEXT,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );

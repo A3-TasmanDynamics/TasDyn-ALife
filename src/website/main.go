@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"os"
@@ -97,7 +98,18 @@ func run() error {
 	// internal/discord/bot.go and docs/WEBSITE.md §9.
 	var discordHealth func() (bool, time.Duration)
 	if cfg.DiscordBotToken != "" {
-		bot, err := discord.NewBot(cfg.DiscordBotToken, pool, cfg.DiscordGuildID)
+		botDeps := discord.Deps{
+			// Lazy: the status monitor is created below, after the bot,
+			// because it in turn checks the bot's health.
+			Status: func(ctx context.Context) (string, []string, error) {
+				if d.StatusMonitor == nil {
+					return "", nil, errors.New("status monitor not running")
+				}
+				return d.StatusMonitor.Summary(ctx)
+			},
+			OutboxBacklog: func(ctx context.Context) (int, error) { return discord.Backlog(ctx, pool) },
+		}
+		bot, err := discord.NewBot(cfg.DiscordBotToken, pool, cfg.DiscordGuildID, botDeps)
 		if err != nil {
 			slog.Error("discord bot: failed to initialize, continuing without it", "error", err)
 		} else if err := bot.Start(ctx); err != nil {
@@ -105,6 +117,9 @@ func run() error {
 		} else {
 			defer bot.Stop()
 			discordHealth = bot.Health
+			// Reliable DMs/posts (docs/DISCORD_BOT.md §8). Messages queued
+			// while the bot is down wait in the table until next start.
+			go (&discord.Outbox{Pool: pool, Sender: bot.Session()}).Run(ctx)
 		}
 	} else {
 		slog.Info("discord bot: DISCORD_BOT_TOKEN not set, /link command disabled")

@@ -858,3 +858,13 @@
   newly set webhook isn't flooded). **Security fixes:** Discord webhook posts now disable all mentions (a
   ticket subject of `@everyone` would have pinged the server) and failed posts no longer log the webhook
   URL (it contains the secret token). The admin staff log shows readable changes and a *Via* column.
+- **Discord bot core (DISCORD_BOT.md stage B0).** Commands now live in a registry and are registered in one bulk
+  overwrite on startup; the bot no longer deletes `/link` on shutdown, so commands don't vanish during restarts.
+  Staff commands are permission-checked against the caller's *linked website account* (never Discord roles),
+  and suspended/LOA staff are refused. New `auth.Can` + permission catalogue (`internal/auth/permissions.go`):
+  per-player override first, else rank level >= the key's default level, with `NoOverride` keys (staff edits,
+  role management, server control) that can only come from rank; unknown keys are an error, never a silent
+  yes/no. New commands: `/status` (the status page as text) and `/bot health` (gateway, outbox backlog, missing
+  guild permissions, warns if the bot has Administrator). New `discord_outbox` table + worker for reliable DMs/
+  channel posts: queued in the action's transaction, de-duplicated, retried with backoff, given up on when DMs
+  are closed or after 24h, mentions always disabled. Integration tests for `auth.Can` and the outbox.
