@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"website/internal/audit"
 	"website/internal/auth"
 	"website/internal/config"
 	"website/internal/csrf"
@@ -121,6 +122,9 @@ func run() error {
 	// Steam profile/ban cache + BattlEye GUID backfill (internal/steam).
 	d.Steam = &steam.Refresher{Pool: pool, Client: steam.NewClient(cfg.SteamWebAPIKey)}
 	go d.Steam.Run(ctx)
+
+	// Every staff_log row (from any source) -> #staff-log (internal/audit).
+	go (&audit.Poster{Pool: pool, WebhookURL: cfg.DiscordStaffLogWebhook}).Run(ctx)
 	if cfg.GameQueryAddr == "" {
 		slog.Info("status: GAME_QUERY_ADDR not set, game server shown as not monitored")
 	}
