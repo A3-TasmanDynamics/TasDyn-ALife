@@ -925,3 +925,12 @@
   badge for players with unreviewed anti-cheat flags, and the 10 most recent staff actions linking to the full Staff
   Log. Open cases, the cases-per-day chart, *My activity*, notifications and the essential-notice banner stay as
   placeholders until Cases and notifications exist.
+- **Discord role sync (INTEGRATIONS §2.3).** Ranks, teams and faction levels become platform-neutral *entitlements*
+  (`linked`, `staff_rank:admin`, `staff_loa`, `faction_rank:police:3`…) mapped to Discord roles on the new
+  `/admin/role-sync` page (`roles.manage`; new `platform_group_map` table). The engine (`internal/rolesync`) syncs a
+  player when the change trigger's `NOTIFY rank_changed` fires and in a full pass every 15 minutes, and **only ever
+  adds or removes mapped roles** -- hand-given roles, boosters and bot roles are never touched. LOA swaps the rank role
+  for the LOA role; suspension removes both. Every add/remove is written to `sync_log` and shown on the page with a
+  24-hour failure count and a *Sync everyone now* button. The mapping page only offers roles the bot can assign
+  (not integration-managed, below the bot's own role) and warns if the bot lacks **Manage Roles**, which `/bot health`
+  now also checks. Saving the mapping is logged (`roles.sync_mapping`). TeamSpeak plugs into the same engine later.

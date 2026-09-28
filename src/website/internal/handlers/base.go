@@ -13,7 +13,9 @@ import (
 	"website/internal/auth"
 	"website/internal/config"
 	"website/internal/csrf"
+	"website/internal/discord"
 	"website/internal/render"
+	"website/internal/rolesync"
 	"website/internal/status"
 	"website/internal/steam"
 )
@@ -36,6 +38,11 @@ type Deps struct {
 
 	// Steam refreshes cached Steam profile/ban data (internal/steam).
 	Steam *steam.Refresher
+
+	// Bot and RoleSyncEngine are nil when the Discord bot isn't running;
+	// the role sync page then explains why instead of failing.
+	Bot            *discord.Bot
+	RoleSyncEngine *rolesync.Engine
 }
 
 // Base is the common template data every page needs -- embedded into each

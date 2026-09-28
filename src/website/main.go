@@ -23,6 +23,7 @@ import (
 	"website/internal/discord"
 	"website/internal/handlers"
 	"website/internal/render"
+	"website/internal/rolesync"
 	"website/internal/staff"
 	"website/internal/status"
 	"website/internal/steam"
@@ -121,6 +122,11 @@ func run() error {
 			// Reliable DMs/posts (docs/DISCORD_BOT.md §8). Messages queued
 			// while the bot is down wait in the table until next start.
 			go (&discord.Outbox{Pool: pool, Sender: bot.Session()}).Run(ctx)
+			// Role sync (docs/INTEGRATIONS.md §2.3): does nothing until roles
+			// are mapped on /admin/role-sync.
+			d.Bot = bot
+			d.RoleSyncEngine = &rolesync.Engine{Pool: pool, Adapters: []rolesync.Adapter{discord.RoleSyncAdapter{Bot: bot}}}
+			go d.RoleSyncEngine.Run(ctx)
 		}
 	} else {
 		slog.Info("discord bot: DISCORD_BOT_TOKEN not set, /link command disabled")
@@ -247,6 +253,11 @@ func run() error {
 			r.Post("/admin/roles/move", d.RoleMove)
 			r.Post("/admin/roles/create", d.RoleCreate)
 			r.Post("/admin/roles/delete", d.RoleDelete)
+
+			// Discord role sync mapping (INTEGRATIONS §2.3).
+			r.Get("/admin/role-sync", d.RoleSync)
+			r.Post("/admin/role-sync/save", d.RoleSyncSave)
+			r.Post("/admin/role-sync/run", d.RoleSyncRun)
 		})
 	})
 
