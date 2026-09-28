@@ -786,3 +786,15 @@
   token hashed exactly the way `internal/auth/session.go` does it) to load `/dashboard` as an
   authenticated player without a real Steam login, confirmed the page renders correctly with real
   data and no template errors, then deleted the test session and reverted the test name change.
+- `docs/OPERATIONS.md`: design for in-house staff operations tooling (staff lifecycle, structured
+  disciplinary cases, faction records, staff meetings + internal wiki), modelled on the old
+  Gamepanel project's feature set; `docs/ROADMAP.md` updated to match. Deliberately no Google
+  Docs/Sheets integration -- everything is built into the website.
+- `src/website`: **staff lifecycle status** (first slice of `docs/OPERATIONS.md`). New
+  `players.staff_status` (`active`/`suspended`/`loa`, CHECK-constrained), `staff_status_reason` and
+  `staff_status_until` columns. A suspended or on-LOA staff member keeps their rank, but
+  `resolvePanelAccess` now zeroes both Admin and Support panel access unless the status is
+  `active`. `RequireAdminPanel`/`RequireSupportPanel` became `*Authenticator` methods so the deny
+  path can look up and show the specific reason ("suspended: ...") instead of a generic 403.
+  `go build`/`go vet` pass. **Not yet verified end-to-end**: the column migration has not been
+  applied to the dev database yet, so the running site hasn't been exercised with this change.

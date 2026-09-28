@@ -62,13 +62,24 @@ func generateToken() (raw string, hash string, err error) {
 // staff_permission_overrides row for 'panel.admin'/'panel.support' says
 // otherwise. A player with no staff_rank_id gets false/false without
 // needing a rank row to exist at all.
+//
+// A suspended/LOA staff member (docs/OPERATIONS.md §3) gets false/false
+// here regardless of rank/overrides -- checked last, after overrides, so a
+// per-player override can never be used to bypass a lifecycle suspension
+// (the override mechanism grants/revokes specific panels, it was never
+// meant to double as a "staff member is currently inactive" escape hatch).
+// This is resolved once at login, same as the rank/override checks above
+// it -- see CreateSession's own doc comment for why a mid-session status
+// change doesn't take effect until next login without also revoking the
+// session row directly.
 func resolvePanelAccess(ctx context.Context, pool *pgxpool.Pool, playerID int64) (adminAccess, supportAccess bool, err error) {
+	var staffStatus string
 	err = pool.QueryRow(ctx, `
-		SELECT COALESCE(sr.default_admin_panel, false), COALESCE(sr.default_support_panel, false)
+		SELECT COALESCE(sr.default_admin_panel, false), COALESCE(sr.default_support_panel, false), p.staff_status
 		FROM players p
 		LEFT JOIN staff_ranks sr ON sr.id = p.staff_rank_id
 		WHERE p.id = $1
-	`, playerID).Scan(&adminAccess, &supportAccess)
+	`, playerID).Scan(&adminAccess, &supportAccess, &staffStatus)
 	if err != nil {
 		return false, false, err
 	}
@@ -95,8 +106,14 @@ func resolvePanelAccess(ctx context.Context, pool *pgxpool.Pool, playerID int64)
 			supportAccess = allow
 		}
 	}
+	if err := rows.Err(); err != nil {
+		return false, false, err
+	}
 
-	return adminAccess, supportAccess, rows.Err()
+	if staffStatus != "active" {
+		return false, false, nil
+	}
+	return adminAccess, supportAccess, nil
 }
 
 // CreateSession resolves panel access, inserts a web_sessions row, and sets
@@ -221,6 +238,36 @@ func RequireLogin(next http.Handler) http.Handler {
 	})
 }
 
+// denialReason looks up *why* a player lacks panel access, only called on
+// the deny path below (never on an allowed request) -- distinguishes "your
+// rank/overrides never granted this" from "you're currently suspended/on
+// LOA" (docs/OPERATIONS.md §3), so a staff member sees why, not a generic
+// 403. Best-effort: a lookup failure here just falls back to the generic
+// message rather than failing the whole (already-denying) request.
+func (a *Authenticator) denialReason(ctx context.Context, playerID int64) string {
+	var status string
+	var reason *string
+	if err := a.Pool.QueryRow(ctx,
+		`SELECT staff_status, staff_status_reason FROM players WHERE id = $1`, playerID,
+	).Scan(&status, &reason); err != nil {
+		return ""
+	}
+	switch status {
+	case "suspended":
+		if reason != nil && *reason != "" {
+			return "You're currently suspended from staff duties: " + *reason
+		}
+		return "You're currently suspended from staff duties."
+	case "loa":
+		if reason != nil && *reason != "" {
+			return "You're currently on a leave of absence: " + *reason
+		}
+		return "You're currently on a leave of absence."
+	default:
+		return ""
+	}
+}
+
 // RequireAdminPanel 403s (not just redirects) when the session lacks admin
 // access -- this re-checks the session row's cached flag on every request,
 // same as RequireSupportPanel. It does NOT re-resolve rank/overrides from
@@ -229,7 +276,7 @@ func RequireLogin(next http.Handler) http.Handler {
 // or update the session row itself, not wait for this middleware to notice
 // -- see docs/WEBSITE.md §10 for the write-path recheck this alone doesn't
 // cover.
-func RequireAdminPanel(next http.Handler) http.Handler {
+func (a *Authenticator) RequireAdminPanel(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sess, ok := FromContext(r.Context())
 		if !ok {
@@ -237,14 +284,18 @@ func RequireAdminPanel(next http.Handler) http.Handler {
 			return
 		}
 		if !sess.AdminPanelAccess {
-			http.Error(w, "403 Forbidden: Admin Panel access required", http.StatusForbidden)
+			msg := "403 Forbidden: Admin Panel access required"
+			if reason := a.denialReason(r.Context(), sess.PlayerID); reason != "" {
+				msg = reason
+			}
+			http.Error(w, msg, http.StatusForbidden)
 			return
 		}
 		next.ServeHTTP(w, r)
 	})
 }
 
-func RequireSupportPanel(next http.Handler) http.Handler {
+func (a *Authenticator) RequireSupportPanel(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sess, ok := FromContext(r.Context())
 		if !ok {
@@ -252,7 +303,11 @@ func RequireSupportPanel(next http.Handler) http.Handler {
 			return
 		}
 		if !sess.SupportPanelAccess {
-			http.Error(w, "403 Forbidden: Support Panel access required", http.StatusForbidden)
+			msg := "403 Forbidden: Support Panel access required"
+			if reason := a.denialReason(r.Context(), sess.PlayerID); reason != "" {
+				msg = reason
+			}
+			http.Error(w, msg, http.StatusForbidden)
 			return
 		}
 		next.ServeHTTP(w, r)
