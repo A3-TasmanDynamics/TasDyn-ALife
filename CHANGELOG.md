@@ -895,3 +895,9 @@
   only ranks below your own level, only keys you hold yourself, only catalogue keys, never the last level-100
   rank. The *Faction rank names* tab edits police/EMS level names (`faction_rank_names`, `factions.configure`).
   Every change is logged with before/after values. Renderer gains `inc`/`list` template helpers.
+- **Staff Log page (`/admin/staff-log`, layout plan board).** Category pills (Moderation, Economy, Tickets, Database,
+  Permissions) with coloured dots, filters for details search, staff member, target, action and date range (24h / 7d
+  default / 30d / all), 50 per page with Newer/Older keyset paging and a total count, and an entry inspector with the
+  before/after payload. Actions display in the plan's dotted style (`staff.status`, `roles.edit`…). *Export CSV*
+  downloads everything matching the filters (up to 10,000 rows) with spreadsheet-formula injection neutralised.
+  The board's *Origin* IP isn't shown: IPs aren't recorded in the staff log. Dashboard links to the full log.

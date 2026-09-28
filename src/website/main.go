@@ -226,6 +226,10 @@ func run() error {
 		// for roles.manage OR factions.configure (checked in the handler);
 		// rank changes need roles.manage, and internal/roles enforces the
 		// level and "only grant what you hold" rules.
+		// Staff Log (GAMEPANEL_PARITY §2.4) -- Admin Panel access is enough to read it.
+		r.Get("/admin/staff-log", d.StaffLog)
+		r.Get("/admin/staff-log.csv", d.StaffLogCSV)
+
 		r.Get("/admin/roles", d.Roles)
 		r.Post("/admin/roles/faction-names", d.RoleFactionNames)
 		r.Group(func(r chi.Router) {

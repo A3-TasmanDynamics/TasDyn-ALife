@@ -1,0 +1,91 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content stafflog-page">
+    <div class="stafflog-main">
+      <div class="stafflog-head">
+        <div>
+          <h1 class="page-title admin-title">Staff Log</h1>
+          <p class="admin-sub">Every staff action, in-game and on the web. Entries are append-only and can't be edited or deleted.</p>
+        </div>
+        <a class="btn" href="/admin/staff-log.csv{{qset .Query "before" "" "after" "" "entry" ""}}">Export CSV</a>
+      </div>
+
+      <nav class="filter-pills" aria-label="Category">
+        <a class="filter-pill {{if not .Filter.Category}}active{{end}}" href="/admin/staff-log{{qset .Query "cat" "" "before" "" "after" "" "entry" ""}}" {{if not .Filter.Category}}aria-current="true"{{end}}>All</a>
+        {{range .Categories}}
+        <a class="filter-pill {{if eq . $.Filter.Category}}active{{end}}" href="/admin/staff-log{{qset $.Query "cat" . "before" "" "after" "" "entry" ""}}" {{if eq . $.Filter.Category}}aria-current="true"{{end}}><span class="cat-dot cat-{{.}}" aria-hidden="true"></span>{{.}}</a>
+        {{end}}
+      </nav>
+
+      <form class="stafflog-filters" method="get" action="/admin/staff-log">
+        {{if .Filter.Category}}<input type="hidden" name="cat" value="{{.Filter.Category}}">{{end}}
+        <label class="search-box"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input name="q" value="{{.Filter.Search}}" aria-label="Search the staff log" placeholder="Search details…"></label>
+        <select name="staff" aria-label="Staff member">
+          <option value="">All staff</option>
+          {{range .Staff}}<option value="{{.ID}}" {{if eq .ID $.Filter.StaffID}}selected{{end}}>{{.Name}}</option>{{end}}
+        </select>
+        <input name="target" value="{{.Filter.Target}}" aria-label="Target" placeholder="Target player or staff">
+        <select name="action" aria-label="Action">
+          <option value="">Any action</option>
+          {{range .Actions}}<option value="{{.Value}}" {{if eq .Value $.Filter.Action}}selected{{end}}>{{.Label}}</option>{{end}}
+        </select>
+        <select name="range" aria-label="Date range">
+          {{range .Ranges}}<option value="{{.Value}}" {{if eq .Value $.Range}}selected{{end}}>{{.Label}}</option>{{end}}
+        </select>
+        <button class="btn" type="submit">Filter</button>
+      </form>
+
+      <div class="stafflog-table" role="table" aria-label="Staff log entries">
+        <div class="stafflog-row stafflog-th" role="row">
+          <span role="columnheader">Time</span><span role="columnheader">Staff</span><span role="columnheader">Action</span><span role="columnheader">Target</span><span role="columnheader">Details</span><span role="columnheader">Source</span>
+        </div>
+        <div class="stafflog-body">
+          {{range .Page.Entries}}
+          <a class="stafflog-row {{if and $.Selected (eq .ID $.Selected.ID)}}selected{{end}}" role="row" href="/admin/staff-log{{qset $.Query "entry" (i64 .ID)}}">
+            <span class="muted" role="cell">{{.Time.Format "01/02 · 15:04"}}</span>
+            <span class="strong" role="cell">{{.Staff}}</span>
+            <span class="stafflog-action" role="cell"><span class="cat-dot cat-{{.Category}}" aria-hidden="true"></span><code>{{.DisplayAction}}</code></span>
+            <span class="ellipsis" role="cell">{{if .Target}}{{.Target}}{{else}}<span class="muted">—</span>{{end}}</span>
+            <span class="muted ellipsis" role="cell">{{.Summary}}</span>
+            <span class="muted small" role="cell">{{.Source}}</span>
+          </a>
+          {{else}}
+          <p class="empty-state">No entries match these filters.</p>
+          {{end}}
+        </div>
+        <div class="stafflog-foot">
+          <span>{{len .Page.Entries}} shown &middot; 50 per page &middot; {{.Page.Total}} {{if eq .Page.Total 1}}entry{{else}}entries{{end}}</span>
+          <div class="pager">
+            {{if .Page.HasNewer}}{{with index .Page.Entries 0}}<a class="btn small-btn" href="/admin/staff-log{{qset $.Query "after" (i64 .ID) "before" "" "entry" ""}}">Newer</a>{{end}}{{else}}<span class="btn small-btn disabled" aria-disabled="true">Newer</span>{{end}}
+            {{if .Page.HasOlder}}{{with index .Page.Entries (dec (len .Page.Entries))}}<a class="btn small-btn" href="/admin/staff-log{{qset $.Query "before" (i64 .ID) "after" "" "entry" ""}}">Older</a>{{end}}{{else}}<span class="btn small-btn disabled" aria-disabled="true">Older</span>{{end}}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="stafflog-inspector" aria-label="Entry details">
+      {{with .Selected}}
+      <div class="card-label">Entry #{{.ID}}</div>
+      <div class="inspector-tags"><span class="cat-tag cat-tag-{{.Category}}">{{.Category}}</span><span class="muted small">{{.Source}}</span></div>
+      <div class="inspector-action"><code>{{.DisplayAction}}</code></div>
+      <dl class="inspector-meta">
+        <dt>Time</dt><dd>{{.Time.Format "2006-01-02 15:04:05"}}</dd>
+        <dt>Staff</dt><dd>{{.Staff}}{{if .StaffRank}} <span class="muted">&middot; {{.StaffRank}}</span>{{end}}</dd>
+        <dt>Target</dt><dd>{{if .Target}}{{.Target}}{{else}}<span class="muted">—</span>{{end}}</dd>
+        <dt>Source</dt><dd><code>{{.Source}}</code></dd>
+      </dl>
+      <div class="card-label">Details</div>
+      <p class="inspector-details">{{.Summary}}</p>
+      {{if $.Payload}}
+      <div class="card-label">Payload</div>
+      <pre class="inspector-payload">{{$.Payload}}</pre>
+      {{end}}
+      {{else}}
+      <p class="empty-state">Select an entry to see its details.</p>
+      {{end}}
+    </aside>
+  </div>
+</div>
+{{end}}
