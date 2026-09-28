@@ -775,3 +775,14 @@
   a real post directly, confirmed it renders correctly on the list page, its own page (multi-
   paragraph line breaks included), and the landing page teaser, then removed the test row; confirmed
   `/admin/devlog/new` redirects unauthenticated requests exactly like the rest of `/admin/*`.
+- `src/website`: visual polish pass on the member Dashboard, matching the landing page's design
+  language. The three faction cards get real inline SVG icons (the same ones from the landing page's
+  factions section) and a colored top accent border, replacing plain `<p>` stat lines with a
+  `mini-stat` label/value layout matching the site's existing stat-tile convention. Gang/Send Money/
+  Connect Discord section headers get a small icon each. Also removed an inline
+  `style="display:grid;..."` hack in the Send Money section that exactly duplicated the already-
+  existing `.field-grid` class -- a real (if harmless) bit of drift, not intentional duplication.
+  Verified against the real dev Postgres instance: inserted a throwaway `web_sessions` row (raw
+  token hashed exactly the way `internal/auth/session.go` does it) to load `/dashboard` as an
+  authenticated player without a real Steam login, confirmed the page renders correctly with real
+  data and no template errors, then deleted the test session and reverted the test name change.

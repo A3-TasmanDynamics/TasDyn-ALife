@@ -485,3 +485,33 @@ code { background: var(--bg-input); padding: 2px 6px; border-radius: 4px; font-s
 }
 .ticket-message-meta { font-size: 11px; color: var(--text-faint); margin-bottom: 4px; }
 .ticket-message-body { white-space: pre-wrap; font-size: 13.5px; }
+
+/* ---------- Dashboard ---------- */
+
+/* Icon inside a .card h2 -- inline-flex + vertical-align rather than
+   changing .card h2's own display, since that selector is shared by every
+   card on every page and most have no icon at all. */
+.section-icon, .faction-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  vertical-align: -5px;
+  color: var(--text-faint);
+}
+.section-icon svg, .faction-icon svg { width: 16px; height: 16px; stroke: currentColor; }
+.faction-icon-civ { color: var(--green); }
+.faction-icon-cop { color: #38bdf8; }
+.faction-icon-medic { color: var(--red); }
+
+.faction-grid { margin-bottom: 24px; }
+.faction-card { text-align: left; border-top: 2px solid var(--border); }
+.faction-card-civ { border-top-color: var(--green); }
+.faction-card-cop { border-top-color: #38bdf8; }
+.faction-card-medic { border-top-color: var(--red); }
+
+.mini-stat-row { display: flex; gap: 20px; }
+.mini-stat-label { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 3px; }
+.mini-stat-value { font-size: 17px; font-weight: 700; }
