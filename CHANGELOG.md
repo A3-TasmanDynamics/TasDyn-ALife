@@ -819,3 +819,8 @@
   never assumed uptime. A2S reply parsing is unit-tested; verified live against the dev database.
   Not built (unlike the old Mommers Co status page it's modelled on): an incident history feed and
   email subscriptions -- both need admin tooling / mail infrastructure first.
+- `docs/GAMEPANEL_PARITY.md`: every feature of the Gamepanel staff panel (44, from a full read of its
+  pages, both API versions, schema and all 47 permission keys) mapped to built / designed / new /
+  skipped, with designs for the 32 new or changed items and a six-wave build order continuing
+  `OPERATIONS.md §7`. Paid reserved slots are left as an explicit decision (Arma 3 monetisation
+  rules).
