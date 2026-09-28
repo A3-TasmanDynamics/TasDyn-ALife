@@ -136,8 +136,21 @@ a { color: var(--amber-bright); }
 /* ---------- Hero / landing ---------- */
 
 .hero { text-align: center; padding: 48px 0 32px; }
+.hero-eyebrow {
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: 20px;
+  background: var(--amber-soft);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: var(--amber-bright);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-bottom: 18px;
+}
 .hero h1 { font-size: 40px; margin: 0 0 8px; letter-spacing: -0.5px; }
-.hero-sub { color: var(--text-dim); font-size: 16px; margin: 0 0 24px; }
+.hero-sub { color: var(--text-dim); font-size: 16px; margin: 0 auto 24px; max-width: 640px; }
+.hero-actions { display: flex; gap: 12px; justify-content: center; }
 
 .cta {
   display: inline-block;
@@ -155,8 +168,6 @@ a { color: var(--amber-bright); }
 .cta.secondary:hover { border-color: var(--amber); color: var(--amber-bright); }
 .cta.small { padding: 5px 12px; font-size: 12px; font-weight: 600; flex-shrink: 0; }
 
-.stat-strip { display: flex; justify-content: center; margin: 32px 0; }
-
 .stat-tile {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
@@ -167,8 +178,42 @@ a { color: var(--amber-bright); }
 }
 .stat-tile .label { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; }
 .stat-tile .value { font-size: 28px; font-weight: 700; color: var(--amber-bright); margin-top: 4px; }
+.stat-tile .value.value-text { font-size: 18px; }
 
 .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+
+/* ---------- Feature grid (landing page factions) ---------- */
+
+.feature-section { padding: 40px 0 8px; text-align: center; }
+.section-title { font-size: 24px; margin: 0 0 6px; }
+.section-sub { color: var(--text-dim); font-size: 14px; margin: 0 0 28px; }
+
+.feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; text-align: left; margin-bottom: 18px; }
+
+.feature-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow-card);
+}
+.feature-card h3 { margin: 0 0 8px; font-size: 16px; }
+.feature-card p { margin: 0; color: var(--text-dim); font-size: 13.5px; line-height: 1.5; }
+
+.feature-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+.feature-icon-civ { background: rgba(34, 197, 94, 0.14); color: var(--green); }
+.feature-icon-cop { background: rgba(56, 189, 248, 0.14); color: #38bdf8; }
+.feature-icon-medic { background: var(--red-soft); color: var(--red); }
 
 /* ---------- Cards ---------- */
 
