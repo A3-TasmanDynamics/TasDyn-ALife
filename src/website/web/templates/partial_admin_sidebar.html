@@ -1,27 +1,34 @@
 {{define "admin_sidebar"}}
-<nav class="admin-sidebar" aria-label="Admin Panel">
+{{/* Section order and names follow the layout plan canvas. Pages that
+     aren't built yet are shown as "Soon" rather than dead links. */}}
+<nav class="admin-sidebar" aria-label="Admin sections">
   <div class="admin-sidebar-head">
-    <span class="brand-mark admin-sidebar-mark" aria-hidden="true"></span>
-    <span>Admin Panel</span>
+    <a href="/admin" class="admin-sidebar-home"><span class="brand-mark admin-sidebar-mark" aria-hidden="true"></span><span>Admin Panel</span></a>
   </div>
 
   <div class="admin-nav-group">Overview</div>
-  <a href="/admin" class="admin-nav-item {{if eq .AdminTab "dashboard"}}active{{end}}">Dashboard</a>
-  <a href="/admin#staff-log" class="admin-nav-item">Staff Log</a>
-  <a href="/admin/devlog/new" class="admin-nav-item {{if eq .AdminTab "devlog"}}active{{end}}">New Devlog Post</a>
+  <a href="/admin" class="admin-nav-item {{if eq .AdminTab "dashboard"}}active{{end}}" {{if eq .AdminTab "dashboard"}}aria-current="page"{{end}}>Dashboard</a>
+  <a href="/admin/devlog/new" class="admin-nav-item {{if eq .AdminTab "devlog"}}active{{end}}" {{if eq .AdminTab "devlog"}}aria-current="page"{{end}}>New Devlog Post</a>
 
-  <div class="admin-nav-group">Staff</div>
-  <a href="/admin/staff" class="admin-nav-item {{if eq .AdminTab "staff"}}active{{end}}">Staff directory</a>
+  <div class="admin-nav-group">Moderation</div>
+  <span class="admin-nav-item disabled">Cases <span class="admin-nav-tag">Soon</span></span>
+  <span class="admin-nav-item disabled">Bans <span class="admin-nav-tag">Soon</span></span>
+  <span class="admin-nav-item disabled">Anti-Cheat Flags <span class="admin-nav-tag">Soon</span></span>
 
   <div class="admin-nav-group">Players</div>
   <span class="admin-nav-item disabled">Player Lookup <span class="admin-nav-tag">Soon</span></span>
-  <span class="admin-nav-item disabled">Bans <span class="admin-nav-tag">Soon</span></span>
 
-  <div class="admin-nav-group">System</div>
-  <span class="admin-nav-item disabled">Anti-Cheat Flags <span class="admin-nav-tag">Soon</span></span>
+  <div class="admin-nav-group">Staff</div>
+  <a href="/admin/staff" class="admin-nav-item {{if eq .AdminTab "staff"}}active{{end}}" {{if eq .AdminTab "staff"}}aria-current="page"{{end}}>Staff Directory</a>
+  <span class="admin-nav-item disabled">Roles &amp; Permissions <span class="admin-nav-tag">Soon</span></span>
+  <span class="admin-nav-item disabled">Applications <span class="admin-nav-tag">Soon</span></span>
+  <a href="/admin#staff-log" class="admin-nav-item">Staff Log</a>
+
+  <div class="admin-nav-group">Server</div>
+  <span class="admin-nav-item disabled">Server Control <span class="admin-nav-tag">Soon</span></span>
   <span class="admin-nav-item disabled admin-nav-highlight">Database <span class="admin-nav-tag">Soon</span></span>
-  <span class="admin-nav-item disabled">Arsenal Editor <span class="admin-nav-tag">Soon</span></span>
-  {{if .Session.SupportPanelAccess}}<a href="/support" class="admin-nav-item">Switch to Support Panel</a>{{end}}
+  <span class="admin-nav-item disabled">Item Prices <span class="admin-nav-tag">Soon</span></span>
+  {{if .Session.SupportPanelAccess}}<a href="/support" class="admin-nav-item admin-nav-switch">Switch to Support Panel</a>{{end}}
 
   <div class="admin-sidebar-foot">
     <div class="admin-sidebar-foot-label">Signed in as</div>

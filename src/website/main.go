@@ -218,7 +218,7 @@ func run() error {
 			r.Get("/admin/staff/{id}", d.StaffProfile)
 			r.Post("/admin/staff/{id}/rank", d.StaffSetRank)
 			r.Post("/admin/staff/{id}/status", d.StaffSetStatus)
-			r.Post("/admin/staff/{id}/team", d.StaffSetTeam)
+			r.Post("/admin/staff/{id}/placement", d.StaffSetPlacement)
 			r.Post("/admin/staff/{id}/notes", d.StaffAddNote)
 		})
 	})

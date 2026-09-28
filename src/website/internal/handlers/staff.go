@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -60,54 +61,125 @@ func finishStaffAction(w http.ResponseWriter, r *http.Request, back string, err 
 type staffListData struct {
 	Base
 	AdminShell
-	Teams    []staffTeam
-	CanAdd   bool
-	Ranks    []staff.Rank
-	Total    int
-	OnLeave  int
-	Unlinked int
+	Teams     []staffTeam
+	CanAdd    bool
+	Ranks     []staff.Rank
+	Total     int
+	Active    int
+	LOA       int
+	Suspended int
+	Filter    string // "", "active", "loa", "suspended"
+	Pills     []staffPill
 }
 
 type staffTeam struct {
 	Name    string
-	Members []staff.Member
+	Count   int // whole team, before the status filter
+	Members []staffRow
 }
 
-// StaffList is /admin/staff: every staff member grouped by team, with an
-// "Unassigned" group (Gamepanel's team overview, GAMEPANEL_PARITY §2.2).
+type staffRow struct {
+	staff.Member
+	Initials   string
+	StatusNote string // e.g. "Back 12 Oct · exams"
+}
+
+type staffPill struct {
+	Label, Value string
+	Active       bool
+}
+
+// statusNote renders the short "why / until when" shown beside a non-active
+// staff member, e.g. "Back 12 Oct · exams" or "Since 22 Sep · lifted by hand".
+func statusNote(m staff.Member) string {
+	switch m.Status {
+	case "loa":
+		note := "On leave"
+		if m.StatusUntil != nil {
+			note = "Back " + m.StatusUntil.Format("2 Jan")
+		}
+		if m.StatusReason != "" {
+			note += " · " + m.StatusReason
+		}
+		return note
+	case "suspended":
+		note := "Lifted by hand"
+		if m.StatusReason != "" {
+			note = m.StatusReason + " · " + note
+		}
+		return note
+	}
+	return ""
+}
+
+func initials(name string) string {
+	// Unnamed players display as "Player #35" -- show "#35", not "PL".
+	if rest, ok := strings.CutPrefix(name, "Player #"); ok {
+		return "#" + rest
+	}
+	r := []rune(strings.TrimSpace(name))
+	if len(r) > 2 {
+		r = r[:2]
+	}
+	return strings.ToUpper(string(r))
+}
+
+// StaffList is /admin/staff: every staff member grouped by team (with an
+// "Unassigned" group), filterable by status -- the layout plan's Staff
+// Directory board.
 func (d *Deps) StaffList(w http.ResponseWriter, r *http.Request) {
-	data := staffListData{Base: baseFrom(r, "Staff"), AdminShell: d.adminShell(r, "staff")}
+	data := staffListData{Base: baseFrom(r, "Staff Directory"), AdminShell: d.adminShell(r, "staff")}
+	switch f := r.URL.Query().Get("status"); f {
+	case "active", "loa", "suspended":
+		data.Filter = f
+	}
+	for _, p := range []staffPill{{"All", "", false}, {"Active", "active", false}, {"LOA", "loa", false}, {"Suspended", "suspended", false}} {
+		p.Active = p.Value == data.Filter
+		data.Pills = append(data.Pills, p)
+	}
+
 	members, err := staff.List(r.Context(), d.Pool)
 	if err != nil {
 		slog.Error("staff list failed", "error", err)
 		http.Error(w, "Failed to load staff.", http.StatusInternalServerError)
 		return
 	}
-	byTeam := map[string][]staff.Member{}
-	var order []string
+	teams := map[string]*staffTeam{}
+	var names []string
 	for _, m := range members {
-		team := m.Team
-		if team == "" {
-			team = "Unassigned"
+		switch m.Status {
+		case "active":
+			data.Active++
+		case "loa":
+			data.LOA++
+		case "suspended":
+			data.Suspended++
 		}
-		if _, seen := byTeam[team]; !seen {
-			order = append(order, team)
+		name := m.Team
+		if name == "" {
+			name = "Unassigned"
 		}
-		byTeam[team] = append(byTeam[team], m)
-		if m.Status != "active" {
-			data.OnLeave++
+		t, ok := teams[name]
+		if !ok {
+			t = &staffTeam{Name: name}
+			teams[name] = t
+			if name != "Unassigned" {
+				names = append(names, name)
+			}
 		}
-		if m.DiscordUsername == "" {
-			data.Unlinked++
+		t.Count++
+		if data.Filter == "" || m.Status == data.Filter {
+			t.Members = append(t.Members, staffRow{Member: m, Initials: initials(m.Name), StatusNote: statusNote(m)})
 		}
 	}
-	for _, t := range order {
-		if t != "Unassigned" {
-			data.Teams = append(data.Teams, staffTeam{Name: t, Members: byTeam[t]})
-		}
+	sort.Strings(names)
+	if _, ok := teams["Unassigned"]; ok {
+		names = append(names, "Unassigned")
 	}
-	if u, ok := byTeam["Unassigned"]; ok {
-		data.Teams = append(data.Teams, staffTeam{Name: "Unassigned", Members: u})
+	for _, n := range names {
+		if len(teams[n].Members) > 0 {
+			data.Teams = append(data.Teams, *teams[n])
+		}
 	}
 	data.Total = len(members)
 
@@ -146,19 +218,24 @@ func (d *Deps) StaffAdd(w http.ResponseWriter, r *http.Request) {
 type staffProfileData struct {
 	Base
 	AdminShell
-	Member  staff.Member
-	IsSelf  bool
-	Ranks   []staff.Rank
-	Notes   []staff.Note
-	History []staff.Change
+	Member     staff.Member
+	Extras     staff.Extras
+	Initials   string
+	StatusNote string
+	IsSelf     bool
+	Ranks      []staff.Rank
+	Teams      []string
+	Regions    []string
+	Timeline   []staff.TimelineEntry
 
-	CanEditRank bool
-	CanRemove   bool
-	CanLOA      bool
-	CanSuspend  bool
-	CanTeam     bool
-	CanNotes    bool
-	Today       string
+	CanPlace   bool // rank (staff.edit) or team/region (staff.team)
+	CanRank    bool
+	CanTeam    bool
+	CanRemove  bool
+	CanLOA     bool
+	CanSuspend bool
+	CanNotes   bool
+	Today      string
 }
 
 func profileID(r *http.Request) (int64, bool) {
@@ -166,7 +243,8 @@ func profileID(r *http.Request) (int64, bool) {
 	return id, err == nil && id > 0
 }
 
-// StaffProfile is /admin/staff/{id}.
+// StaffProfile is /admin/staff/{id} -- the layout plan's Staff profile
+// board: header with status actions, placement, notes & history, removal.
 func (d *Deps) StaffProfile(w http.ResponseWriter, r *http.Request) {
 	id, ok := profileID(r)
 	if !ok {
@@ -181,26 +259,87 @@ func (d *Deps) StaffProfile(w http.ResponseWriter, r *http.Request) {
 	sess, _ := auth.FromContext(r.Context())
 	data := staffProfileData{
 		Base: baseFrom(r, m.Name), AdminShell: d.adminShell(r, "staff"), Member: m,
+		Initials: initials(m.Name), StatusNote: statusNote(m),
 		IsSelf: sess.PlayerID == id, Today: time.Now().Format("2006-01-02"),
 	}
+	data.Extras, _ = staff.ProfileExtras(r.Context(), d.Pool, id)
 	if !data.IsSelf {
-		data.CanEditRank = d.can(r, "staff.edit")
-		data.CanRemove = m.RankID != 0 && d.can(r, "staff.remove")
-		data.CanLOA = m.RankID != 0 && m.Status != "suspended" && d.can(r, "staff.loa")
-		data.CanSuspend = m.RankID != 0 && d.can(r, "staff.suspend")
-		data.CanTeam = m.RankID != 0 && d.can(r, "staff.team")
+		isStaff := m.RankID != 0
+		data.CanRank = d.can(r, "staff.edit")
+		data.CanTeam = isStaff && d.can(r, "staff.team")
+		data.CanPlace = data.CanRank || data.CanTeam
+		data.CanRemove = isStaff && d.can(r, "staff.remove")
+		data.CanLOA = isStaff && m.Status != "suspended" && d.can(r, "staff.loa")
+		data.CanSuspend = isStaff && d.can(r, "staff.suspend")
 		data.CanNotes = d.can(r, "staff.notes")
 	}
-	if data.CanEditRank {
+	if data.CanRank {
 		data.Ranks, _ = staff.Ranks(r.Context(), d.Pool)
 	}
-	if data.CanNotes {
-		data.Notes, _ = staff.Notes(r.Context(), d.Pool, id)
+	if data.CanTeam {
+		data.Teams, data.Regions, _ = staff.Suggestions(r.Context(), d.Pool)
 	}
-	data.History, _ = staff.History(r.Context(), d.Pool, id)
+	if data.CanNotes {
+		data.Timeline, _ = staff.Timeline(r.Context(), d.Pool, id)
+	} else {
+		// Without notes access, still show the rank/status history.
+		all, _ := staff.Timeline(r.Context(), d.Pool, id)
+		for _, e := range all {
+			if e.Kind == "status" {
+				data.Timeline = append(data.Timeline, e)
+			}
+		}
+	}
 	d.Render.Render(w, "staff_profile.html", data)
 }
 
+// StaffSetPlacement saves the Placement card: rank, team and region in one
+// form. Each part is only applied if it changed, and each is checked
+// against its own permission; a rank change needs a reason.
+func (d *Deps) StaffSetPlacement(w http.ResponseWriter, r *http.Request) {
+	id, ok := profileID(r)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	back := fmt.Sprintf("/admin/staff/%d", id)
+	m, err := staff.Get(r.Context(), d.Pool, id)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	var done []string
+
+	if rankID, _ := strconv.Atoi(r.FormValue("rank_id")); rankID != 0 && rankID != m.RankID {
+		if !d.requireCan(w, r, "staff.edit", back) {
+			return
+		}
+		if err := staff.SetRank(r.Context(), d.Pool, actorFrom(r), id, rankID, r.FormValue("reason")); err != nil {
+			finishStaffAction(w, r, back, err, "")
+			return
+		}
+		done = append(done, "rank")
+		m.RankID = rankID
+	}
+
+	team, region := strings.TrimSpace(r.FormValue("team")), strings.TrimSpace(r.FormValue("region"))
+	if r.Form.Has("team") && m.RankID != 0 && (team != m.Team || region != m.Region) {
+		if !d.requireCan(w, r, "staff.team", back) {
+			return
+		}
+		if err := staff.SetTeam(r.Context(), d.Pool, actorFrom(r), id, team, region); err != nil {
+			finishStaffAction(w, r, back, err, "")
+			return
+		}
+		done = append(done, "team/region")
+	}
+
+	if len(done) == 0 {
+		http.Redirect(w, r, back+"?notice="+errMsg("Nothing changed."), http.StatusSeeOther)
+		return
+	}
+	finishStaffAction(w, r, back, nil, "Updated "+strings.Join(done, ", ")+".")
+}
 func (d *Deps) StaffSetRank(w http.ResponseWriter, r *http.Request) {
 	id, ok := profileID(r)
 	if !ok {
@@ -254,20 +393,6 @@ func (d *Deps) StaffSetStatus(w http.ResponseWriter, r *http.Request) {
 	finishStaffAction(w, r, back, err, map[string]string{
 		"active": "Reinstated.", "loa": "Placed on leave.", "suspended": "Suspended.",
 	}[next])
-}
-
-func (d *Deps) StaffSetTeam(w http.ResponseWriter, r *http.Request) {
-	id, ok := profileID(r)
-	if !ok {
-		http.NotFound(w, r)
-		return
-	}
-	back := fmt.Sprintf("/admin/staff/%d", id)
-	if !d.requireCan(w, r, "staff.team", back) {
-		return
-	}
-	err := staff.SetTeam(r.Context(), d.Pool, actorFrom(r), id, r.FormValue("team"), r.FormValue("region"))
-	finishStaffAction(w, r, back, err, "Team updated.")
 }
 
 func (d *Deps) StaffAddNote(w http.ResponseWriter, r *http.Request) {
