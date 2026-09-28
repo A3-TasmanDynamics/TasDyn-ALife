@@ -386,6 +386,62 @@ CREATE INDEX idx_gang_log_gang_id ON gang_log(gang_id);
 -- ---------------------------------------------------------------------------
 -- Staff/moderation (docs/ADMIN_TOOLS.md §7-9).
 -- ---------------------------------------------------------------------------
+-- Which permission keys each staff rank has (docs/GAMEPANEL_PARITY.md §2.1),
+-- edited on /admin/roles. Keys must exist in the website's catalogue
+-- (src/website/internal/auth/permissions.go); the seed below gives each
+-- built-in rank every key whose SeedLevel is at or below its level, and is
+-- checked against the catalogue by internal/auth's tests.
+CREATE TABLE rank_permissions (
+    rank_id      INTEGER NOT NULL REFERENCES staff_ranks(id) ON DELETE CASCADE,
+    command_key  TEXT NOT NULL,
+    PRIMARY KEY (rank_id, command_key)
+);
+
+INSERT INTO rank_permissions (rank_id, command_key)
+SELECT sr.id, k.command_key
+FROM staff_ranks sr
+JOIN (VALUES
+    ('staff.view', 10),
+    ('staff.edit', 100),
+    ('staff.loa', 40),
+    ('staff.suspend', 100),
+    ('staff.remove', 100),
+    ('roles.manage', 100),
+    ('staff.notes', 40),
+    ('cases.view', 10),
+    ('cases.lead', 10),
+    ('cases.close', 20),
+    ('bans.issue', 20),
+    ('bans.permanent', 40),
+    ('bans.revoke', 40),
+    ('bans.appeal_review', 40),
+    ('anticheat.review', 20),
+    ('players.view', 10),
+    ('players.vehicles', 20),
+    ('players.edit_police', 40),
+    ('players.edit_medic', 40),
+    ('players.compensate', 40),
+    ('players.compensate_large', 100),
+    ('applications.view', 20),
+    ('applications.decide', 40),
+    ('factions.audit', 20),
+    ('factions.configure', 100),
+    ('records.review', 40),
+    ('server.logs', 40),
+    ('server.control', 100),
+    ('database.query', 100),
+    ('announce.post', 40),
+    ('bot.admin', 100)
+) AS k(command_key, seed_level) ON sr.level >= k.seed_level;
+
+-- Display names for police/EMS levels (GAMEPANEL_PARITY §6.3), shown
+-- wherever a raw cop_level / medic_level number used to appear.
+CREATE TABLE faction_rank_names (
+    faction  TEXT NOT NULL CHECK (faction IN ('police', 'ems')),
+    level    INTEGER NOT NULL CHECK (level > 0),
+    name     TEXT NOT NULL,
+    PRIMARY KEY (faction, level)
+);
 CREATE TABLE staff_permission_overrides (
     id           SERIAL PRIMARY KEY,
     player_id    BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,

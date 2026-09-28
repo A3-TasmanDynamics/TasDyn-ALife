@@ -1,0 +1,122 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content roles-page">
+    <div class="roles-head">
+      <div>
+        <h1 class="page-title admin-title">Roles &amp; Permissions</h1>
+        <p class="admin-sub">Only keys from the permission catalogue can be granted, so a typo can never silently grant nothing.</p>
+      </div>
+      <nav class="tabbar" aria-label="Role settings">
+        {{if .CanRanks}}<a class="tab {{if eq .Tab "ranks"}}active{{end}}" href="/admin/roles" {{if eq .Tab "ranks"}}aria-current="page"{{end}}>Staff ranks</a>{{end}}
+        <a class="tab {{if eq .Tab "faction"}}active{{end}}" href="/admin/roles?tab=faction" {{if eq .Tab "faction"}}aria-current="page"{{end}}>Faction rank names</a>
+      </nav>
+    </div>
+
+    {{if eq .Tab "ranks"}}
+    <div class="roles-body">
+      <aside class="rank-list" aria-label="Staff ranks">
+        <div class="card-label">Staff ranks, highest first</div>
+        {{$sel := .Selected}}{{$csrf := .CSRFToken}}
+        {{range .Ranks}}
+        <div class="rank-row {{if and $sel (eq .ID $sel.ID)}}selected{{end}}">
+          <a class="rank-pick" href="/admin/roles?rank={{.ID}}">
+            <span class="rank-level">{{.Level}}</span>
+            <span class="rank-text"><span class="rank-name">{{.Name}}</span><span class="rank-meta">{{.Members}} {{if eq .Members 1}}member{{else}}members{{end}} &middot; {{.PermCount}} permissions</span></span>
+            {{if .Locked}}<svg class="rank-lock" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" role="img" aria-label="Locked"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>{{end}}
+          </a>
+          <form method="post" action="/admin/roles/move"><input type="hidden" name="csrf_token" value="{{$csrf}}"><input type="hidden" name="rank_id" value="{{.ID}}"><input type="hidden" name="dir" value="up">
+            <button class="icon-btn" type="submit" aria-label="Move {{.Name}} up" {{if not .CanUp}}disabled{{end}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg></button></form>
+          <form method="post" action="/admin/roles/move"><input type="hidden" name="csrf_token" value="{{$csrf}}"><input type="hidden" name="rank_id" value="{{.ID}}"><input type="hidden" name="dir" value="down">
+            <button class="icon-btn" type="submit" aria-label="Move {{.Name}} down" {{if not .CanDown}}disabled{{end}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></form>
+        </div>
+        {{end}}
+        <button class="new-rank" type="button" data-dialog-open="dlg-new-rank">New rank</button>
+        <p class="hint rank-list-foot">Moving a rank changes its level. You can't create or edit ranks at or above your own level ({{.MyLevel}}), and the last level-100 rank can't be removed.</p>
+      </aside>
+
+      {{with .Selected}}
+      <form class="rank-editor" method="post" action="/admin/roles/save">
+        <input type="hidden" name="csrf_token" value="{{$csrf}}">
+        <input type="hidden" name="rank_id" value="{{.ID}}">
+        {{if .Locked}}<div class="banner banner-warn">{{.Name}} is at or above your level, so it's read-only for you.</div>{{end}}
+        <div class="rank-fields">
+          <div class="field grow"><label for="rank-name">Display name</label><input id="rank-name" name="name" value="{{.Name}}" maxlength="50" required {{if .Locked}}disabled{{end}}></div>
+          <div class="field"><label>Level</label><div class="readonly-box">{{.Level}}</div></div>
+          <fieldset class="field panel-defaults" {{if .Locked}}disabled{{end}}>
+            <legend>Default panels</legend>
+            <label><input type="checkbox" name="admin_panel" {{if .AdminPanel}}checked{{end}}> Admin panel</label>
+            <label><input type="checkbox" name="support_panel" {{if .SupportPanel}}checked{{end}}> Support panel</label>
+          </fieldset>
+        </div>
+        {{$locked := .Locked}}
+        <div class="perm-groups">
+          {{range $.Groups}}
+          <fieldset class="perm-group" {{if $locked}}disabled{{end}}>
+            <legend>{{.Name}}</legend>
+            {{range .Perms}}
+            <label class="perm {{if and (not .Grantable) (not .On)}}perm-unavailable{{end}}" {{if and (not .Grantable) (not .On)}}title="You can't grant a permission you don't have"{{end}}>
+              <input type="checkbox" name="perm" value="{{.Key}}" {{if .On}}checked{{end}} {{if and (not .Grantable) (not .On)}}disabled{{end}}>
+              <span class="perm-label">{{.Label}}</span>
+              <code class="perm-key">{{.Key}}</code>
+            </label>
+            {{end}}
+          </fieldset>
+          {{end}}
+        </div>
+        <div class="rank-editor-foot">
+          <span class="hint">Saving logs the change to the Staff Log with before and after values.</span>
+          {{if .CanDelete}}<button class="btn btn-danger-outline" type="button" data-dialog-open="dlg-delete-rank">Delete rank</button>{{end}}
+          <a class="btn" href="/admin/roles?rank={{.ID}}">Discard</a>
+          <button class="btn btn-primary" type="submit" {{if .Locked}}disabled{{end}}>Save rank</button>
+        </div>
+      </form>
+
+      {{if .CanDelete}}
+      <dialog id="dlg-delete-rank" class="modal" aria-labelledby="dlg-delete-title">
+        <form method="post" action="/admin/roles/delete">
+          <input type="hidden" name="csrf_token" value="{{$csrf}}"><input type="hidden" name="rank_id" value="{{.ID}}">
+          <div class="modal-head"><h2 id="dlg-delete-title">Delete {{.Name}}</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+          <div class="modal-body"><p>This rank has no members. Deleting it removes its permissions too. This is logged.</p></div>
+          <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-danger" type="submit">Delete rank</button></div>
+        </form>
+      </dialog>
+      {{end}}
+      {{end}}
+    </div>
+
+    <dialog id="dlg-new-rank" class="modal" aria-labelledby="dlg-new-title">
+      <form method="post" action="/admin/roles/create">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <div class="modal-head"><h2 id="dlg-new-title">New rank</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+        <div class="modal-body">
+          <div class="field"><label for="new-name">Display name</label><input id="new-name" name="name" maxlength="50" required placeholder="e.g. Senior Moderator"></div>
+          <div class="field"><label for="new-level">Level (1–{{if gt .MyLevel 1}}{{.MyLevel}}{{end}}, below your own; must be unused)</label><input id="new-level" name="level" type="number" min="1" max="{{.MyLevel}}" value="{{.NextLevel}}" required></div>
+          <p class="hint">New ranks start with no permissions. Tick them after creating it.</p>
+        </div>
+        <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Create rank</button></div>
+      </form>
+    </dialog>
+    {{else}}
+    <div class="faction-names">
+      <p class="admin-sub">Names shown everywhere a police or EMS level number used to appear: dashboard, player profiles and faction rosters. Requires <code class="perm-key">factions.configure</code>.</p>
+      <div class="faction-grid">
+        {{range $f := (list "police" "ems")}}
+        <form class="card faction-card" method="post" action="/admin/roles/faction-names">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="faction" value="{{$f}}">
+          <div class="faction-card-head"><span class="faction-dot faction-dot-{{$f}}" aria-hidden="true"></span><h2>{{if eq $f "police"}}Police{{else}}EMS{{end}}</h2></div>
+          {{$names := $.Police}}{{if eq $f "ems"}}{{$names = $.EMS}}{{end}}
+          {{range $i, $n := $names}}
+          <label class="level-row"><span>Level {{inc $i}}</span><input name="name" value="{{$n}}" maxlength="50" aria-label="{{$f}} level {{inc $i}} name" {{if not $.CanFaction}}disabled{{end}}></label>
+          {{end}}
+          <label class="level-row"><span>Level {{inc (len $names)}}</span><input name="name" maxlength="50" placeholder="Add level…" aria-label="{{$f}} new level name" {{if not $.CanFaction}}disabled{{end}}></label>
+          {{if $.CanFaction}}<div class="faction-card-foot"><span class="hint">Clear the last name to remove that level.</span><button class="btn btn-primary" type="submit">Save rank names</button></div>{{end}}
+        </form>
+        {{end}}
+      </div>
+    </div>
+    {{end}}
+  </div>
+</div>
+<script src="/static/admin.js" defer></script>
+{{end}}

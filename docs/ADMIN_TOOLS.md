@@ -161,6 +161,11 @@ vehicles" without inventing a whole new rank tier for one person. Every gated co
 order: (1) is there an override row for this player + command? use it. (2) otherwise, fall back to
 the rank-level default. The debug console (§6) is hard-excluded from ever being grantable this way.
 
+*Website update:* on the website, step (2) is now "does the player's rank have this key ticked"
+(`rank_permissions`, edited on `/admin/roles`) instead of a fixed level threshold. The built-in
+ranks were seeded with the keys their level previously implied, so behaviour didn't change. The
+in-game menu keeps its level thresholds for now.
+
 ## 8. Access control, banlist, and reporting
 
 - **Whitelist**: server-join allowlist by UID, managed at level 100.

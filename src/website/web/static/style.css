@@ -835,3 +835,67 @@ code { background: var(--bg-input); padding: 2px 6px; border-radius: 4px; font-s
   .timeline-by { text-align: left; }
   .danger-strip { flex-wrap: wrap; }
 }
+/* ---------- Roles & Permissions (layout plan board) ---------- */
+
+.roles-page { display: flex; flex-direction: column; gap: 0; padding: 0; }
+.roles-head { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 28px 32px 18px; border-bottom: 1px solid var(--border-soft); }
+.roles-head .admin-sub { margin: 0; }
+.tabbar { margin-left: auto; display: flex; gap: 4px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; padding: 3px; }
+.tab { display: inline-flex; align-items: center; min-height: 32px; padding: 0 16px; border-radius: 6px; font-size: 13px; font-weight: 600; color: #c7d0e0; text-decoration: none; }
+.tab.active { background: var(--amber); color: #1e1200; }
+.roles-body { display: flex; min-height: 0; }
+.rank-list { width: 330px; flex-shrink: 0; border-right: 1px solid var(--border-soft); padding: 18px 16px; display: flex; flex-direction: column; }
+.rank-list .card-label { padding: 0 6px 8px; margin: 0; }
+.rank-row { display: flex; align-items: center; gap: 6px; padding: 9px 10px; border-radius: 10px; margin-bottom: 2px; border: 1px solid transparent; }
+.rank-row.selected { background: #1a2438; border-color: var(--amber); }
+.rank-pick { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; }
+.rank-level { width: 34px; font-size: 12px; font-weight: 700; color: var(--text-dim); }
+.rank-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rank-name { font-size: 13.5px; font-weight: 600; }
+.rank-meta { font-size: 11.5px; color: var(--text-dim); }
+.rank-lock { margin-left: auto; color: var(--text-dim); flex-shrink: 0; }
+.icon-btn { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: #c7d0e0; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.icon-btn:disabled { opacity: 0.35; cursor: default; }
+.new-rank { margin-top: 10px; min-height: 36px; border-radius: 8px; border: 1px dashed var(--border); background: transparent; color: #c7d0e0; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.rank-list-foot { margin-top: auto; padding-top: 16px; line-height: 1.5; }
+.rank-editor { flex: 1; min-width: 0; padding: 18px 28px 28px; display: flex; flex-direction: column; gap: 16px; }
+.banner-warn { background: var(--amber-soft); border: 1px solid rgba(245, 158, 11, 0.35); color: var(--amber-bright); margin: 0; }
+.rank-fields { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+.rank-fields .field { margin: 0; }
+.rank-fields .grow { flex: 1; min-width: 200px; }
+.readonly-box { min-height: 38px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-input); display: flex; align-items: center; font-weight: 700; }
+.panel-defaults { border: 0; padding: 0; display: flex; gap: 16px; align-items: center; min-height: 38px; }
+.panel-defaults legend { font-size: 12.5px; color: var(--text-dim); padding: 0; margin-bottom: 6px; }
+.panel-defaults label, .perm { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+.panel-defaults input, .perm input { width: 16px; height: 16px; accent-color: var(--amber); flex-shrink: 0; }
+.perm-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.perm-group { margin: 0; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px 8px; }
+.perm-group legend { padding: 0 6px; font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+.perm { padding: 6px 0; gap: 10px; }
+.perm-label { flex: 1; }
+.perm-key { font-family: "JetBrains Mono", ui-monospace, Consolas, monospace; font-size: 11px; color: var(--text-dim); }
+.perm-unavailable { opacity: 0.5; cursor: not-allowed; }
+.rank-editor-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.rank-editor-foot .hint { margin-right: auto; }
+.rank-editor fieldset:disabled .perm, .rank-editor fieldset:disabled label { cursor: default; opacity: 0.7; }
+
+.faction-names { padding: 22px 32px; }
+.faction-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; max-width: 980px; }
+.faction-card { margin: 0; }
+.faction-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.faction-card-head h2 { margin: 0; font-size: 15px; }
+.faction-dot { width: 10px; height: 10px; border-radius: 5px; }
+.faction-dot-police { background: #3b82f6; }
+.faction-dot-ems { background: #ef4444; }
+.level-row { display: flex; align-items: center; gap: 12px; padding: 5px 0; }
+.level-row span { width: 64px; font-size: 12.5px; color: var(--text-dim); flex-shrink: 0; }
+.level-row input { flex: 1; min-width: 0; min-height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text); font: inherit; font-size: 13px; }
+.faction-card-foot { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.faction-card-foot .hint { margin-right: auto; }
+
+@media (max-width: 1000px) {
+  .roles-body { flex-direction: column; }
+  .rank-list { width: auto; border-right: 0; border-bottom: 1px solid var(--border-soft); }
+  .perm-groups, .faction-grid { grid-template-columns: 1fr; }
+  .roles-head, .rank-editor, .faction-names { padding-left: 16px; padding-right: 16px; }
+}

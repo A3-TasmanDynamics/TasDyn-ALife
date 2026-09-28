@@ -13,20 +13,25 @@ import (
 // only list of keys that exist: the role editor can only offer these, and
 // Can refuses any key not in it, so a typo'd key grants nothing instead of
 // silently checking a permission nobody can hold (docs/GAMEPANEL_PARITY.md
-// §10). Resolution follows docs/ADMIN_TOOLS.md §7: a per-player override
-// row wins; otherwise the player's rank level must be >= MinLevel.
+// §10).
+//
+// Resolution: a per-player override row wins (docs/ADMIN_TOOLS.md §7);
+// otherwise the player's rank must have the key ticked in rank_permissions
+// (edited on /admin/roles, the layout plan's Roles & Permissions board).
 type Permission struct {
-	Key      string
-	Label    string
-	Group    string
-	MinLevel int
-	// NoOverride keys can only come from rank level -- a Head Admin can't
-	// hand one to a lower rank as a one-off (same idea as the in-game debug
-	// console exclusion).
+	Key   string
+	Label string
+	Group string
+	// SeedLevel is only a starting point: the schema seeds each built-in
+	// rank with every key whose SeedLevel is at or below the rank's level.
+	// After that, rank_permissions is the source of truth.
+	SeedLevel int
+	// NoOverride keys can only come from a rank, never from a one-off
+	// per-player override.
 	NoOverride bool
 }
 
-// Rank levels, matching the seeded staff_ranks rows.
+// Levels of the seeded staff_ranks rows.
 const (
 	LevelTrialMod  = 10
 	LevelModerator = 20
@@ -34,42 +39,45 @@ const (
 	LevelHeadAdmin = 100
 )
 
-// Catalogue holds default thresholds; they're starting points to tune, and
-// the role editor (Wave 1) will let per-rank grants refine them.
+// Catalogue groups and keys follow the layout plan's Roles board; the
+// extra keys at the end of some groups are ones the website already uses.
 var Catalogue = []Permission{
-	{Key: "players.view", Label: "Look up players", Group: "Players", MinLevel: LevelTrialMod},
-	{Key: "players.vehicles", Label: "View player vehicles", Group: "Players", MinLevel: LevelModerator},
-	{Key: "players.edit_police", Label: "Set police level", Group: "Players", MinLevel: LevelAdmin},
-	{Key: "players.edit_medic", Label: "Set EMS level", Group: "Players", MinLevel: LevelAdmin},
-	{Key: "players.compensate", Label: "Compensate players", Group: "Players", MinLevel: LevelAdmin},
-	{Key: "players.compensate_large", Label: "Compensate large amounts", Group: "Players", MinLevel: LevelHeadAdmin},
+	{Key: "staff.view", Label: "View staff directory", Group: "Staff", SeedLevel: LevelTrialMod},
+	{Key: "staff.edit", Label: "Edit rank, team, region", Group: "Staff", SeedLevel: LevelHeadAdmin, NoOverride: true},
+	{Key: "staff.loa", Label: "Put staff on LOA", Group: "Staff", SeedLevel: LevelAdmin},
+	{Key: "staff.suspend", Label: "Suspend staff", Group: "Staff", SeedLevel: LevelHeadAdmin, NoOverride: true},
+	{Key: "staff.remove", Label: "Remove from staff", Group: "Staff", SeedLevel: LevelHeadAdmin, NoOverride: true},
+	{Key: "roles.manage", Label: "Edit roles & permissions", Group: "Staff", SeedLevel: LevelHeadAdmin, NoOverride: true},
+	{Key: "staff.notes", Label: "Read and add staff notes", Group: "Staff", SeedLevel: LevelAdmin},
 
-	{Key: "cases.view", Label: "View cases", Group: "Discipline", MinLevel: LevelTrialMod},
-	{Key: "cases.create", Label: "Open cases, add notes, warn", Group: "Discipline", MinLevel: LevelTrialMod},
-	{Key: "cases.close", Label: "Close cases", Group: "Discipline", MinLevel: LevelModerator},
-	{Key: "bans.issue", Label: "Issue temporary bans", Group: "Discipline", MinLevel: LevelModerator},
-	{Key: "bans.permanent", Label: "Issue permanent bans", Group: "Discipline", MinLevel: LevelAdmin},
-	{Key: "bans.revoke", Label: "Lift bans", Group: "Discipline", MinLevel: LevelAdmin},
+	{Key: "cases.view", Label: "View cases", Group: "Moderation", SeedLevel: LevelTrialMod},
+	{Key: "cases.lead", Label: "Open and lead cases", Group: "Moderation", SeedLevel: LevelTrialMod},
+	{Key: "cases.close", Label: "Close cases", Group: "Moderation", SeedLevel: LevelModerator},
+	{Key: "bans.issue", Label: "Issue timed bans", Group: "Moderation", SeedLevel: LevelModerator},
+	{Key: "bans.permanent", Label: "Issue permanent bans", Group: "Moderation", SeedLevel: LevelAdmin},
+	{Key: "bans.revoke", Label: "Lift bans", Group: "Moderation", SeedLevel: LevelAdmin},
+	{Key: "bans.appeal_review", Label: "Review ban appeals", Group: "Moderation", SeedLevel: LevelAdmin},
+	{Key: "anticheat.review", Label: "Review anti-cheat flags", Group: "Moderation", SeedLevel: LevelModerator},
 
-	{Key: "staff.view", Label: "View staff directory", Group: "Staff", MinLevel: LevelTrialMod},
-	{Key: "staff.loa", Label: "Put staff on LOA / reinstate", Group: "Staff", MinLevel: LevelAdmin},
-	{Key: "staff.notes", Label: "Read and add staff notes", Group: "Staff", MinLevel: LevelAdmin},
-	{Key: "staff.team", Label: "Assign staff teams and regions", Group: "Staff", MinLevel: LevelAdmin},
-	{Key: "staff.edit", Label: "Promote / demote staff", Group: "Staff", MinLevel: LevelHeadAdmin, NoOverride: true},
-	{Key: "staff.suspend", Label: "Suspend staff", Group: "Staff", MinLevel: LevelHeadAdmin, NoOverride: true},
-	{Key: "staff.remove", Label: "Remove from staff", Group: "Staff", MinLevel: LevelHeadAdmin, NoOverride: true},
-	{Key: "roles.manage", Label: "Edit ranks, permissions and role sync", Group: "Staff", MinLevel: LevelHeadAdmin, NoOverride: true},
-	{Key: "applications.view", Label: "View applications", Group: "Staff", MinLevel: LevelModerator},
-	{Key: "applications.decide", Label: "Accept / reject applications", Group: "Staff", MinLevel: LevelAdmin},
+	{Key: "players.view", Label: "Look up players", Group: "Players", SeedLevel: LevelTrialMod},
+	{Key: "players.vehicles", Label: "View vehicles tab", Group: "Players", SeedLevel: LevelModerator},
+	{Key: "players.edit_police", Label: "Set police level", Group: "Players", SeedLevel: LevelAdmin},
+	{Key: "players.edit_medic", Label: "Set EMS level", Group: "Players", SeedLevel: LevelAdmin},
+	{Key: "players.compensate", Label: "Compensate players", Group: "Players", SeedLevel: LevelAdmin},
+	{Key: "players.compensate_large", Label: "Compensate above threshold", Group: "Players", SeedLevel: LevelHeadAdmin},
 
-	{Key: "factions.audit", Label: "View faction audit logs", Group: "Factions", MinLevel: LevelModerator},
-	{Key: "factions.configure", Label: "Configure faction ranks", Group: "Factions", MinLevel: LevelHeadAdmin},
-	{Key: "records.review", Label: "Review faction records", Group: "Factions", MinLevel: LevelAdmin},
+	{Key: "applications.view", Label: "View staff applications", Group: "Recruitment", SeedLevel: LevelModerator},
+	{Key: "applications.decide", Label: "Accept or reject applications", Group: "Recruitment", SeedLevel: LevelAdmin},
 
-	{Key: "announce.post", Label: "Post announcements", Group: "Community", MinLevel: LevelAdmin},
-	{Key: "server.logs", Label: "View live server logs", Group: "Server", MinLevel: LevelAdmin},
-	{Key: "server.control", Label: "Restart / stop servers", Group: "Server", MinLevel: LevelHeadAdmin, NoOverride: true},
-	{Key: "bot.admin", Label: "Bot health and forced syncs", Group: "Server", MinLevel: LevelHeadAdmin},
+	{Key: "factions.audit", Label: "View faction command logs", Group: "Factions", SeedLevel: LevelModerator},
+	{Key: "factions.configure", Label: "Edit faction rank names", Group: "Factions", SeedLevel: LevelHeadAdmin},
+	{Key: "records.review", Label: "Review faction records", Group: "Factions", SeedLevel: LevelAdmin},
+
+	{Key: "server.logs", Label: "View live server logs", Group: "Server", SeedLevel: LevelAdmin},
+	{Key: "server.control", Label: "Restart, stop and start servers", Group: "Server", SeedLevel: LevelHeadAdmin, NoOverride: true},
+	{Key: "database.query", Label: "Read-only database browser", Group: "Server", SeedLevel: LevelHeadAdmin, NoOverride: true},
+	{Key: "announce.post", Label: "Post announcements", Group: "Server", SeedLevel: LevelAdmin},
+	{Key: "bot.admin", Label: "Bot health and forced syncs", Group: "Server", SeedLevel: LevelHeadAdmin},
 }
 
 var catalogueByKey = func() map[string]Permission {
@@ -79,6 +87,33 @@ var catalogueByKey = func() map[string]Permission {
 	}
 	return m
 }()
+
+// Known reports whether key is in the Catalogue.
+func Known(key string) bool {
+	_, ok := catalogueByKey[key]
+	return ok
+}
+
+// CatalogueGroups returns the catalogue grouped, in catalogue order.
+func CatalogueGroups() []PermissionGroup {
+	var out []PermissionGroup
+	idx := map[string]int{}
+	for _, p := range Catalogue {
+		i, ok := idx[p.Group]
+		if !ok {
+			i = len(out)
+			idx[p.Group] = i
+			out = append(out, PermissionGroup{Name: p.Group})
+		}
+		out[i].Perms = append(out[i].Perms, p)
+	}
+	return out
+}
+
+type PermissionGroup struct {
+	Name  string
+	Perms []Permission
+}
 
 // ErrUnknownPermission means a caller asked about a key that isn't in the
 // Catalogue -- a programming error, surfaced loudly rather than as "no".
@@ -91,14 +126,14 @@ const (
 	Allowed      Denial = ""
 	DenyNotStaff Denial = "not_staff"
 	DenyInactive Denial = "inactive" // suspended / LOA
-	DenyLevel    Denial = "level"
+	DenyLevel    Denial = "level"    // rank doesn't grant it (name kept for callers)
 )
 
 // RequirePermission gates a route on one Catalogue key, checked live on
 // every request (not cached in the session), so a demotion, suspension or
-// revoked override takes effect immediately.
+// permission change takes effect immediately.
 func (a *Authenticator) RequirePermission(key string) func(http.Handler) http.Handler {
-	if _, ok := catalogueByKey[key]; !ok {
+	if !Known(key) {
 		panic("auth: RequirePermission with unknown key " + key) // a wiring bug; fail at startup
 	}
 	return func(next http.Handler) http.Handler {
@@ -135,20 +170,21 @@ func Can(ctx context.Context, pool *pgxpool.Pool, playerID int64, key string) (D
 		return DenyLevel, ErrUnknownPermission
 	}
 
-	var level *int
+	var rankID *int
 	var status string
+	var rankHas bool
 	err := pool.QueryRow(ctx, `
-		SELECT sr.level, p.staff_status
-		FROM players p LEFT JOIN staff_ranks sr ON sr.id = p.staff_rank_id
-		WHERE p.id = $1
-	`, playerID).Scan(&level, &status)
+		SELECT p.staff_rank_id, p.staff_status,
+		       EXISTS (SELECT 1 FROM rank_permissions rp WHERE rp.rank_id = p.staff_rank_id AND rp.command_key = $2)
+		FROM players p WHERE p.id = $1
+	`, playerID, key).Scan(&rankID, &status, &rankHas)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return DenyNotStaff, nil
 	}
 	if err != nil {
 		return DenyLevel, err
 	}
-	if level == nil {
+	if rankID == nil {
 		return DenyNotStaff, nil
 	}
 	if status != "active" {
@@ -170,7 +206,7 @@ func Can(ctx context.Context, pool *pgxpool.Pool, playerID int64, key string) (D
 		}
 	}
 
-	if *level >= perm.MinLevel {
+	if rankHas {
 		return Allowed, nil
 	}
 	return DenyLevel, nil
