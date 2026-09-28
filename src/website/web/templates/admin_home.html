@@ -1,51 +1,68 @@
 {{define "content"}}
 <div class="admin-shell">
   {{template "admin_sidebar" .}}
-  <div class="admin-content">
-    <h1 class="page-title admin-title">Dashboard</h1>
-    <p class="admin-sub">Server-wide overview and recent staff activity.</p>
+  <div class="admin-content dash">
+    <div>
+      <h1 class="page-title admin-title">Dashboard</h1>
+      <p class="admin-sub">Server-wide overview, economy and recent staff activity.</p>
+    </div>
 
-    <section class="admin-stats">
-      <div class="admin-stat">
-        <div class="label">Online Now</div>
-        <div class="value value-green">{{.OnlineCount}}</div>
-      </div>
-      <div class="admin-stat">
-        <div class="label">Open Tickets</div>
-        <div class="value">{{.OpenTickets}}</div>
-      </div>
-      <div class="admin-stat">
-        <div class="label">Flagged Events (24h)</div>
-        <div class="value {{if .FlagsLast24h}}value-amber{{end}}">{{.FlagsLast24h}}</div>
-      </div>
-      <div class="admin-stat">
-        <div class="label">Total Players</div>
-        <div class="value">{{.TotalPlayers}}</div>
+    <section class="admin-stats" aria-label="Operations">
+      <div class="admin-stat"><div class="label">Online now</div><div class="value value-green">{{.OnlineCount}}</div></div>
+      <div class="admin-stat" title="Cases arrive in Wave 2"><div class="label">Open cases</div><div class="value muted">—</div></div>
+      <a class="admin-stat stat-link" href="/support/tickets"><div class="label">Open tickets</div><div class="value">{{.OpenTickets}}</div></a>
+      <div class="admin-stat"><div class="label">Anti-cheat flags (24 h)</div><div class="value {{if .FlagsLast24h}}value-amber{{end}}">{{.FlagsLast24h}}</div></div>
+    </section>
+
+    <section aria-label="Economy and population">
+      <h2 class="card-label">Economy &amp; population</h2>
+      <div class="admin-stats">
+        <div class="admin-stat"><div class="label">Registered players</div><div class="value">{{.TotalPlayers}}</div></div>
+        <div class="admin-stat"><div class="label">Police whitelisted</div><div class="value">{{.PoliceCount}}</div></div>
+        <div class="admin-stat"><div class="label">EMS whitelisted</div><div class="value">{{.EMSCount}}</div></div>
+        <div class="admin-stat"><div class="label">Money supply (bank + cash)</div><div class="value">${{.Money}}</div></div>
       </div>
     </section>
 
-    <div class="page-header-row"><h2 class="admin-section-title" id="staff-log">Recent staff activity</h2><a class="hint" href="/admin/staff-log">View full staff log &rarr;</a></div>
-    <section class="card admin-table-card">
-      {{if .StaffLog}}
-        <table>
-          <thead><tr><th>Staff</th><th>Action</th><th>Target</th><th>Reason</th><th>Via</th><th>Time</th></tr></thead>
-          <tbody>
-            {{range .StaffLog}}
-            <tr>
-              <td><strong>{{.StaffName}}</strong></td>
-              <td>{{.Action}}</td>
-              <td>{{if .TargetName}}{{.TargetName}}{{else}}—{{end}}</td>
-              <td>{{.Reason}}</td>
-              <td class="muted">{{.Source}}</td>
-              <td class="muted">{{.CreatedAt}}</td>
-            </tr>
-            {{end}}
-          </tbody>
-        </table>
-      {{else}}
-        <p class="empty-state">No staff actions logged yet.</p>
-      {{end}}
-    </section>
+    <div class="dash-grid">
+      <div class="dash-col">
+        <section class="card dash-card" aria-labelledby="dash-activity">
+          <div class="dash-card-head">
+            <h2 id="dash-activity">Recent staff activity</h2>
+            <span class="muted small">Case charts and "My activity" arrive with Cases (Wave 2).</span>
+            <a class="dash-link" href="/admin/staff-log">Full staff log &rarr;</a>
+          </div>
+          {{range .StaffLog}}
+          <div class="dash-row">
+            <span class="strong ellipsis">{{.StaffName}}</span>
+            <span class="ellipsis">{{.Action}}{{if .TargetName}} &middot; {{.TargetName}}{{end}}{{if .Reason}} <span class="muted">&middot; {{.Reason}}</span>{{end}}</span>
+            <span class="muted small">{{.Source}}</span>
+            <span class="muted small dash-when">{{.CreatedAt}}</span>
+          </div>
+          {{else}}
+          <p class="empty-state">No staff actions logged yet.</p>
+          {{end}}
+        </section>
+      </div>
+
+      <div class="dash-col">
+        <section class="card dash-card" aria-labelledby="dash-rich">
+          <div class="dash-card-head">
+            <h2 id="dash-rich">Rich list</h2>
+            <span class="muted small">Top 10 &middot; staff only, never published</span>
+          </div>
+          {{range $i, $r := .RichList}}
+          <div class="rich-row">
+            <span class="muted">{{inc $i}}</span>
+            <a href="/admin/players?id={{$r.ID}}">{{$r.Name}}{{if $r.Flag}} <span class="flag-tag" title="Has an unreviewed anti-cheat flag">FLAG</span>{{end}}</a>
+            <span class="strong rich-total">${{$r.Total}}</span>
+          </div>
+          {{else}}
+          <p class="empty-state">No players yet.</p>
+          {{end}}
+        </section>
+      </div>
+    </div>
   </div>
 </div>
 {{end}}

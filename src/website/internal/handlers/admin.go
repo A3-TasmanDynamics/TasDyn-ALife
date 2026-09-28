@@ -7,6 +7,7 @@ import (
 
 	"website/internal/audit"
 	"website/internal/auth"
+	"website/internal/players"
 )
 
 type staffLogRow struct {
@@ -51,7 +52,23 @@ type adminHomeData struct {
 	FlagsLast24h int
 	TotalPlayers int
 	StaffLog     []staffLogRow
+
+	// Economy & population row and rich list (layout plan dashboard,
+	// GAMEPANEL_PARITY §5.4). Staff-only: never shown publicly.
+	PoliceCount int
+	EMSCount    int
+	MoneyCents  int64
+	RichList    []richRow
 }
+
+type richRow struct {
+	ID    int64
+	Name  string
+	Total string
+	Flag  bool // has an unreviewed anti-cheat flag
+}
+
+func (d adminHomeData) Money() string { return players.Dollars(d.MoneyCents) }
 
 // AdminHome is the Admin Panel landing page: headline counts plus the
 // read-only staff log. Player lookup, bans, anti-cheat review, the database
@@ -72,8 +89,30 @@ func (d *Deps) AdminHome(w http.ResponseWriter, r *http.Request) {
 	if err := d.Pool.QueryRow(ctx, `SELECT count(*) FROM anti_cheat_flags WHERE created_at > now() - interval '24 hours'`).Scan(&data.FlagsLast24h); err != nil {
 		slog.Error("admin home: anti-cheat flag count failed", "error", err)
 	}
-	if err := d.Pool.QueryRow(ctx, `SELECT count(*) FROM players`).Scan(&data.TotalPlayers); err != nil {
-		slog.Error("admin home: player count failed", "error", err)
+	if err := d.Pool.QueryRow(ctx, `
+		SELECT count(*), count(*) FILTER (WHERE cop_level > 0), count(*) FILTER (WHERE medic_level > 0),
+		       COALESCE(sum(COALESCE(civ_cash, 0) + COALESCE(cop_cash, 0) + COALESCE(medic_cash, 0)), 0)
+		         + COALESCE((SELECT sum(balance) FROM bank_accounts), 0)
+		FROM players`).Scan(&data.TotalPlayers, &data.PoliceCount, &data.EMSCount, &data.MoneyCents); err != nil {
+		slog.Error("admin home: population/economy counts failed", "error", err)
+	}
+	if rows, err := d.Pool.Query(ctx, `
+		SELECT p.id, COALESCE(NULLIF(p.name, ''), NULLIF(p.steam_name, ''), 'Player #' || p.id),
+		       COALESCE(p.civ_cash, 0) + COALESCE(p.cop_cash, 0) + COALESCE(p.medic_cash, 0)
+		         + COALESCE((SELECT sum(balance) FROM bank_accounts b WHERE b.player_id = p.id), 0) AS total,
+		       EXISTS (SELECT 1 FROM anti_cheat_flags f WHERE f.player_id = p.id AND f.reviewed_at IS NULL)
+		FROM players p ORDER BY total DESC, p.id LIMIT 10`); err != nil {
+		slog.Error("admin home: rich list failed", "error", err)
+	} else {
+		for rows.Next() {
+			var rr richRow
+			var cents int64
+			if rows.Scan(&rr.ID, &rr.Name, &cents, &rr.Flag) == nil {
+				rr.Total = players.Dollars(cents)
+				data.RichList = append(data.RichList, rr)
+			}
+		}
+		rows.Close()
 	}
 
 	rows, err := d.Pool.Query(ctx, `
@@ -85,7 +124,7 @@ func (d *Deps) AdminHome(w http.ResponseWriter, r *http.Request) {
 		LEFT JOIN players staff ON staff.id = sl.staff_player_id
 		LEFT JOIN players target ON target.id = sl.target_player_id
 		ORDER BY sl.created_at DESC
-		LIMIT 50
+		LIMIT 10
 	`)
 	if err != nil {
 		slog.Error("admin home: staff log query failed", "error", err)

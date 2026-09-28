@@ -1018,3 +1018,26 @@ a.stafflog-row:hover { background: #151f35; }
   .lookup-profile { padding: 20px 16px; }
   .lookup-veh-row, .audit-row { grid-template-columns: 1fr 1fr; }
 }
+
+/* ---------- Admin dashboard (layout plan board) ---------- */
+
+.dash { display: flex; flex-direction: column; gap: 18px; padding-top: 24px; }
+.dash .admin-stats { margin-bottom: 0; }
+.dash .card-label { margin-bottom: 10px; }
+.stat-link { color: var(--text); text-decoration: none; }
+.stat-link:hover { border-color: #334166; }
+.dash-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; }
+.dash-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.dash-card { margin: 0; padding: 0; overflow: hidden; }
+.dash-card-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+.dash-card-head h2 { margin: 0; font-size: 14px; }
+.dash-link { margin-left: auto; font-size: 12.5px; font-weight: 600; text-decoration: none; }
+.dash-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) 60px 110px; gap: 10px; padding: 10px 20px; font-size: 13px; border-bottom: 1px solid var(--border-soft); align-items: baseline; }
+.dash-when { text-align: right; }
+.dash-card .empty-state { padding: 20px; }
+.rich-row { display: grid; grid-template-columns: 28px minmax(0, 1fr) 110px; gap: 8px; padding: 6px 20px; font-size: 13px; }
+.rich-row a { color: var(--text); text-decoration: none; display: flex; align-items: center; gap: 6px; }
+.rich-row a:hover { color: var(--amber-bright); }
+.rich-total { text-align: right; }
+.flag-tag { font-size: 10px; font-weight: 800; padding: 1px 5px; border-radius: 4px; background: var(--amber-soft); color: var(--amber-bright); }
+@media (max-width: 1000px) { .dash-grid { grid-template-columns: 1fr; } .dash-row { grid-template-columns: 1fr 1fr; } }
