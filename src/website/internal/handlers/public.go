@@ -1,13 +1,16 @@
 package handlers
 
 import (
+	"log/slog"
 	"net/http"
+	"time"
 )
 
 type landingData struct {
 	Base
 	OnlineCount     int
 	RegisteredCount int
+	LatestPosts     []devlogSummary
 }
 
 // Landing renders the public landing page -- no login required. OnlineCount
@@ -32,6 +35,29 @@ func (d *Deps) Landing(w http.ResponseWriter, r *http.Request) {
 
 	if err := d.Pool.QueryRow(r.Context(), `SELECT count(*) FROM players`).Scan(&data.RegisteredCount); err != nil {
 		data.RegisteredCount = 0
+	}
+
+	rows, err := d.Pool.Query(r.Context(), `
+		SELECT slug, title, body, published_at FROM devlog_posts
+		WHERE published_at IS NOT NULL ORDER BY published_at DESC LIMIT 3
+	`)
+	if err != nil {
+		// Same reasoning as the stat queries above -- a devlog teaser is
+		// non-essential to the landing page; log it and show none rather
+		// than failing the whole page.
+		slog.Error("landing: devlog teaser query failed", "error", err)
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			var s devlogSummary
+			var body string
+			var publishedAt time.Time
+			if err := rows.Scan(&s.Slug, &s.Title, &body, &publishedAt); err == nil {
+				s.Snippet = snippetOf(body)
+				s.PublishedAt = publishedAt.Format("2 January 2006")
+				data.LatestPosts = append(data.LatestPosts, s)
+			}
+		}
 	}
 
 	d.Render.Render(w, "landing.html", data)

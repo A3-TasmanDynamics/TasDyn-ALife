@@ -1,5 +1,8 @@
 {{define "content"}}
-<h1 class="page-title">Admin Panel</h1>
+<div class="page-header-row">
+  <h1 class="page-title" style="margin:0;">Admin Panel</h1>
+  <a class="cta small" href="/admin/devlog/new">New Devlog Post</a>
+</div>
 {{if .Session.SupportPanelAccess}}<p class="hint"><a href="/support">Switch to Support Panel</a></p>{{end}}
 
 <section class="card">
@@ -28,6 +31,7 @@
   <h2>Coming soon</h2>
   <p class="hint">Player lookup, ban/unban, rank management, anti-cheat flag review, and the arsenal
   editor are designed in <code>docs/WEBSITE.md §7</code> and land in follow-up work -- this panel
-  currently exposes the staff log (read-only) and the access-gating/switcher itself.</p>
+  currently exposes the staff log (read-only), the devlog composer, and the access-gating/switcher
+  itself.</p>
 </section>
 {{end}}

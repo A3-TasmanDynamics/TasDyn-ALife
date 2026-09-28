@@ -1,0 +1,9 @@
+{{define "content"}}
+<a class="hint devlog-back" href="/devlog">&larr; Back to Devlog</a>
+
+<article class="devlog-post">
+  <h1>{{.Title}}</h1>
+  <div class="devlog-post-meta">By {{.AuthorName}} &middot; {{.PublishedAt}}</div>
+  <div class="devlog-post-body">{{.Body}}</div>
+</article>
+{{end}}

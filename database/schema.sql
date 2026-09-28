@@ -613,6 +613,32 @@ CREATE TABLE discord_link_codes (
 
 CREATE INDEX idx_discord_link_codes_player_id ON discord_link_codes(player_id);
 
+-- Devlog posts -- public dev-blog entries, authored by staff through the
+-- Admin Panel. `body` is plain text, not HTML/markdown: html/template
+-- auto-escapes it on render, and the template applies white-space: pre-wrap
+-- for paragraph breaks -- no markdown-to-HTML pipeline and no risk of a
+-- staff-authored post accidentally (or maliciously, if an account is ever
+-- compromised) injecting markup into a public page. `published_at IS NULL`
+-- is a draft, not shown on any public route -- the column supports it, but
+-- there's no draft/edit UI yet (DevlogCreate always publishes immediately),
+-- so nothing in the app sets it NULL today; a draft with no way to ever
+-- publish or change it later would just be a dead end, not a real feature.
+-- `slug` is what the public URL uses (/devlog/<slug>), kept separate from
+-- `id` so a URL never has to change if a post's id would (it won't, but
+-- decoupling costs nothing).
+CREATE TABLE devlog_posts (
+    id             BIGSERIAL PRIMARY KEY,
+    slug           TEXT NOT NULL UNIQUE,
+    title          TEXT NOT NULL,
+    body           TEXT NOT NULL,
+    author_player_id BIGINT REFERENCES players(id) ON DELETE SET NULL,
+    published_at   TIMESTAMPTZ,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_devlog_posts_published_at ON devlog_posts(published_at DESC) WHERE published_at IS NOT NULL;
+
 -- ---------------------------------------------------------------------------
 -- Triggers: keep players.*_bank in sync with bank_accounts.balance
 -- (authoritative) automatically — a DB-enforced guarantee, not something

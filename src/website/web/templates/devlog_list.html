@@ -1,0 +1,22 @@
+{{define "content"}}
+<div class="page-header-row">
+  <h1 class="page-title">Devlog</h1>
+  {{if and .Session .Session.AdminPanelAccess}}<a class="cta small" href="/admin/devlog/new">New Post</a>{{end}}
+</div>
+<p class="hint devlog-intro">Progress notes from whoever's actually building TasDyn-ALife, posted as things happen &mdash; not a marketing schedule.</p>
+
+{{if .Posts}}
+<div class="devlog-list">
+  {{range .Posts}}
+  <a class="devlog-card" href="/devlog/{{.Slug}}">
+    <div class="devlog-card-date">{{.PublishedAt}}</div>
+    <h2>{{.Title}}</h2>
+    <p>{{.Snippet}}</p>
+    <span class="devlog-read-more">Read more &rarr;</span>
+  </a>
+  {{end}}
+</div>
+{{else}}
+<p class="empty-state">Nothing posted yet &mdash; check back soon.</p>
+{{end}}
+{{end}}

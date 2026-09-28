@@ -1,29 +1,35 @@
 {{define "content"}}
-<h1 class="page-title">Dashboard</h1>
+<h1 class="page-title">Welcome back, {{.Player.Name}}</h1>
 
-<section class="stat-grid">
-  <div class="card">
-    <h2>Civilian</h2>
-    <p>Cash: ${{.Player.CivCash}}</p>
-    <p>Bank: ${{.Player.CivBank}}</p>
-    <p>Playtime: {{.Player.CivPlaytimeHours}}h</p>
+<section class="stat-grid faction-grid">
+  <div class="card faction-card faction-card-civ">
+    <h2><span class="faction-icon faction-icon-civ"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>Civilian</h2>
+    <div class="mini-stat-row">
+      <div class="mini-stat"><div class="mini-stat-label">Cash</div><div class="mini-stat-value">${{.Player.CivCash}}</div></div>
+      <div class="mini-stat"><div class="mini-stat-label">Bank</div><div class="mini-stat-value">${{.Player.CivBank}}</div></div>
+      <div class="mini-stat"><div class="mini-stat-label">Playtime</div><div class="mini-stat-value">{{.Player.CivPlaytimeHours}}h</div></div>
+    </div>
   </div>
-  <div class="card">
-    <h2>Police</h2>
-    <p>Level: {{.Player.CopLevel}}</p>
-    <p>Cash: ${{.Player.CopCash}}</p>
-    <p>Bank: ${{.Player.CopBank}}</p>
+  <div class="card faction-card faction-card-cop">
+    <h2><span class="faction-icon faction-icon-cop"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V5z"/></svg></span>Police</h2>
+    <div class="mini-stat-row">
+      <div class="mini-stat"><div class="mini-stat-label">Level</div><div class="mini-stat-value">{{.Player.CopLevel}}</div></div>
+      <div class="mini-stat"><div class="mini-stat-label">Cash</div><div class="mini-stat-value">${{.Player.CopCash}}</div></div>
+      <div class="mini-stat"><div class="mini-stat-label">Bank</div><div class="mini-stat-value">${{.Player.CopBank}}</div></div>
+    </div>
   </div>
-  <div class="card">
-    <h2>Medic</h2>
-    <p>Level: {{.Player.MedicLevel}}</p>
-    <p>Cash: ${{.Player.MedicCash}}</p>
-    <p>Bank: ${{.Player.MedicBank}}</p>
+  <div class="card faction-card faction-card-medic">
+    <h2><span class="faction-icon faction-icon-medic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></span>Medic</h2>
+    <div class="mini-stat-row">
+      <div class="mini-stat"><div class="mini-stat-label">Level</div><div class="mini-stat-value">{{.Player.MedicLevel}}</div></div>
+      <div class="mini-stat"><div class="mini-stat-label">Cash</div><div class="mini-stat-value">${{.Player.MedicCash}}</div></div>
+      <div class="mini-stat"><div class="mini-stat-label">Bank</div><div class="mini-stat-value">${{.Player.MedicBank}}</div></div>
+    </div>
   </div>
 </section>
 
 <section class="card">
-  <h2>Gang</h2>
+  <h2><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Gang</h2>
   {{if .Gang}}
     <p><strong>{{.Gang.Name}}</strong> [{{.Gang.Tag}}] — bank: ${{.Gang.Balance}}</p>
     <table>
@@ -68,9 +74,9 @@
 </section>
 
 <section class="card">
-  <h2>Send Money</h2>
+  <h2><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Send Money</h2>
 
-  <div class="field-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px;">
+  <div class="field-grid">
     <div>
       <p class="hint">Move between your own faction accounts.</p>
       <form method="post" action="/dashboard/transfer">
@@ -138,7 +144,7 @@
 </section>
 
 <section class="card">
-  <h2>Connect Discord</h2>
+  <h2><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M7.5 7.5c3-1 6-1 9 0M7 16.5c3 1 7 1 10 0M17 4a13 13 0 0 1 2.5 6.5c0 4-1 7-1 7s-2 .5-4 .5l-1-2h-3l-1 2c-2 0-4-.5-4-.5s-1-3-1-7A13 13 0 0 1 7 4c1.5-.7 3.5-1 5-1s3.5.3 5 1z"/></svg></span>Connect Discord</h2>
   {{if .Player.DiscordUsername}}
     <p>Linked to <strong>{{.Player.DiscordUsername}}</strong>.</p>
   {{else}}

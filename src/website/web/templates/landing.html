@@ -1,28 +1,32 @@
 {{define "content"}}
-<section class="hero">
-  <div class="hero-eyebrow">Oceania / Australia region &middot; Pre-Alpha</div>
-  <h1>A custom-built Altis Life, backed by a real database.</h1>
-  <p class="hero-sub">TasDyn-ALife runs on a from-scratch C++/PostgreSQL bridge instead of the usual extDB3/MySQL stack &mdash; three factions, one economy, and a server built to last.</p>
-  <div class="hero-actions">
-    {{if not .Session}}
-      <a class="cta" href="/auth/steam/login">Sign in with Steam to get started</a>
-    {{else}}
-      <a class="cta" href="/dashboard">Go to your Dashboard</a>
-    {{end}}
-    <a class="cta secondary" href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Join the Discord</a>
+<div class="landing-wrap">
+
+<section class="hero-band">
+  <div class="hero">
+    <div class="hero-eyebrow">Oceania / Australia region &middot; Pre-Alpha</div>
+    <h1>A custom-built Altis Life,<br>backed by a <span class="accent">real database</span>.</h1>
+    <p class="hero-sub">TasDyn-ALife runs on a from-scratch C++/PostgreSQL bridge instead of the usual extDB3/MySQL stack &mdash; three factions, one economy, and a server built to last.</p>
+    <div class="hero-actions">
+      {{if not .Session}}
+        <a class="cta" href="/auth/steam/login">Sign in with Steam to get started</a>
+      {{else}}
+        <a class="cta" href="/dashboard">Go to your Dashboard</a>
+      {{end}}
+      <a class="cta secondary" href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Join the Discord</a>
+    </div>
   </div>
 </section>
 
 <section class="stat-grid">
-  <div class="stat-tile">
+  <div class="stat-tile stat-tile-accent-green">
     <div class="label">Players Online</div>
     <div class="value">{{.OnlineCount}}</div>
   </div>
-  <div class="stat-tile">
+  <div class="stat-tile stat-tile-accent-amber">
     <div class="label">Registered Players</div>
     <div class="value">{{.RegisteredCount}}</div>
   </div>
-  <div class="stat-tile">
+  <div class="stat-tile stat-tile-accent-blue">
     <div class="label">Region</div>
     <div class="value value-text">Oceania / AU</div>
   </div>
@@ -33,26 +37,55 @@
   <p class="section-sub">Pick a side the moment you connect &mdash; no menus, no waiting.</p>
   <div class="feature-grid">
     <div class="feature-card">
-      <div class="feature-icon feature-icon-civ">C</div>
+      <div class="feature-icon feature-icon-civ">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      </div>
       <h3>Civilian</h3>
       <p>Work legal jobs, build a bank balance, and decide whether the rebel life is worth the risk.</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon feature-icon-cop">P</div>
+      <div class="feature-icon feature-icon-cop">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V5z"/></svg>
+      </div>
       <h3>Police</h3>
       <p>Arrest, impound, and patrol &mdash; a whitelist and rank structure keep the badge meaningful.</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon feature-icon-medic">M</div>
+      <div class="feature-icon feature-icon-medic">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+      </div>
       <h3>Medic</h3>
       <p>Revive the fallen and keep the city running &mdash; no faction survives long without you.</p>
     </div>
   </div>
 </section>
 
-<section class="card">
-  <h2>Connect</h2>
-  <p>Join our Discord for the connect IP, rules, and whitelist process.</p>
+{{if .LatestPosts}}
+<section class="feature-section">
+  <div class="page-header-row">
+    <h2 class="section-title" style="margin:0;">From the Devlog</h2>
+    <a class="hint" href="/devlog">View all &rarr;</a>
+  </div>
+  <div class="devlog-list devlog-list-teaser">
+    {{range .LatestPosts}}
+    <a class="devlog-card" href="/devlog/{{.Slug}}">
+      <div class="devlog-card-date">{{.PublishedAt}}</div>
+      <h2>{{.Title}}</h2>
+      <p>{{.Snippet}}</p>
+      <span class="devlog-read-more">Read more &rarr;</span>
+    </a>
+    {{end}}
+  </div>
+</section>
+{{end}}
+
+<section class="connect-band">
+  <div>
+    <h2>Ready to connect?</h2>
+    <p>Join our Discord for the connect IP, rules, and whitelist process.</p>
+  </div>
   <a class="cta secondary" href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Join the Discord</a>
 </section>
+
+</div>
 {{end}}

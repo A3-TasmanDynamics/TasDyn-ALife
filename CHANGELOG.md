@@ -758,3 +758,31 @@
   `web/static/style.css` alongside the existing navy/amber tokens, no new palette. Verified by
   running the site locally against the real dev Postgres instance and checking the rendered HTML
   and served CSS directly, not just that `go build` succeeded.
+- `src/website`: added a public devlog (`/devlog`, `/devlog/<slug>`, new `devlog_posts` table) and a
+  visual polish pass on the landing page. Posts are authored via `/admin/devlog/new`, gated on the
+  same `AdminPanelAccess` the rest of `/admin/*` uses -- a dedicated `devlog.write` permission would
+  be more precise but isn't built yet. Posts are stored and rendered as plain text, not markdown/
+  HTML -- `html/template` auto-escapes on render, so there's no injection risk from a compromised or
+  careless staff account, at the cost of no rich formatting. Publishing is immediate; deliberately
+  did **not** build a draft/edit UI this pass -- a draft with no way to ever publish or change it
+  later would be a dead end, not a real feature, so `published_at` stays nullable in the schema for
+  later but nothing in the app sets it NULL today. The landing page now teases the 3 most recent
+  posts. Landing page polish: real inline SVG icons (matching the stroke-icon convention already
+  used in `partial_support_sidebar.html`) replacing letter-avatar faction icons, a subtle radial
+  glow behind the hero, a `landing-wrap` max-width container so content doesn't stretch edge-to-edge
+  on wide screens, hover states on cards/stat tiles, and a two-column closing "Connect" band
+  replacing the old plain card. Verified end-to-end against the real dev Postgres instance: inserted
+  a real post directly, confirmed it renders correctly on the list page, its own page (multi-
+  paragraph line breaks included), and the landing page teaser, then removed the test row; confirmed
+  `/admin/devlog/new` redirects unauthenticated requests exactly like the rest of `/admin/*`.
+- `src/website`: visual polish pass on the member Dashboard, matching the landing page's design
+  language. The three faction cards get real inline SVG icons (the same ones from the landing page's
+  factions section) and a colored top accent border, replacing plain `<p>` stat lines with a
+  `mini-stat` label/value layout matching the site's existing stat-tile convention. Gang/Send Money/
+  Connect Discord section headers get a small icon each. Also removed an inline
+  `style="display:grid;..."` hack in the Send Money section that exactly duplicated the already-
+  existing `.field-grid` class -- a real (if harmless) bit of drift, not intentional duplication.
+  Verified against the real dev Postgres instance: inserted a throwaway `web_sessions` row (raw
+  token hashed exactly the way `internal/auth/session.go` does it) to load `/dashboard` as an
+  authenticated player without a real Steam login, confirmed the page renders correctly with real
+  data and no template errors, then deleted the test session and reverted the test name change.

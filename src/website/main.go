@@ -126,6 +126,8 @@ func run() error {
 	})))
 
 	r.Get("/", d.Landing)
+	r.Get("/devlog", d.DevlogList)
+	r.Get("/devlog/{slug}", d.DevlogPost)
 
 	r.Get("/auth/steam/login", d.SteamLogin)
 	r.Get("/auth/steam/callback", d.SteamCallback)
@@ -152,6 +154,8 @@ func run() error {
 	r.Group(func(r chi.Router) {
 		r.Use(auth.RequireAdminPanel)
 		r.Get("/admin", d.AdminHome)
+		r.Get("/admin/devlog/new", d.DevlogNewForm)
+		r.Post("/admin/devlog/new", d.DevlogCreate)
 	})
 
 	r.Group(func(r chi.Router) {
