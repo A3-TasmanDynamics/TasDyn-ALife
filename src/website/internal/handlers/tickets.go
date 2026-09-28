@@ -224,8 +224,8 @@ func (d *Deps) TicketThread(w http.ResponseWriter, r *http.Request) {
 	err = d.Pool.QueryRow(r.Context(), `
 		SELECT st.player_id, st.subject, st.category_id, tc1.label, st.subcategory_id, COALESCE(tc2.label, ''),
 		       st.status, st.priority, st.assigned_staff_id,
-		       COALESCE(NULLIF(p.name, ''), 'Player #' || p.id),
-		       COALESCE(NULLIF(requester.name, ''), 'Player #' || requester.id),
+		       COALESCE(NULLIF(p.name, ''), NULLIF(p.steam_name, ''), 'Player #' || p.id),
+		       COALESCE(NULLIF(requester.name, ''), NULLIF(requester.steam_name, ''), 'Player #' || requester.id),
 		       requester.uid, requester.discord_id, requester.discord_username,
 		       st.created_at, st.updated_at
 		FROM support_tickets st

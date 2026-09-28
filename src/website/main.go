@@ -22,6 +22,7 @@ import (
 	"website/internal/handlers"
 	"website/internal/render"
 	"website/internal/status"
+	"website/internal/steam"
 )
 
 // loadDotEnv applies KEY=VALUE lines from .env (if present) to the process
@@ -116,6 +117,10 @@ func run() error {
 		DiscordHealth: discordHealth,
 	})
 	go d.StatusMonitor.Run(ctx)
+
+	// Steam profile/ban cache + BattlEye GUID backfill (internal/steam).
+	d.Steam = &steam.Refresher{Pool: pool, Client: steam.NewClient(cfg.SteamWebAPIKey)}
+	go d.Steam.Run(ctx)
 	if cfg.GameQueryAddr == "" {
 		slog.Info("status: GAME_QUERY_ADDR not set, game server shown as not monitored")
 	}

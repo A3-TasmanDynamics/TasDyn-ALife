@@ -45,8 +45,8 @@ func (d *Deps) SupportDashboard(w http.ResponseWriter, r *http.Request) {
 	data.Stats = stats
 
 	rows, err := d.Pool.Query(r.Context(), `
-		SELECT st.id, st.subject, tc1.label, COALESCE(tc2.label, ''), st.status, st.priority, COALESCE(NULLIF(assignee.name, ''), 'Player #' || assignee.id, ''),
-		       COALESCE(NULLIF(requester.name, ''), 'Player #' || requester.id), requester.uid, st.created_at
+		SELECT st.id, st.subject, tc1.label, COALESCE(tc2.label, ''), st.status, st.priority, COALESCE(NULLIF(assignee.name, ''), NULLIF(assignee.steam_name, ''), 'Player #' || assignee.id, ''),
+		       COALESCE(NULLIF(requester.name, ''), NULLIF(requester.steam_name, ''), 'Player #' || requester.id), requester.uid, st.created_at
 		FROM support_tickets st
 		JOIN ticket_categories tc1 ON tc1.id = st.category_id
 		LEFT JOIN ticket_categories tc2 ON tc2.id = st.subcategory_id
@@ -132,8 +132,8 @@ func (d *Deps) SupportQueue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := `
-		SELECT st.id, st.subject, tc1.label, COALESCE(tc2.label, ''), st.status, st.priority, COALESCE(NULLIF(assignee.name, ''), 'Player #' || assignee.id, ''),
-		       COALESCE(NULLIF(requester.name, ''), 'Player #' || requester.id), requester.uid, st.created_at
+		SELECT st.id, st.subject, tc1.label, COALESCE(tc2.label, ''), st.status, st.priority, COALESCE(NULLIF(assignee.name, ''), NULLIF(assignee.steam_name, ''), 'Player #' || assignee.id, ''),
+		       COALESCE(NULLIF(requester.name, ''), NULLIF(requester.steam_name, ''), 'Player #' || requester.id), requester.uid, st.created_at
 		FROM support_tickets st
 		JOIN ticket_categories tc1 ON tc1.id = st.category_id
 		LEFT JOIN ticket_categories tc2 ON tc2.id = st.subcategory_id
@@ -232,7 +232,7 @@ type staffOption struct {
 
 func fetchSupportStaff(ctx context.Context, pool *pgxpool.Pool) ([]staffOption, error) {
 	rows, err := pool.Query(ctx, `
-		SELECT p.id, COALESCE(NULLIF(p.name, ''), 'Player #' || p.id)
+		SELECT p.id, COALESCE(NULLIF(p.name, ''), NULLIF(p.steam_name, ''), 'Player #' || p.id)
 		FROM players p
 		LEFT JOIN staff_ranks sr ON sr.id = p.staff_rank_id
 		LEFT JOIN staff_permission_overrides spo ON spo.player_id = p.id AND spo.command_key = 'panel.support'

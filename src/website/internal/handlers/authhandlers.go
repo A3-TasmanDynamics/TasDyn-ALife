@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 
@@ -33,6 +34,12 @@ func (d *Deps) SteamCallback(w http.ResponseWriter, r *http.Request) {
 		slog.Error("steam login: create session failed", "error", err)
 		http.Redirect(w, r, "/?error="+errMsg("Something went wrong signing you in."), http.StatusSeeOther)
 		return
+	}
+
+	// Refresh their cached Steam name/avatar/bans in the background -- never
+	// on the request path, so a slow or down Steam API can't delay sign-in.
+	if d.Steam != nil {
+		go d.Steam.RefreshOne(context.WithoutCancel(r.Context()), steamID)
 	}
 
 	http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
