@@ -1,0 +1,66 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content">
+    <h1 class="page-title admin-title">Staff</h1>
+    <p class="admin-sub">Everyone with a staff rank, grouped by team.</p>
+
+    <section class="admin-stats">
+      <div class="admin-stat"><div class="label">Staff</div><div class="value">{{.Total}}</div></div>
+      <div class="admin-stat"><div class="label">On leave / suspended</div><div class="value {{if .OnLeave}}value-amber{{end}}">{{.OnLeave}}</div></div>
+      <div class="admin-stat"><div class="label">Discord not linked</div><div class="value {{if .Unlinked}}value-amber{{end}}">{{.Unlinked}}</div></div>
+      <div class="admin-stat"><div class="label">Teams</div><div class="value">{{len .Teams}}</div></div>
+    </section>
+
+    {{range .Teams}}
+    <h2 class="admin-section-title">{{.Name}} <span class="muted">· {{len .Members}}</span></h2>
+    <section class="card admin-table-card">
+      <table>
+        <thead><tr><th>Name</th><th>Rank</th><th>Status</th><th>Region</th><th>Discord</th></tr></thead>
+        <tbody>
+          {{range .Members}}
+          <tr>
+            <td><a class="staff-name" href="/admin/staff/{{.ID}}">{{if .AvatarURL}}<img class="staff-avatar" src="{{.AvatarURL}}" alt="">{{end}}{{.Name}}</a></td>
+            <td>{{.RankName}}</td>
+            <td><span class="badge badge-staff-{{.Status}}">{{if eq .Status "loa"}}LOA{{else}}{{.Status}}{{end}}</span></td>
+            <td>{{if .Region}}{{.Region}}{{else}}<span class="muted">—</span>{{end}}</td>
+            <td>{{if .DiscordUsername}}{{.DiscordUsername}}{{else}}<span class="badge badge-warn">Not linked</span>{{end}}</td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </section>
+    {{else}}
+    <p class="empty-state">No staff yet.</p>
+    {{end}}
+
+    {{if .CanAdd}}
+    <h2 class="admin-section-title">Add a staff member</h2>
+    <section class="card">
+      <form method="post" action="/admin/staff/add">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <div class="field-grid">
+          <div class="field">
+            <label for="steam_id">Steam64 ID</label>
+            <input id="steam_id" name="steam_id" inputmode="numeric" pattern="[0-9]{17}" maxlength="17" required placeholder="7656119…">
+          </div>
+          <div class="field">
+            <label for="rank_id">Rank</label>
+            <select id="rank_id" name="rank_id" required>
+              <option value="">Choose…</option>
+              {{range .Ranks}}<option value="{{.ID}}">{{.Name}}</option>{{end}}
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="add_reason">Reason</label>
+          <input id="add_reason" name="reason" maxlength="500" required placeholder="e.g. Application #12 accepted">
+        </div>
+        <p class="hint">You can only assign ranks below your own. The change is logged and posted to #staff-log.</p>
+        <button class="cta" type="submit">Add to staff</button>
+      </form>
+    </section>
+    {{end}}
+  </div>
+</div>
+{{end}}

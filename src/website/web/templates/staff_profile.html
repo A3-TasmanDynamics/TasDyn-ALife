@@ -1,0 +1,161 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content">
+    <p class="hint"><a href="/admin/staff">&larr; All staff</a></p>
+
+    <div class="staff-header">
+      {{if .Member.AvatarURL}}<img class="staff-avatar-lg" src="{{.Member.AvatarURL}}" alt="">{{end}}
+      <div>
+        <h1 class="page-title admin-title">{{.Member.Name}}</h1>
+        <p class="admin-sub">
+          {{if .Member.RankName}}{{.Member.RankName}}{{else}}Not staff{{end}}
+          {{if .Member.RankName}} · <span class="badge badge-staff-{{.Member.Status}}">{{if eq .Member.Status "loa"}}LOA{{else}}{{.Member.Status}}{{end}}</span>{{end}}
+        </p>
+      </div>
+    </div>
+
+    {{if and .Member.RankName (ne .Member.Status "active")}}
+    <div class="banner banner-error">
+      {{if eq .Member.Status "loa"}}On leave{{else}}Suspended{{end}}{{if .Member.StatusUntil}} until {{.Member.StatusUntil.Format "2 Jan 2006"}}{{end}}{{if .Member.StatusReason}}: {{.Member.StatusReason}}{{end}}
+    </div>
+    {{end}}
+
+    <div class="staff-grid">
+      <section class="card">
+        <h2>Details</h2>
+        <dl class="meta-list">
+          <dt>Steam64</dt><dd><a href="https://steamcommunity.com/profiles/{{.Member.UID}}" target="_blank" rel="noopener">{{.Member.UID}}</a></dd>
+          <dt>Discord</dt><dd>{{if .Member.DiscordUsername}}{{.Member.DiscordUsername}}{{else}}<span class="badge badge-warn">Not linked</span>{{end}}</dd>
+          <dt>Team</dt><dd>{{if .Member.Team}}{{.Member.Team}}{{else}}<span class="muted">Unassigned</span>{{end}}</dd>
+          <dt>Region</dt><dd>{{if .Member.Region}}{{.Member.Region}}{{else}}<span class="muted">—</span>{{end}}</dd>
+          <dt>Last seen</dt><dd>{{if .Member.LastSeen}}{{.Member.LastSeen.Format "2 Jan 2006 15:04"}}{{else}}<span class="muted">Never in-game</span>{{end}}</dd>
+        </dl>
+        {{if .IsSelf}}<p class="hint">This is you. Your own rank and status can only be changed by someone senior.</p>{{end}}
+      </section>
+
+      {{if .CanEditRank}}
+      <section class="card">
+        <h2>{{if .Member.RankName}}Change rank{{else}}Add to staff{{end}}</h2>
+        <form method="post" action="/admin/staff/{{.Member.ID}}/rank">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+          <div class="field">
+            <label for="rank_id">New rank</label>
+            <select id="rank_id" name="rank_id" required>
+              {{$cur := .Member.RankID}}
+              {{range .Ranks}}<option value="{{.ID}}" {{if eq .ID $cur}}selected{{end}}>{{.Name}}</option>{{end}}
+            </select>
+          </div>
+          <div class="field">
+            <label for="rank_reason">Reason</label>
+            <input id="rank_reason" name="reason" maxlength="500" required>
+          </div>
+          <button class="cta small" type="submit">Save rank</button>
+        </form>
+      </section>
+      {{end}}
+
+      {{if or .CanLOA .CanSuspend}}
+      <section class="card">
+        <h2>Status</h2>
+        <form method="post" action="/admin/staff/{{.Member.ID}}/status">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+          <div class="field">
+            <label for="status">Set status</label>
+            <select id="status" name="status" required>
+              {{if ne .Member.Status "active"}}<option value="active">Reinstate (active)</option>{{end}}
+              {{if and .CanLOA (ne .Member.Status "loa")}}<option value="loa">Leave of absence</option>{{end}}
+              {{if and .CanSuspend (ne .Member.Status "suspended")}}<option value="suspended">Suspend</option>{{end}}
+            </select>
+          </div>
+          <div class="field">
+            <label for="until">Until (optional)</label>
+            <input id="until" type="date" name="until" min="{{.Today}}">
+          </div>
+          <div class="field">
+            <label for="status_reason">Reason</label>
+            <input id="status_reason" name="reason" maxlength="500" required>
+          </div>
+          <p class="hint">Leave ends automatically on the date set. Suspensions are only lifted by hand.</p>
+          <button class="cta small" type="submit">Update status</button>
+        </form>
+      </section>
+      {{end}}
+
+      {{if .CanTeam}}
+      <section class="card">
+        <h2>Team &amp; region</h2>
+        <form method="post" action="/admin/staff/{{.Member.ID}}/team">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+          <div class="field-grid">
+            <div class="field"><label for="team">Team</label><input id="team" name="team" maxlength="50" value="{{.Member.Team}}" placeholder="e.g. Moderation"></div>
+            <div class="field"><label for="region">Region</label><input id="region" name="region" maxlength="50" value="{{.Member.Region}}" placeholder="e.g. AU-East"></div>
+          </div>
+          <button class="cta small" type="submit">Save</button>
+        </form>
+      </section>
+      {{end}}
+
+      {{if .CanRemove}}
+      <section class="card card-danger">
+        <h2>Remove from staff</h2>
+        <form method="post" action="/admin/staff/{{.Member.ID}}/rank">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+          <input type="hidden" name="rank_id" value="0">
+          <div class="field">
+            <label for="remove_reason">Reason</label>
+            <input id="remove_reason" name="reason" maxlength="500" required>
+          </div>
+          <p class="hint">Clears their rank, status, team and region. Their history and notes are kept.</p>
+          <button class="cta small danger" type="submit">Remove from staff</button>
+        </form>
+      </section>
+      {{end}}
+    </div>
+
+    <h2 class="admin-section-title">Rank history</h2>
+    <section class="card admin-table-card">
+      {{if .History}}
+      <table>
+        <thead><tr><th>When</th><th>Change</th><th>By</th><th>Reason</th><th>Via</th></tr></thead>
+        <tbody>
+          {{range .History}}
+          <tr>
+            <td class="muted">{{.ChangedAt.Format "2006-01-02 15:04"}}</td>
+            <td>{{.Field}}: {{.Old}} &rarr; {{.New}}</td>
+            <td>{{.Actor}}</td>
+            <td>{{.Reason}}</td>
+            <td class="muted">{{.Source}}</td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+      {{else}}<p class="empty-state">No rank changes recorded yet.</p>{{end}}
+    </section>
+
+    {{if .CanNotes}}
+    <h2 class="admin-section-title">Notes</h2>
+    <section class="card">
+      <form method="post" action="/admin/staff/{{.Member.ID}}/notes">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <div class="field">
+          <label for="note_body">Add a note</label>
+          <textarea id="note_body" name="body" rows="3" maxlength="4000" required></textarea>
+        </div>
+        <div class="button-row">
+          <select name="kind" aria-label="Note type"><option value="note">General note</option><option value="promotion">Promotion note</option></select>
+          <button class="cta small" type="submit">Add note</button>
+        </div>
+        <p class="hint">Notes can't be edited or deleted.</p>
+      </form>
+      {{range .Notes}}
+      <div class="staff-note">
+        <div class="staff-note-meta">{{if eq .Kind "promotion"}}<span class="badge badge-status-open">Promotion</span>{{end}} {{.Author}} · {{.CreatedAt.Format "2 Jan 2006 15:04"}}</div>
+        <p>{{.Body}}</p>
+      </div>
+      {{end}}
+    </section>
+    {{end}}
+  </div>
+</div>
+{{end}}
