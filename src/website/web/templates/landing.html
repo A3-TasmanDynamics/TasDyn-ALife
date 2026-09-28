@@ -1,18 +1,52 @@
 {{define "content"}}
 <section class="hero">
-  <h1>TasDyn-ALife</h1>
-  <p class="hero-sub">An Oceania/Australia region Arma 3 roleplay server.</p>
-  {{if not .Session}}
-    <a class="cta" href="/auth/steam/login">Sign in with Steam to get started</a>
-  {{else}}
-    <a class="cta" href="/dashboard">Go to your Dashboard</a>
-  {{end}}
+  <div class="hero-eyebrow">Oceania / Australia region &middot; Pre-Alpha</div>
+  <h1>A custom-built Altis Life, backed by a real database.</h1>
+  <p class="hero-sub">TasDyn-ALife runs on a from-scratch C++/PostgreSQL bridge instead of the usual extDB3/MySQL stack &mdash; three factions, one economy, and a server built to last.</p>
+  <div class="hero-actions">
+    {{if not .Session}}
+      <a class="cta" href="/auth/steam/login">Sign in with Steam to get started</a>
+    {{else}}
+      <a class="cta" href="/dashboard">Go to your Dashboard</a>
+    {{end}}
+    <a class="cta secondary" href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Join the Discord</a>
+  </div>
 </section>
 
-<section class="stat-strip">
+<section class="stat-grid">
   <div class="stat-tile">
     <div class="label">Players Online</div>
     <div class="value">{{.OnlineCount}}</div>
+  </div>
+  <div class="stat-tile">
+    <div class="label">Registered Players</div>
+    <div class="value">{{.RegisteredCount}}</div>
+  </div>
+  <div class="stat-tile">
+    <div class="label">Region</div>
+    <div class="value value-text">Oceania / AU</div>
+  </div>
+</section>
+
+<section class="feature-section">
+  <h2 class="section-title">Three factions, one economy</h2>
+  <p class="section-sub">Pick a side the moment you connect &mdash; no menus, no waiting.</p>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon feature-icon-civ">C</div>
+      <h3>Civilian</h3>
+      <p>Work legal jobs, build a bank balance, and decide whether the rebel life is worth the risk.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon feature-icon-cop">P</div>
+      <h3>Police</h3>
+      <p>Arrest, impound, and patrol &mdash; a whitelist and rank structure keep the badge meaningful.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon feature-icon-medic">M</div>
+      <h3>Medic</h3>
+      <p>Revive the fallen and keep the city running &mdash; no faction survives long without you.</p>
+    </div>
   </div>
 </section>
 

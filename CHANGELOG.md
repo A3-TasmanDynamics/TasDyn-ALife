@@ -734,3 +734,14 @@
   before use. No per-point custom icon asset exists yet, so every row uses the same generic
   waypoint icon rather than the mockup's per-location icons. Also enlarged and re-styled the
   selected-point title (`InfoText`) to match the mockup's bold preview-title treatment.
+- `src/website`: finished the public landing page content -- a hero with real copy (previously just
+  a bare title), a three-tile stat row, and a factions section, matching a layout mockup reviewed
+  and agreed with the project owner first. Added `players.RegisteredCount` alongside the existing
+  online-count query in `public.go`. Deliberately does **not** add a "server online" status tile --
+  a successful DB query says nothing about whether `arma3server_x64.exe` is actually up and
+  accepting connections (a separate system entirely with no real signal wired to the website yet),
+  so showing that without a real check behind it would just be a fabricated claim on a public page.
+  New CSS (`hero-eyebrow`, `hero-actions`, `feature-grid`/`feature-card`) added to
+  `web/static/style.css` alongside the existing navy/amber tokens, no new palette. Verified by
+  running the site locally against the real dev Postgres instance and checking the rendered HTML
+  and served CSS directly, not just that `go build` succeeded.
