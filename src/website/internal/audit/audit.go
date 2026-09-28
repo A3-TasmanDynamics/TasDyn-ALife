@@ -1,0 +1,122 @@
+// Package audit is the single path for recording staff actions and
+// attributing rank/role changes (docs/INTEGRATIONS.md §3).
+//
+// Rank/role changes need no explicit logging call: a database trigger on
+// players records them in rank_changes and staff_log. What the app must do
+// is attribute them -- call SetActor in the same transaction before the
+// UPDATE, or the change is recorded as a 'manual' one.
+//
+// Other staff actions (bans, notes, ...) call LogStaffAction. Either way,
+// internal/audit's Poster sends each staff_log row to #staff-log.
+package audit
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"strconv"
+
+	"github.com/jackc/pgx/v5"
+)
+
+// Sources, matching the CHECK constraints on staff_log.source and
+// rank_changes.source.
+const (
+	SourceWebsite = "website"
+	SourceDiscord = "discord"
+	SourceGame    = "game"
+	SourceManual  = "manual"
+)
+
+// SetActor attributes every change made later in tx to actorID (0 = no
+// player, e.g. a system job), from source, for reason. The settings are
+// transaction-local, so they can't leak into another request's writes on
+// a pooled connection.
+func SetActor(ctx context.Context, tx pgx.Tx, actorID int64, source, reason string) error {
+	actor := ""
+	if actorID > 0 {
+		actor = strconv.FormatInt(actorID, 10)
+	}
+	_, err := tx.Exec(ctx, `
+		SELECT set_config('tasdyn.actor_id', $1, true),
+		       set_config('tasdyn.source',   $2, true),
+		       set_config('tasdyn.reason',   $3, true)
+	`, actor, source, reason)
+	return err
+}
+
+// Entry is one staff action for LogStaffAction.
+type Entry struct {
+	StaffID  int64  // 0 = system
+	TargetID int64  // 0 = no target
+	Action   string // e.g. "ban", "devlog_post"
+	Reason   string
+	Before   any // marshalled to JSONB; nil = NULL
+	After    any
+	Source   string // defaults to SourceWebsite
+}
+
+// LogStaffAction writes one staff_log row inside tx, so it commits or rolls
+// back with the action it describes.
+func LogStaffAction(ctx context.Context, tx pgx.Tx, e Entry) error {
+	if e.Source == "" {
+		e.Source = SourceWebsite
+	}
+	before, err := jsonOrNil(e.Before)
+	if err != nil {
+		return err
+	}
+	after, err := jsonOrNil(e.After)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(ctx, `
+		INSERT INTO staff_log (staff_player_id, target_player_id, action, reason, before_value, after_value, source)
+		VALUES (NULLIF($1, 0), NULLIF($2, 0), $3, NULLIF($4, ''), $5, $6, $7)
+	`, e.StaffID, e.TargetID, e.Action, e.Reason, before, after, e.Source)
+	return err
+}
+
+func jsonOrNil(v any) ([]byte, error) {
+	if v == nil {
+		return nil, nil
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil, fmt.Errorf("audit: marshal: %w", err)
+	}
+	return b, nil
+}
+
+var fieldNames = map[string]string{
+	"staff_rank_id": "staff rank",
+	"staff_status":  "staff status",
+	"cop_level":     "police level",
+	"medic_level":   "EMS level",
+}
+
+// Describe turns a staff_log action and its before/after JSON into the
+// short phrase shown on the admin panel and in #staff-log, e.g.
+// "changed staff rank: Moderator → Admin". Unknown actions are shown as-is.
+func Describe(action string, before, after []byte) string {
+	const prefix = "rank_change:"
+	if len(action) > len(prefix) && action[:len(prefix)] == prefix {
+		field := action[len(prefix):]
+		name, ok := fieldNames[field]
+		if !ok {
+			name = field
+		}
+		return fmt.Sprintf("changed %s: %s → %s", name, label(before), label(after))
+	}
+	return action
+}
+
+func label(raw []byte) string {
+	var v struct {
+		Label string `json:"label"`
+	}
+	if len(raw) == 0 || json.Unmarshal(raw, &v) != nil || v.Label == "" {
+		return "none"
+	}
+	return v.Label
+}

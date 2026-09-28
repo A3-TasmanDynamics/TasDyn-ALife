@@ -403,6 +403,12 @@ CREATE TABLE staff_log (
     reason            TEXT,
     before_value      JSONB,
     after_value       JSONB,
+    -- Where the action came from (docs/INTEGRATIONS.md §3.1). 'manual' =
+    -- a direct database change with no app attribution -- flagged, not hidden.
+    source            TEXT NOT NULL DEFAULT 'website'
+                          CHECK (source IN ('website', 'discord', 'game', 'manual')),
+    -- Set once internal/audit's poster has sent this row to #staff-log.
+    discord_posted_at TIMESTAMPTZ,
     created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -744,5 +750,102 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_player_sessions_sync_last_seen
     AFTER INSERT OR UPDATE OF disconnected_at ON player_sessions
     FOR EACH ROW EXECUTE FUNCTION sync_last_seen_cache();
+
+-- ---------------------------------------------------------------------------
+-- Change capture: every rank/role change is logged once, here, whichever
+-- tool made it (website, Discord bot, game server, or a manual psql edit).
+-- docs/INTEGRATIONS.md §3.
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE rank_changes (
+    id           BIGSERIAL PRIMARY KEY,
+    player_id    BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    field        TEXT NOT NULL,          -- 'staff_rank_id', 'staff_status', 'cop_level', 'medic_level', 'discord_id'
+    old_value    TEXT,
+    new_value    TEXT,
+    source       TEXT NOT NULL CHECK (source IN ('website', 'discord', 'game', 'manual')),
+    actor_id     BIGINT REFERENCES players(id) ON DELETE SET NULL,
+    reason       TEXT,
+    changed_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_rank_changes_player_id ON rank_changes(player_id, changed_at DESC);
+
+-- Attribution comes from transaction-local settings the app sets before
+-- writing (internal/audit.SetActor). The C++ extension identifies itself
+-- via application_name instead. Anything else is a manual change.
+CREATE OR REPLACE FUNCTION tasdyn_change_source() RETURNS TEXT AS $$
+    SELECT COALESCE(
+        NULLIF(current_setting('tasdyn.source', true), ''),
+        CASE WHEN current_setting('application_name', true) = 'tasdyn-extension' THEN 'game' ELSE 'manual' END)
+$$ LANGUAGE sql STABLE;
+
+-- Human-readable label for a changed value, stored alongside the raw value
+-- so the log still reads correctly after a rank is renamed or deleted.
+CREATE OR REPLACE FUNCTION tasdyn_change_label(p_field TEXT, p_value TEXT) RETURNS TEXT AS $$
+    SELECT CASE
+        WHEN p_value IS NULL THEN 'none'
+        WHEN p_field = 'staff_rank_id' THEN
+            COALESCE((SELECT display_name FROM staff_ranks WHERE id = p_value::integer), 'rank #' || p_value)
+        ELSE p_value
+    END
+$$ LANGUAGE sql STABLE;
+
+CREATE OR REPLACE FUNCTION log_player_changes() RETURNS TRIGGER AS $$
+DECLARE
+    v_source TEXT   := tasdyn_change_source();
+    v_actor  BIGINT := NULLIF(current_setting('tasdyn.actor_id', true), '')::bigint;
+    v_reason TEXT   := NULLIF(current_setting('tasdyn.reason', true), '');
+    v_field  TEXT;
+    v_old    TEXT;
+    v_new    TEXT;
+BEGIN
+    FOR v_field, v_old, v_new IN
+        SELECT * FROM (VALUES
+            ('staff_rank_id', OLD.staff_rank_id::text, NEW.staff_rank_id::text),
+            ('staff_status',  OLD.staff_status,        NEW.staff_status),
+            ('cop_level',     OLD.cop_level::text,     NEW.cop_level::text),
+            ('medic_level',   OLD.medic_level::text,   NEW.medic_level::text),
+            ('discord_id',    OLD.discord_id,          NEW.discord_id)
+        ) AS v(field, old_value, new_value)
+    LOOP
+        CONTINUE WHEN v_old IS NOT DISTINCT FROM v_new;
+
+        INSERT INTO rank_changes (player_id, field, old_value, new_value, source, actor_id, reason)
+        VALUES (NEW.id, v_field, v_old, v_new, v_source, v_actor, v_reason);
+
+        -- Linking/unlinking Discord is recorded for sync, but it's the
+        -- player's own action, not a staff one -- no staff_log row.
+        IF v_field <> 'discord_id' THEN
+            INSERT INTO staff_log (staff_player_id, target_player_id, action, reason, before_value, after_value, source)
+            VALUES (v_actor, NEW.id, 'rank_change:' || v_field, v_reason,
+                    jsonb_build_object('value', v_old, 'label', tasdyn_change_label(v_field, v_old)),
+                    jsonb_build_object('value', v_new, 'label', tasdyn_change_label(v_field, v_new)),
+                    v_source);
+        END IF;
+
+        -- Wakes the website's role-sync engine for this player.
+        PERFORM pg_notify('rank_changed', NEW.id::text);
+    END LOOP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_players_log_changes
+    AFTER UPDATE OF staff_rank_id, staff_status, cop_level, medic_level, discord_id ON players
+    FOR EACH ROW EXECUTE FUNCTION log_player_changes();
+
+-- Wakes internal/audit's poster so new staff_log rows reach #staff-log
+-- promptly; it also polls, so a missed notification only delays a post.
+CREATE OR REPLACE FUNCTION notify_staff_log() RETURNS TRIGGER AS $$
+BEGIN
+    PERFORM pg_notify('staff_log', NEW.id::text);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_staff_log_notify
+    AFTER INSERT ON staff_log
+    FOR EACH ROW EXECUTE FUNCTION notify_staff_log();
 
 COMMIT;

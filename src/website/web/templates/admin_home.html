@@ -28,7 +28,7 @@
     <section class="card admin-table-card">
       {{if .StaffLog}}
         <table>
-          <thead><tr><th>Staff</th><th>Action</th><th>Target</th><th>Reason</th><th>Time</th></tr></thead>
+          <thead><tr><th>Staff</th><th>Action</th><th>Target</th><th>Reason</th><th>Via</th><th>Time</th></tr></thead>
           <tbody>
             {{range .StaffLog}}
             <tr>
@@ -36,6 +36,7 @@
               <td>{{.Action}}</td>
               <td>{{if .TargetName}}{{.TargetName}}{{else}}—{{end}}</td>
               <td>{{.Reason}}</td>
+              <td class="muted">{{.Source}}</td>
               <td class="muted">{{.CreatedAt}}</td>
             </tr>
             {{end}}

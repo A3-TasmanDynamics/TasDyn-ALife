@@ -848,3 +848,13 @@
   GUIDs are set on website signup and backfilled for game-created rows, with or without an API key.
   Display names everywhere now fall back in-game name -> Steam name -> `Player #id`. New
   `STEAM_WEB_API_KEY` env var (optional).
+- **Wave 1 foundation: change capture + #staff-log.** A trigger on `players` records every change to staff rank,
+  staff status, police/EMS level or linked Discord in a new `rank_changes` table and (except Discord
+  links) a readable `staff_log` row, in the same transaction, then `NOTIFY rank_changed` for role sync.
+  Attribution: the website sets actor/source/reason with `audit.SetActor`; the C++ extension now connects
+  as `application_name=tasdyn-extension` so its changes are `game`; anything else is flagged `manual`.
+  No-op updates aren't logged. New `internal/audit` poster sends each `staff_log` row to
+  `DISCORD_STAFF_LOG_WEBHOOK` exactly once (NOTIFY + 1-minute poll, `discord_posted_at`, 24h window so a
+  newly set webhook isn't flooded). **Security fixes:** Discord webhook posts now disable all mentions (a
+  ticket subject of `@everyone` would have pinged the server) and failed posts no longer log the webhook
+  URL (it contains the secret token). The admin staff log shows readable changes and a *Via* column.

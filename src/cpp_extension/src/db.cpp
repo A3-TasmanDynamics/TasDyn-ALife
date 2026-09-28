@@ -102,7 +102,11 @@ bool Database::Connect(const DbConfig& config, std::string& outError) {
         " dbname=" + config.dbname +
         " user=" + config.user +
         " password=" + config.password +
-        " connect_timeout=5";
+        " connect_timeout=5" +
+        // Lets database triggers attribute changes made by the game server
+        // (e.g. an in-game faction promotion) to source 'game' in
+        // rank_changes/staff_log -- see docs/INTEGRATIONS.md §3.1.
+        " application_name=tasdyn-extension";
 
     conn_ = PQconnectdb(connInfo.c_str());
 

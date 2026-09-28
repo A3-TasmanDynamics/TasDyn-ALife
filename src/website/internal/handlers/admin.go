@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"website/internal/audit"
 	"website/internal/auth"
 )
 
@@ -13,6 +14,7 @@ type staffLogRow struct {
 	Action     string
 	TargetName string
 	Reason     string
+	Source     string
 	CreatedAt  string
 }
 
@@ -75,7 +77,9 @@ func (d *Deps) AdminHome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rows, err := d.Pool.Query(ctx, `
-		SELECT COALESCE(NULLIF(staff.name, ''), staff.steam_name, 'System'), sl.action,
+		SELECT COALESCE(NULLIF(staff.name, ''), staff.steam_name,
+		                CASE sl.source WHEN 'game' THEN 'In-game' WHEN 'manual' THEN 'Manual DB change' ELSE 'System' END),
+		       sl.action, sl.before_value, sl.after_value, sl.source,
 		       COALESCE(NULLIF(target.name, ''), target.steam_name, ''), COALESCE(sl.reason, ''), sl.created_at
 		FROM staff_log sl
 		LEFT JOIN players staff ON staff.id = sl.staff_player_id
@@ -92,7 +96,10 @@ func (d *Deps) AdminHome(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var row staffLogRow
 		var createdAt time.Time
-		if err := rows.Scan(&row.StaffName, &row.Action, &row.TargetName, &row.Reason, &createdAt); err == nil {
+		var action string
+		var before, after []byte
+		if err := rows.Scan(&row.StaffName, &action, &before, &after, &row.Source, &row.TargetName, &row.Reason, &createdAt); err == nil {
+			row.Action = audit.Describe(action, before, after)
 			row.CreatedAt = createdAt.Format("2006-01-02 15:04")
 			data.StaffLog = append(data.StaffLog, row)
 		}
