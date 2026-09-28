@@ -125,6 +125,10 @@ have on that platform, and applies only the difference.
 
 ### 2.5 Bot commands
 
+The full bot design (every command, buttons, events, ticket forum, outbox, permissions and build
+stages) is in [DISCORD_BOT.md](DISCORD_BOT.md). The commands below are the ones this integration
+plan depends on.
+
 In addition to `/link` (already built):
 
 | Command | Who | What |
