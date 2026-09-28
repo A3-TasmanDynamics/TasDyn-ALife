@@ -11,6 +11,9 @@ vs. this project's Go/Postgres) and was never itself finished/hardened enough to
 This is a genuine scope increase on top of [WEBSITE.md](WEBSITE.md) and
 [ADMIN_TOOLS.md](ADMIN_TOOLS.md) — see [§7](#7-timeline-impact--the-honest-part).
 
+For the complete Gamepanel feature-by-feature mapping (all 44 features, not just the five here)
+and the overall build order, see [GAMEPANEL_PARITY.md](GAMEPANEL_PARITY.md).
+
 ## 1. Scope note
 
 Five features, two audiences:
