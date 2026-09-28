@@ -57,6 +57,23 @@ var funcs = template.FuncMap{
 		return "?" + out.Encode()
 	},
 	"i64": func(i int64) string { return strconv.FormatInt(i, 10) },
+	"deref": func(p *int) int {
+		if p == nil {
+			return 0
+		}
+		return *p
+	},
+	// initialsOf: two-letter avatar text; unnamed "Player #35" shows "#35".
+	"initialsOf": func(name string) string {
+		if rest, ok := strings.CutPrefix(name, "Player #"); ok {
+			return "#" + rest
+		}
+		r := []rune(strings.TrimSpace(name))
+		if len(r) > 2 {
+			r = r[:2]
+		}
+		return strings.ToUpper(string(r))
+	},
 }
 
 func New(dir string) (*Renderer, error) {
