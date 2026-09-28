@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -108,6 +109,19 @@ func Describe(action string, before, after []byte) string {
 			name = field
 		}
 		return fmt.Sprintf("changed %s: %s → %s", name, label(before), label(after))
+	}
+	for prefix, verb := range map[string]string{
+		"rank_edit:":          "edited the %s rank",
+		"rank_create:":        "created the %s rank",
+		"rank_delete:":        "deleted the %s rank",
+		"faction_rank_names:": "updated %s rank names",
+	} {
+		if rest, ok := strings.CutPrefix(action, prefix); ok {
+			return fmt.Sprintf(verb, rest)
+		}
+	}
+	if action == "rank_reorder" {
+		return "reordered ranks"
 	}
 	return action
 }

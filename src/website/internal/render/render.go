@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"net/url"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -29,6 +31,34 @@ type Renderer struct {
 // (e.g. "support_sidebar") instead, so it can be parsed alongside every
 // page without that collision, and any page can reference it with
 // {{template "name" .}}.
+// funcs are the small helpers templates may use -- kept deliberately few.
+var funcs = template.FuncMap{
+	"inc":  func(i int) int { return i + 1 },
+	"dec":  func(i int) int { return i - 1 },
+	"list": func(s ...string) []string { return s },
+	// qset returns "?query" with the given key/value pairs set on a copy of
+	// v (an empty value removes the key) -- for filter and paging links
+	// that keep the other filters.
+	"qset": func(v url.Values, kv ...string) string {
+		out := url.Values{}
+		for k, vals := range v {
+			out[k] = append([]string(nil), vals...)
+		}
+		for i := 0; i+1 < len(kv); i += 2 {
+			if kv[i+1] == "" {
+				out.Del(kv[i])
+			} else {
+				out.Set(kv[i], kv[i+1])
+			}
+		}
+		if len(out) == 0 {
+			return "?"
+		}
+		return "?" + out.Encode()
+	},
+	"i64": func(i int64) string { return strconv.FormatInt(i, 10) },
+}
+
 func New(dir string) (*Renderer, error) {
 	layout := filepath.Join(dir, "layout.html")
 
@@ -49,7 +79,7 @@ func New(dir string) (*Renderer, error) {
 			continue
 		}
 		files := append([]string{layout, page}, partials...)
-		t, err := template.ParseFiles(files...)
+		t, err := template.New(filepath.Base(layout)).Funcs(funcs).ParseFiles(files...)
 		if err != nil {
 			return nil, fmt.Errorf("render: parsing %s: %w", name, err)
 		}

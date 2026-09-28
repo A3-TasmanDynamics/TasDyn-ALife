@@ -896,3 +896,17 @@
   one *Placement* form for rank/team/region (shows permission overrides), a combined *Notes & history* timeline,
   and a *Remove from staff* strip with a confirmation dialog. Dialog behaviour lives in `/static/admin.js`. Not
   yet shown (their features aren't built): case activity, notifications bell, sidebar search.
+- **Roles & Permissions (`/admin/roles`, layout plan board).** Permissions are now ticked per rank (new`rank_permissions` table) instead of derived from a level threshold; built-in ranks were seeded with exactly the
+  keys their level implied, so nobody's access changed (a test keeps the schema seed and the Go catalogue in
+  step). The catalogue follows the board's groups and adds `cases.lead`, `bans.appeal_review`,`anticheat.review`, `database.query`; team/region editing now falls under `staff.edit`. The *Staff ranks* tab lists
+  ranks highest-first (members, permission count, lock icon), reorders them by swapping levels, creates and
+  deletes (empty) ranks, and edits name, default panels and permissions. Rules in the new `internal/roles`:
+  only ranks below your own level, only keys you hold yourself, only catalogue keys, never the last level-100
+  rank. The *Faction rank names* tab edits police/EMS level names (`faction_rank_names`, `factions.configure`).
+  Every change is logged with before/after values. Renderer gains `inc`/`list` template helpers.
+- **Staff Log page (`/admin/staff-log`, layout plan board).** Category pills (Moderation, Economy, Tickets, Database,
+  Permissions) with coloured dots, filters for details search, staff member, target, action and date range (24h / 7d
+  default / 30d / all), 50 per page with Newer/Older keyset paging and a total count, and an entry inspector with the
+  before/after payload. Actions display in the plan's dotted style (`staff.status`, `roles.edit`…). *Export CSV*
+  downloads everything matching the filters (up to 10,000 rows) with spreadsheet-formula injection neutralised.
+  The board's *Origin* IP isn't shown: IPs aren't recorded in the staff log. Dashboard links to the full log.

@@ -228,7 +228,7 @@ type staffProfileData struct {
 	Regions    []string
 	Timeline   []staff.TimelineEntry
 
-	CanPlace   bool // rank (staff.edit) or team/region (staff.team)
+	CanPlace   bool // rank, team and region all need staff.edit
 	CanRank    bool
 	CanTeam    bool
 	CanRemove  bool
@@ -266,7 +266,7 @@ func (d *Deps) StaffProfile(w http.ResponseWriter, r *http.Request) {
 	if !data.IsSelf {
 		isStaff := m.RankID != 0
 		data.CanRank = d.can(r, "staff.edit")
-		data.CanTeam = isStaff && d.can(r, "staff.team")
+		data.CanTeam = isStaff && data.CanRank
 		data.CanPlace = data.CanRank || data.CanTeam
 		data.CanRemove = isStaff && d.can(r, "staff.remove")
 		data.CanLOA = isStaff && m.Status != "suspended" && d.can(r, "staff.loa")
@@ -324,7 +324,7 @@ func (d *Deps) StaffSetPlacement(w http.ResponseWriter, r *http.Request) {
 
 	team, region := strings.TrimSpace(r.FormValue("team")), strings.TrimSpace(r.FormValue("region"))
 	if r.Form.Has("team") && m.RankID != 0 && (team != m.Team || region != m.Region) {
-		if !d.requireCan(w, r, "staff.team", back) {
+		if !d.requireCan(w, r, "staff.edit", back) {
 			return
 		}
 		if err := staff.SetTeam(r.Context(), d.Pool, actorFrom(r), id, team, region); err != nil {

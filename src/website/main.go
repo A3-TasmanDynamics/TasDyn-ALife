@@ -221,6 +221,24 @@ func run() error {
 			r.Post("/admin/staff/{id}/placement", d.StaffSetPlacement)
 			r.Post("/admin/staff/{id}/notes", d.StaffAddNote)
 		})
+
+		// Roles & Permissions (GAMEPANEL_PARITY §2.1). The page itself opens
+		// for roles.manage OR factions.configure (checked in the handler);
+		// rank changes need roles.manage, and internal/roles enforces the
+		// level and "only grant what you hold" rules.
+		// Staff Log (GAMEPANEL_PARITY §2.4) -- Admin Panel access is enough to read it.
+		r.Get("/admin/staff-log", d.StaffLog)
+		r.Get("/admin/staff-log.csv", d.StaffLogCSV)
+
+		r.Get("/admin/roles", d.Roles)
+		r.Post("/admin/roles/faction-names", d.RoleFactionNames)
+		r.Group(func(r chi.Router) {
+			r.Use(d.Auth.RequirePermission("roles.manage"))
+			r.Post("/admin/roles/save", d.RoleSave)
+			r.Post("/admin/roles/move", d.RoleMove)
+			r.Post("/admin/roles/create", d.RoleCreate)
+			r.Post("/admin/roles/delete", d.RoleDelete)
+		})
 	})
 
 	r.Group(func(r chi.Router) {

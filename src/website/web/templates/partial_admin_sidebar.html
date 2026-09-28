@@ -20,9 +20,9 @@
 
   <div class="admin-nav-group">Staff</div>
   <a href="/admin/staff" class="admin-nav-item {{if eq .AdminTab "staff"}}active{{end}}" {{if eq .AdminTab "staff"}}aria-current="page"{{end}}>Staff Directory</a>
-  <span class="admin-nav-item disabled">Roles &amp; Permissions <span class="admin-nav-tag">Soon</span></span>
+  <a href="/admin/roles" class="admin-nav-item {{if eq .AdminTab "roles"}}active{{end}}" {{if eq .AdminTab "roles"}}aria-current="page"{{end}}>Roles &amp; Permissions</a>
   <span class="admin-nav-item disabled">Applications <span class="admin-nav-tag">Soon</span></span>
-  <a href="/admin#staff-log" class="admin-nav-item">Staff Log</a>
+  <a href="/admin/staff-log" class="admin-nav-item {{if eq .AdminTab "stafflog"}}active{{end}}" {{if eq .AdminTab "stafflog"}}aria-current="page"{{end}}>Staff Log</a>
 
   <div class="admin-nav-group">Server</div>
   <span class="admin-nav-item disabled">Server Control <span class="admin-nav-tag">Soon</span></span>

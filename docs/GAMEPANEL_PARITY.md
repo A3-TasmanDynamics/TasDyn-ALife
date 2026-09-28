@@ -120,6 +120,11 @@ Reordering changes `level`. **Guardrails:** nobody can create or edit a rank at 
 level, and nobody can remove the last level-100 rank. Every change is written to `staff_log` with
 before/after values. Permission: `roles.manage`.
 
+**Built** (`/admin/roles`, `internal/roles`). Ticked keys are stored per rank in `rank_permissions`,
+and that's what `auth.Can` checks after any per-player override. One extra guardrail: you can only
+grant a key you hold yourself. The page also has the faction rank names tab (§6.3,
+`factions.configure`).
+
 ### 2.2 Staff directory & profiles (#6, #7)
 
 ```sql
