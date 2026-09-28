@@ -958,3 +958,20 @@
   (`players.Dollars`, `players.LargeCompensation`), the compensate form rejects fractional amounts, and the staff-log
   payload keys are `amount`/`balance`. `bank.Transfer*` parameters were renamed from `amountCents` to `amount` (they
   were already whole dollars).
+- **Layout plan alignment (canvas version 1790637194).** *Site header:* nav pills with the current page highlighted
+  (Dashboard, Rules, Support, Devlog, Status), a user chip (initials, name, and a rank line such as "Moderator · on
+  leave" or "Police · Senior Constable"), and an *Admin panel* link. *Admin pages:* no site header; the sidebar runs
+  full height with the plan's search box ("Search players" → Player Lookup), and *View site* and *Sign out* in its
+  footer. Flash messages there show as toasts. *Landing:* the stat strip's last cell is **Server Status**, from the
+  status page's real A2S check ("Not monitored yet" until `GAME_QUERY_ADDR` is set). *Player dashboard* rebuilt to the
+  plan: greeting with Steam64/Discord and *Join server · N online* (a `steam://connect` link when the game address is
+  configured), four tiles (net worth, faction rank, playtime with hours this week, account standing), houses,
+  vehicles, licences, the latest tickets with "Staff replied" badges, and **opt-in leaderboards** (richest in bands,
+  most houses, most personal vehicles; `players.leaderboard_opt_in`, off by default). Gang management, money transfers
+  and Discord linking stay on the dashboard. *Server rules:* public `/rules` page with a table of contents, search,
+  and a "CHANGED" banner plus highlighted rules for 30 days after an edit. Rules are edited as one plain-text document
+  on `/admin/rules` (new `rules.edit` permission, seeded to Admin and above; new `rule_versions` table keeps every
+  version; logged as `rules.update`). *Access-denied pages:* suspended, on-leave, not-staff and missing-permission
+  pages (HTTP 403) replace the plain-text errors. **Security fix:** Admin and Support Panel access is now re-checked on
+  every request, so a suspension, LOA or removal applies immediately; before, `/admin` itself stayed open until the
+  staff member's next sign-in. The Staff Profile's remove dialog no longer says role sync is pending.

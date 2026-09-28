@@ -2,26 +2,14 @@ package handlers
 
 import (
 	"log/slog"
+	"net"
 	"net/http"
 	"strconv"
 
 	"website/internal/auth"
 	"website/internal/bank"
+	"website/internal/dashboard"
 )
-
-type playerStats struct {
-	Name             string
-	CivCash          int64
-	CivBank          int64
-	CivPlaytimeHours int64
-	CopLevel         int32
-	CopCash          int64
-	CopBank          int64
-	MedicLevel       int32
-	MedicCash        int64
-	MedicBank        int64
-	DiscordUsername  string
-}
 
 type gangMember struct {
 	PlayerID int64
@@ -39,122 +27,115 @@ type gangInfo struct {
 
 type dashboardData struct {
 	Base
-	Player          playerStats
+	dashboard.Overview
+	Boards          []dashboard.Board
 	Gang            *gangInfo
 	DiscordLinkCode string
 	TransferToken   string
+	JoinURL         string // steam://connect link, "" when the game address isn't configured
 }
 
+// Dashboard is the player dashboard (layout plan "Player — Dashboard").
 func (d *Deps) Dashboard(w http.ResponseWriter, r *http.Request) {
+	d.renderDashboard(w, r, "")
+}
+
+// renderDashboard loads and renders the dashboard; linkCode, if set, is a
+// freshly generated Discord /link code shown once.
+func (d *Deps) renderDashboard(w http.ResponseWriter, r *http.Request, linkCode string) {
 	sess, _ := auth.FromContext(r.Context())
 	transferToken, _ := auth.RandomState()
-	data := dashboardData{Base: baseFrom(r, "Dashboard"), TransferToken: transferToken}
-
-	var discordUsername *string
-	var civPlaytimeSeconds int64
-	err := d.Pool.QueryRow(r.Context(), `
-		SELECT name, civ_cash, civ_bank, civ_playtime_seconds,
-		       cop_level, cop_cash, cop_bank,
-		       medic_level, medic_cash, medic_bank,
-		       discord_username
-		FROM players WHERE id = $1
-	`, sess.PlayerID).Scan(
-		&data.Player.Name, &data.Player.CivCash, &data.Player.CivBank, &civPlaytimeSeconds,
-		&data.Player.CopLevel, &data.Player.CopCash, &data.Player.CopBank,
-		&data.Player.MedicLevel, &data.Player.MedicCash, &data.Player.MedicBank,
-		&discordUsername,
-	)
+	data := dashboardData{Base: baseFrom(r, "Dashboard"), TransferToken: transferToken, DiscordLinkCode: linkCode}
+	ov, err := dashboard.Load(r.Context(), d.Pool, sess.PlayerID)
 	if err != nil {
 		slog.Error("dashboard: loading player failed", "error", err)
 		http.Error(w, "Failed to load your account.", http.StatusInternalServerError)
 		return
 	}
-	data.Player.CivPlaytimeHours = civPlaytimeSeconds / 3600
-	if discordUsername != nil {
-		data.Player.DiscordUsername = *discordUsername
+	data.Overview = ov
+	if data.Boards, err = dashboard.Leaderboards(r.Context(), d.Pool, sess.PlayerID, ov.OptIn); err != nil {
+		slog.Error("dashboard: leaderboards failed", "error", err)
 	}
+	data.JoinURL = joinURL(d.Cfg.GameQueryAddr)
+	data.Gang = d.loadGang(r, sess.PlayerID)
+	d.Render.Render(w, "dashboard.html", data)
+}
 
+// joinURL builds a steam://connect link from the game's query address
+// (query port = game port + 1).
+func joinURL(queryAddr string) string {
+	host, port, err := net.SplitHostPort(queryAddr)
+	if err != nil || host == "" {
+		return ""
+	}
+	p, err := strconv.Atoi(port)
+	if err != nil || p < 2 {
+		return ""
+	}
+	return "steam://connect/" + net.JoinHostPort(host, strconv.Itoa(p-1))
+}
+
+func (d *Deps) loadGang(r *http.Request, playerID int64) *gangInfo {
 	var gangID, leaderPlayerID int64
 	var g gangInfo
-	err = d.Pool.QueryRow(r.Context(), `
+	err := d.Pool.QueryRow(r.Context(), `
 		SELECT g.id, g.name, g.tag, COALESCE(ga.balance, 0), g.leader_player_id
 		FROM gang_members gm
 		JOIN gangs g ON g.id = gm.gang_id
 		LEFT JOIN gang_accounts ga ON ga.gang_id = g.id
 		WHERE gm.player_id = $1
-	`, sess.PlayerID).Scan(&gangID, &g.Name, &g.Tag, &g.Balance, &leaderPlayerID)
+	`, playerID).Scan(&gangID, &g.Name, &g.Tag, &g.Balance, &leaderPlayerID)
+	if err != nil {
+		return nil
+	}
+	g.IsLeader = leaderPlayerID == playerID
+	rows, err := d.Pool.Query(r.Context(), `
+		SELECT p.id, p.name, gm.rank FROM gang_members gm
+		JOIN players p ON p.id = gm.player_id
+		WHERE gm.gang_id = $1 ORDER BY gm.rank DESC, p.name
+	`, gangID)
 	if err == nil {
-		g.IsLeader = leaderPlayerID == sess.PlayerID
-		rows, rerr := d.Pool.Query(r.Context(), `
-			SELECT p.id, p.name, gm.rank FROM gang_members gm
-			JOIN players p ON p.id = gm.player_id
-			WHERE gm.gang_id = $1 ORDER BY gm.rank DESC, p.name
-		`, gangID)
-		if rerr == nil {
-			defer rows.Close()
-			for rows.Next() {
-				var m gangMember
-				if rows.Scan(&m.PlayerID, &m.Name, &m.Rank) == nil {
-					g.Members = append(g.Members, m)
-				}
+		defer rows.Close()
+		for rows.Next() {
+			var m gangMember
+			if rows.Scan(&m.PlayerID, &m.Name, &m.Rank) == nil {
+				g.Members = append(g.Members, m)
 			}
 		}
-		data.Gang = &g
 	}
-
-	d.Render.Render(w, "dashboard.html", data)
+	return &g
 }
 
 // GenerateDiscordLinkCode issues a one-time code for the Discord `/link`
 // command (the mirror-image of DiscordConnect's OAuth path) and re-renders
 // the dashboard with it shown. POST, not GET -- it has a side effect (a new
-// row in discord_link_codes).
+// row in discord_link_codes). Re-rendered inline rather than redirected: a
+// redirect would put the one-time code in browser history.
 func (d *Deps) GenerateDiscordLinkCode(w http.ResponseWriter, r *http.Request) {
 	sess, _ := auth.FromContext(r.Context())
-
 	code, _, err := auth.GenerateLinkCode(r.Context(), d.Pool, sess.PlayerID)
 	if err != nil {
 		slog.Error("dashboard: generating discord link code failed", "error", err)
 		http.Redirect(w, r, "/dashboard?error="+errMsg("Couldn't generate a code, try again."), http.StatusSeeOther)
 		return
 	}
-
-	// Re-render inline rather than redirecting -- a redirect would lose the
-	// code (it's only meaningful once, shown once), and it's short-lived
-	// enough that reflecting it via a query param isn't worth the
-	// leak-into-browser-history tradeoff.
-	transferToken, _ := auth.RandomState()
-	data := dashboardData{Base: baseFrom(r, "Dashboard"), DiscordLinkCode: code, TransferToken: transferToken}
-	if err := d.loadDashboardPlayer(r, sess.PlayerID, &data); err != nil {
-		http.Error(w, "Failed to load your account.", http.StatusInternalServerError)
-		return
-	}
-	d.Render.Render(w, "dashboard.html", data)
+	d.renderDashboard(w, r, code)
 }
 
-func (d *Deps) loadDashboardPlayer(r *http.Request, playerID int64, data *dashboardData) error {
-	var discordUsername *string
-	var civPlaytimeSeconds int64
-	err := d.Pool.QueryRow(r.Context(), `
-		SELECT name, civ_cash, civ_bank, civ_playtime_seconds,
-		       cop_level, cop_cash, cop_bank,
-		       medic_level, medic_cash, medic_bank,
-		       discord_username
-		FROM players WHERE id = $1
-	`, playerID).Scan(
-		&data.Player.Name, &data.Player.CivCash, &data.Player.CivBank, &civPlaytimeSeconds,
-		&data.Player.CopLevel, &data.Player.CopCash, &data.Player.CopBank,
-		&data.Player.MedicLevel, &data.Player.MedicCash, &data.Player.MedicBank,
-		&discordUsername,
-	)
-	if err != nil {
-		return err
+// SetLeaderboardOptIn is the dashboard's "Show me on leaderboards" box.
+func (d *Deps) SetLeaderboardOptIn(w http.ResponseWriter, r *http.Request) {
+	sess, _ := auth.FromContext(r.Context())
+	on := r.FormValue("opt_in") == "on"
+	if err := dashboard.SetOptIn(r.Context(), d.Pool, sess.PlayerID, on); err != nil {
+		slog.Error("dashboard: leaderboard opt-in failed", "error", err)
+		http.Redirect(w, r, "/dashboard?error="+errMsg("Couldn't save that. Try again.")+"#leaderboards", http.StatusSeeOther)
+		return
 	}
-	data.Player.CivPlaytimeHours = civPlaytimeSeconds / 3600
-	if discordUsername != nil {
-		data.Player.DiscordUsername = *discordUsername
+	msg := "You're now hidden from the leaderboards."
+	if on {
+		msg = "You now appear on the leaderboards."
 	}
-	return nil
+	http.Redirect(w, r, "/dashboard?notice="+errMsg(msg)+"#leaderboards", http.StatusSeeOther)
 }
 
 // Transfer handles both "Send Money" forms on the dashboard (move between

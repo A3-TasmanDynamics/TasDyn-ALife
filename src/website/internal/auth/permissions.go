@@ -77,6 +77,7 @@ var Catalogue = []Permission{
 	{Key: "server.control", Label: "Restart, stop and start servers", Group: "Server", SeedLevel: LevelHeadAdmin, NoOverride: true},
 	{Key: "database.query", Label: "Read-only database browser", Group: "Server", SeedLevel: LevelHeadAdmin, NoOverride: true},
 	{Key: "announce.post", Label: "Post announcements", Group: "Server", SeedLevel: LevelAdmin},
+	{Key: "rules.edit", Label: "Edit the server rules", Group: "Server", SeedLevel: LevelAdmin},
 	{Key: "bot.admin", Label: "Bot health and forced syncs", Group: "Server", SeedLevel: LevelHeadAdmin},
 }
 
@@ -149,11 +150,7 @@ func (a *Authenticator) RequirePermission(key string) func(http.Handler) http.Ha
 				return
 			}
 			if denial != Allowed {
-				msg := "403 Forbidden: you don't have permission for this page"
-				if reason := a.denialReason(r.Context(), sess.PlayerID); reason != "" {
-					msg = reason
-				}
-				http.Error(w, msg, http.StatusForbidden)
+				a.deny(w, r, sess.PlayerID, "admin", key)
 				return
 			}
 			next.ServeHTTP(w, r)

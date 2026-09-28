@@ -7,6 +7,7 @@ package handlers
 import (
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -50,6 +51,8 @@ type Deps struct {
 // always resolve regardless of which page is rendering.
 type Base struct {
 	Title     string
+	Path      string // request path, for the header's active nav item
+	Panel     bool   // /admin pages: full-height sidebar, no site header (layout plan)
 	Session   *auth.Session
 	Error     string
 	Notice    string
@@ -58,7 +61,8 @@ type Base struct {
 
 func baseFrom(r *http.Request, title string) Base {
 	sess, _ := auth.FromContext(r.Context())
-	b := Base{Title: title, Session: sess, CSRFToken: csrf.FromContext(r.Context())}
+	b := Base{Title: title, Session: sess, CSRFToken: csrf.FromContext(r.Context()), Path: r.URL.Path,
+		Panel: r.URL.Path == "/admin" || strings.HasPrefix(r.URL.Path, "/admin/")}
 	q := r.URL.Query()
 	if q.Get("login_required") == "1" {
 		b.Error = "Please sign in to continue."

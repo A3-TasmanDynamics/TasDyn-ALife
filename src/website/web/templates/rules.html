@@ -1,0 +1,49 @@
+{{define "content"}}
+<div class="rules-page">
+  <nav class="rules-toc" aria-label="Rule sections">
+    <form method="get" action="/rules" role="search" class="rules-search">
+      <label>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input name="q" value="{{.Q}}" aria-label="Search the rules" placeholder="Search the rules">
+      </label>
+    </form>
+    {{range .TOC}}
+    <a class="rules-toc-item" href="/rules#{{.Anchor}}"><span class="rules-toc-n">{{.N}}</span>{{.Title}}</a>
+    {{end}}
+    <div class="rules-aside-note">Staff enforce these rules. Breaking them earns points that add up and expire over time. Questions? <a href="/tickets">Open a ticket</a>.</div>
+    {{if .CanEdit}}<a class="btn rules-edit-link" href="/admin/rules">Edit the rules</a>{{end}}
+  </nav>
+
+  <article class="rules-body">
+    <h1 class="rules-title">Server rules</h1>
+    {{if not .Published}}
+      <p class="rules-meta">The rules haven't been published on the website yet. Ask in the Discord in the meantime.</p>
+    {{else}}
+      <p class="rules-meta">Last updated {{.Doc.UpdatedAt.Format "2 Jan 2006"}} &middot; applies to everyone on the server, including staff</p>
+
+      {{if and .Doc.Recent .Doc.ChangeNote}}
+      <div class="rules-changed">
+        <span class="rules-changed-tag">CHANGED</span>
+        <div><strong>{{.Doc.UpdatedAt.Format "2 Jan"}}{{if .Doc.Changed}}: rule{{if gt (len .Doc.Changed) 1}}s{{end}} {{range $i, $n := .Doc.Changed}}{{if $i}}, {{end}}{{$n}}{{end}}{{end}}</strong> &mdash; {{.Doc.ChangeNote}}{{if .FirstHit}} <a href="/rules#{{.FirstHit}}">Read the change</a>{{end}}</div>
+      </div>
+      {{end}}
+
+      {{if .Q}}<p class="rules-meta">Showing rules matching &ldquo;{{.Q}}&rdquo; &middot; <a href="/rules">Show all</a></p>{{end}}
+
+      {{range .Sections}}
+      <section id="{{.Anchor}}" class="rules-section">
+        <h2><span class="rules-section-n">{{.N}}.</span>{{.Title}}</h2>
+        {{range .Rules}}
+        <div class="rule{{if .Changed}} rule-changed{{end}}" id="rule-{{.Number}}">
+          <span class="rule-n">{{.Number}}</span>
+          <span class="rule-text">{{.Text}}{{if .Changed}} <span class="rule-changed-tag">Changed</span>{{end}}</span>
+        </div>
+        {{end}}
+      </section>
+      {{else}}
+        {{if .Q}}<p class="rules-meta">No rules mention &ldquo;{{.Q}}&rdquo;.</p>{{end}}
+      {{end}}
+    {{end}}
+  </article>
+</div>
+{{end}}

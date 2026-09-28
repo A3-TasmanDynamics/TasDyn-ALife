@@ -87,7 +87,7 @@ func (d *Deps) Roles(w http.ResponseWriter, r *http.Request) {
 	// The page opens for either permission; the ranks tab needs roles.manage.
 	data.CanRanks = d.can(r, "roles.manage")
 	if !data.CanRanks && !data.CanFaction {
-		http.Error(w, "403 Forbidden: you don't have permission for this page", http.StatusForbidden)
+		d.Denied(w, r, auth.DeniedInfo{Kind: "no_permission", Area: "admin", Permission: "Edit roles & permissions"})
 		return
 	}
 	if !data.CanRanks {

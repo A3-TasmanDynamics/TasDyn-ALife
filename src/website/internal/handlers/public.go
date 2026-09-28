@@ -11,6 +11,9 @@ type landingData struct {
 	OnlineCount     int
 	RegisteredCount int
 	LatestPosts     []devlogSummary
+	// ServerState is the game server's status-page state: "up", "down", or
+	// "" when it isn't monitored (GAME_QUERY_ADDR unset) or unknown.
+	ServerState string
 }
 
 // Landing renders the public landing page -- no login required. OnlineCount
@@ -35,6 +38,18 @@ func (d *Deps) Landing(w http.ResponseWriter, r *http.Request) {
 
 	if err := d.Pool.QueryRow(r.Context(), `SELECT count(*) FROM players`).Scan(&data.RegisteredCount); err != nil {
 		data.RegisteredCount = 0
+	}
+
+	// Server status comes from the status page's real A2S query of the game
+	// server, never from the database being reachable.
+	if d.StatusMonitor != nil {
+		if snap, err := d.StatusMonitor.Snapshot(r.Context(), time.UTC); err == nil {
+			for _, c := range snap.Components {
+				if c.Key == "game" && (c.State == "up" || c.State == "down") {
+					data.ServerState = c.State
+				}
+			}
+		}
 	}
 
 	rows, err := d.Pool.Query(r.Context(), `

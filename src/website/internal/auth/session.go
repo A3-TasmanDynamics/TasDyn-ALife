@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"time"
+	"unicode"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -28,6 +29,44 @@ type Session struct {
 	Name               string
 	AdminPanelAccess   bool
 	SupportPanelAccess bool
+
+	// For the site header's user chip; read live with the session.
+	StaffRank   string // display name, "" = not staff
+	StaffStatus string // active / loa / suspended
+	PoliceRank  string // rank name (or "Level n"), "" = not police
+	EMSRank     string
+}
+
+// Subtitle is the line under the player's name in the site header, e.g.
+// "Moderator · on leave" or "Police · Senior Constable".
+func (s *Session) Subtitle() string {
+	switch {
+	case s.StaffRank != "" && s.StaffStatus == "loa":
+		return s.StaffRank + " · on leave"
+	case s.StaffRank != "" && s.StaffStatus == "suspended":
+		return s.StaffRank + " · suspended"
+	case s.StaffRank != "":
+		return s.StaffRank
+	case s.PoliceRank != "":
+		return "Police · " + s.PoliceRank
+	case s.EMSRank != "":
+		return "EMS · " + s.EMSRank
+	}
+	return "Civilian"
+}
+
+// Initials are the avatar letters: the first two letters or digits of the name.
+func (s *Session) Initials() string {
+	var out []rune
+	for _, r := range s.Name {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			out = append(out, unicode.ToUpper(r))
+			if len(out) == 2 {
+				break
+			}
+		}
+	}
+	return string(out)
 }
 
 type ctxKey struct{}
@@ -38,6 +77,9 @@ type ctxKey struct{}
 type Authenticator struct {
 	Pool         *pgxpool.Pool
 	CookieSecure bool
+	// Denied renders the access-denied page (internal/handlers); nil falls
+	// back to a plain-text 403.
+	Denied func(w http.ResponseWriter, r *http.Request, info DeniedInfo)
 }
 
 // generateToken returns a cryptographically random, URL-safe token, and its
@@ -197,11 +239,16 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 		// everywhere this session's Name gets displayed (top nav, ticket
 		// "Requester" columns, ...) rather than an honest placeholder.
 		err = a.Pool.QueryRow(r.Context(), `
-			SELECT p.id, COALESCE(NULLIF(p.name, ''), NULLIF(p.steam_name, ''), 'Player #' || p.id), ws.admin_panel_access, ws.support_panel_access, ws.expires_at
+			SELECT p.id, COALESCE(NULLIF(p.name, ''), NULLIF(p.steam_name, ''), 'Player #' || p.id), ws.admin_panel_access, ws.support_panel_access, ws.expires_at,
+			       COALESCE(sr.display_name, ''), p.staff_status,
+			       CASE WHEN COALESCE(p.cop_level, 0) > 0 THEN COALESCE((SELECT name FROM faction_rank_names WHERE faction = 'police' AND level = p.cop_level), 'Level ' || p.cop_level) ELSE '' END,
+			       CASE WHEN COALESCE(p.medic_level, 0) > 0 THEN COALESCE((SELECT name FROM faction_rank_names WHERE faction = 'ems' AND level = p.medic_level), 'Level ' || p.medic_level) ELSE '' END
 			FROM web_sessions ws
 			JOIN players p ON p.id = ws.player_id
+			LEFT JOIN staff_ranks sr ON sr.id = p.staff_rank_id
 			WHERE ws.token_hash = $1
-		`, hash).Scan(&sess.PlayerID, &sess.Name, &sess.AdminPanelAccess, &sess.SupportPanelAccess, &expiresAt)
+		`, hash).Scan(&sess.PlayerID, &sess.Name, &sess.AdminPanelAccess, &sess.SupportPanelAccess, &expiresAt,
+			&sess.StaffRank, &sess.StaffStatus, &sess.PoliceRank, &sess.EMSRank)
 
 		if err != nil || time.Now().After(expiresAt) {
 			// Invalid, unknown, or expired token -- proceed unauthenticated
@@ -238,76 +285,29 @@ func RequireLogin(next http.Handler) http.Handler {
 	})
 }
 
-// denialReason looks up *why* a player lacks panel access, only called on
-// the deny path below (never on an allowed request) -- distinguishes "your
-// rank/overrides never granted this" from "you're currently suspended/on
-// LOA" (docs/OPERATIONS.md §3), so a staff member sees why, not a generic
-// 403. Best-effort: a lookup failure here just falls back to the generic
-// message rather than failing the whole (already-denying) request.
-func (a *Authenticator) denialReason(ctx context.Context, playerID int64) string {
-	var status string
-	var reason *string
-	if err := a.Pool.QueryRow(ctx,
-		`SELECT staff_status, staff_status_reason FROM players WHERE id = $1`, playerID,
-	).Scan(&status, &reason); err != nil {
-		return ""
-	}
-	switch status {
-	case "suspended":
-		if reason != nil && *reason != "" {
-			return "You're currently suspended from staff duties: " + *reason
-		}
-		return "You're currently suspended from staff duties."
-	case "loa":
-		if reason != nil && *reason != "" {
-			return "You're currently on a leave of absence: " + *reason
-		}
-		return "You're currently on a leave of absence."
-	default:
-		return ""
-	}
-}
-
-// RequireAdminPanel 403s (not just redirects) when the session lacks admin
-// access -- this re-checks the session row's cached flag on every request,
-// same as RequireSupportPanel. It does NOT re-resolve rank/overrides from
-// scratch per request (that's login-time, §4); a revoked override still
-// takes effect immediately because revoking access is expected to delete
-// or update the session row itself, not wait for this middleware to notice
-// -- see docs/WEBSITE.md §10 for the write-path recheck this alone doesn't
-// cover.
+// RequireAdminPanel refuses the request (with the access-denied page) unless
+// the player has Admin Panel access right now -- re-resolved from their
+// rank, overrides and staff status on every request, so a suspension or LOA
+// applies immediately instead of at their next sign-in.
 func (a *Authenticator) RequireAdminPanel(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sess, ok := FromContext(r.Context())
-		if !ok {
-			http.Redirect(w, r, "/?login_required=1", http.StatusSeeOther)
-			return
-		}
-		if !sess.AdminPanelAccess {
-			msg := "403 Forbidden: Admin Panel access required"
-			if reason := a.denialReason(r.Context(), sess.PlayerID); reason != "" {
-				msg = reason
-			}
-			http.Error(w, msg, http.StatusForbidden)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
+	return a.requirePanel("admin", next)
 }
 
 func (a *Authenticator) RequireSupportPanel(next http.Handler) http.Handler {
+	return a.requirePanel("support", next)
+}
+
+func (a *Authenticator) requirePanel(area string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sess, ok := FromContext(r.Context())
 		if !ok {
 			http.Redirect(w, r, "/?login_required=1", http.StatusSeeOther)
 			return
 		}
-		if !sess.SupportPanelAccess {
-			msg := "403 Forbidden: Support Panel access required"
-			if reason := a.denialReason(r.Context(), sess.PlayerID); reason != "" {
-				msg = reason
-			}
-			http.Error(w, msg, http.StatusForbidden)
+		admin, support := a.livePanelAccess(r.Context(), sess)
+		sess.AdminPanelAccess, sess.SupportPanelAccess = admin, support
+		if (area == "admin" && !admin) || (area == "support" && !support) {
+			a.deny(w, r, sess.PlayerID, area, "")
 			return
 		}
 		next.ServeHTTP(w, r)

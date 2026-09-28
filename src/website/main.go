@@ -94,6 +94,7 @@ func run() error {
 		Auth:   &auth.Authenticator{Pool: pool, CookieSecure: cfg.CookieSecure},
 		Cfg:    cfg,
 	}
+	d.Auth.Denied = d.Denied
 
 	// Discord bot (account linking via `/link`) -- optional. Its absence
 	// must never stop the website from serving HTTP; see
@@ -195,6 +196,7 @@ func run() error {
 	r.Get("/devlog", d.DevlogList)
 	r.Get("/devlog/{slug}", d.DevlogPost)
 	r.Get("/status", d.Status)
+	r.Get("/rules", d.Rules)
 
 	r.Get("/auth/steam/login", d.SteamLogin)
 	r.Get("/auth/steam/callback", d.SteamCallback)
@@ -207,6 +209,7 @@ func run() error {
 		r.Get("/dashboard", d.Dashboard)
 		r.Post("/dashboard/discord/link-code", d.GenerateDiscordLinkCode)
 		r.Post("/dashboard/transfer", d.Transfer)
+		r.Post("/dashboard/leaderboards", d.SetLeaderboardOptIn)
 		r.Post("/dashboard/gang/invite", d.InviteToGang)
 		r.Post("/dashboard/gang/remove", d.RemoveFromGang)
 		r.Post("/dashboard/gang/rank", d.SetGangRank)
@@ -268,6 +271,13 @@ func run() error {
 			r.Get("/admin/role-sync", d.RoleSync)
 			r.Post("/admin/role-sync/save", d.RoleSyncSave)
 			r.Post("/admin/role-sync/run", d.RoleSyncRun)
+		})
+
+		// Server rules editor (public page is /rules).
+		r.Group(func(r chi.Router) {
+			r.Use(d.Auth.RequirePermission("rules.edit"))
+			r.Get("/admin/rules", d.RulesEdit)
+			r.Post("/admin/rules/save", d.RulesSave)
 		})
 
 		// Discord bot settings: channels, toggles, welcome message
