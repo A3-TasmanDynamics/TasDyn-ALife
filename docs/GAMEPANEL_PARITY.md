@@ -12,6 +12,9 @@ server-rendered templates) and several of Gamepanel's implementations aren't saf
 designs for five of these features and isn't repeated here. This doc covers the rest and sets one
 build order for all of them.
 
+How each feature connects to Discord and Steam (role sync, DMs, webhooks, Steam bans, BattlEye
+GUIDs) is planned in [INTEGRATIONS.md](INTEGRATIONS.md).
+
 Status key: **Built** · **Designed** (detailed design exists in another doc) · **New** (designed
 here) · **Skip** (deliberately not doing it, with the reason).
 
