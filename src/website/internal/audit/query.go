@@ -26,7 +26,8 @@ func Category(action string) string {
 	case strings.HasPrefix(action, "player.compensate"), strings.HasPrefix(action, "bank."), strings.HasPrefix(action, "economy."):
 		return "Economy"
 	case strings.HasPrefix(action, "player."), strings.HasPrefix(action, "ban"), strings.HasPrefix(action, "case"),
-		strings.HasPrefix(action, "anticheat."), strings.HasPrefix(action, "kick"):
+		strings.HasPrefix(action, "anticheat."), strings.HasPrefix(action, "kick"),
+		action == "discord.kick", action == "discord.ban", action == "discord.unban", strings.HasPrefix(action, "discord.timeout"):
 		return "Moderation"
 	case strings.HasPrefix(action, "ticket."):
 		return "Tickets"
@@ -41,7 +42,7 @@ func Category(action string) string {
 var categoryPatterns = map[string][]string{
 	"Permissions": {"rank\\_%", "faction\\_rank\\_names:%", "staff.%", "permissions.%", "roles.%"},
 	"Economy":     {"player.compensate%", "bank.%", "economy.%"},
-	"Moderation":  {"player.%", "ban%", "case%", "anticheat.%", "kick%"},
+	"Moderation":  {"player.%", "ban%", "case%", "anticheat.%", "kick%", "discord.kick", "discord.ban", "discord.unban", "discord.timeout%"},
 	"Tickets":     {"ticket.%"},
 	"Database":    {"database.%"},
 }
@@ -76,8 +77,8 @@ func DisplayAction(action string) string {
 
 // Filter narrows a staff log query. Zero values mean "no filter".
 type Filter struct {
-	Category string    // one of Categories
-	Search   string    // matches action, reason, and staff/target names
+	Category string // one of Categories
+	Search   string // matches action, reason, and staff/target names
 	StaffID  int64
 	Target   string    // name substring
 	Action   string    // raw action prefix
@@ -170,7 +171,7 @@ func escapeLike(s string) string {
 // Page is one page of entries plus what's needed for Newer/Older links.
 type Page struct {
 	Entries  []LogEntry
-	Total    int  // entries matching the filter (all pages)
+	Total    int // entries matching the filter (all pages)
 	HasOlder bool
 	HasNewer bool
 }

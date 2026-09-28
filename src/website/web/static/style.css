@@ -1068,3 +1068,9 @@ a.stafflog-row:hover { background: #151f35; }
   .map-row { grid-template-columns: 1fr; gap: 6px; }
   .sync-form-foot { flex-direction: column; align-items: stretch; }
 }
+
+/* ---- Discord bot settings (/admin/discord) ---- */
+.map-label .hint { font-size: 12.5px; }
+.toggle-row { cursor: pointer; }
+.toggle-box { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; justify-self: start; }
+.welcome-form { margin-top: 12px; }

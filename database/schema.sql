@@ -842,6 +842,16 @@ CREATE TABLE discord_outbox (
 
 CREATE INDEX idx_discord_outbox_due ON discord_outbox(next_attempt) WHERE sent_at IS NULL AND gave_up_at IS NULL;
 
+-- Discord bot layout (docs/DISCORD_BOT.md §3): channels and toggles set on
+-- /admin/discord, plus "state.*" rows where the bot remembers its own
+-- long-lived messages (welcome, live status) as "channelID/messageID".
+CREATE TABLE discord_settings (
+    key         TEXT PRIMARY KEY,
+    value       TEXT NOT NULL,
+    updated_by  BIGINT REFERENCES players(id) ON DELETE SET NULL,
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- ---------------------------------------------------------------------------
 -- Change capture: every rank/role change is logged once, here, whichever
 -- tool made it (website, Discord bot, game server, or a manual psql edit).

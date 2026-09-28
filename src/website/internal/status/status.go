@@ -108,7 +108,7 @@ func New(pool *pgxpool.Pool, o Options) *Monitor {
 		},
 	})
 
-	discord := Component{Key: "discord", Name: "Discord Bot", Description: "Account linking (/link)"}
+	discord := Component{Key: "discord", Name: "Discord Bot", Description: "Account linking, role sync, staff commands"}
 	if o.DiscordHealth != nil {
 		health := o.DiscordHealth
 		discord.probe = func(ctx context.Context) (bool, time.Duration, string) {

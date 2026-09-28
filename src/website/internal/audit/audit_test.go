@@ -48,3 +48,18 @@ func TestFormatSourceWithoutStaff(t *testing.T) {
 		t.Errorf("manual change: %q", msg)
 	}
 }
+
+func TestDescribeDiscordModeration(t *testing.T) {
+	after := []byte(`{"user":"griefer","by":"modalice"}`)
+	if got := Describe("discord.ban", nil, after); got != "banned griefer in Discord" {
+		t.Errorf("got %q", got)
+	}
+	// Unlinked moderator: named from after_value, marked as Discord.
+	got := Format("", "", "discord.kick", "spam", nil, after, SourceDiscord)
+	if got != `**modalice** (Discord) kicked griefer in Discord — spam · _via discord_` {
+		t.Errorf("got %q", got)
+	}
+	if Category("discord.timeout_end") != "Moderation" || Category("discord.settings") != "Other" {
+		t.Error("discord.* categories wrong")
+	}
+}

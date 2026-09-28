@@ -29,6 +29,7 @@
   <span class="admin-nav-item disabled">Server Control <span class="admin-nav-tag">Soon</span></span>
   <span class="admin-nav-item disabled admin-nav-highlight">Database <span class="admin-nav-tag">Soon</span></span>
   <span class="admin-nav-item disabled">Item Prices <span class="admin-nav-tag">Soon</span></span>
+  <a href="/admin/discord" class="admin-nav-item {{if eq .AdminTab "discord"}}active{{end}}" {{if eq .AdminTab "discord"}}aria-current="page"{{end}}>Discord Bot</a>
   {{if .Session.SupportPanelAccess}}<a href="/support" class="admin-nav-item admin-nav-switch">Switch to Support Panel</a>{{end}}
 
   <div class="admin-sidebar-foot">

@@ -1,0 +1,69 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content">
+    <h1 class="page-title admin-title">Discord Bot</h1>
+    <p class="admin-sub">Which channels the bot posts to and how it behaves{{if .GuildName}} in <strong>{{.GuildName}}</strong>{{end}}. A channel left unset means that feature simply doesn't post. Which Discord role each rank gets is on <a href="/admin/role-sync">Discord Role Sync</a>.</p>
+
+    {{if .BotError}}<div class="banner banner-warn sync-banner">{{.BotError}}</div>{{end}}
+    {{if .HasAdministrator}}<div class="banner banner-warn sync-banner">The bot has the <strong>Administrator</strong> permission. Everything works, but it should only have the permissions it needs (docs/DISCORD_BOT.md §9).</div>
+    {{else if .Missing}}<div class="banner banner-warn sync-banner">The bot is missing: <strong>{{range $i, $m := .Missing}}{{if $i}}, {{end}}{{$m}}{{end}}</strong>. Some features will fail until it's granted in Server Settings &rarr; Roles.</div>{{end}}
+
+    <div class="admin-stats sync-stats">
+      <div class="admin-stat"><div class="label">Bot</div><div class="value {{if .BotRunning}}value-green{{else}}value-amber{{end}}">{{if .BotRunning}}Online{{else}}Offline{{end}}</div></div>
+      <div class="admin-stat"><div class="label">Signed in as</div><div class="value value-text-sm">{{if .BotName}}{{.BotName}}{{else}}—{{end}}</div></div>
+      <div class="admin-stat"><div class="label">Server</div><div class="value value-text-sm">{{if .GuildName}}{{.GuildName}}{{else}}—{{end}}</div></div>
+      <div class="admin-stat"><div class="label">Text channels</div><div class="value">{{len .Channels}}</div></div>
+    </div>
+
+    <form class="card sync-form" method="post" action="/admin/discord/save">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      {{$chans := .Channels}}{{$bot := .BotRunning}}
+      <fieldset class="map-group" {{if not $bot}}disabled{{end}}>
+        <legend>Channels</legend>
+        <div class="map-rows">
+          {{range .Settings}}{{if eq .Kind "channel"}}
+          <div class="map-row">
+            <label class="map-label" for="set-{{.Key}}">{{.Label}}<span class="hint">{{.Help}}</span></label>
+            <div class="map-selects">
+              {{$v := .Value}}
+              <select id="set-{{.Key}}" name="{{.Key}}">
+                <option value="">— Not set —</option>
+                {{if .Missing}}<option value="{{$v}}" selected>Deleted channel ({{$v}})</option>{{end}}
+                {{range $chans}}
+                <option value="{{.ID}}" {{if eq .ID $v}}selected{{end}}>#{{.Name}}{{if .Category}} · {{.Category}}{{end}}</option>
+                {{end}}
+              </select>
+            </div>
+          </div>
+          {{end}}{{end}}
+        </div>
+      </fieldset>
+      <fieldset class="map-group" {{if not $bot}}disabled{{end}}>
+        <legend>Behaviour</legend>
+        <div class="map-rows">
+          {{range .Settings}}{{if eq .Kind "toggle"}}
+          <label class="map-row toggle-row">
+            <span class="map-label">{{.Label}}<span class="hint">{{.Help}}</span></span>
+            <span class="toggle-box"><input type="checkbox" name="{{.Key}}" value="on" {{if eq .Value "on"}}checked{{end}}> On</span>
+          </label>
+          {{end}}{{end}}
+        </div>
+      </fieldset>
+      <div class="sync-form-foot">
+        <span class="hint">Saving is logged to the Staff Log.</span>
+        <button class="btn btn-primary" type="submit" {{if not .BotRunning}}disabled{{end}}>Save settings</button>
+      </div>
+    </form>
+
+    <div class="card sync-form">
+      <h2 class="admin-section-title">Welcome message</h2>
+      <p class="hint">Posts the onboarding message to #welcome with a <strong>Link account</strong> button (to this website's Dashboard) and an <strong>Update my roles</strong> button. Posting again edits the existing message instead of adding another. Pin it afterwards so new members see it first.</p>
+      <form method="post" action="/admin/discord/welcome" class="welcome-form">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <button class="btn" type="submit" {{if not .WelcomeSet}}disabled title="Choose and save a #welcome channel first"{{end}}>Post or update welcome message</button>
+      </form>
+    </div>
+  </div>
+</div>
+{{end}}

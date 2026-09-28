@@ -64,6 +64,25 @@ func Enqueue(ctx context.Context, tx pgx.Tx, m OutboxMessage) error {
 	return err
 }
 
+// EnqueueNow queues m on its own, for messages not tied to a transaction
+// (status posts, #bot-admin reports).
+func EnqueueNow(ctx context.Context, pool *pgxpool.Pool, m OutboxMessage) error {
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	if err := Enqueue(ctx, tx, m); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+func isNotFound(err error) bool {
+	var rest *discordgo.RESTError
+	return errors.As(err, &rest) && rest.Response != nil && rest.Response.StatusCode == http.StatusNotFound
+}
+
 // Sender is the part of a discordgo session the worker needs -- an
 // interface so the worker can be tested without Discord.
 type Sender interface {
@@ -77,8 +96,8 @@ type Outbox struct {
 }
 
 const (
-	outboxBatch    = 20
-	outboxGiveUp   = 24 * time.Hour
+	outboxBatch     = 20
+	outboxGiveUp    = 24 * time.Hour
 	discordDMClosed = 50007 // "Cannot send messages to this user"
 )
 

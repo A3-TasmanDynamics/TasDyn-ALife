@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-
 )
 
 // RoleSyncAdapter is the Discord side of internal/rolesync (it satisfies
