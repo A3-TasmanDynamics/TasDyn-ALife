@@ -53,6 +53,12 @@ type Config struct {
 	// purposes and must not be confused with each other.
 	DiscordOAuthClientID     string
 	DiscordOAuthClientSecret string
+
+	// GameQueryAddr is the Arma 3 server's Steam query endpoint
+	// ("host:port", query port = game port + 1, so 2303 by default). The
+	// status page queries it for a real up/down signal; empty means the
+	// game server shows as "not monitored" instead of a guessed status.
+	GameQueryAddr string
 }
 
 func Load() (Config, error) {
@@ -67,6 +73,7 @@ func Load() (Config, error) {
 		DiscordBotToken:         os.Getenv("DISCORD_BOT_TOKEN"),
 		DiscordGuildID:          os.Getenv("DISCORD_GUILD_ID"),
 		DiscordTicketCategoryID: os.Getenv("DISCORD_TICKET_CATEGORY_ID"),
+		GameQueryAddr:           os.Getenv("GAME_QUERY_ADDR"),
 	}
 
 	if c.DatabaseURL == "" {

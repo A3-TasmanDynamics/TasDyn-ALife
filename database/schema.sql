@@ -648,6 +648,20 @@ CREATE TABLE devlog_posts (
 
 CREATE INDEX idx_devlog_posts_published_at ON devlog_posts(published_at DESC) WHERE published_at IS NOT NULL;
 
+-- Public status page history (src/website/internal/status). One row per
+-- component per minute; pruned after 90 days by the checker itself.
+CREATE TABLE status_checks (
+    id          BIGSERIAL PRIMARY KEY,
+    component   TEXT NOT NULL,          -- 'game', 'website', 'database', 'discord'
+    ok          BOOLEAN NOT NULL,
+    latency_ms  INTEGER,
+    detail      TEXT,                   -- e.g. '7 / 64 players', or why it failed
+    checked_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_status_checks_component_time ON status_checks(component, checked_at DESC);
+CREATE INDEX idx_status_checks_time ON status_checks(checked_at);
+
 -- ---------------------------------------------------------------------------
 -- Triggers: keep players.*_bank in sync with bank_accounts.balance
 -- (authoritative) automatically — a DB-enforced guarantee, not something

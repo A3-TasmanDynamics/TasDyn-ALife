@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"website/internal/auth"
 )
 
 type staffLogRow struct {
@@ -14,21 +16,65 @@ type staffLogRow struct {
 	CreatedAt  string
 }
 
-type adminHomeData struct {
-	Base
-	StaffLog []staffLogRow
+// AdminShell is what partial_admin_sidebar.html needs on top of Base --
+// embedded into every Admin Panel page's data so the sidebar renders the
+// same everywhere. AdminTab picks the highlighted nav item.
+type AdminShell struct {
+	AdminTab  string
+	StaffRank string
 }
 
-// AdminHome is the Admin Panel landing page. Currently a read-only staff
-// log viewer -- player lookup, ban/unban, rank management, anti-cheat flag
-// review, and the arsenal editor are designed in docs/WEBSITE.md §7 but not
-// yet built (see the template's "Coming soon" note); this establishes the
-// access-gated route and the panel switcher, which the rest builds on top
-// of incrementally.
-func (d *Deps) AdminHome(w http.ResponseWriter, r *http.Request) {
-	data := adminHomeData{Base: baseFrom(r, "Admin Panel")}
+// adminShell looks up the signed-in staff member's rank display name for
+// the sidebar footer. Cosmetic only -- access was already decided by
+// RequireAdminPanel -- so a failed lookup just leaves the rank blank.
+func (d *Deps) adminShell(r *http.Request, tab string) AdminShell {
+	s := AdminShell{AdminTab: tab}
+	sess, ok := auth.FromContext(r.Context())
+	if !ok || sess == nil {
+		return s
+	}
+	_ = d.Pool.QueryRow(r.Context(), `
+		SELECT COALESCE(sr.display_name, '')
+		FROM players p LEFT JOIN staff_ranks sr ON sr.id = p.staff_rank_id
+		WHERE p.id = $1
+	`, sess.PlayerID).Scan(&s.StaffRank)
+	return s
+}
 
-	rows, err := d.Pool.Query(r.Context(), `
+type adminHomeData struct {
+	Base
+	AdminShell
+	OnlineCount  int
+	OpenTickets  int
+	FlagsLast24h int
+	TotalPlayers int
+	StaffLog     []staffLogRow
+}
+
+// AdminHome is the Admin Panel landing page: headline counts plus the
+// read-only staff log. Player lookup, bans, anti-cheat review, the database
+// browser and the arsenal editor are designed (docs/WEBSITE.md §7) but not
+// built yet -- the sidebar shows them as "Soon" rather than dead links.
+func (d *Deps) AdminHome(w http.ResponseWriter, r *http.Request) {
+	data := adminHomeData{Base: baseFrom(r, "Admin Panel"), AdminShell: d.adminShell(r, "dashboard")}
+
+	// Headline counts are non-essential -- a failed one shows 0 rather than
+	// taking the whole panel down, same as the landing page's stats.
+	ctx := r.Context()
+	if err := d.Pool.QueryRow(ctx, `SELECT count(*) FROM player_sessions WHERE disconnected_at IS NULL`).Scan(&data.OnlineCount); err != nil {
+		slog.Error("admin home: online count failed", "error", err)
+	}
+	if err := d.Pool.QueryRow(ctx, `SELECT count(*) FROM support_tickets WHERE status <> 'closed'`).Scan(&data.OpenTickets); err != nil {
+		slog.Error("admin home: open ticket count failed", "error", err)
+	}
+	if err := d.Pool.QueryRow(ctx, `SELECT count(*) FROM anti_cheat_flags WHERE created_at > now() - interval '24 hours'`).Scan(&data.FlagsLast24h); err != nil {
+		slog.Error("admin home: anti-cheat flag count failed", "error", err)
+	}
+	if err := d.Pool.QueryRow(ctx, `SELECT count(*) FROM players`).Scan(&data.TotalPlayers); err != nil {
+		slog.Error("admin home: player count failed", "error", err)
+	}
+
+	rows, err := d.Pool.Query(ctx, `
 		SELECT COALESCE(staff.name, 'System'), sl.action, COALESCE(target.name, ''), COALESCE(sl.reason, ''), sl.created_at
 		FROM staff_log sl
 		LEFT JOIN players staff ON staff.id = sl.staff_player_id

@@ -111,6 +111,7 @@ func (d *Deps) DevlogPost(w http.ResponseWriter, r *http.Request) {
 
 type devlogNewData struct {
 	Base
+	AdminShell
 }
 
 // DevlogNewForm renders the staff post-composer -- gated on Admin Panel
@@ -120,7 +121,7 @@ type devlogNewData struct {
 // full trust anyway -- see docs/WEBSITE.md for the broader permission model
 // this can graduate into later.
 func (d *Deps) DevlogNewForm(w http.ResponseWriter, r *http.Request) {
-	d.Render.Render(w, "devlog_new.html", devlogNewData{Base: baseFrom(r, "New Devlog Post")})
+	d.Render.Render(w, "devlog_new.html", devlogNewData{Base: baseFrom(r, "New Devlog Post"), AdminShell: d.adminShell(r, "devlog")})
 }
 
 var slugNonAlnum = regexp.MustCompile(`[^a-z0-9]+`)
