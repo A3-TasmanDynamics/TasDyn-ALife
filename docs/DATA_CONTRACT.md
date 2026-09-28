@@ -63,7 +63,7 @@ Request (SQF → C++): `"tasdyn_alife" callExtension ["load", [uid]]`
 
 | Arg | Type | Notes |
 |---|---|---|
-| `uid` | string | The player's Arma UID — unique key into `players.uid`. |
+| `uid` | string | The player's Arma UID (Steam64, 17 digits) — unique key into `players.uid`. Arma delivers string args in `str` form (quoted, inner quotes doubled); the extension unwraps them (`UnwrapArmaString`) and rejects any uid that isn't 17 digits with `ERROR:invalid uid`. |
 
 Response (C++ → SQF): a `parseSimpleArray`-compatible string encoding `[[key, value], ...]` pairs.
 `status` is always present and must be checked before trusting any other key — `OK` or `ERROR`.
