@@ -230,6 +230,15 @@ func run() error {
 		r.Get("/admin/staff-log", d.StaffLog)
 		r.Get("/admin/staff-log.csv", d.StaffLogCSV)
 
+		// Player Lookup (GAMEPANEL_PARITY #20-#24). Actions check their own
+		// permissions (players.edit_*, players.compensate[_large]).
+		r.Group(func(r chi.Router) {
+			r.Use(d.Auth.RequirePermission("players.view"))
+			r.Get("/admin/players", d.PlayerLookup)
+			r.Post("/admin/players/{id}/faction-level", d.PlayerSetFactionLevel)
+			r.Post("/admin/players/{id}/compensate", d.PlayerCompensate)
+		})
+
 		r.Get("/admin/roles", d.Roles)
 		r.Post("/admin/roles/faction-names", d.RoleFactionNames)
 		r.Group(func(r chi.Router) {

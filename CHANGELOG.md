@@ -901,3 +901,12 @@
   before/after payload. Actions display in the plan's dotted style (`staff.status`, `roles.edit`…). *Export CSV*
   downloads everything matching the filters (up to 10,000 rows) with spreadsheet-formula injection neutralised.
   The board's *Origin* IP isn't shown: IPs aren't recorded in the staff log. Dashboard links to the full log.
+- **Player Lookup (`/admin/players`, layout plan board).** Search by current name, past names (`player_aliases`),
+  Steam name, Steam64, BattlEye GUID or player id, with Online/Offline/Banned pills. Profile header (aliases, first
+  joined, last seen, playtime, Discord, Steam ban counts, staff badge linking to the staff profile), active-ban banner,
+  and tabs: *Overview* (cash/bank/total, police/EMS level names, gang and licences), *Vehicles* (vehicles + garage +
+  state, recent vehicle history; `players.vehicles`) and *Audit trail* (game events, staff actions, kicks, anti-cheat
+  flags merged). Actions: **Compensate** (an `admin_adjustment` bank transaction via the existing balance trigger,
+  never a direct overwrite, plus a `player.compensate` staff-log row in the same transaction; over $10,000 needs
+  `players.compensate_large`) and **Faction level** (`players.edit_police`/`players.edit_medic`, logged by the change
+  trigger). Kick, *Open a case* and punishment points wait for the server-manager API and Cases.

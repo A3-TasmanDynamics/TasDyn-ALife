@@ -16,7 +16,7 @@
   <span class="admin-nav-item disabled">Anti-Cheat Flags <span class="admin-nav-tag">Soon</span></span>
 
   <div class="admin-nav-group">Players</div>
-  <span class="admin-nav-item disabled">Player Lookup <span class="admin-nav-tag">Soon</span></span>
+  <a href="/admin/players" class="admin-nav-item {{if eq .AdminTab "players"}}active{{end}}" {{if eq .AdminTab "players"}}aria-current="page"{{end}}>Player Lookup</a>
 
   <div class="admin-nav-group">Staff</div>
   <a href="/admin/staff" class="admin-nav-item {{if eq .AdminTab "staff"}}active{{end}}" {{if eq .AdminTab "staff"}}aria-current="page"{{end}}>Staff Directory</a>

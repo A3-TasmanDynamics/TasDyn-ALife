@@ -1,0 +1,155 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content lookup-page">
+    <section class="lookup-search" aria-label="Search">
+      <h1 class="page-title admin-title">Player Lookup</h1>
+      <p class="admin-sub">Name, past names, Steam64, BattlEye GUID or player ID.</p>
+      <form method="get" action="/admin/players">
+        <label class="search-box"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input name="q" value="{{.Q}}" aria-label="Search players" placeholder="e.g. Raider or 76561198…" autofocus></label>
+      </form>
+      <div class="card-label result-label">{{if .Q}}{{len .Results}} {{if eq (len .Results) 1}}match{{else}}matches{{end}}{{else}}Recently seen{{end}}</div>
+      <div class="lookup-results">
+        {{range .Results}}
+        <a class="lookup-result {{if and $.P (eq .ID $.P.ID)}}selected{{end}}" href="/admin/players{{qset $.Query "id" (i64 .ID) "tab" ""}}">
+          <span class="staff-initials" aria-hidden="true">{{initialsOf .Name}}</span>
+          <span class="lookup-result-text"><span class="strong">{{.Name}}</span><span class="muted small ellipsis">{{.Hint}}</span></span>
+          <span class="status-pill status-pill-{{.Status}}">{{.Status}}</span>
+        </a>
+        {{else}}
+        <p class="empty-state">No players or past names match.</p>
+        {{end}}
+      </div>
+    </section>
+
+    <section class="lookup-profile" aria-label="Player profile">
+      {{with .P}}
+      <div class="profile-head">
+        {{if .AvatarURL}}<img class="profile-avatar" src="{{.AvatarURL}}" alt="">{{else}}<span class="profile-avatar" aria-hidden="true">{{$.Initials}}</span>{{end}}
+        <div class="profile-head-body">
+          <div class="profile-title">
+            <h2>{{.Name}}</h2>
+            <span class="status-pill status-pill-{{.Status}}">{{.Status}}</span>
+            {{if .StaffRank}}<a class="staff-badge" href="/admin/staff/{{.StaffID}}">Staff &middot; {{.StaffRank}}</a>{{end}}
+          </div>
+          <div class="profile-line small"><a class="mono" href="https://steamcommunity.com/profiles/{{.UID}}" target="_blank" rel="noopener">{{.UID}}</a> &middot; id {{.ID}}{{if .BEGUID}} &middot; GUID <span class="mono">{{.BEGUID}}</span>{{end}}{{if .Aliases}} &middot; also known as {{range $i, $a := .Aliases}}{{if $i}}, {{end}}{{$a}}{{end}}{{end}}</div>
+          <div class="profile-facts">
+            <div><span>First joined</span>{{.Joined.Format "2 Jan 2006"}}</div>
+            <div><span>Last seen</span>{{if .LastSeen}}{{.LastSeen.Format "2 Jan 2006 15:04"}}{{else}}Never in-game{{end}}</div>
+            <div><span>Playtime</span>{{$.Playtime}}</div>
+            <div><span>Discord</span>{{if .Discord}}{{.Discord}}{{else}}<span class="muted">not linked</span>{{end}}</div>
+            <div><span>Steam bans</span>{{if .SteamVAC}}{{if or (gt (deref .SteamVAC) 0) (gt (deref .SteamGame) 0)}}<span class="warn-text">{{deref .SteamVAC}} VAC · {{deref .SteamGame}} game</span>{{else}}None{{end}}{{else}}<span class="muted">unknown</span>{{end}}</div>
+            <div><span>Active points</span><span class="muted" title="Punishment points arrive with Cases (Wave 2)">—</span></div>
+          </div>
+        </div>
+        <div class="profile-actions lookup-actions">
+          <div>
+            {{if $.CanCompensate}}<button class="btn" type="button" data-dialog-open="dlg-comp">Compensate…</button>{{end}}
+            {{if or $.CanPolice $.CanEMS}}<button class="btn" type="button" data-dialog-open="dlg-level">Faction level…</button>{{end}}
+          </div>
+          <span class="btn btn-primary disabled" aria-disabled="true" title="Cases arrive in Wave 2">Open a case</span>
+        </div>
+      </div>
+
+      {{if .BanActive}}
+      <div class="alert-strip alert-danger"><strong>Banned</strong><span>{{.BanReason}}{{if .BanExpires}} &middot; until {{.BanExpires.Format "2 Jan 2006 15:04"}}{{else}} &middot; permanent{{end}}</span></div>
+      {{end}}
+
+      <nav class="tabbar lookup-tabs" aria-label="Profile sections">
+        <a class="tab {{if eq $.Tab "overview"}}active{{end}}" href="/admin/players{{qset $.Query "tab" ""}}">Overview</a>
+        {{if $.CanVehicles}}<a class="tab {{if eq $.Tab "vehicles"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "vehicles"}}">Vehicles</a>{{end}}
+        <a class="tab {{if eq $.Tab "audit"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "audit"}}">Audit trail</a>
+      </nav>
+
+      {{if eq $.Tab "overview"}}
+      <div class="lookup-cards">
+        <div class="card mini-card">
+          <div class="card-label">Money</div>
+          <div class="kv"><span>Cash</span><strong>${{$.Money .CashCents}}</strong></div>
+          <div class="kv"><span>Bank</span><strong>${{$.Money .BankCents}}</strong></div>
+          <div class="kv kv-total"><span>Total</span><strong>${{$.Money .TotalCents}}</strong></div>
+        </div>
+        <div class="card mini-card">
+          <div class="card-label">Factions</div>
+          <div class="kv"><span>Civilian</span><span>Open to all</span></div>
+          <div class="kv"><span>Police</span><strong>{{if .CopLevel}}{{if .CopName}}{{.CopName}}{{else}}Level {{.CopLevel}}{{end}}{{else}}<span class="muted">—</span>{{end}}</strong></div>
+          <div class="kv"><span>EMS</span><strong>{{if .MedicLevel}}{{if .MedicName}}{{.MedicName}}{{else}}Level {{.MedicLevel}}{{end}}{{else}}<span class="muted">—</span>{{end}}</strong></div>
+        </div>
+        <div class="card mini-card">
+          <div class="card-label">Gang &amp; licences</div>
+          <div class="strong">{{if .GangName}}{{.GangName}}{{else}}<span class="muted">No gang</span>{{end}}</div>
+          <div class="muted small">{{.GangRank}}</div>
+          <div class="chips">{{range .Licences}}<span class="chip">{{.}}</span>{{else}}<span class="muted small">No licences</span>{{end}}</div>
+        </div>
+      </div>
+      <div class="card lookup-points">
+        <div class="card-label">Punishment points</div>
+        <p class="muted small">Punishment points arrive with Cases (Wave 2).</p>
+      </div>
+      {{end}}
+
+      {{if eq $.Tab "vehicles"}}
+      <div class="stafflog-table lookup-table">
+        <div class="lookup-veh-row stafflog-th"><span>Vehicle</span><span>Side</span><span>Garage / location</span><span>State</span></div>
+        {{range $.Vehicles}}
+        <div class="lookup-veh-row"><span class="strong">{{.Name}}</span><span>{{.Side}}</span><span>{{.Where}}</span><span><span class="veh-state veh-{{.Status}}">{{.Status}}</span></span></div>
+        {{else}}<p class="empty-state">No vehicles.</p>{{end}}
+      </div>
+      <div class="card lookup-points">
+        <div class="card-label">Vehicle history</div>
+        {{range $.VehLog}}<div class="kv"><span>{{.When.Format "2 Jan 15:04"}}</span><span>{{.What}}</span></div>{{else}}<p class="muted small">No vehicle history.</p>{{end}}
+      </div>
+      <p class="hint">Read-only. Requires players.vehicles.</p>
+      {{end}}
+
+      {{if eq $.Tab "audit"}}
+      <div class="card lookup-audit">
+        {{range $.Audit}}
+        <div class="audit-row"><span class="muted">{{.When.Format "2 Jan 2006 15:04"}}</span><span><span class="src-tag src-{{.Source}}">{{.Source}}</span></span><span>{{.What}}</span><span class="muted audit-by">{{.By}}</span></div>
+        {{else}}<p class="empty-state">Nothing recorded for this player yet.</p>{{end}}
+      </div>
+      {{end}}
+
+      {{if $.CanCompensate}}
+      <dialog id="dlg-comp" class="modal" aria-labelledby="dlg-comp-title">
+        <form method="post" action="/admin/players/{{.ID}}/compensate">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="q" value="{{$.Q}}">
+          <div class="modal-head"><h2 id="dlg-comp-title">Compensate {{.Name}}</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+          <div class="modal-body">
+            <div class="field-grid">
+              <div class="field"><label for="comp-amount">Amount ($)</label><input id="comp-amount" name="amount" inputmode="decimal" required placeholder="4000"></div>
+              <div class="field"><label for="comp-account">Account</label><select id="comp-account" name="account"><option value="civilian">Civilian bank</option><option value="police">Police bank</option><option value="medic">EMS bank</option></select></div>
+            </div>
+            <div class="field"><label for="comp-reason">Reason (required)</label><input id="comp-reason" name="reason" maxlength="300" required placeholder="e.g. Vehicle lost to server restart, ticket #47"></div>
+            <p class="hint">Adds a <code>bank_transactions</code> row (admin adjustment). The balance is never overwritten directly. Amounts above ${{$.LargeLimit}} need players.compensate_large{{if not $.CanLarge}}, which you don't have{{end}}.</p>
+          </div>
+          <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Add transaction</button></div>
+        </form>
+      </dialog>
+      {{end}}
+      {{if or $.CanPolice $.CanEMS}}
+      <dialog id="dlg-level" class="modal" aria-labelledby="dlg-level-title">
+        <form method="post" action="/admin/players/{{.ID}}/faction-level">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="q" value="{{$.Q}}">
+          <div class="modal-head"><h2 id="dlg-level-title">Faction level for {{.Name}}</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+          <div class="modal-body">
+            <div class="field-grid">
+              <div class="field"><label for="lvl-faction">Faction</label><select id="lvl-faction" name="faction">{{if $.CanPolice}}<option value="police">Police (now {{.CopLevel}})</option>{{end}}{{if $.CanEMS}}<option value="ems">EMS (now {{.MedicLevel}})</option>{{end}}</select></div>
+              <div class="field"><label for="lvl-level">New level (0 = none)</label><input id="lvl-level" name="level" type="number" min="0" max="20" required></div>
+            </div>
+            <div class="field"><label for="lvl-reason">Reason (required)</label><input id="lvl-reason" name="reason" maxlength="500" required></div>
+            <p class="hint">Day-to-day roster changes belong to faction command; this is the staff override. Logged, and synced to Discord/TeamSpeak once role sync is live. Takes effect in-game on their next load.</p>
+          </div>
+          <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Set level</button></div>
+        </form>
+      </dialog>
+      {{end}}
+      {{else}}
+      <div class="lookup-empty"><p class="empty-state">Search for a player, then pick them from the list.</p></div>
+      {{end}}
+    </section>
+  </div>
+</div>
+<script src="/static/admin.js" defer></script>
+{{end}}
