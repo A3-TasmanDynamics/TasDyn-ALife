@@ -734,6 +734,19 @@
   before use. No per-point custom icon asset exists yet, so every row uses the same generic
   waypoint icon rather than the mockup's per-location icons. Also enlarged and re-styled the
   selected-point title (`InfoText`) to match the mockup's bold preview-title treatment.
+- `src/ALife.Altis`: pressing Escape while the spawn menu or the loading screen is open now kicks
+  the player back to the server browser instead of just closing the dialog. Selecting a spawn point
+  is mandatory, not optional, once the engine's role screen has already assigned a side -- letting
+  Escape close either dialog via the engine's default handling would leave the player's unit sitting
+  wherever `mission.sqm` placed their Editor slot with nothing ever repositioning them, the exact
+  "spawning straight into the playable" bug through a different door. Both `fn_spawnMenu.sqf` and
+  `fn_loadingScreen.sqf` now install a `KeyDown` display event handler (`displaySetEventHandler`) in
+  their `onLoad` that returns `true` for `DIK_Escape` (key code `1`) -- confirmed both the return-
+  true-suppresses-default-handling mechanic and the key code against Bohemia's own docs -- and
+  routes it to a new `"escape"` mode that calls `BIS_fnc_endMission`. Read Tonic's own
+  `fn_displayHandler.sqf` for comparison: it uses the identical KeyDown-returns-true technique to
+  block Escape on its spawn dialog, but only swallows the key with no further action -- kicking to
+  the lobby instead is this project's own, stricter choice, not something Tonic itself does.
 - `src/website`: finished the public landing page content -- a hero with real copy (previously just
   a bare title), a three-tile stat row, and a factions section, matching a layout mockup reviewed
   and agreed with the project owner first. Added `players.RegisteredCount` alongside the existing
