@@ -112,6 +112,15 @@ buried in settings) — this is the concrete answer to "switch between without p
 - Landing page — server pitch, rules summary, connect info, Discord invite link.
 - Status strip — reuses `server_manager`'s dashboard queries (player count, uptime) so the public
   page and the operator's desktop dashboard never show different numbers from two code paths.
+  Deliberately doesn't claim a "server online" status — a successful DB query says nothing about
+  whether `arma3server_x64.exe` is actually up, a separate system with no real signal wired here.
+- **Devlog** — `/devlog` (list) and `/devlog/<slug>` (post), `devlog_posts` table. **Built.** Posts
+  are plain text (no markdown/HTML pipeline — `html/template` auto-escapes on render, avoiding any
+  injection risk from a compromised or careless staff account), authored via the Admin Panel
+  (`/admin/devlog/new`, gated on the same `AdminPanelAccess` as the rest of `/admin/*` for now — a
+  dedicated `devlog.write` permission would be more precise but isn't built). Publishing is
+  immediate; there's no draft/edit UI yet, so `published_at` staying nullable in the schema is
+  future-proofing, not a used feature today. The landing page teases the 3 most recent posts.
 
 **Member portal (login required, plain player):**
 - **Stats** — per-faction (civilian/police/medic) level, cash, bank balance, licences, playtime.
@@ -245,6 +254,19 @@ Other as top-level categories, each (except Other) with a handful of subcategori
 | internal | boolean, default false | staff-only note, never shown to the requester or mirrored to Discord — §8 |
 | discord_message_id | text, nullable | for edit/delete mirroring, if implemented |
 | created_at | timestamptz | |
+
+**`devlog_posts`** *(new)*
+
+| Column | Type | Notes |
+|---|---|---|
+| id | bigserial PK | |
+| slug | text, unique | the public URL (`/devlog/<slug>`), decoupled from `id` |
+| title | text | |
+| body | text | plain text only — `html/template` auto-escapes on render, no markdown/HTML pipeline, no injection risk from a compromised staff account |
+| author_player_id | FK → players, nullable | null if the author's row is later deleted |
+| published_at | timestamptz, nullable | `NULL` = draft, hidden from every public route — currently unused in practice, since there's no draft/edit UI yet (§5) |
+| created_at | timestamptz | |
+| updated_at | timestamptz | not yet touched by an update path — reserved for the eventual edit feature |
 
 No changes needed to `players`, `gangs`, `gang_members`, `bank_accounts`, or `bank_transactions` —
 the member portal and admin panel are additional *writers* against those tables using the exact
