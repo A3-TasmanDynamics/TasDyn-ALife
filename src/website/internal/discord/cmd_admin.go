@@ -10,13 +10,16 @@ import (
 
 // requiredPermissions are the guild permissions the bot needs for the
 // features built so far (docs/DISCORD_BOT.md §9). Grows as features land.
-var requiredPermissions = []struct {
+type permission struct {
 	bit  int64
 	name string
-}{
+}
+
+var requiredPermissions = []permission{
 	{discordgo.PermissionViewChannel, "View Channels"},
 	{discordgo.PermissionSendMessages, "Send Messages"},
 	{discordgo.PermissionEmbedLinks, "Embed Links"},
+	{discordgo.PermissionManageRoles, "Manage Roles"}, // role sync
 }
 
 func botCommand() *Command {
@@ -62,6 +65,12 @@ func botCommand() *Command {
 // missingPermissions compares the bot's effective guild permissions with
 // requiredPermissions.
 func (b *Bot) missingPermissions() ([]string, error) {
+	return b.missingPermissionsFor(requiredPermissions)
+}
+
+// missingPermissionsFor compares the bot's effective guild permissions with
+// the given list.
+func (b *Bot) missingPermissionsFor(required []permission) ([]string, error) {
 	if b.guildID == "" {
 		return nil, fmt.Errorf("no DISCORD_GUILD_ID configured")
 	}
@@ -89,7 +98,7 @@ func (b *Bot) missingPermissions() ([]string, error) {
 		return []string{"(bot has Administrator — works, but should be removed: DISCORD_BOT.md §9)"}, nil
 	}
 	var missing []string
-	for _, p := range requiredPermissions {
+	for _, p := range required {
 		if perms&p.bit == 0 {
 			missing = append(missing, p.name)
 		}

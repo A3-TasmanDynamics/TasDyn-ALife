@@ -1,0 +1,78 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content">
+    <h1 class="page-title admin-title">Discord Role Sync</h1>
+    <p class="admin-sub">Pick the Discord role each rank, team or faction level gets. Linked players are updated automatically whenever their rank changes, and in a full pass every 15 minutes. Roles you don't map here are never touched.</p>
+
+    {{if .BotError}}<div class="banner banner-warn sync-banner">{{.BotError}}</div>
+    {{else if not .CanManageRoles}}<div class="banner banner-warn sync-banner">The bot doesn't have the <strong>Manage Roles</strong> permission in your Discord server, so syncing will fail. Grant it in Server Settings &rarr; Roles.</div>{{end}}
+
+    <div class="admin-stats sync-stats">
+      <div class="admin-stat"><div class="label">Bot</div><div class="value {{if .BotRunning}}value-green{{else}}value-amber{{end}}">{{if .BotRunning}}Online{{else}}Offline{{end}}</div></div>
+      <div class="admin-stat"><div class="label">Mapped roles</div><div class="value">{{.Mapped}}</div></div>
+      <div class="admin-stat"><div class="label">Failures (24h)</div><div class="value {{if .Failures24h}}value-amber{{end}}">{{.Failures24h}}</div></div>
+      <div class="admin-stat"><div class="label">Full sync</div><div class="value value-text-sm">{{if .Running}}Running…{{else}}Idle{{end}}</div></div>
+    </div>
+
+    <form class="card sync-form" method="post" action="/admin/role-sync/save">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      {{$roles := .Roles}}{{$bot := .BotRunning}}
+      {{range .Groups}}
+      <fieldset class="map-group" {{if not $bot}}disabled{{end}}>
+        <legend>{{.Name}}</legend>
+        <div class="map-rows">
+          {{range $row := .Rows}}
+          <div class="map-row">
+            <label class="map-label" for="map-{{$row.Key}}">{{$row.Label}}<code class="perm-key">{{$row.Key}}</code></label>
+            <div class="map-selects">
+              {{range $i, $sel := $row.Selected}}
+              <select name="map:{{$row.Key}}" {{if eq $i 0}}id="map-{{$row.Key}}"{{end}} aria-label="Discord role for {{$row.Label}}">
+                <option value="">— Not synced —</option>
+                {{if index $row.Missing $sel}}<option value="{{$sel}}" selected>Deleted role ({{$sel}})</option>{{end}}
+                {{range $roles}}
+                <option value="{{.ID}}" {{if eq .ID $sel}}selected{{end}} {{if and (not .Assignable) (ne .ID $sel)}}disabled{{end}}>{{.Name}}{{if not .Assignable}} ({{.Why}}){{end}}</option>
+                {{end}}
+              </select>
+              {{end}}
+            </div>
+          </div>
+          {{end}}
+        </div>
+      </fieldset>
+      {{end}}
+      <div class="sync-form-foot">
+        <span class="hint">Saving is logged to the Staff Log. Removing a mapping stops sync managing that role; it doesn't take the role off anyone.</span>
+        <button class="btn btn-primary" type="submit" {{if not .BotRunning}}disabled{{end}}>Save mapping</button>
+      </div>
+    </form>
+
+    <div class="sync-log-head">
+      <h2 class="admin-section-title">Recent sync activity</h2>
+      <form method="post" action="/admin/role-sync/run">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <button class="btn" type="submit" {{if or .Running (not .Mapped) (not .BotRunning)}}disabled{{end}}>Sync everyone now</button>
+      </form>
+    </div>
+    <div class="card sync-log">
+      {{if .Log}}
+      <table>
+        <thead><tr><th>When</th><th>Player</th><th>Change</th><th>Result</th></tr></thead>
+        <tbody>
+          {{range .Log}}
+          <tr>
+            <td class="muted">{{.When.Format "2 Jan 15:04"}}</td>
+            <td>{{if .PlayerID}}<a href="/admin/players?id={{.PlayerID}}">{{.Player}}</a>{{else}}{{.Player}}{{end}}</td>
+            <td>{{if eq .Action "add"}}+{{else}}&minus;{{end}} {{if .GroupName}}{{.GroupName}}{{else}}<span class="muted">(reading roles)</span>{{end}} <span class="muted">on {{.Platform}}</span></td>
+            <td>{{if .OK}}<span class="sync-ok">Done</span>{{else}}<span class="sync-fail" title="{{.Error}}">Failed: {{.Error}}</span>{{end}}</td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+      {{else}}
+      <p class="hint sync-empty">Nothing synced yet. Map a role above, then change someone's rank or press "Sync everyone now".</p>
+      {{end}}
+    </div>
+  </div>
+</div>
+{{end}}

@@ -927,6 +927,31 @@ CREATE TRIGGER trg_players_log_changes
     AFTER UPDATE OF staff_rank_id, staff_status, staff_team, cop_level, medic_level, discord_id ON players
     FOR EACH ROW EXECUTE FUNCTION log_player_changes();
 
+-- Role sync (docs/INTEGRATIONS.md §2.3): which platform group each
+-- entitlement grants, and a log of every add/remove the sync makes.
+-- Groups NOT listed here are never touched by sync.
+CREATE TABLE platform_group_map (
+    id           SERIAL PRIMARY KEY,
+    platform     TEXT NOT NULL CHECK (platform IN ('discord', 'teamspeak')),
+    entitlement  TEXT NOT NULL,     -- e.g. 'linked', 'staff_rank:admin', 'faction_rank:police:3'
+    group_id     TEXT NOT NULL,     -- Discord role snowflake / TeamSpeak server group id
+    UNIQUE (platform, entitlement, group_id)
+);
+
+CREATE TABLE sync_log (
+    id              BIGSERIAL PRIMARY KEY,
+    player_id       BIGINT REFERENCES players(id) ON DELETE SET NULL,
+    platform        TEXT NOT NULL CHECK (platform IN ('discord', 'teamspeak')),
+    action          TEXT NOT NULL CHECK (action IN ('add', 'remove', 'ban', 'unban', 'drift_reverted')),
+    group_id        TEXT,
+    rank_change_id  BIGINT REFERENCES rank_changes(id) ON DELETE SET NULL,  -- NULL = periodic/manual pass
+    ok              BOOLEAN NOT NULL,
+    error           TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_sync_log_created ON sync_log(created_at DESC);
+CREATE INDEX idx_sync_log_failures ON sync_log(created_at DESC) WHERE NOT ok;
 -- Wakes internal/audit's poster so new staff_log rows reach #staff-log
 -- promptly; it also polls, so a missed notification only delays a post.
 CREATE OR REPLACE FUNCTION notify_staff_log() RETURNS TRIGGER AS $$
