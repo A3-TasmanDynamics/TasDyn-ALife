@@ -11,15 +11,20 @@
   <header class="site-header">
     <a class="brand" href="/">
       <span class="brand-mark">TD</span>
-      <span class="brand-text">TasDyn<strong>ALife</strong></span>
+      <span class="brand-text">TasDyn-<strong>ALife</strong></span>
     </a>
-    <nav class="site-nav">
-      <a href="/devlog">Devlog</a>
+    <nav class="site-nav-main">
       {{if .Session}}
         <a href="/dashboard">Dashboard</a>
         <a href="/tickets">My Tickets</a>
         {{if .Session.AdminPanelAccess}}<a href="/admin">Admin Panel</a>{{end}}
         {{if .Session.SupportPanelAccess}}<a href="/support">Support Panel</a>{{end}}
+      {{end}}
+      <a href="/devlog">Devlog</a>
+    </nav>
+    <nav class="site-nav">
+      <a href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Discord</a>
+      {{if .Session}}
         <span class="nav-user">{{.Session.Name}}</span>
         <form method="post" action="/auth/logout" class="inline-form"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="link-button" type="submit">Sign out</button></form>
       {{else}}
@@ -34,7 +39,14 @@
     {{template "content" .}}
   </main>
 
-  <footer class="site-footer">TASMAN DYNAMICS</footer>
+  <footer class="site-footer">
+    <div>&copy; 2026 Tasman Dynamics</div>
+    <nav class="site-footer-links">
+      <a href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Discord</a>
+      <a href="https://github.com/A3-TasmanDynamics/TasDyn-ALife" target="_blank" rel="noopener">GitHub</a>
+      <a href="/tickets">Support</a>
+    </nav>
+  </footer>
 </body>
 </html>
 {{end}}

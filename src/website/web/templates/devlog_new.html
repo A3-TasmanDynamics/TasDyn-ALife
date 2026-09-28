@@ -1,19 +1,24 @@
 {{define "content"}}
-<h1 class="page-title">New Devlog Post</h1>
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content">
+    <h1 class="page-title">New Devlog Post</h1>
 
-<section class="card">
-  <form method="post" action="/admin/devlog/new">
-    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-    <div class="field">
-      <label>Title</label>
-      <input type="text" name="title" maxlength="200" required autofocus />
-    </div>
-    <div class="field">
-      <label>Body</label>
-      <textarea name="body" rows="14" required placeholder="Plain text only -- no markdown or HTML. Blank lines become paragraph breaks."></textarea>
-    </div>
-    <p class="hint">Posts publish immediately and appear on /devlog right away -- there's no draft/edit step yet.</p>
-    <button class="cta" type="submit">Publish Post</button>
-  </form>
-</section>
+    <section class="card">
+      <form method="post" action="/admin/devlog/new">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <div class="field">
+          <label>Title</label>
+          <input type="text" name="title" maxlength="200" required autofocus />
+        </div>
+        <div class="field">
+          <label>Body</label>
+          <textarea name="body" rows="14" required placeholder="Plain text only -- no markdown or HTML. Blank lines become paragraph breaks."></textarea>
+        </div>
+        <p class="hint">Posts publish immediately and appear on /devlog right away -- there's no draft/edit step yet.</p>
+        <button class="cta" type="submit">Publish Post</button>
+      </form>
+    </section>
+  </div>
+</div>
 {{end}}

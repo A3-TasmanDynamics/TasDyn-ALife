@@ -798,3 +798,13 @@
   path can look up and show the specific reason ("suspended: ...") instead of a generic 403.
   `go build`/`go vet` pass. **Not yet verified end-to-end**: the column migration has not been
   applied to the dev database yet, so the running site hasn't been exercised with this change.
+- `src/website`: aligned with the "TasDyn-ALife Web — Layout Plan" design canvas. Header: brand is
+  now "TasDyn-ALife", member nav sits beside the brand, Discord + sign-in on the right. Footer:
+  copyright plus Discord/GitHub/Support links. Landing stats are one joined 4-cell strip (Players
+  Online, Registered Players, Factions, Region) -- the design's "Server Status: Online" cell is
+  deliberately *not* shown because there's no real game-server signal behind it yet. Admin Panel
+  rebuilt as the design's sidebar shell (Overview / Players / System groups, signed-in-as footer
+  with rank) with Online Now / Open Tickets / Flagged Events (24h) / Total Players cards above the
+  staff log; unbuilt tools (Player Lookup, Bans, Anti-Cheat Flags, Database, Arsenal Editor) show
+  as "Soon", not dead links. The devlog composer uses the same shell. Verified by rendering the
+  pages against the dev database (a temporary staff session for /admin, deleted afterwards).

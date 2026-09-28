@@ -1,37 +1,50 @@
 {{define "content"}}
-<div class="page-header-row">
-  <h1 class="page-title" style="margin:0;">Admin Panel</h1>
-  <a class="cta small" href="/admin/devlog/new">New Devlog Post</a>
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content">
+    <h1 class="page-title admin-title">Dashboard</h1>
+    <p class="admin-sub">Server-wide overview and recent staff activity.</p>
+
+    <section class="admin-stats">
+      <div class="admin-stat">
+        <div class="label">Online Now</div>
+        <div class="value value-green">{{.OnlineCount}}</div>
+      </div>
+      <div class="admin-stat">
+        <div class="label">Open Tickets</div>
+        <div class="value">{{.OpenTickets}}</div>
+      </div>
+      <div class="admin-stat">
+        <div class="label">Flagged Events (24h)</div>
+        <div class="value {{if .FlagsLast24h}}value-amber{{end}}">{{.FlagsLast24h}}</div>
+      </div>
+      <div class="admin-stat">
+        <div class="label">Total Players</div>
+        <div class="value">{{.TotalPlayers}}</div>
+      </div>
+    </section>
+
+    <h2 class="admin-section-title" id="staff-log">Recent staff activity</h2>
+    <section class="card admin-table-card">
+      {{if .StaffLog}}
+        <table>
+          <thead><tr><th>Staff</th><th>Action</th><th>Target</th><th>Reason</th><th>Time</th></tr></thead>
+          <tbody>
+            {{range .StaffLog}}
+            <tr>
+              <td><strong>{{.StaffName}}</strong></td>
+              <td>{{.Action}}</td>
+              <td>{{if .TargetName}}{{.TargetName}}{{else}}—{{end}}</td>
+              <td>{{.Reason}}</td>
+              <td class="muted">{{.CreatedAt}}</td>
+            </tr>
+            {{end}}
+          </tbody>
+        </table>
+      {{else}}
+        <p class="empty-state">No staff actions logged yet.</p>
+      {{end}}
+    </section>
+  </div>
 </div>
-{{if .Session.SupportPanelAccess}}<p class="hint"><a href="/support">Switch to Support Panel</a></p>{{end}}
-
-<section class="card">
-  <h2>Recent staff actions</h2>
-  {{if .StaffLog}}
-    <table>
-      <thead><tr><th>Staff</th><th>Action</th><th>Target</th><th>Reason</th><th>When</th></tr></thead>
-      <tbody>
-        {{range .StaffLog}}
-        <tr>
-          <td>{{.StaffName}}</td>
-          <td>{{.Action}}</td>
-          <td>{{if .TargetName}}{{.TargetName}}{{else}}—{{end}}</td>
-          <td>{{.Reason}}</td>
-          <td>{{.CreatedAt}}</td>
-        </tr>
-        {{end}}
-      </tbody>
-    </table>
-  {{else}}
-    <p class="empty-state">No staff actions logged yet.</p>
-  {{end}}
-</section>
-
-<section class="card">
-  <h2>Coming soon</h2>
-  <p class="hint">Player lookup, ban/unban, rank management, anti-cheat flag review, and the arsenal
-  editor are designed in <code>docs/WEBSITE.md §7</code> and land in follow-up work -- this panel
-  currently exposes the staff log (read-only), the devlog composer, and the access-gating/switcher
-  itself.</p>
-</section>
 {{end}}
