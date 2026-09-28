@@ -44,7 +44,7 @@ func validFaction(f string) bool {
 
 // TransferOwnAccounts moves money between two of the same player's own
 // faction bank accounts (e.g. civilian -> police).
-func TransferOwnAccounts(ctx context.Context, pool *pgxpool.Pool, playerID int64, fromFaction, toFaction string, amountCents int64, requestToken string) error {
+func TransferOwnAccounts(ctx context.Context, pool *pgxpool.Pool, playerID int64, fromFaction, toFaction string, amount int64, requestToken string) error {
 	if !validFaction(fromFaction) || !validFaction(toFaction) {
 		return ErrInvalidFaction
 	}
@@ -61,7 +61,7 @@ func TransferOwnAccounts(ctx context.Context, pool *pgxpool.Pool, playerID int64
 		return err
 	}
 
-	return moveMoney(ctx, pool, fromAccountID, toAccountID, amountCents, requestToken)
+	return moveMoney(ctx, pool, fromAccountID, toAccountID, amount, requestToken)
 }
 
 // TransferToPlayer moves money from the sender's fromFaction account to a
@@ -71,7 +71,7 @@ func TransferOwnAccounts(ctx context.Context, pool *pgxpool.Pool, playerID int64
 // are the input here: this is what a player can actually see/ask another
 // player for, and a wrong guess routing real money to the wrong account is
 // exactly the class of mistake worth an extra rejection to prevent.
-func TransferToPlayer(ctx context.Context, pool *pgxpool.Pool, senderPlayerID int64, fromFaction string, recipientName string, toFaction string, amountCents int64, requestToken string) error {
+func TransferToPlayer(ctx context.Context, pool *pgxpool.Pool, senderPlayerID int64, fromFaction string, recipientName string, toFaction string, amount int64, requestToken string) error {
 	if !validFaction(fromFaction) || !validFaction(toFaction) {
 		return ErrInvalidFaction
 	}
@@ -98,7 +98,7 @@ func TransferToPlayer(ctx context.Context, pool *pgxpool.Pool, senderPlayerID in
 		return err
 	}
 
-	return moveMoney(ctx, pool, fromAccountID, toAccountID, amountCents, requestToken)
+	return moveMoney(ctx, pool, fromAccountID, toAccountID, amount, requestToken)
 }
 
 func accountID(ctx context.Context, pool *pgxpool.Pool, playerID int64, faction string) (int64, error) {
@@ -118,8 +118,8 @@ func accountID(ctx context.Context, pool *pgxpool.Pool, playerID int64, faction 
 // concurrent transfer against the same account can't be read-then-
 // overwritten -- the classic double-spend race this row-level locking
 // exists to close.
-func moveMoney(ctx context.Context, pool *pgxpool.Pool, fromAccountID, toAccountID int64, amountCents int64, requestToken string) error {
-	if amountCents <= 0 {
+func moveMoney(ctx context.Context, pool *pgxpool.Pool, fromAccountID, toAccountID int64, amount int64, requestToken string) error {
+	if amount <= 0 {
 		return ErrInvalidAmount
 	}
 	if fromAccountID == toAccountID {
@@ -147,7 +147,7 @@ func moveMoney(ctx context.Context, pool *pgxpool.Pool, fromAccountID, toAccount
 	if err := tx.QueryRow(ctx, `SELECT balance FROM bank_accounts WHERE id = $1`, fromAccountID).Scan(&fromBalance); err != nil {
 		return err
 	}
-	if fromBalance < amountCents {
+	if fromBalance < amount {
 		return ErrInsufficientFunds
 	}
 	var toBalance int64
@@ -158,7 +158,7 @@ func moveMoney(ctx context.Context, pool *pgxpool.Pool, fromAccountID, toAccount
 	_, err = tx.Exec(ctx, `
 		INSERT INTO bank_transactions (account_id, type, amount, balance_after, related_account_id, request_token)
 		VALUES ($1, 'transfer_out', $2, $3, $4, $5)
-	`, fromAccountID, -amountCents, fromBalance-amountCents, toAccountID, requestToken)
+	`, fromAccountID, -amount, fromBalance-amount, toAccountID, requestToken)
 	if err != nil {
 		if isUniqueViolation(err) {
 			return ErrDuplicateRequest
@@ -169,7 +169,7 @@ func moveMoney(ctx context.Context, pool *pgxpool.Pool, fromAccountID, toAccount
 	_, err = tx.Exec(ctx, `
 		INSERT INTO bank_transactions (account_id, type, amount, balance_after, related_account_id, request_token)
 		VALUES ($1, 'transfer_in', $2, $3, $4, $5)
-	`, toAccountID, amountCents, toBalance+amountCents, fromAccountID, requestToken)
+	`, toAccountID, amount, toBalance+amount, fromAccountID, requestToken)
 	if err != nil {
 		if isUniqueViolation(err) {
 			return ErrDuplicateRequest

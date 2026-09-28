@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -48,7 +47,7 @@ func (d *Deps) PlayerLookup(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	data := playerLookupData{
 		Base: baseFrom(r, "Player Lookup"), AdminShell: d.adminShell(r, "players"),
-		Q: q.Get("q"), Tab: "overview", Query: q, LargeLimit: players.Dollars(players.LargeCompensationCents),
+		Q: q.Get("q"), Tab: "overview", Query: q, LargeLimit: players.Dollars(players.LargeCompensation),
 	}
 	var err error
 	if data.Results, err = players.Search(r.Context(), d.Pool, data.Q); err != nil {
@@ -151,18 +150,19 @@ func (d *Deps) PlayerCompensate(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, back+"&error="+errMsg("You don't have permission to do that."), http.StatusSeeOther)
 		return
 	}
-	amount, err := strconv.ParseFloat(strings.ReplaceAll(strings.TrimPrefix(strings.TrimSpace(r.FormValue("amount")), "$"), ",", ""), 64)
-	if err != nil || amount <= 0 || math.IsInf(amount, 0) {
-		http.Redirect(w, r, back+"&error="+errMsg("Enter a positive dollar amount."), http.StatusSeeOther)
+	// In-game money is whole dollars, so "1,500" and "$1500" are fine but
+	// "12.50" isn't.
+	amount, err := strconv.ParseInt(strings.ReplaceAll(strings.TrimPrefix(strings.TrimSpace(r.FormValue("amount")), "$"), ",", ""), 10, 64)
+	if err != nil || amount <= 0 {
+		http.Redirect(w, r, back+"&error="+errMsg("Enter a whole dollar amount greater than zero."), http.StatusSeeOther)
 		return
 	}
-	cents := int64(math.Round(amount * 100))
-	if cents > players.LargeCompensationCents && !d.can(r, "players.compensate_large") {
-		http.Redirect(w, r, back+"&error="+errMsg("Amounts over $"+players.Dollars(players.LargeCompensationCents)+" need players.compensate_large."), http.StatusSeeOther)
+	if amount > players.LargeCompensation && !d.can(r, "players.compensate_large") {
+		http.Redirect(w, r, back+"&error="+errMsg("Amounts over $"+players.Dollars(players.LargeCompensation)+" need players.compensate_large."), http.StatusSeeOther)
 		return
 	}
-	err = players.Compensate(r.Context(), d.Pool, playerActor(r), id, r.FormValue("account"), cents, r.FormValue("reason"))
-	finishPlayerAction(w, r, back, err, "Compensation of $"+players.Dollars(cents)+" added.")
+	err = players.Compensate(r.Context(), d.Pool, playerActor(r), id, r.FormValue("account"), amount, r.FormValue("reason"))
+	finishPlayerAction(w, r, back, err, "Compensation of $"+players.Dollars(amount)+" added.")
 }
 
 // hoursMinutes renders a playtime duration like "142h 10m".

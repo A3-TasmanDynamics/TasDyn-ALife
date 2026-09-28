@@ -28,9 +28,13 @@ func notAllowed(format string, args ...any) error {
 	return fmt.Errorf("%w: %s", ErrNotAllowed, fmt.Sprintf(format, args...))
 }
 
-// LargeCompensationCents is the amount above which compensation needs
+// Money is stored in whole in-game dollars everywhere (players.*_cash,
+// bank_accounts.balance, bank_transactions.amount -- see DATA_CONTRACT.md,
+// where "-500" spends $500). There are no cents.
+
+// LargeCompensation is the amount above which compensation needs
 // players.compensate_large ($10,000).
-const LargeCompensationCents = 10_000_00
+const LargeCompensation = 10_000
 
 type Result struct {
 	ID     int64
@@ -109,37 +113,37 @@ func collect(rows pgx.Rows, err error, hint func(*Result, string)) ([]Result, er
 }
 
 type Profile struct {
-	ID          int64
-	UID         string
-	BEGUID      string
-	Name        string
-	AvatarURL   string
-	Status      string
-	Aliases     []string
-	StaffRank   string
-	StaffID     int64 // == ID when staff, for the profile link
-	Joined      time.Time
-	LastSeen    *time.Time
-	Playtime    time.Duration
-	CashCents   int64
-	BankCents   int64
-	CopLevel    int
-	CopName     string
-	MedicLevel  int
-	MedicName   string
-	GangName    string
-	GangRank    string
-	Licences    []string
-	Discord     string
-	SteamVAC    *int
-	SteamGame   *int
-	SteamAge    *time.Time
-	BanReason   string
-	BanExpires  *time.Time
-	BanActive   bool
+	ID         int64
+	UID        string
+	BEGUID     string
+	Name       string
+	AvatarURL  string
+	Status     string
+	Aliases    []string
+	StaffRank  string
+	StaffID    int64 // == ID when staff, for the profile link
+	Joined     time.Time
+	LastSeen   *time.Time
+	Playtime   time.Duration
+	Cash       int64 // whole dollars, all three factions
+	Bank       int64
+	CopLevel   int
+	CopName    string
+	MedicLevel int
+	MedicName  string
+	GangName   string
+	GangRank   string
+	Licences   []string
+	Discord    string
+	SteamVAC   *int
+	SteamGame  *int
+	SteamAge   *time.Time
+	BanReason  string
+	BanExpires *time.Time
+	BanActive  bool
 }
 
-func (p Profile) TotalCents() int64 { return p.CashCents + p.BankCents }
+func (p Profile) Total() int64 { return p.Cash + p.Bank }
 
 // Get loads one player's profile.
 func Get(ctx context.Context, pool *pgxpool.Pool, id int64) (Profile, error) {
@@ -164,7 +168,7 @@ func Get(ctx context.Context, pool *pgxpool.Pool, id int64) (Profile, error) {
 		LEFT JOIN gangs g ON g.id = gm.gang_id
 		WHERE p.id = $1`, id).Scan(
 		&p.ID, &p.UID, &p.BEGUID, &p.Name, &p.AvatarURL, &p.Status,
-		&p.StaffRank, &p.Joined, &p.LastSeen, &playSecs, &p.CashCents, &p.BankCents,
+		&p.StaffRank, &p.Joined, &p.LastSeen, &playSecs, &p.Cash, &p.Bank,
 		&p.CopLevel, &p.MedicLevel, &p.CopName, &p.MedicName, &p.GangName, &p.GangRank,
 		&civL, &copL, &medL, &p.Discord, &p.SteamVAC, &p.SteamGame, &p.SteamAge)
 	if err != nil {
@@ -358,16 +362,16 @@ func SetFactionLevel(ctx context.Context, pool *pgxpool.Pool, actor Actor, targe
 	return tx.Commit(ctx)
 }
 
-// Compensate adds amountCents to one of the player's bank accounts as an
+// Compensate adds amount (whole dollars) to one of the player's bank accounts as an
 // admin_adjustment transaction (the balance follows via the existing
 // trigger -- never a direct overwrite) and logs it. The caller checks
 // players.compensate, and players.compensate_large above the threshold.
-func Compensate(ctx context.Context, pool *pgxpool.Pool, actor Actor, targetID int64, faction string, amountCents int64, reason string) error {
+func Compensate(ctx context.Context, pool *pgxpool.Pool, actor Actor, targetID int64, faction string, amount int64, reason string) error {
 	if faction != "civilian" && faction != "police" && faction != "medic" {
 		return notAllowed("unknown account")
 	}
-	if amountCents <= 0 || amountCents > 100_000_000_00 {
-		return notAllowed("the amount must be positive")
+	if amount <= 0 || amount > 100_000_000 {
+		return notAllowed("the amount must be between $1 and $100,000,000")
 	}
 	reason = strings.TrimSpace(reason)
 	if reason == "" || len(reason) > 300 {
@@ -394,43 +398,37 @@ func Compensate(ctx context.Context, pool *pgxpool.Pool, actor Actor, targetID i
 	if _, err := tx.Exec(ctx, `
 		INSERT INTO bank_transactions (account_id, type, amount, balance_after, memo, created_by)
 		VALUES ($1, 'admin_adjustment', $2, $3, $4, $5)`,
-		accountID, amountCents, balance+amountCents, "Compensation: "+reason, actor.PlayerID); err != nil {
+		accountID, amount, balance+amount, "Compensation: "+reason, actor.PlayerID); err != nil {
 		return err
 	}
 	if err := audit.LogStaffAction(ctx, tx, audit.Entry{
 		StaffID: actor.PlayerID, TargetID: targetID, Action: "player.compensate", Source: actor.Source,
-		Reason: fmt.Sprintf("+$%s %s bank: %s", dollars(amountCents), faction, reason),
-		Before: map[string]any{"account": faction, "balance_cents": balance},
-		After:  map[string]any{"account": faction, "balance_cents": balance + amountCents, "amount_cents": amountCents},
+		Reason: fmt.Sprintf("+$%s %s bank: %s", Dollars(amount), faction, reason),
+		Before: map[string]any{"account": faction, "balance": balance},
+		After:  map[string]any{"account": faction, "balance": balance + amount, "amount": amount},
 	}); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)
 }
 
-// dollars formats cents as "1,234.50" (or "1,234" when whole).
-func dollars(cents int64) string {
-	neg := cents < 0
+// Dollars formats whole dollars with thousands separators: 1234567 ->
+// "1,234,567".
+func Dollars(amount int64) string {
+	neg := amount < 0
 	if neg {
-		cents = -cents
+		amount = -amount
 	}
-	whole := strconv.FormatInt(cents/100, 10)
+	whole := strconv.FormatInt(amount, 10)
 	var b strings.Builder
+	if neg {
+		b.WriteByte('-')
+	}
 	for i, c := range whole {
 		if i > 0 && (len(whole)-i)%3 == 0 {
 			b.WriteByte(',')
 		}
 		b.WriteRune(c)
 	}
-	s := b.String()
-	if r := cents % 100; r != 0 {
-		s += fmt.Sprintf(".%02d", r)
-	}
-	if neg {
-		s = "-" + s
-	}
-	return s
+	return b.String()
 }
-
-// Dollars is dollars exported for templates.
-func Dollars(cents int64) string { return dollars(cents) }

@@ -951,3 +951,10 @@
   12/64 on Altis"). *Other:* #staff-log posts go through the bot when that channel is set (webhook otherwise).
   `/bot health` also checks View Audit Log. The webhook helper moved to `internal/discord/webhook` to break an import
   cycle. Intents: Server Members (privileged, already enabled for the app) and Guild Moderation.
+- **Fix: Player Lookup, the admin dashboard and compensation treated money as cents.** In-game money is stored in
+  whole dollars (DATA_CONTRACT.md: `"-500"` spends $500), but Player Lookup's balances, the dashboard's money supply
+  and rich list divided by 100, and **Compensate multiplied the entered amount by 100** (compensating "$50" added
+  $5,000; the $10,000 approval threshold was effectively $1,000,000). Everything now uses whole dollars
+  (`players.Dollars`, `players.LargeCompensation`), the compensate form rejects fractional amounts, and the staff-log
+  payload keys are `amount`/`balance`. `bank.Transfer*` parameters were renamed from `amountCents` to `amount` (they
+  were already whole dollars).
