@@ -86,7 +86,7 @@ type supportQueueData struct {
 }
 
 // SupportQueue is the Support Panel's "Tickets" page: the full
-// filterable/sortable working queue (gated by auth.RequireSupportPanel
+// filterable/sortable working queue (gated by Deps.Auth.RequireSupportPanel
 // upstream, not re-checked here -- this handler trusts its middleware the
 // same way every other panel-gated handler does). Filterable by
 // status/priority/assignment via query params -- a plain server-rendered

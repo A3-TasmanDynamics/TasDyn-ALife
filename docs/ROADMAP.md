@@ -14,6 +14,16 @@
 > launch-critical instead, on purpose, at the cost of the date.** ~6 added weeks for the website is
 > this project's estimate, not a confirmed decision — treat Phase W's window below as a proposal to
 > confirm or adjust, same as Phase 3's was.
+>
+> **A third scope question is now open, not yet folded into the date above.**
+> [OPERATIONS.md](OPERATIONS.md) — structured staff disciplinary cases, staff lifecycle (active/
+> suspended/LOA), staff meetings, an internal wiki, and a new player-facing faction records system
+> (police/EMS/gang duty logs) — was scoped after Phase W's website work was already underway.
+> Unlike the two revisions above, this one deliberately has **no date attached yet**
+> ([OPERATIONS.md §7](OPERATIONS.md#7-timeline-impact--the-honest-part) explains why): the scope
+> was captured immediately so it isn't lost, but sequencing five more features into an already-moved
+> Phase W needs its own pass once the website's existing scope is further along, not a number
+> guessed while this is still fresh.
 
 This is a solo-scoped plan, which matters for how "parallel track" (Phase W below) should actually
 be read: the website shares almost no *code* with the SQF/C++ side, so it doesn't block Phase 1–4
@@ -242,6 +252,18 @@ its own phase instead of embedded piecemeal inside them.
       end-to-end: leader invite/promote/remove, a non-leader correctly blocked, a duplicate invite
       and an ambiguous name both correctly rejected, `gang_log` checked by hand for all three
       action types.
+- [x] Public devlog (`/devlog`, `/devlog/<slug>`, `devlog_posts` table) and a composer at
+      `/admin/devlog/new` — plain-text posts, `html/template` auto-escaping the only thing standing
+      between a compromised staff account and injected markup on a public page. Publishes
+      immediately; no draft/edit UI built. Landing page finished (hero copy, real stats, factions
+      section) and both it and the member Dashboard got a visual polish pass (real SVG icons,
+      hover states, a max-width layout) to match. Verified against the real dev Postgres instance,
+      including a throwaway `web_sessions` row to exercise the Dashboard without a real Steam login.
+- [ ] **New scope, not yet scheduled**: [OPERATIONS.md](OPERATIONS.md) — structured staff
+      disciplinary cases, staff lifecycle (active/suspended/LOA), staff meetings, an internal wiki,
+      and player-facing faction records (police/EMS/gang duty logs). See the roadmap header and
+      [OPERATIONS.md §7](OPERATIONS.md#7-timeline-impact--the-honest-part) for why this has no date
+      yet.
 - [ ] Admin Panel: currently a read-only staff-log viewer only. Player lookup, ban/unban, rank +
       permission-override management (the actual web UI for the DB-driven system Phase 3 built
       the data model for), anti-cheat flag review queue, and the arsenal editor are still to build.

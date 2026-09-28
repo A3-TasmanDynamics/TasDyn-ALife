@@ -114,7 +114,7 @@ type devlogNewData struct {
 }
 
 // DevlogNewForm renders the staff post-composer -- gated on Admin Panel
-// access (auth.RequireAdminPanel, wired in main.go) same as the rest of
+// access (Deps.Auth.RequireAdminPanel, wired in main.go) same as the rest of
 // /admin/*. A dedicated devlog.write permission would be more precise, but
 // admin-panel-or-nothing is a reasonable v1 given every current admin has
 // full trust anyway -- see docs/WEBSITE.md for the broader permission model

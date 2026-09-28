@@ -120,6 +120,15 @@ CREATE TABLE players (
     medic_playtime_seconds BIGINT NOT NULL DEFAULT 0,
 
     staff_rank_id  INTEGER REFERENCES staff_ranks(id) ON DELETE SET NULL,
+    -- Whether staff_rank_id's access should actually apply right now --
+    -- docs/OPERATIONS.md §3. A suspended/LOA staff member keeps their rank
+    -- (so nothing else has to change when they come back) but panel access
+    -- resolution (internal/auth/session.go's resolvePanelAccess) requires
+    -- 'active' in addition to the rank's own grants.
+    staff_status         TEXT NOT NULL DEFAULT 'active'
+                             CHECK (staff_status IN ('active', 'suspended', 'loa')),
+    staff_status_reason  TEXT,
+    staff_status_until   TIMESTAMPTZ,  -- LOA/suspension end date; NULL = indefinite
 
     created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()

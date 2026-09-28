@@ -152,14 +152,14 @@ func run() error {
 	})
 
 	r.Group(func(r chi.Router) {
-		r.Use(auth.RequireAdminPanel)
+		r.Use(d.Auth.RequireAdminPanel)
 		r.Get("/admin", d.AdminHome)
 		r.Get("/admin/devlog/new", d.DevlogNewForm)
 		r.Post("/admin/devlog/new", d.DevlogCreate)
 	})
 
 	r.Group(func(r chi.Router) {
-		r.Use(auth.RequireSupportPanel)
+		r.Use(d.Auth.RequireSupportPanel)
 		r.Get("/support", d.SupportDashboard)
 		r.Get("/support/tickets", d.SupportQueue)
 		r.Post("/support/tickets/{id}/assign", d.AssignTicket)
