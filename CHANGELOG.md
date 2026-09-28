@@ -798,3 +798,24 @@
   path can look up and show the specific reason ("suspended: ...") instead of a generic 403.
   `go build`/`go vet` pass. **Not yet verified end-to-end**: the column migration has not been
   applied to the dev database yet, so the running site hasn't been exercised with this change.
+- `src/website`: aligned with the "TasDyn-ALife Web — Layout Plan" design canvas. Header: brand is
+  now "TasDyn-ALife", member nav sits beside the brand, Discord + sign-in on the right. Footer:
+  copyright plus Discord/GitHub/Support links. Landing stats are one joined 4-cell strip (Players
+  Online, Registered Players, Factions, Region) -- the design's "Server Status: Online" cell is
+  deliberately *not* shown because there's no real game-server signal behind it yet. Admin Panel
+  rebuilt as the design's sidebar shell (Overview / Players / System groups, signed-in-as footer
+  with rank) with Online Now / Open Tickets / Flagged Events (24h) / Total Players cards above the
+  staff log; unbuilt tools (Player Lookup, Bans, Anti-Cheat Flags, Database, Arsenal Editor) show
+  as "Soon", not dead links. The devlog composer uses the same shell. Verified by rendering the
+  pages against the dev database (a temporary staff session for /admin, deleted afterwards).
+- `src/website`: public **status page** (`/status`, linked from the header and footer). A
+  background checker (`internal/status`) probes each component once a minute and records the
+  result in a new `status_checks` table (pruned after 90 days): **Website** (HTTP request to
+  itself), **Database** (pool ping), **Discord Bot** (gateway session ready), and **Game Server**
+  via a Steam A2S_INFO query (with the post-2020 challenge handshake) against `GAME_QUERY_ADDR` --
+  a real "is arma3server answering" signal, including player count. Components without a
+  configured check show "Not monitored yet" instead of a guessed status. 60 daily bars per
+  component, bucketed on Australia/Sydney days; days before monitoring began show as "no data",
+  never assumed uptime. A2S reply parsing is unit-tested; verified live against the dev database.
+  Not built (unlike the old Mommers Co status page it's modelled on): an incident history feed and
+  email subscriptions -- both need admin tooling / mail infrastructure first.

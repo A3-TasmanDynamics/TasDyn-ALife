@@ -14,6 +14,7 @@ import (
 	"website/internal/config"
 	"website/internal/csrf"
 	"website/internal/render"
+	"website/internal/status"
 )
 
 // errMsg URL-encodes a message for use in a redirect's ?error=/?notice=
@@ -28,6 +29,9 @@ type Deps struct {
 	Render *render.Renderer
 	Auth   *auth.Authenticator
 	Cfg    config.Config
+
+	// StatusMonitor backs the public /status page; nil renders it empty.
+	StatusMonitor *status.Monitor
 }
 
 // Base is the common template data every page needs -- embedded into each

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -74,6 +75,12 @@ func (b *Bot) Start(ctx context.Context) error {
 
 	slog.Info("discord bot: connected and /link registered", "guild_id", b.guildID)
 	return nil
+}
+
+// Health reports whether the gateway session is connected and ready, plus
+// its last heartbeat round-trip -- used by the public status page.
+func (b *Bot) Health() (bool, time.Duration) {
+	return b.session.DataReady, b.session.HeartbeatLatency()
 }
 
 func (b *Bot) Stop() {

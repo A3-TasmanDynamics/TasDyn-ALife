@@ -1,0 +1,28 @@
+{{define "admin_sidebar"}}
+<nav class="admin-sidebar" aria-label="Admin Panel">
+  <div class="admin-sidebar-head">
+    <span class="brand-mark admin-sidebar-mark" aria-hidden="true"></span>
+    <span>Admin Panel</span>
+  </div>
+
+  <div class="admin-nav-group">Overview</div>
+  <a href="/admin" class="admin-nav-item {{if eq .AdminTab "dashboard"}}active{{end}}">Dashboard</a>
+  <a href="/admin#staff-log" class="admin-nav-item">Staff Log</a>
+  <a href="/admin/devlog/new" class="admin-nav-item {{if eq .AdminTab "devlog"}}active{{end}}">New Devlog Post</a>
+
+  <div class="admin-nav-group">Players</div>
+  <span class="admin-nav-item disabled">Player Lookup <span class="admin-nav-tag">Soon</span></span>
+  <span class="admin-nav-item disabled">Bans <span class="admin-nav-tag">Soon</span></span>
+
+  <div class="admin-nav-group">System</div>
+  <span class="admin-nav-item disabled">Anti-Cheat Flags <span class="admin-nav-tag">Soon</span></span>
+  <span class="admin-nav-item disabled admin-nav-highlight">Database <span class="admin-nav-tag">Soon</span></span>
+  <span class="admin-nav-item disabled">Arsenal Editor <span class="admin-nav-tag">Soon</span></span>
+  {{if .Session.SupportPanelAccess}}<a href="/support" class="admin-nav-item">Switch to Support Panel</a>{{end}}
+
+  <div class="admin-sidebar-foot">
+    <div class="admin-sidebar-foot-label">Signed in as</div>
+    <div class="admin-sidebar-foot-name">{{.Session.Name}}{{if .StaffRank}} &middot; {{.StaffRank}}{{end}}</div>
+  </div>
+</nav>
+{{end}}

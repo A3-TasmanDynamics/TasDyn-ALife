@@ -1,0 +1,68 @@
+{{define "content"}}
+<div class="landing-wrap status-wrap">
+
+<section class="status-hero">
+  <div>
+    <div class="hero-eyebrow">System Status</div>
+    <h1 class="status-headline status-headline-{{.State}}">{{.Headline}}</h1>
+    <p class="hero-sub status-sub">Live health checks for the TasDyn-ALife server and its services, run every minute.
+      {{if .CheckedAt}}Last checked {{.CheckedAt}}.{{end}}</p>
+  </div>
+  {{if .Uptime}}
+  <div class="status-pill status-pill-{{.State}}">
+    <span class="status-dot" aria-hidden="true"></span>
+    <span>{{.Uptime}}</span>
+  </div>
+  {{end}}
+</section>
+
+<section class="status-list">
+  <div class="status-list-head">
+    <h2>Services</h2>
+    <span class="hint">{{.Days}}-day history</span>
+  </div>
+
+  {{range .Components}}
+  <div class="status-row status-row-{{.State}}">
+    <div class="status-row-name">
+      <h3>{{.Name}}</h3>
+      <p>{{.Description}}</p>
+    </div>
+    <div class="status-row-bars">
+      {{if .Days}}
+      <div class="uptime-track" role="img" aria-label="{{.Name}} daily uptime, last {{len .Days}} days">
+        {{range .Days}}<span class="uptime-bar uptime-bar-{{.Class}}" title="{{.Title}}"></span>{{end}}
+      </div>
+      <div class="uptime-scale"><span>{{len .Days}} days ago</span><span>{{if .Uptime}}{{.Uptime}} uptime{{end}}</span><span>Today</span></div>
+      {{else}}
+      <p class="status-unmonitored">No health check is configured for this yet.</p>
+      {{end}}
+    </div>
+    <div class="status-row-state">
+      <span class="status-state status-state-{{.State}}">
+        <span class="status-dot" aria-hidden="true"></span>{{.StateText}}
+      </span>
+      {{if .Detail}}<span class="status-detail">{{.Detail}}</span>{{end}}
+    </div>
+  </div>
+  {{end}}
+
+  <div class="uptime-legend">
+    <span><span class="uptime-bar uptime-bar-up"></span> 99.9%+</span>
+    <span><span class="uptime-bar uptime-bar-warn"></span> 95&ndash;99.9%</span>
+    <span><span class="uptime-bar uptime-bar-down"></span> Below 95%</span>
+    <span><span class="uptime-bar uptime-bar-none"></span> No data</span>
+  </div>
+  {{if .Since}}<p class="hint status-since">Monitoring since {{.Since}}. Days before that show as no data rather than assumed uptime.</p>{{end}}
+</section>
+
+<section class="connect-band">
+  <div>
+    <h2>Something not working?</h2>
+    <p>If a service shows operational but you're still having trouble, open a support ticket or ask in Discord.</p>
+  </div>
+  <a class="cta secondary" href="/tickets">Open a ticket</a>
+</section>
+
+</div>
+{{end}}
