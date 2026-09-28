@@ -858,6 +858,15 @@
   newly set webhook isn't flooded). **Security fixes:** Discord webhook posts now disable all mentions (a
   ticket subject of `@everyone` would have pinged the server) and failed posts no longer log the webhook
   URL (it contains the secret token). The admin staff log shows readable changes and a *Via* column.
+- **Fix: quoted Steam IDs created duplicate players.** Arma passes `callExtension` array arguments in their `str` form,
+  so a uid arrived as `"7656…"` (quotes included) and a second, bogus `players` row was created. The earlier
+  SQF-side unwrap in `fn_callExtension.sqf` could never work (the quotes are added *after* SQF runs) and is
+  removed. The extension now unwraps every argument (`UnwrapArmaString`: strips the quotes, un-doubles inner
+  quotes, which also fixes JSON gear values arriving with doubled quotes) and rejects any uid that isn't a
+  17-digit Steam64 ID (`ERROR:invalid uid`). `players.uid` gains a CHECK constraint. One-off repair script
+  `database/fixes/2026-09-29_quoted_uids.sql` deletes empty duplicates and reports anything needing a manual
+  merge. Verified with the native harness using Arma-style quoted args; repair script dry-run in a rolled-back
+  transaction.
 - **Discord bot core (DISCORD_BOT.md stage B0).** Commands now live in a registry and are registered in one bulk
   overwrite on startup; the bot no longer deletes `/link` on shutdown, so commands don't vanish during restarts.
   Staff commands are permission-checked against the caller's *linked website account* (never Discord roles),

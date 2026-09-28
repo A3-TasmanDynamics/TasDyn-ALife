@@ -75,7 +75,7 @@ INSERT INTO staff_ranks (key, display_name, level, default_admin_panel, default_
 -- ---------------------------------------------------------------------------
 CREATE TABLE players (
     id             BIGSERIAL PRIMARY KEY,
-    uid            TEXT NOT NULL UNIQUE,
+    uid            TEXT NOT NULL UNIQUE CHECK (uid ~ '^[0-9]{17}$'),  -- Steam64 ID, digits only
     name           TEXT NOT NULL DEFAULT '',
     status         TEXT NOT NULL DEFAULT 'active'
                        CHECK (status IN ('active', 'banned', 'whitelisted_pending')),

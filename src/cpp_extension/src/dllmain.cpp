@@ -56,7 +56,8 @@ std::vector<std::string> ToVector(const char** argv, int argc) {
     std::vector<std::string> result;
     result.reserve(static_cast<size_t>(argc > 0 ? argc : 0));
     for (int i = 0; i < argc; ++i) {
-        result.emplace_back(argv[i] ? argv[i] : "");
+        // Every arg arrives in Arma's `str` form -- see UnwrapArmaString.
+        result.emplace_back(UnwrapArmaString(argv[i] ? argv[i] : ""));
     }
     return result;
 }
