@@ -910,3 +910,9 @@
   never a direct overwrite, plus a `player.compensate` staff-log row in the same transaction; over $10,000 needs
   `players.compensate_large`) and **Faction level** (`players.edit_police`/`players.edit_medic`, logged by the change
   trigger). Kick, *Open a case* and punishment points wait for the server-manager API and Cases.
+- **Admin dashboard matches the updated layout plan.** Operations row (online now, open cases, open tickets linking to
+  the queue, anti-cheat flags in 24h), an *Economy & population* row (registered players, police and EMS whitelisted
+  counts, total money supply = cash + bank), a staff-only top-10 **rich list** linking into Player Lookup with a *FLAG*
+  badge for players with unreviewed anti-cheat flags, and the 10 most recent staff actions linking to the full Staff
+  Log. Open cases, the cases-per-day chart, *My activity*, notifications and the essential-notice banner stay as
+  placeholders until Cases and notifications exist.
