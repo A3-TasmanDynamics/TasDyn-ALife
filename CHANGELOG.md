@@ -840,3 +840,11 @@
   onboarding, role drift detection, logging of Discord-side moderation from the audit log,
   ticket ↔ forum-channel sync, live status message + presence, a transactional outbox for DMs and
   posts, required intents/permissions, and build stages B0–B7 mapped to the waves.
+- `src/website`: **Wave 1 foundation: Steam.** New `internal/steam`: BattlEye GUID from Steam64 (verified
+  against two independently published ID/GUID pairs), a Steam Web API client (GetPlayerSummaries,
+  GetPlayerBans; the API key is never written to logs), and a refresher that updates a player's cached
+  Steam name/avatar/account age/VAC/game bans on login (in the background) and sweeps stale rows
+  every 15 minutes. A *new* VAC or game ban adds a `steam_ban` row to `anti_cheat_flags`. BattlEye
+  GUIDs are set on website signup and backfilled for game-created rows, with or without an API key.
+  Display names everywhere now fall back in-game name -> Steam name -> `Player #id`. New
+  `STEAM_WEB_API_KEY` env var (optional).

@@ -15,6 +15,7 @@ import (
 	"website/internal/csrf"
 	"website/internal/render"
 	"website/internal/status"
+	"website/internal/steam"
 )
 
 // errMsg URL-encodes a message for use in a redirect's ?error=/?notice=
@@ -32,6 +33,9 @@ type Deps struct {
 
 	// StatusMonitor backs the public /status page; nil renders it empty.
 	StatusMonitor *status.Monitor
+
+	// Steam refreshes cached Steam profile/ban data (internal/steam).
+	Steam *steam.Refresher
 }
 
 // Base is the common template data every page needs -- embedded into each

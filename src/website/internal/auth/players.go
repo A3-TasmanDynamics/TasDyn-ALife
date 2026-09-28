@@ -5,6 +5,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"website/internal/steam"
 )
 
 // FindOrCreatePlayerBySteamUID resolves a players.id for a Steam64 ID,
@@ -36,9 +38,15 @@ func FindOrCreatePlayerBySteamUID(ctx context.Context, pool *pgxpool.Pool, uid s
 	}
 	defer tx.Rollback(ctx)
 
+	// BattlEye GUID up front for website-first signups; game-first rows get
+	// theirs from internal/steam's backfill instead.
+	var beGUID *string
+	if g, err := steam.BEGUID(uid); err == nil {
+		beGUID = &g
+	}
 	err = tx.QueryRow(ctx, `
-		INSERT INTO players (uid, status) VALUES ($1, 'active') RETURNING id
-	`, uid).Scan(&playerID)
+		INSERT INTO players (uid, status, be_guid) VALUES ($1, 'active', $2) RETURNING id
+	`, uid, beGUID).Scan(&playerID)
 	if err != nil {
 		return 0, err
 	}

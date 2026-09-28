@@ -75,7 +75,8 @@ func (d *Deps) AdminHome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rows, err := d.Pool.Query(ctx, `
-		SELECT COALESCE(staff.name, 'System'), sl.action, COALESCE(target.name, ''), COALESCE(sl.reason, ''), sl.created_at
+		SELECT COALESCE(NULLIF(staff.name, ''), staff.steam_name, 'System'), sl.action,
+		       COALESCE(NULLIF(target.name, ''), target.steam_name, ''), COALESCE(sl.reason, ''), sl.created_at
 		FROM staff_log sl
 		LEFT JOIN players staff ON staff.id = sl.staff_player_id
 		LEFT JOIN players target ON target.id = sl.target_player_id

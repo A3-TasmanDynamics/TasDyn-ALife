@@ -130,6 +130,21 @@ CREATE TABLE players (
     staff_status_reason  TEXT,
     staff_status_until   TIMESTAMPTZ,  -- LOA/suspension end date; NULL = indefinite
 
+    -- BattlEye GUID, derived from uid (src/website/internal/steam/guid.go).
+    -- Set on website signup or by the website's backfill for game-created rows.
+    be_guid              TEXT UNIQUE,
+
+    -- Steam Web API cache (docs/INTEGRATIONS.md §2.1) -- display/review data
+    -- only, never identity. NULL = never fetched, or no API key configured.
+    steam_name             TEXT,
+    steam_avatar_url       TEXT,
+    steam_created_at       TIMESTAMPTZ,   -- NULL also when the profile is private
+    steam_vac_bans         INTEGER,
+    steam_game_bans        INTEGER,
+    steam_days_since_ban   INTEGER,
+    steam_community_banned BOOLEAN,
+    steam_refreshed_at     TIMESTAMPTZ,
+
     created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -431,7 +446,8 @@ CREATE TABLE whitelist (
 CREATE TABLE anti_cheat_flags (
     id            BIGSERIAL PRIMARY KEY,
     player_id     BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
-    flag_type     TEXT NOT NULL CHECK (flag_type IN ('honeypot', 'movement', 'idempotency_reject', 'rate_limit')),
+    -- 'steam_ban': a new VAC/game ban appeared on the player's Steam account (internal/steam).
+    flag_type     TEXT NOT NULL CHECK (flag_type IN ('honeypot', 'movement', 'idempotency_reject', 'rate_limit', 'steam_ban')),
     confidence    TEXT NOT NULL CHECK (confidence IN ('high', 'medium')),
     details       JSONB,
     reviewed_by   BIGINT REFERENCES players(id) ON DELETE SET NULL,

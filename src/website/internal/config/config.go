@@ -59,6 +59,11 @@ type Config struct {
 	// status page queries it for a real up/down signal; empty means the
 	// game server shows as "not monitored" instead of a guessed status.
 	GameQueryAddr string
+
+	// SteamWebAPIKey (steamcommunity.com/dev/apikey) lets internal/steam
+	// cache persona names, avatars, account age and VAC/game-ban status.
+	// Empty = those stay unset; login and everything else still work.
+	SteamWebAPIKey string
 }
 
 func Load() (Config, error) {
@@ -74,6 +79,7 @@ func Load() (Config, error) {
 		DiscordGuildID:          os.Getenv("DISCORD_GUILD_ID"),
 		DiscordTicketCategoryID: os.Getenv("DISCORD_TICKET_CATEGORY_ID"),
 		GameQueryAddr:           os.Getenv("GAME_QUERY_ADDR"),
+		SteamWebAPIKey:          os.Getenv("STEAM_WEB_API_KEY"),
 	}
 
 	if c.DatabaseURL == "" {
