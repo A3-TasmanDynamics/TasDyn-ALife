@@ -824,7 +824,11 @@
   skipped, with designs for the 32 new or changed items and a six-wave build order continuing
   `OPERATIONS.md §7`. Paid reserved slots are left as an explicit decision (Arma 3 monetisation
   rules).
-- `docs/INTEGRATIONS.md`: Discord & Steam integration plan for every Gamepanel-parity feature. Foundations:
+- `docs/INTEGRATIONS.md`: Discord, Steam & TeamSpeak 3 integration plan for every Gamepanel-parity feature. Every
+  promotion/role change is captured once by a Postgres trigger (`rank_changes`, whichever tool made it:
+  website, Discord `/promote`, in-game menu, or manual), then applied to Discord roles and TeamSpeak
+  server groups by one sync engine, with a `sync_log` and drift reverting. TeamSpeak: ServerQuery connector,
+  `!link` identity linking, groups, optional bans, status component. Foundations:
   a Steam Web API client (persona names/avatars, account age, VAC/game bans feeding the anti-cheat
   review queue), BattlEye GUIDs derived from Steam64 IDs, one-way website→Discord role sync that only
   touches mapped roles, a single staff-log helper that also posts to Discord, DM notifications, and

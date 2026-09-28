@@ -376,7 +376,7 @@ The concrete features that distinguish this from a plain forum thread:
 
 ## 9. Discord integration
 
-The full plan for Discord (and Steam Web API) integration across every staff and faction feature, including role sync, DMs, more webhooks and bot commands, is [INTEGRATIONS.md](INTEGRATIONS.md). This section covers the original login/ticket pieces.
+The full plan for Discord, Steam Web API and TeamSpeak integration across every staff and faction feature, including role sync, DMs, more webhooks and bot commands, is [INTEGRATIONS.md](INTEGRATIONS.md). This section covers the original login/ticket pieces.
 
 Two different integrations, deliberately built differently because they solve different problems:
 
