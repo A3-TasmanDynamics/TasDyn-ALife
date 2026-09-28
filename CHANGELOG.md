@@ -834,6 +834,12 @@
   touches mapped roles, a single staff-log helper that also posts to Discord, DM notifications, and
   `/status` `/profile` `/whois` `/rules` bot commands. Then a per-wave table of each feature's Steam and
   Discord hooks, security/privacy rules, and four open decisions.
+- `docs/DISCORD_BOT.md`: full Discord bot plan. The bot stays inside the website and calls the same
+  service functions as the website (permissions from the linked account, never Discord roles).
+  Covers the command catalogue (player/staff/senior), context menus, action buttons on staff posts,
+  onboarding, role drift detection, logging of Discord-side moderation from the audit log,
+  ticket ↔ forum-channel sync, live status message + presence, a transactional outbox for DMs and
+  posts, required intents/permissions, and build stages B0–B7 mapped to the waves.
 - `src/website`: **Wave 1 foundation: Steam.** New `internal/steam`: BattlEye GUID from Steam64 (verified
   against two independently published ID/GUID pairs), a Steam Web API client (GetPlayerSummaries,
   GetPlayerBans; the API key is never written to logs), and a refresher that updates a player's cached
