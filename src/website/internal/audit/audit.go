@@ -136,6 +136,9 @@ func Describe(action string, before, after []byte) string {
 	if action == "discord.settings" {
 		return "updated the Discord bot settings"
 	}
+	if action == "rules.update" {
+		return "updated the server rules"
+	}
 	return action
 }
 

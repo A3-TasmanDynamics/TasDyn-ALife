@@ -7,48 +7,59 @@
   <title>{{if .Title}}{{.Title}} · {{end}}TasDyn-ALife</title>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
-<body>
+<body{{if .Panel}} class="panel-body"{{end}}>
+  {{if not .Panel}}
   <header class="site-header">
     <a class="brand" href="/">
       <span class="brand-mark">TD</span>
       <span class="brand-text">TasDyn-<strong>ALife</strong></span>
     </a>
-    <nav class="site-nav-main">
-      {{if .Session}}
-        <a href="/dashboard">Dashboard</a>
-        <a href="/tickets">My Tickets</a>
-        {{if .Session.AdminPanelAccess}}<a href="/admin">Admin Panel</a>{{end}}
-        {{if .Session.SupportPanelAccess}}<a href="/support">Support Panel</a>{{end}}
-      {{end}}
-      <a href="/devlog">Devlog</a>
-      <a href="/status">Status</a>
+    <nav class="site-nav-main" aria-label="Main">
+      <a class="nav-pill {{if hasPrefix .Path "/dashboard"}}active{{end}}" href="/dashboard" {{if hasPrefix .Path "/dashboard"}}aria-current="page"{{end}}>Dashboard</a>
+      <a class="nav-pill {{if hasPrefix .Path "/rules"}}active{{end}}" href="/rules" {{if hasPrefix .Path "/rules"}}aria-current="page"{{end}}>Rules</a>
+      <a class="nav-pill {{if hasPrefix .Path "/tickets"}}active{{end}}" href="/tickets" {{if hasPrefix .Path "/tickets"}}aria-current="page"{{end}}>Support</a>
+      <a class="nav-pill {{if hasPrefix .Path "/devlog"}}active{{end}}" href="/devlog" {{if hasPrefix .Path "/devlog"}}aria-current="page"{{end}}>Devlog</a>
+      <a class="nav-pill {{if hasPrefix .Path "/status"}}active{{end}}" href="/status" {{if hasPrefix .Path "/status"}}aria-current="page"{{end}}>Status</a>
     </nav>
-    <nav class="site-nav">
-      <a href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Discord</a>
+    <div class="site-nav">
       {{if .Session}}
-        <span class="nav-user">{{.Session.Name}}</span>
+        {{if .Session.AdminPanelAccess}}<a class="panel-link" href="/admin">Admin panel</a>
+        {{else if .Session.SupportPanelAccess}}<a class="panel-link" href="/support">Support panel</a>{{end}}
+        <div class="user-chip">
+          <span class="user-avatar" aria-hidden="true">{{.Session.Initials}}</span>
+          <span class="user-text"><span class="user-name">{{.Session.Name}}</span><span class="user-sub">{{.Session.Subtitle}}</span></span>
+        </div>
         <form method="post" action="/auth/logout" class="inline-form"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="link-button" type="submit">Sign out</button></form>
       {{else}}
+        <a href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Discord</a>
         <a class="steam-login" href="/auth/steam/login">Sign in with Steam</a>
       {{end}}
-    </nav>
+    </div>
   </header>
+  {{end}}
 
-  <main class="site-main">
-    {{if .Error}}<div class="banner banner-error">{{.Error}}</div>{{end}}
-    {{if .Notice}}<div class="banner banner-notice">{{.Notice}}</div>{{end}}
+  <main class="site-main{{if .Panel}} site-main-panel{{end}}">
+    {{if .Panel}}
+      {{if or .Error .Notice}}<div class="toast-stack" role="status">{{if .Error}}<div class="banner banner-error">{{.Error}}</div>{{end}}{{if .Notice}}<div class="banner banner-notice">{{.Notice}}</div>{{end}}</div>{{end}}
+    {{else}}
+      {{if .Error}}<div class="banner banner-error">{{.Error}}</div>{{end}}
+      {{if .Notice}}<div class="banner banner-notice">{{.Notice}}</div>{{end}}
+    {{end}}
     {{template "content" .}}
   </main>
 
+  {{if not .Panel}}
   <footer class="site-footer">
     <div>&copy; 2026 Tasman Dynamics</div>
-    <nav class="site-footer-links">
+    <nav class="site-footer-links" aria-label="Footer">
       <a href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Discord</a>
       <a href="https://github.com/A3-TasmanDynamics/TasDyn-ALife" target="_blank" rel="noopener">GitHub</a>
+      <a href="/rules">Rules</a>
       <a href="/status">Status</a>
       <a href="/tickets">Support</a>
     </nav>
   </footer>
+  {{end}}
 </body>
 </html>
 {{end}}

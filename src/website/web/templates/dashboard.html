@@ -1,162 +1,214 @@
 {{define "content"}}
-<h1 class="page-title">Welcome back, {{.Player.Name}}</h1>
+<div class="pdash">
+  <div class="pdash-greeting">
+    <div>
+      <h1>G'day, {{.Name}}</h1>
+      <p class="pdash-meta">Playing since {{.Since.Format "2 Jan 2006"}} &middot; Steam64 <span class="mono">{{.UID}}</span> &middot; {{if .DiscordUsername}}Discord @{{.DiscordUsername}} linked{{else}}Discord not linked{{end}}</p>
+    </div>
+    <div class="pdash-actions">
+      <a class="btn btn-lg" href="/tickets">Open a ticket</a>
+      {{if .JoinURL}}<a class="btn btn-primary btn-lg pdash-join" href="{{.JoinURL}}"><span class="pdash-join-dot" aria-hidden="true"></span>Join server &middot; {{.OnlineCount}} online</a>{{end}}
+    </div>
+  </div>
 
-<section class="stat-grid faction-grid">
-  <div class="card faction-card faction-card-civ">
-    <h2><span class="faction-icon faction-icon-civ"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>Civilian</h2>
-    <div class="mini-stat-row">
-      <div class="mini-stat"><div class="mini-stat-label">Cash</div><div class="mini-stat-value">${{.Player.CivCash}}</div></div>
-      <div class="mini-stat"><div class="mini-stat-label">Bank</div><div class="mini-stat-value">${{.Player.CivBank}}</div></div>
-      <div class="mini-stat"><div class="mini-stat-label">Playtime</div><div class="mini-stat-value">{{.Player.CivPlaytimeHours}}h</div></div>
+  <div class="pdash-tiles">
+    <div class="pdash-tile">
+      <div class="pdash-tile-label">Net worth</div>
+      <div class="pdash-tile-value">${{money .NetWorth}}</div>
+      <div class="pdash-tile-sub">${{money .Cash}} cash &middot; ${{money .Bank}} bank</div>
+    </div>
+    <div class="pdash-tile">
+      <div class="pdash-tile-label">Faction</div>
+      <div class="pdash-tile-value pdash-tile-value-sm">{{.Faction}}</div>
+      <div class="pdash-tile-sub">{{.FactionSub}}</div>
+    </div>
+    <div class="pdash-tile">
+      <div class="pdash-tile-label">Playtime</div>
+      <div class="pdash-tile-value">{{.PlaytimeHours}} h</div>
+      <div class="pdash-tile-sub">{{.WeekHours}} h this week</div>
+    </div>
+    <div class="pdash-tile">
+      <div class="pdash-tile-label">Account standing</div>
+      {{if .Banned}}
+      <div class="pdash-tile-value pdash-tile-value-sm pdash-bad">Banned</div>
+      <div class="pdash-tile-sub">{{with .BanExpires}}Until {{.Format "2 Jan 2006"}}{{else}}Permanent{{end}}{{if .BanReason}} &middot; {{.BanReason}}{{end}}</div>
+      {{else}}
+      <div class="pdash-tile-value pdash-tile-value-sm pdash-good"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>Good</div>
+      <div class="pdash-tile-sub">No active bans</div>
+      {{end}}
     </div>
   </div>
-  <div class="card faction-card faction-card-cop">
-    <h2><span class="faction-icon faction-icon-cop"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V5z"/></svg></span>Police</h2>
-    <div class="mini-stat-row">
-      <div class="mini-stat"><div class="mini-stat-label">Level</div><div class="mini-stat-value">{{.Player.CopLevel}}</div></div>
-      <div class="mini-stat"><div class="mini-stat-label">Cash</div><div class="mini-stat-value">${{.Player.CopCash}}</div></div>
-      <div class="mini-stat"><div class="mini-stat-label">Bank</div><div class="mini-stat-value">${{.Player.CopBank}}</div></div>
-    </div>
-  </div>
-  <div class="card faction-card faction-card-medic">
-    <h2><span class="faction-icon faction-icon-medic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></span>Medic</h2>
-    <div class="mini-stat-row">
-      <div class="mini-stat"><div class="mini-stat-label">Level</div><div class="mini-stat-value">{{.Player.MedicLevel}}</div></div>
-      <div class="mini-stat"><div class="mini-stat-label">Cash</div><div class="mini-stat-value">${{.Player.MedicCash}}</div></div>
-      <div class="mini-stat"><div class="mini-stat-label">Bank</div><div class="mini-stat-value">${{.Player.MedicBank}}</div></div>
-    </div>
-  </div>
-</section>
 
-<section class="card">
-  <h2><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Gang</h2>
-  {{if .Gang}}
-    <p><strong>{{.Gang.Name}}</strong> [{{.Gang.Tag}}] — bank: ${{.Gang.Balance}}</p>
-    <table>
-      <thead><tr><th>Member</th><th>Rank</th>{{if .Gang.IsLeader}}<th></th>{{end}}</tr></thead>
-      <tbody>
-        {{range .Gang.Members}}
-        <tr>
-          <td>{{.Name}}</td>
-          <td>{{.Rank}}</td>
-          {{if $.Gang.IsLeader}}
-          <td>
-            <form method="post" action="/dashboard/gang/rank" class="inline-form">
-              <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
-              <input type="hidden" name="member_id" value="{{.PlayerID}}">
-              <select name="rank" onchange="this.form.submit()">
-                <option value="member" {{if eq .Rank "member"}}selected{{end}}>member</option>
-                <option value="officer" {{if eq .Rank "officer"}}selected{{end}}>officer</option>
-              </select>
-            </form>
-            <form method="post" action="/dashboard/gang/remove" class="inline-form">
-              <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
-              <input type="hidden" name="member_id" value="{{.PlayerID}}">
-              <button class="link-button" type="submit">Remove</button>
-            </form>
-          </td>
-          {{end}}
-        </tr>
+  <div class="pdash-grid">
+    <div class="pdash-col">
+      <section class="pdash-card" aria-labelledby="pd-houses">
+        <div class="pdash-card-head"><h2 id="pd-houses">My houses</h2><span class="pdash-count">{{len .Houses}} owned</span></div>
+        {{range .Houses}}
+        <div class="pdash-row pdash-row-house">
+          <span><span class="pdash-strong">{{.Name}}</span><span class="pdash-small">Bought for ${{money .Price}}</span></span>
+          <span class="pdash-dim">{{.Storage}} stored item{{if ne .Storage 1}}s{{end}}</span>
+          <span class="pdash-dim pdash-right">{{if .Unlocked}}Unlocked{{else}}Locked{{end}}</span>
+        </div>
+        {{else}}
+        <p class="pdash-empty">You don't own a house yet. Houses are bought in-game.</p>
         {{end}}
-      </tbody>
-    </table>
+      </section>
 
-    {{if .Gang.IsLeader}}
-    <form method="post" action="/dashboard/gang/invite" class="button-row">
-      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-      <input type="text" name="member_name" placeholder="Exact player name" required />
-      <button class="cta secondary" type="submit">Invite to Gang</button>
-    </form>
-    {{end}}
-  {{else}}
-    <p class="empty-state">You're not in a gang.</p>
-  {{end}}
-</section>
+      <section class="pdash-card" aria-labelledby="pd-vehicles">
+        <div class="pdash-card-head"><h2 id="pd-vehicles">My vehicles</h2><span class="pdash-count">{{len .Vehicles}} total</span></div>
+        {{range .Vehicles}}
+        <div class="pdash-row pdash-row-vehicle">
+          <span class="pdash-strong">{{.Name}}</span>
+          <span class="pdash-dim">{{.Side}}</span>
+          <span class="pdash-dim">{{.Where}}</span>
+          <span class="pdash-right pdash-state-{{.State}}">{{.State}}</span>
+        </div>
+        {{else}}
+        <p class="pdash-empty">No vehicles yet.</p>
+        {{end}}
+      </section>
 
-<section class="card">
-  <h2><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Send Money</h2>
+      <section class="pdash-card pdash-pad" aria-labelledby="pd-licences">
+        <h2 id="pd-licences">Licences</h2>
+        {{if .Licences}}
+        <div class="pdash-chips">{{range .Licences}}<span class="pdash-chip">{{.}}</span>{{end}}</div>
+        {{else}}<p class="pdash-empty pdash-empty-flush">No licences yet. Buy them in-game.</p>{{end}}
+      </section>
 
-  <div class="field-grid">
-    <div>
-      <p class="hint">Move between your own faction accounts.</p>
-      <form method="post" action="/dashboard/transfer">
-        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-        <input type="hidden" name="transfer_token" value="{{.TransferToken}}">
-        <input type="hidden" name="mode" value="own">
-        <div class="field">
-          <label>From</label>
-          <select name="from_faction">
-            <option value="civilian">Civilian</option>
-            <option value="police">Police</option>
-            <option value="medic">Medic</option>
-          </select>
+      <section class="pdash-card pdash-pad" aria-labelledby="pd-gang">
+        <h2 id="pd-gang">Gang</h2>
+        {{if .Gang}}
+          <p class="pdash-dim"><span class="pdash-strong">{{.Gang.Name}}</span> [{{.Gang.Tag}}] &middot; gang bank ${{money .Gang.Balance}}</p>
+          <table class="pdash-table">
+            <thead><tr><th>Member</th><th>Rank</th>{{if .Gang.IsLeader}}<th><span class="visually-hidden">Actions</span></th>{{end}}</tr></thead>
+            <tbody>
+              {{range .Gang.Members}}
+              <tr>
+                <td>{{.Name}}</td>
+                <td>{{.Rank}}</td>
+                {{if $.Gang.IsLeader}}
+                <td class="pdash-gang-actions">
+                  <form method="post" action="/dashboard/gang/rank" class="inline-form">
+                    <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+                    <input type="hidden" name="member_id" value="{{.PlayerID}}">
+                    <select name="rank" aria-label="Rank for {{.Name}}" onchange="this.form.submit()">
+                      <option value="member" {{if eq .Rank "member"}}selected{{end}}>member</option>
+                      <option value="officer" {{if eq .Rank "officer"}}selected{{end}}>officer</option>
+                    </select>
+                  </form>
+                  <form method="post" action="/dashboard/gang/remove" class="inline-form">
+                    <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+                    <input type="hidden" name="member_id" value="{{.PlayerID}}">
+                    <button class="link-button" type="submit">Remove</button>
+                  </form>
+                </td>
+                {{end}}
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+          {{if .Gang.IsLeader}}
+          <form method="post" action="/dashboard/gang/invite" class="pdash-inline-form">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+            <input type="text" name="member_name" aria-label="Player to invite" placeholder="Exact player name" required>
+            <button class="btn" type="submit">Invite to gang</button>
+          </form>
+          {{end}}
+        {{else}}
+          <p class="pdash-empty pdash-empty-flush">You're not in a gang.</p>
+        {{end}}
+      </section>
+
+      <section class="pdash-card pdash-pad" aria-labelledby="pd-money">
+        <h2 id="pd-money">Send money</h2>
+        <div class="pdash-money">
+          <form method="post" action="/dashboard/transfer">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+            <input type="hidden" name="transfer_token" value="{{.TransferToken}}">
+            <input type="hidden" name="mode" value="own">
+            <p class="hint">Between your own faction accounts.</p>
+            <div class="field"><label for="own-from">From</label>
+              <select id="own-from" name="from_faction"><option value="civilian">Civilian</option><option value="police">Police</option><option value="medic">Medic</option></select></div>
+            <div class="field"><label for="own-to">To</label>
+              <select id="own-to" name="to_faction"><option value="police">Police</option><option value="civilian">Civilian</option><option value="medic">Medic</option></select></div>
+            <div class="field"><label for="own-amount">Amount ($)</label><input id="own-amount" type="number" name="amount" min="1" step="1" required></div>
+            <button class="btn" type="submit">Move money</button>
+          </form>
+          <form method="post" action="/dashboard/transfer">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+            <input type="hidden" name="transfer_token" value="{{.TransferToken}}">
+            <input type="hidden" name="mode" value="player">
+            <p class="hint">To another player, by their exact in-game name.</p>
+            <div class="field"><label for="pl-from">From (your account)</label>
+              <select id="pl-from" name="from_faction"><option value="civilian">Civilian</option><option value="police">Police</option><option value="medic">Medic</option></select></div>
+            <div class="field"><label for="pl-name">Recipient's name</label><input id="pl-name" type="text" name="recipient_name" required></div>
+            <div class="field"><label for="pl-acct">Recipient's account</label>
+              <select id="pl-acct" name="recipient_faction"><option value="civilian">Civilian</option><option value="police">Police</option><option value="medic">Medic</option></select></div>
+            <div class="field"><label for="pl-amount">Amount ($)</label><input id="pl-amount" type="number" name="amount" min="1" step="1" required></div>
+            <button class="btn" type="submit">Send money</button>
+          </form>
         </div>
-        <div class="field">
-          <label>To</label>
-          <select name="to_faction">
-            <option value="police">Police</option>
-            <option value="civilian">Civilian</option>
-            <option value="medic">Medic</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Amount ($)</label>
-          <input type="number" name="amount" min="1" required />
-        </div>
-        <button class="cta secondary" type="submit">Move Money</button>
-      </form>
+      </section>
     </div>
 
-    <div>
-      <p class="hint">Send to another player, by their exact in-game name.</p>
-      <form method="post" action="/dashboard/transfer">
-        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-        <input type="hidden" name="transfer_token" value="{{.TransferToken}}">
-        <input type="hidden" name="mode" value="player">
-        <div class="field">
-          <label>From (your account)</label>
-          <select name="from_faction">
-            <option value="civilian">Civilian</option>
-            <option value="police">Police</option>
-            <option value="medic">Medic</option>
-          </select>
+    <div class="pdash-col">
+      <section class="pdash-card" aria-labelledby="pd-tickets">
+        <div class="pdash-card-head"><h2 id="pd-tickets">My tickets</h2><a class="pdash-head-link" href="/tickets">All tickets</a></div>
+        {{range .Tickets}}
+        <a class="pdash-row pdash-ticket" href="/tickets/{{.ID}}">
+          <span class="pdash-strong">#{{.ID}}</span><span class="pdash-ticket-subject">{{.Subject}}</span><span class="pdash-badge pdash-badge-{{.Class}}">{{.Label}}</span>
+        </a>
+        {{else}}
+        <p class="pdash-empty">No tickets. Need help? <a href="/tickets">Open one</a>.</p>
+        {{end}}
+      </section>
+
+      {{if not .DiscordUsername}}
+      <section class="pdash-card pdash-pad" aria-labelledby="pd-discord">
+        <h2 id="pd-discord">Connect Discord</h2>
+        <p class="pdash-dim">Linking gets you your roles in the Discord server automatically.</p>
+        <div class="pdash-inline-form">
+          <a class="btn btn-primary" href="/auth/discord/connect">Connect with Discord</a>
+          <form method="post" action="/dashboard/discord/link-code" class="inline-form">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+            <button class="btn" type="submit">Get a /link code instead</button>
+          </form>
         </div>
-        <div class="field">
-          <label>Recipient's name</label>
-          <input type="text" name="recipient_name" required />
-        </div>
-        <div class="field">
-          <label>Recipient's account</label>
-          <select name="recipient_faction">
-            <option value="civilian">Civilian</option>
-            <option value="police">Police</option>
-            <option value="medic">Medic</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Amount ($)</label>
-          <input type="number" name="amount" min="1" required />
-        </div>
-        <button class="cta secondary" type="submit">Send Money</button>
-      </form>
+        {{if .DiscordLinkCode}}<p class="hint">Run <code>/link {{.DiscordLinkCode}}</code> in the Discord server within 10 minutes.</p>{{end}}
+      </section>
+      {{end}}
     </div>
   </div>
-</section>
 
-<section class="card">
-  <h2><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M7.5 7.5c3-1 6-1 9 0M7 16.5c3 1 7 1 10 0M17 4a13 13 0 0 1 2.5 6.5c0 4-1 7-1 7s-2 .5-4 .5l-1-2h-3l-1 2c-2 0-4-.5-4-.5s-1-3-1-7A13 13 0 0 1 7 4c1.5-.7 3.5-1 5-1s3.5.3 5 1z"/></svg></span>Connect Discord</h2>
-  {{if .Player.DiscordUsername}}
-    <p>Linked to <strong>{{.Player.DiscordUsername}}</strong>.</p>
-  {{else}}
-    <p>Link your Discord account either way:</p>
-    <a class="cta secondary" href="/auth/discord/connect">Connect with Discord</a>
-    <form method="post" action="/dashboard/discord/link-code" class="inline-form">
-      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-      <button class="cta secondary" type="submit">Generate a /link code instead</button>
-    </form>
-    {{if .DiscordLinkCode}}
-      <p class="hint">Run <code>/link {{.DiscordLinkCode}}</code> in the Discord server within 10 minutes.</p>
-    {{end}}
-  {{end}}
-</section>
+  <section class="pdash-lb" id="leaderboards" aria-labelledby="lb-title">
+    <div class="pdash-lb-head">
+      <div>
+        <h2 id="lb-title">Leaderboards</h2>
+        <p class="pdash-dim">Opt-in only. Wealth shows as a band, never an exact balance.</p>
+      </div>
+      <form method="post" action="/dashboard/leaderboards" class="pdash-optin">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <label><input type="checkbox" name="opt_in" {{if .OptIn}}checked{{end}} onchange="this.form.submit()"> Show me on leaderboards</label>
+        <noscript><button class="btn" type="submit">Save</button></noscript>
+      </form>
+    </div>
+    <div class="pdash-lb-grid">
+      {{range .Boards}}
+      <div class="pdash-card">
+        <div class="pdash-lb-card-head"><h3>{{.Title}}</h3><div class="pdash-small">{{.Sub}}</div></div>
+        {{range .Rows}}
+        <div class="pdash-lb-row{{if .You}} pdash-lb-you{{end}}">
+          <span class="pdash-lb-rank">{{.Rank}}</span>
+          <span class="pdash-strong pdash-lb-name">{{.Name}}{{if .You}} (you){{end}}</span>
+          <span class="pdash-lb-value">{{.Value}}</span>
+        </div>
+        {{else}}
+        <p class="pdash-empty">Nobody has opted in yet.</p>
+        {{end}}
+        <div class="pdash-lb-foot">{{.You}}</div>
+      </div>
+      {{end}}
+    </div>
+  </section>
+</div>
 {{end}}

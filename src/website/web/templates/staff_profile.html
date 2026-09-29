@@ -155,7 +155,7 @@
         <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="rank_id" value="0">
         <div class="modal-head"><h2 id="dlg-remove-title">Remove {{$m.Name}} from staff</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
         <div class="modal-body"><div class="field"><label for="rm-reason">Reason (required)</label><textarea id="rm-reason" name="reason" rows="3" maxlength="500" required></textarea></div>
-          <p class="hint">Their Discord and TeamSpeak staff roles will be removed once role sync is live.</p></div>
+          <p class="hint">Their synced Discord staff roles are removed automatically.</p></div>
         <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-danger" type="submit">Remove from staff</button></div>
       </form>
     </dialog>

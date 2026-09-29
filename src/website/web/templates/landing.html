@@ -27,13 +27,15 @@
     <div class="value">{{.RegisteredCount}}</div>
   </div>
   <div class="stat-strip-cell">
-    <div class="label">Factions</div>
+    <div class="label">Factions Live</div>
     <div class="value">3</div>
   </div>
-  <div class="stat-strip-cell">
-    <div class="label">Region</div>
-    <div class="value value-text">Oceania / AU</div>
-  </div>
+  <a class="stat-strip-cell stat-link" href="/status">
+    <div class="label">Server Status</div>
+    {{if eq .ServerState "up"}}<div class="value value-text value-green">&#9679; Online</div>
+    {{else if eq .ServerState "down"}}<div class="value value-text value-red">&#9679; Offline</div>
+    {{else}}<div class="value value-text value-dim">Not monitored yet</div>{{end}}
+  </a>
 </section>
 
 <section class="feature-section">

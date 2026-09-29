@@ -89,6 +89,9 @@ CREATE TABLE players (
     -- is the durable key.
     discord_id       TEXT UNIQUE,
     discord_username TEXT,
+    -- Player dashboard leaderboards are opt-in (layout plan): nobody is
+    -- listed until they tick "Show me on leaderboards".
+    leaderboard_opt_in BOOLEAN NOT NULL DEFAULT false,
 
     civ_cash       BIGINT NOT NULL DEFAULT 0,
     civ_bank       BIGINT NOT NULL DEFAULT 0,
@@ -431,6 +434,7 @@ JOIN (VALUES
     ('server.control', 100),
     ('database.query', 100),
     ('announce.post', 40),
+    ('rules.edit', 40),
     ('bot.admin', 100)
 ) AS k(command_key, seed_level) ON sr.level >= k.seed_level;
 
@@ -841,6 +845,19 @@ CREATE TABLE discord_outbox (
 );
 
 CREATE INDEX idx_discord_outbox_due ON discord_outbox(next_attempt) WHERE sent_at IS NULL AND gave_up_at IS NULL;
+
+-- Server rules (public /rules, edited on /admin/rules; internal/rules).
+-- The rulebook is one plain-text document ("# Section" headings, numbered
+-- rules); every save is a new version and the latest is live. changed =
+-- rule numbers that differ from the previous version, highlighted publicly.
+CREATE TABLE rule_versions (
+    id           BIGSERIAL PRIMARY KEY,
+    body         TEXT NOT NULL,
+    change_note  TEXT,
+    changed      TEXT[] NOT NULL DEFAULT '{}',
+    created_by   BIGINT REFERENCES players(id) ON DELETE SET NULL,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
 -- Discord bot layout (docs/DISCORD_BOT.md §3): channels and toggles set on
 -- /admin/discord, plus "state.*" rows where the bot remembers its own

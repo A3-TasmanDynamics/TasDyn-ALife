@@ -5,6 +5,7 @@
 package render
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -33,7 +34,27 @@ type Renderer struct {
 // {{template "name" .}}.
 // funcs are the small helpers templates may use -- kept deliberately few.
 var funcs = template.FuncMap{
-	"inc":  func(i int) int { return i + 1 },
+	"inc":       func(i int) int { return i + 1 },
+	"hasPrefix": strings.HasPrefix,
+	// money formats whole in-game dollars: 1234567 -> "1,234,567".
+	"money": func(n int64) string {
+		neg := n < 0
+		if neg {
+			n = -n
+		}
+		d := strconv.FormatInt(n, 10)
+		var b strings.Builder
+		if neg {
+			b.WriteByte('-')
+		}
+		for i, c := range d {
+			if i > 0 && (len(d)-i)%3 == 0 {
+				b.WriteByte(',')
+			}
+			b.WriteRune(c)
+		}
+		return b.String()
+	},
 	"dec":  func(i int) int { return i - 1 },
 	"list": func(s ...string) []string { return s },
 	// qset returns "?query" with the given key/value pairs set on a copy of
@@ -108,13 +129,24 @@ func New(dir string) (*Renderer, error) {
 // Render executes "<page>.html" (must have been found by New) against the
 // shared layout, with data as the layout's top-level template data.
 func (r *Renderer) Render(w http.ResponseWriter, page string, data any) {
+	r.RenderStatus(w, http.StatusOK, page, data)
+}
+
+// RenderStatus renders page with an HTTP status other than 200 (e.g. 403
+// for the access-denied pages). The page is rendered to a buffer first, so
+// a template error still produces a clean 500.
+func (r *Renderer) RenderStatus(w http.ResponseWriter, status int, page string, data any) {
 	t, ok := r.templates[page]
 	if !ok {
 		http.Error(w, fmt.Sprintf("render: unknown page %q", page), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := t.ExecuteTemplate(w, "layout", data); err != nil {
+	var buf bytes.Buffer
+	if err := t.ExecuteTemplate(&buf, "layout", data); err != nil {
 		http.Error(w, "render: "+err.Error(), http.StatusInternalServerError)
+		return
 	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(status)
+	_, _ = buf.WriteTo(w)
 }
