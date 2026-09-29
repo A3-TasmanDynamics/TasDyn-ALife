@@ -8,6 +8,7 @@ import (
 
 	"website/internal/auth"
 	"website/internal/bank"
+	"website/internal/cases"
 	"website/internal/dashboard"
 )
 
@@ -33,6 +34,10 @@ type dashboardData struct {
 	DiscordLinkCode string
 	TransferToken   string
 	JoinURL         string // steam://connect link, "" when the game address isn't configured
+
+	ActivePoints int
+	Ban          *cases.Ban    // current ban, nil if none
+	Appeal       *cases.Appeal // latest appeal against it
 }
 
 // Dashboard is the player dashboard (layout plan "Player — Dashboard").
@@ -58,6 +63,10 @@ func (d *Deps) renderDashboard(w http.ResponseWriter, r *http.Request, linkCode 
 	}
 	data.JoinURL = joinURL(d.Cfg.GameQueryAddr)
 	data.Gang = d.loadGang(r, sess.PlayerID)
+	_, data.ActivePoints = d.playerPoints(r.Context(), sess.PlayerID)
+	if data.Ban, data.Appeal, err = cases.ActiveBan(r.Context(), d.Pool, sess.PlayerID); err != nil {
+		slog.Error("dashboard: ban lookup failed", "error", err)
+	}
 	d.Render.Render(w, "dashboard.html", data)
 }
 

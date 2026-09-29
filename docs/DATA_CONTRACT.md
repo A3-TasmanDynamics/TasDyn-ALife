@@ -85,6 +85,12 @@ On `OK`, every key below is present:
 | `civ_position` / `cop_position` / `medic_position` | array of `[key, value]` pairs | `players.<faction>_position` | World position to resume at when `*_alive` is `false`. Empty array (`[]`) until the first death is ever recorded for that faction — **not `null`** |
 | `civ_bounty` | number | `players.civ_bounty` | **Cache** — authoritative source is `wanted_crimes` (sum of outstanding, i.e. `cleared_at IS NULL`, rows), synced by trigger. No `cop_bounty`/`medic_bounty` — the wanted list is civilian-only |
 
+**`BANNED`.** If `banlist` has an active row for `uid` (no `expires_at`, or one in the future; lifting a
+ban sets `expires_at` to the lift time), the response is `[["status","BANNED"],["reason",…],["until",…]]`
+instead, and no blank record is created. `until` is `""` for a permanent ban, otherwise e.g.
+`"27 Oct 2026 14:00 UTC"`. The server must not spawn the player (`fn_playerJoin.sqf` shows the reason
+on the loading screen and stops there). Bans are issued and lifted from the website (Admin Panel → Bans).
+
 If no row exists for `uid`, the C++ side creates a blank record (all `*_cash`/`*_bank` = 0, empty
 `*_licence`/`*_gear`, `status = 'active'`, no staff rank, and a matching `bank_accounts` row per
 faction) *before* building the response — a new player and an existing player get the exact same

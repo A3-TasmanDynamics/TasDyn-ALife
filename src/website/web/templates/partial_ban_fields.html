@@ -1,0 +1,20 @@
+{{define "ban_fields"}}
+{{if .Players}}<div class="field"><label for="bf-player">Player</label><select id="bf-player" name="player" required>{{range .Players}}<option value="{{.PlayerID}}">{{.Name}}{{if .Banned}} (already banned){{end}}</option>{{end}}</select></div>{{end}}
+<div class="field"><label for="bf-reason">Reason</label>
+  <select id="bf-reason" name="reason" required>{{range .Reasons}}<option>{{.}}</option>{{end}}</select></div>
+<div class="field"><label for="bf-other">If "Other", the reason</label><input id="bf-other" name="reason_other" maxlength="300"></div>
+<fieldset class="mod-fieldset">
+  <legend>Duration</legend>
+  <div class="mod-durations">
+    {{range $i, $d := .Durations}}
+    <label class="mod-duration{{if and (eq $d.Days 0) (not $.CanPerm)}} mod-duration-off{{end}}"><input type="radio" name="days" value="{{$d.Days}}" {{if eq $i 2}}checked{{end}} {{if and (eq $d.Days 0) (not $.CanPerm)}}disabled title="Needs bans.permanent"{{end}}> {{$d.Label}}</label>
+    {{end}}
+  </div>
+</fieldset>
+<fieldset class="mod-fieldset">
+  <legend>Scope</legend>
+  <label class="mod-check"><input type="checkbox" checked disabled> Game (always)</label>
+  <label class="mod-check"><input type="checkbox" name="discord"> Discord too (the bot bans their linked account)</label>
+</fieldset>
+<div class="field"><label for="bf-note">Staff note (not shown to the player)</label><textarea id="bf-note" name="note" rows="2" maxlength="2000"></textarea></div>
+{{end}}

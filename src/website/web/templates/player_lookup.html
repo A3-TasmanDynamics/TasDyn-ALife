@@ -40,7 +40,7 @@
             <div><span>Playtime</span>{{$.Playtime}}</div>
             <div><span>Discord</span>{{if .Discord}}{{.Discord}}{{else}}<span class="muted">not linked</span>{{end}}</div>
             <div><span>Steam bans</span>{{if .SteamVAC}}{{if or (gt (deref .SteamVAC) 0) (gt (deref .SteamGame) 0)}}<span class="warn-text">{{deref .SteamVAC}} VAC · {{deref .SteamGame}} game</span>{{else}}None{{end}}{{else}}<span class="muted">unknown</span>{{end}}</div>
-            <div><span>Active points</span><span class="muted" title="Punishment points arrive with Cases (Wave 2)">—</span></div>
+            <div><span>Active points</span>{{if $.ActivePoints}}<span class="warn-text">{{$.ActivePoints}}</span>{{else}}0{{end}}</div>
           </div>
         </div>
         <div class="profile-actions lookup-actions">
@@ -48,7 +48,7 @@
             {{if $.CanCompensate}}<button class="btn" type="button" data-dialog-open="dlg-comp">Compensate…</button>{{end}}
             {{if or $.CanPolice $.CanEMS}}<button class="btn" type="button" data-dialog-open="dlg-level">Faction level…</button>{{end}}
           </div>
-          <span class="btn btn-primary disabled" aria-disabled="true" title="Cases arrive in Wave 2">Open a case</span>
+          {{if $.CanOpenCase}}<a class="btn btn-primary" href="/admin/cases/new?player={{.ID}}">Open a case</a>{{end}}
         </div>
       </div>
 
@@ -84,9 +84,35 @@
         </div>
       </div>
       <div class="card lookup-points">
-        <div class="card-label">Punishment points</div>
-        <p class="muted small">Punishment points arrive with Cases (Wave 2).</p>
+        <div class="card-label">Punishment points &middot; {{$.ActivePoints}} active</div>
+        {{range $.Points}}
+        <div class="points-row{{if not .Active}} points-inactive{{end}}">
+          <strong>{{.Points}} pt{{if ne .Points 1}}s{{end}}</strong>
+          <span>Rule {{.Rules}}{{if .Comment}} &middot; <span class="muted">{{.Comment}}</span>{{end}}</span>
+          <a href="/admin/cases/{{.CaseID}}">Case #{{.CaseID}}</a>
+          <span class="muted small">{{.CreatedAt.Format "2 Jan 2006"}} by {{.By}} &middot; {{if .RevokedAt}}revoked{{else if .ExpiresAt}}{{if .Active}}until{{else}}expired{{end}} {{.ExpiresAt.Format "2 Jan 2006"}}{{else}}no expiry{{end}}</span>
+          {{if and .Active $.CanRevoke}}
+          <form class="points-revoke" method="post" action="/admin/points/{{.ID}}/revoke">
+            <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="back" value="/admin/players?id={{$.P.ID}}">
+            <input name="reason" aria-label="Reason for revoking" placeholder="Reason for revoking" required maxlength="1000">
+            <button class="btn btn-sm" type="submit">Revoke</button>
+          </form>
+          {{end}}
+        </div>
+        {{else}}
+        <p class="muted small">No punishment points on record. Expired and revoked points stay listed but stop counting.</p>
+        {{end}}
       </div>
+      {{if $.CanCases}}
+      <div class="card lookup-points">
+        <div class="card-label">Cases</div>
+        {{range $.Cases}}
+        <a class="points-row points-case" href="/admin/cases/{{.ID}}"><strong>#{{.ID}}</strong><span>{{.Summary}}</span><span class="muted small">{{.TypeLabel}} &middot; {{if eq .Status "open"}}open{{else}}closed{{end}}{{if .Outcome}} &middot; {{.Outcome}}{{end}}</span><span class="muted small">{{.Opened.Format "2 Jan 2006"}}</span></a>
+        {{else}}
+        <p class="muted small">Not involved in any cases.</p>
+        {{end}}
+      </div>
+      {{end}}
       {{end}}
 
       {{if eq $.Tab "vehicles"}}

@@ -215,6 +215,36 @@ bool Database::LoadPlayer(const std::string& uid, std::string& outResponse, std:
         return false;
     }
 
+    // Bans are checked before anything else (and before a blank record is
+    // created): an active banlist row -- not expired; lifting a ban sets
+    // expires_at to the lift time -- answers BANNED with the reason and end
+    // time instead of the player's record, so the server never spawns them.
+    {
+        const char* banParams[1] = {uid.c_str()};
+        PGresult* banRes = PQexecParams(
+            conn_,
+            "SELECT reason, COALESCE(to_char(expires_at AT TIME ZONE 'UTC', 'DD Mon YYYY HH24:MI \"UTC\"'), '') "
+            "FROM banlist WHERE uid = $1 AND (expires_at IS NULL OR expires_at > now()) "
+            "ORDER BY expires_at DESC NULLS FIRST LIMIT 1",
+            1, nullptr, banParams, nullptr, nullptr, 0);
+        if (PQresultStatus(banRes) != PGRES_TUPLES_OK) {
+            outError = PQerrorMessage(conn_);
+            PQclear(banRes);
+            return false;
+        }
+        if (PQntuples(banRes) > 0) {
+            std::string ban = "[[\"status\",\"BANNED\"]";
+            bool first = false;
+            AppendStringKv(ban, first, "reason", PQgetvalue(banRes, 0, 0));
+            AppendStringKv(ban, first, "until", PQgetvalue(banRes, 0, 1));
+            ban += "]";
+            PQclear(banRes);
+            outResponse = ban;
+            return true;
+        }
+        PQclear(banRes);
+    }
+
     if (!EnsureBlankPlayer(uid, outError)) return false;
 
     const char* selectParams[1] = {uid.c_str()};

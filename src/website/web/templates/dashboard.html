@@ -34,7 +34,7 @@
       <div class="pdash-tile-sub">{{with .BanExpires}}Until {{.Format "2 Jan 2006"}}{{else}}Permanent{{end}}{{if .BanReason}} &middot; {{.BanReason}}{{end}}</div>
       {{else}}
       <div class="pdash-tile-value pdash-tile-value-sm pdash-good"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>Good</div>
-      <div class="pdash-tile-sub">No active bans</div>
+      <div class="pdash-tile-sub">{{.ActivePoints}} active point{{if ne .ActivePoints 1}}s{{end}} &middot; no bans</div>
       {{end}}
     </div>
   </div>
@@ -152,6 +152,24 @@
     </div>
 
     <div class="pdash-col">
+      {{with .Ban}}
+      <section class="pdash-card pdash-pad pdash-ban" aria-labelledby="pd-ban">
+        <h2 id="pd-ban">You're banned from the server</h2>
+        <p class="pdash-dim">{{.Reason}} &middot; {{if .ExpiresAt}}until {{.ExpiresAt.Format "2 Jan 2006 15:04"}}{{else}}permanent{{end}}</p>
+        {{if $.Appeal}}
+          {{if eq $.Appeal.Status "open"}}<p class="pdash-dim"><strong>Your appeal is waiting for review</strong> (sent {{$.Appeal.CreatedAt.Format "2 Jan"}}). You'll see the decision here.</p>
+          {{else if eq $.Appeal.Status "rejected"}}<p class="pdash-dim"><strong>Your appeal was rejected:</strong> {{$.Appeal.Decision}}</p>{{end}}
+        {{else}}
+        <form method="post" action="/dashboard/appeal" class="pdash-appeal">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+          <label for="appeal-body">Appeal this ban</label>
+          <textarea id="appeal-body" name="body" rows="4" minlength="20" maxlength="4000" required placeholder="Explain what happened and why the ban should be lifted or shortened."></textarea>
+          <button class="btn btn-primary" type="submit">Send appeal</button>
+          <p class="hint">One appeal per ban. Staff see it alongside the case.</p>
+        </form>
+        {{end}}
+      </section>
+      {{end}}
       <section class="pdash-card" aria-labelledby="pd-tickets">
         <div class="pdash-card-head"><h2 id="pd-tickets">My tickets</h2><a class="pdash-head-link" href="/tickets">All tickets</a></div>
         {{range .Tickets}}

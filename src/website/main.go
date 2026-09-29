@@ -210,6 +210,7 @@ func run() error {
 		r.Post("/dashboard/discord/link-code", d.GenerateDiscordLinkCode)
 		r.Post("/dashboard/transfer", d.Transfer)
 		r.Post("/dashboard/leaderboards", d.SetLeaderboardOptIn)
+		r.Post("/dashboard/appeal", d.SubmitAppeal)
 		r.Post("/dashboard/gang/invite", d.InviteToGang)
 		r.Post("/dashboard/gang/remove", d.RemoveFromGang)
 		r.Post("/dashboard/gang/rank", d.SetGangRank)
@@ -281,6 +282,33 @@ func run() error {
 			r.Get("/admin/role-sync", d.RoleSync)
 			r.Post("/admin/role-sync/save", d.RoleSyncSave)
 			r.Post("/admin/role-sync/run", d.RoleSyncRun)
+		})
+
+		// Moderation (GAMEPANEL_PARITY §3): cases, bans, anti-cheat. Each
+		// write action checks its own permission in the handler.
+		r.Group(func(r chi.Router) {
+			r.Use(d.Auth.RequirePermission("cases.view"))
+			r.Get("/admin/cases", d.CasesList)
+			r.Get("/admin/cases/{id}", d.CaseView)
+			r.Post("/admin/cases/{id}/entries", d.CaseAddEntry)
+			r.Post("/admin/cases/{id}/status", d.CaseSetStatus)
+			r.Post("/admin/cases/{id}/participants", d.CaseAddParticipant)
+			r.Post("/admin/cases/{id}/points", d.CaseIssuePoints)
+			r.Post("/admin/points/{id}/revoke", d.PointsRevoke)
+			r.Get("/admin/bans", d.BansList)
+			r.Post("/admin/bans/issue", d.BanIssue)
+			r.Post("/admin/bans/{id}/lift", d.BanLift)
+			r.Post("/admin/appeals/{id}", d.AppealDecide)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(d.Auth.RequirePermission("cases.lead"))
+			r.Get("/admin/cases/new", d.CaseNew)
+			r.Post("/admin/cases/new", d.CaseCreate)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(d.Auth.RequirePermission("anticheat.review"))
+			r.Get("/admin/anticheat", d.AntiCheat)
+			r.Post("/admin/anticheat/{id}", d.FlagReview)
 		})
 
 		// Server rules editor (public page is /rules).

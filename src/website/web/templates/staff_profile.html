@@ -79,6 +79,17 @@
     </section>
     {{end}}
 
+    {{if .CanCases}}
+    <section class="card profile-card" aria-labelledby="case-activity">
+      <div class="timeline-head"><h2 class="card-label" id="case-activity">Case activity</h2><a class="hint" href="/admin/cases?q={{.Member.Name}}&amp;range=all">Cases they're on &rarr;</a></div>
+      <div class="case-activity">
+        <div><span class="muted small">This week</span><strong>{{.Activity.LedWeek}}</strong> led &middot; <strong>{{.Activity.AssistWeek}}</strong> assisted</div>
+        <div><span class="muted small">Last 30 days</span><strong>{{.Activity.Led30}}</strong> led &middot; <strong>{{.Activity.Assist30}}</strong> assisted</div>
+        <div><span class="muted small">All time</span><strong>{{.Activity.LedAll}}</strong> led &middot; <strong>{{.Activity.AssistAll}}</strong> assisted</div>
+      </div>
+    </section>
+    {{end}}
+
     <section class="card profile-card profile-timeline">
       <div class="timeline-head">
         <h2 class="card-label">{{if .CanNotes}}Notes &amp; history{{else}}History{{end}}</h2>

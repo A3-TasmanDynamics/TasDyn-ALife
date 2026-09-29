@@ -94,7 +94,7 @@ func (d *Deps) DiscordCallback(w http.ResponseWriter, r *http.Request) {
 	auth.ClearOAuthCookies(w, d.Cfg.CookieSecure)
 
 	if err1 != nil || err2 != nil || r.URL.Query().Get("state") != stateCookie.Value {
-		http.Redirect(w, r, "/?error="+errMsg("Discord sign-in session expired -- please try again."), http.StatusSeeOther)
+		http.Redirect(w, r, "/?error="+errMsg("That Discord sign-in link has expired (they last 10 minutes). Start again from your Dashboard or the sign-in button."), http.StatusSeeOther)
 		return
 	}
 
@@ -149,6 +149,6 @@ func (d *Deps) DiscordCallback(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 
 	default:
-		http.Redirect(w, r, "/?error="+errMsg("Discord sign-in session expired -- please try again."), http.StatusSeeOther)
+		http.Redirect(w, r, "/?error="+errMsg("That Discord sign-in link has expired (they last 10 minutes). Start again from your Dashboard or the sign-in button."), http.StatusSeeOther)
 	}
 }

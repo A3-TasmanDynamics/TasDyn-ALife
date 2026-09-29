@@ -51,6 +51,17 @@ waitUntil { !isNil "ALife_fnc_load" };
 
 private _record = [_player] call ALife_fnc_load;
 
+// Banned (docs/DATA_CONTRACT.md "load"): never reach the spawn menu. The
+// server decides this, so a modified client can't skip it -- without the
+// spawn menu there's no character to play.
+if ((_record getOrDefault ["status", "ERROR"]) == "BANNED") exitWith {
+    private _until = _record getOrDefault ["until", ""];
+    diag_log format ["[ALife] playerJoin: refused banned player %1 (%2)", name _player, _uid];
+    ["setProgress", 100, format ["You are banned from this server%1. Reason: %2. You can appeal on the website.",
+        if (_until == "") then {" permanently"} else {" until " + _until},
+        _record getOrDefault ["reason", "not given"]]] remoteExec ["ALife_fnc_loadingScreen", _player];
+};
+
 if ((_record getOrDefault ["status", "ERROR"]) != "OK") exitWith {
     diag_log format ["[ALife] playerJoin: load failed for %1 (%2)", name _player, _uid];
     // TODO(#10): decide the actual failure policy before this ships — kick

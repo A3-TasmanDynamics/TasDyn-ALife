@@ -1,0 +1,66 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content mod-page ac-page">
+    <div class="ac-list">
+      <h1 class="page-title admin-title">Anti-Cheat Flags</h1>
+      <p class="admin-sub">Server-side detections. Flags never punish on their own: a staff member reviews each one, and any action happens through a case.</p>
+      <form class="mod-filters" method="get" action="/admin/anticheat">
+        <nav class="seg" aria-label="Confidence">
+          <a class="seg-item {{if not .Confidence}}active{{end}}" href="/admin/anticheat{{if .OpenOnly}}?open=1{{end}}">All &middot; {{index .Counts ""}}</a>
+          <a class="seg-item {{if eq .Confidence "high"}}active{{end}}" href="/admin/anticheat?confidence=high{{if .OpenOnly}}&amp;open=1{{end}}">High &middot; {{index .Counts "high"}}</a>
+          <a class="seg-item {{if eq .Confidence "medium"}}active{{end}}" href="/admin/anticheat?confidence=medium{{if .OpenOnly}}&amp;open=1{{end}}">Medium &middot; {{index .Counts "medium"}}</a>
+        </nav>
+        {{if .Confidence}}<input type="hidden" name="confidence" value="{{.Confidence}}">{{end}}
+        <label class="mod-check"><input type="checkbox" name="open" value="1" {{if .OpenOnly}}checked{{end}} onchange="this.form.submit()"> Open flags only</label>
+        <noscript><button class="btn" type="submit">Filter</button></noscript>
+      </form>
+      <div class="ac-items">
+        {{range .Flags}}
+        <a class="ac-item{{if and $.Selected (eq .ID $.Selected.ID)}} active{{end}}" href="/admin/anticheat?flag={{.ID}}{{if $.Confidence}}&amp;confidence={{$.Confidence}}{{end}}{{if $.OpenOnly}}&amp;open=1{{end}}">
+          <span class="ac-item-top"><span class="ac-sev ac-sev-{{.Confidence}}">{{.Confidence}}</span><span class="mod-dim">#{{.ID}} &middot; {{.CreatedAt.Format "2 Jan 15:04"}}</span><span class="ac-status ac-status-{{if .Open}}open{{else}}closed{{end}}">{{.Status}}</span></span>
+          <span class="strong">{{.Title}}</span>
+          <span class="mod-dim">{{.Player}}</span>
+        </a>
+        {{else}}
+        <p class="mod-empty">No flags match these filters.</p>
+        {{end}}
+      </div>
+    </div>
+
+    <div class="ac-detail card">
+      {{with .Selected}}
+      <div class="ac-item-top"><span class="ac-sev ac-sev-{{.Confidence}}">{{.Confidence}} confidence</span><span class="ac-status ac-status-{{if .Open}}open{{else}}closed{{end}}">{{.Status}}</span><span class="mod-dim">Raised {{.CreatedAt.Format "2 Jan 2006 15:04"}}</span></div>
+      <h2 class="ac-title">#{{.ID}} &middot; {{.Title}}</h2>
+      <p class="mod-dim">Player <a href="/admin/players?id={{.PlayerID}}">{{.Player}}</a> &middot; detector <code class="perm-key">{{.Type}}</code></p>
+      <div class="ac-evidence">
+        <div class="card-label">Evidence</div>
+        {{range .Details}}<div class="ac-kv"><span class="mod-dim">{{.Key}}</span><span class="mono">{{.Value}}</span></div>{{else}}<p class="mod-dim">No details recorded.</p>{{end}}
+      </div>
+      {{if .Open}}
+      <form class="ac-review" method="post" action="/admin/anticheat/{{.ID}}">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+        <div class="field"><label for="ac-note">Resolution note</label><textarea id="ac-note" name="note" rows="2" maxlength="1000" placeholder="Why you're dismissing or watching. Saved to the Staff Log. To act on the player, open a case."></textarea></div>
+        <div class="ac-actions">
+          <button class="btn" type="submit" name="resolution" value="dismiss">Dismiss as false positive</button>
+          <button class="btn" type="submit" name="resolution" value="watch">Watch player</button>
+          {{if $.CanCase}}<a class="btn btn-primary" href="/admin/cases/new?flag={{.ID}}">Open a case</a>{{end}}
+        </div>
+      </form>
+      {{else}}
+      <div class="ac-resolved">
+        <span class="mod-dim">{{if .ReviewedBy}}Resolved by <strong>{{.ReviewedBy}}</strong>{{end}}{{if .ReviewedAt}} on {{.ReviewedAt.Format "2 Jan 2006 15:04"}}{{end}}</span>
+        {{if .Note}}<p>{{.Note}}</p>{{end}}
+        {{if .CaseID}}<a class="btn" href="/admin/cases/{{.CaseID}}">Go to case #{{.CaseID}}</a>
+        {{else}}
+        <form method="post" action="/admin/anticheat/{{.ID}}"><input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><button class="btn" type="submit" name="resolution" value="">Reopen</button></form>
+        {{end}}
+      </div>
+      {{end}}
+      {{else}}
+      <p class="mod-empty">No flags yet. They appear here when the server's detectors or the Steam ban check raise one.</p>
+      {{end}}
+    </div>
+  </div>
+</div>
+{{end}}
