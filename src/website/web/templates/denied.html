@@ -30,6 +30,14 @@
         <a class="btn btn-primary btn-lg" href="/dashboard">Go to my dashboard</a>
         <a class="btn btn-lg" href="/rules">Server rules</a>
       </div>
+    {{else if eq .Info.Kind "not_command"}}
+      <div class="denied-icon denied-icon-lock"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/></svg></div>
+      <h1>This is for faction command</h1>
+      <p class="denied-lead">The {{if .AreaName}}{{.AreaName}} {{end}}command panel opens for officers whose rank has command authority. It comes from your faction rank, not a staff role.</p>
+      <p class="denied-note">If you think your rank should have access, ask your faction's leadership. Command ranks are set by Management.</p>
+      <div class="denied-actions">
+        <a class="btn btn-primary btn-lg" href="/dashboard">Go to my dashboard</a>
+      </div>
     {{else if eq .Info.Kind "no_permission"}}
       <div class="denied-icon denied-icon-lock"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
       <h1>Your rank doesn't include this page</h1>

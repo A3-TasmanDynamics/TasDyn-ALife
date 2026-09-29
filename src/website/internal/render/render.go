@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Renderer struct {
@@ -36,6 +37,17 @@ type Renderer struct {
 var funcs = template.FuncMap{
 	"inc":       func(i int) int { return i + 1 },
 	"hasPrefix": strings.HasPrefix,
+	// days renders a duration as whole days ("0 days" under a day, "—" when unknown).
+	"days": func(d time.Duration) string {
+		if d <= 0 {
+			return "—"
+		}
+		n := int(d.Hours() / 24)
+		if n == 1 {
+			return "1 day"
+		}
+		return strconv.Itoa(n) + " days"
+	},
 	// money formats whole in-game dollars: 1234567 -> "1,234,567".
 	"money": func(n int64) string {
 		neg := n < 0

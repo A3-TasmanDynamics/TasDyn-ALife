@@ -1,0 +1,46 @@
+{{define "content"}}
+<div class="cmd-shell">
+  {{template "command_sidebar" .}}
+  <div class="cmd-main">
+    <div class="cmd-head">
+      <div>
+        <h1>Overview</h1>
+        <p class="cmd-sub">Command access comes from your {{.FactionName}} rank, not a staff role.</p>
+      </div>
+    </div>
+    <div class="cmd-tiles">
+      <div class="cmd-tile"><div class="cmd-tile-label">Members</div><div class="cmd-tile-value">{{.MemberCount}}</div><div class="cmd-tile-sub">across {{len .Strength}} ranks</div></div>
+      <div class="cmd-tile"><div class="cmd-tile-label">Online now</div><div class="cmd-tile-value cmd-green">{{.Online}}</div><div class="cmd-tile-sub">of {{.MemberCount}} members</div></div>
+      <div class="cmd-tile"><div class="cmd-tile-label">Open slots</div><div class="cmd-tile-value">{{if .HasSlots}}{{.OpenSlots}}{{else}}&mdash;{{end}}</div><div class="cmd-tile-sub">{{if .HasSlots}}in ranks with a slot limit{{else}}No slot limits set{{end}}</div></div>
+      <div class="cmd-tile"><div class="cmd-tile-label">Your authority</div><div class="cmd-tile-value cmd-tile-value-sm">{{if .ReadOnly}}Read-only{{else}}Up to {{.AuthorityTo}}{{end}}</div><div class="cmd-tile-sub">{{if .ReadOnly}}Staff view{{else}}Promote, demote, recruit, remove{{end}}</div></div>
+    </div>
+    <div class="cmd-grid">
+      <section class="cmd-card" aria-labelledby="cmd-strength">
+        <div class="cmd-card-head"><h2 id="cmd-strength">Strength by rank</h2><span class="cmd-dim">filled / slots</span></div>
+        {{range .Strength}}
+        <div class="cmd-strength-row">
+          <span class="cmd-strength-name">{{if .Rank.Short}}{{.Rank.Short}}{{else}}{{.Rank.Label}}{{end}}</span>
+          <span class="cmd-bar">{{if .Rank.Slots}}<span class="cmd-bar-fill{{if .Full}} cmd-bar-full{{end}}" style="width: {{.Percent}}%"></span>{{end}}</span>
+          <span class="cmd-strength-count">{{.Filled}}{{if .Rank.Slots}}/{{.Rank.Slots}}{{end}}</span>
+        </div>
+        {{else}}
+        <p class="cmd-empty">No ranks are configured yet. Management sets them on Roles &amp; Permissions → Faction rank names.</p>
+        {{end}}
+      </section>
+      <section class="cmd-card" aria-labelledby="cmd-recent">
+        <div class="cmd-card-head"><h2 id="cmd-recent">Recent changes</h2><a class="cmd-head-link" href="/command/{{.Faction}}/log">Full command log</a></div>
+        {{range .Recent}}
+        <div class="cmd-recent-row">
+          <span class="cmd-dim">{{.When.Format "2 Jan"}}</span>
+          <a href="/command/{{$.Faction}}/members/{{.TargetID}}">{{.Target}}</a>
+          <span>{{.Change}}{{if eq .Via "staff_override"}} <span class="cmd-tag cmd-tag-override">Staff override{{if .OwnFaction}} · own faction{{end}}</span>{{end}}</span>
+          <span class="cmd-dim">{{.By}}</span>
+        </div>
+        {{else}}
+        <p class="cmd-empty">No changes yet.</p>
+        {{end}}
+      </section>
+    </div>
+  </div>
+</div>
+{{end}}

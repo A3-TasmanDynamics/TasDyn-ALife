@@ -271,6 +271,11 @@ their next save/load; the admin panel doesn't push live changes into the game. *
 is not editable here:** staff rank changes go only through §2.1/§2.2, so there is one path to
 audit. Permissions: `players.edit_police`, `players.edit_medic`.
 
+**Only Management can override** (decided 29 Sep 2026). Both keys are seeded to Head Admin only and
+are `NoOverride`, so they can't be handed to an individual; a future Management rank gets them by
+ticking them on Roles & Permissions. Overrides go through the same `internal/factions` service as
+faction command and appear in the faction's Command log as **staff override**.
+
 ### 5.3 Compensation (#24)
 
 "Compensate" on the player profile adds a `bank_transactions` row (type `compensation`, amount,
@@ -305,6 +310,24 @@ introduces for faction records. The two features should share that check, not bu
 - Every change is written to a `faction_log` table (faction, actor, target, before/after, reason),
   which that faction's command and staff with `factions.audit` can view. This is Gamepanel's
   `PD_EMS_COMMAND` audit, as its own table.
+
+**Command authority** is set per rank on Roles & Permissions → Faction rank names: "can set ranks up
+to" (`faction_rank_names.promote_up_to`). Any rank with it set is command. Command can recruit,
+promote, demote and remove members whose current *and* new rank are within that authority, which is
+always below their own. Optional slot limits per rank bind command but not Management.
+
+**Staff who are in a faction, or are faction command** (decided 29 Sep 2026):
+
+1. Staff rank and faction rank are separate authorities. A staff member who is police command uses
+   the command panel for everyday roster work, exactly like any other commander.
+2. **Nobody changes their own rank**, on either path.
+3. **Only Management overrides** (§5.2). An override by a staff member who is in that faction is
+   allowed but flagged **own faction** in the Command log and Staff Log.
+4. Every Command log entry records which authority was used: *command* or *staff override*.
+5. A staff suspension or LOA pauses staff access only; faction membership and command are unaffected.
+6. When Cases exist: leading a case against a member of your own faction shows a warning and suggests
+   handing it to someone else.
+7. Discord roles stack: staff, faction and faction-rank roles each come from their own mapping.
 
 ### 6.2 Faction applications (#29)
 

@@ -421,8 +421,8 @@ JOIN (VALUES
     ('anticheat.review', 20),
     ('players.view', 10),
     ('players.vehicles', 20),
-    ('players.edit_police', 40),
-    ('players.edit_medic', 40),
+    ('players.edit_police', 100),
+    ('players.edit_medic', 100),
     ('players.compensate', 40),
     ('players.compensate_large', 100),
     ('applications.view', 20),
@@ -444,8 +444,40 @@ CREATE TABLE faction_rank_names (
     faction  TEXT NOT NULL CHECK (faction IN ('police', 'ems')),
     level    INTEGER NOT NULL CHECK (level > 0),
     name     TEXT NOT NULL,
+    -- Faction command (docs/GAMEPANEL_PARITY.md §6.1, layout plan "Police
+    -- command"): short name for tight spaces, how many officers the rank
+    -- is meant to hold (NULL = no limit), and the highest level someone
+    -- at this rank may set others to. promote_up_to > 0 is what makes a
+    -- rank "command"; it must stay below the rank's own level.
+    short_name     TEXT,
+    slots          INTEGER CHECK (slots > 0),
+    promote_up_to  INTEGER NOT NULL DEFAULT 0 CHECK (promote_up_to >= 0 AND promote_up_to < level),
     PRIMARY KEY (faction, level)
 );
+
+-- Every faction roster change made on the website: by faction command on
+-- the command panel, or by Management as a staff override from Player
+-- Lookup. own_faction flags an override by a staff member who is in that
+-- faction themselves (conflict of interest: allowed, but visible). The
+-- level change itself is also captured by the players trigger in
+-- rank_changes/staff_log; this table is the faction's own record, shown
+-- as the Command log. Never edited or deleted.
+CREATE TABLE faction_log (
+    id           BIGSERIAL PRIMARY KEY,
+    faction      TEXT NOT NULL CHECK (faction IN ('police', 'ems')),
+    actor_id     BIGINT REFERENCES players(id) ON DELETE SET NULL,
+    target_id    BIGINT REFERENCES players(id) ON DELETE SET NULL,
+    kind         TEXT NOT NULL CHECK (kind IN ('recruit', 'promote', 'demote', 'remove')),
+    from_level   INTEGER NOT NULL,
+    to_level     INTEGER NOT NULL,
+    reason       TEXT NOT NULL,
+    via          TEXT NOT NULL CHECK (via IN ('command', 'staff_override')),
+    own_faction  BOOLEAN NOT NULL DEFAULT false,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_faction_log_faction ON faction_log(faction, id DESC);
+CREATE INDEX idx_faction_log_target ON faction_log(target_id, id DESC);
 CREATE TABLE staff_permission_overrides (
     id           SERIAL PRIMARY KEY,
     player_id    BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,

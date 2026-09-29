@@ -327,41 +327,6 @@ type Actor struct {
 	Source   string
 }
 
-// SetFactionLevel sets a player's police ("police") or EMS ("ems") level.
-// The caller checks players.edit_police / players.edit_medic.
-func SetFactionLevel(ctx context.Context, pool *pgxpool.Pool, actor Actor, targetID int64, faction string, level int, reason string) error {
-	col := map[string]string{"police": "cop_level", "ems": "medic_level"}[faction]
-	if col == "" {
-		return notAllowed("unknown faction")
-	}
-	if level < 0 || level > 20 {
-		return notAllowed("the level must be between 0 and 20")
-	}
-	reason = strings.TrimSpace(reason)
-	if reason == "" {
-		return notAllowed("a reason is required")
-	}
-	if actor.PlayerID == targetID {
-		return notAllowed("you can't change your own faction level")
-	}
-	tx, err := pool.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
-	if err := audit.SetActor(ctx, tx, actor.PlayerID, actor.Source, reason); err != nil {
-		return err
-	}
-	tag, err := tx.Exec(ctx, `UPDATE players SET `+col+` = $2 WHERE id = $1 AND `+col+` IS DISTINCT FROM $2`, targetID, level)
-	if err != nil {
-		return err
-	}
-	if tag.RowsAffected() == 0 {
-		return notAllowed("they're already at that level")
-	}
-	return tx.Commit(ctx)
-}
-
 // Compensate adds amount (whole dollars) to one of the player's bank accounts as an
 // admin_adjustment transaction (the balance follows via the existing
 // trigger -- never a direct overwrite) and logs it. The caller checks

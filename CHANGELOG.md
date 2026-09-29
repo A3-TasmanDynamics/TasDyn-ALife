@@ -975,3 +975,17 @@
   pages (HTTP 403) replace the plain-text errors. **Security fix:** Admin and Support Panel access is now re-checked on
   every request, so a suspension, LOA or removal applies immediately; before, `/admin` itself stayed open until the
   staff member's next sign-in. The Staff Profile's remove dialog no longer says role sync is pending.
+- **Faction command panel (GAMEPANEL_PARITY §6.1, layout plan "Police command").** `/command/{police|ems}`, with a
+  *Command* link in the header for anyone whose faction rank has command authority. **Overview** (members, online
+  now, open slots, your authority, strength by rank, recent changes), **Roster** grouped by rank with search and
+  *Recruit a member* (Steam64 or exact name), a **service record** page per member with *Change rank* (promote,
+  demote, remove), and the **Command log** (filter by type, search). Staff with `factions.audit` get a read-only
+  view. Recruits & training, Discipline, Divisions & quals and Ranks & gear show as "Soon". Access comes from the
+  faction rank, never a staff role: Roles & Permissions → *Faction rank names* now sets each rank's short name, slot
+  limit and **"can set ranks up to"** (`faction_rank_names.short_name/slots/promote_up_to`). All faction level changes
+  go through the new `internal/factions` service and are written to the new `faction_log` table. **Only Management
+  overrides:** `players.edit_police`/`players.edit_medic` are now Head Admin only and can't be granted per-player
+  (`database/fixes/2026-09-29_management_faction_override.sql` removes them from lower ranks). An override appears in
+  the Command log as *staff override*, flagged **own faction** when the staff member is in that faction. Nobody can
+  change their own rank on either path. Denied page for non-command. The conflict-of-interest rules are recorded in
+  GAMEPANEL_PARITY §5.2/§6.1.

@@ -99,21 +99,37 @@
     </dialog>
     {{else}}
     <div class="faction-names">
-      <p class="admin-sub">Names shown everywhere a police or EMS level number used to appear: dashboard, player profiles and faction rosters. Requires <code class="perm-key">factions.configure</code>.</p>
-      <div class="faction-grid">
-        {{range $f := (list "police" "ems")}}
-        <form class="card faction-card" method="post" action="/admin/roles/faction-names">
-          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="faction" value="{{$f}}">
-          <div class="faction-card-head"><span class="faction-dot faction-dot-{{$f}}" aria-hidden="true"></span><h2>{{if eq $f "police"}}Police{{else}}EMS{{end}}</h2></div>
-          {{$names := $.Police}}{{if eq $f "ems"}}{{$names = $.EMS}}{{end}}
-          {{range $i, $n := $names}}
-          <label class="level-row"><span>Level {{inc $i}}</span><input name="name" value="{{$n}}" maxlength="50" aria-label="{{$f}} level {{inc $i}} name" {{if not $.CanFaction}}disabled{{end}}></label>
+      <p class="admin-sub">Rank names are shown everywhere a police or EMS level number used to appear. <strong>Command</strong> is set here too: a rank with "can set ranks up to" gets the faction command panel and can recruit, promote, demote and remove members up to that rank, never at or above their own. Slots cap how many members a rank holds (command can't go over; Management can). Requires <code class="perm-key">factions.configure</code>.</p>
+      {{range $f := (list "police" "ems")}}
+      <form class="card faction-card faction-ranks" method="post" action="/admin/roles/faction-names">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="faction" value="{{$f}}">
+        <div class="faction-card-head"><span class="faction-dot faction-dot-{{$f}}" aria-hidden="true"></span><h2>{{if eq $f "police"}}Police{{else}}EMS{{end}}</h2></div>
+        {{$ranks := $.Police}}{{if eq $f "ems"}}{{$ranks = $.EMS}}{{end}}
+        <div class="faction-rank-table" role="table" aria-label="{{$f}} ranks">
+          <div class="faction-rank-row faction-rank-headrow" role="row"><span role="columnheader">Level</span><span role="columnheader">Name</span><span role="columnheader">Short</span><span role="columnheader">Slots</span><span role="columnheader">Command: can set ranks up to</span></div>
+          {{range $i, $r := $ranks}}
+          <div class="faction-rank-row" role="row">
+            <span class="faction-rank-level">{{$r.Level}}</span>
+            <input name="name" value="{{$r.Name}}" maxlength="50" aria-label="{{$f}} level {{$r.Level}} name" {{if not $.CanFaction}}disabled{{end}}>
+            <input name="short" value="{{$r.Short}}" maxlength="12" aria-label="{{$f}} level {{$r.Level}} short name" placeholder="e.g. Sgt" {{if not $.CanFaction}}disabled{{end}}>
+            <input name="slots" type="number" min="1" max="500" value="{{if $r.Slots}}{{$r.Slots}}{{end}}" aria-label="{{$f}} level {{$r.Level}} slots" placeholder="No limit" {{if not $.CanFaction}}disabled{{end}}>
+            <select name="authority" aria-label="{{$f}} level {{$r.Level}} command authority" {{if not $.CanFaction}}disabled{{end}}>
+              <option value="0">Not command</option>
+              {{range $ranks}}{{if lt .Level $r.Level}}<option value="{{.Level}}" {{if eq .Level $r.PromoteUpTo}}selected{{end}}>{{.Name}} ({{.Level}})</option>{{end}}{{end}}
+            </select>
+          </div>
           {{end}}
-          <label class="level-row"><span>Level {{inc (len $names)}}</span><input name="name" maxlength="50" placeholder="Add level…" aria-label="{{$f}} new level name" {{if not $.CanFaction}}disabled{{end}}></label>
-          {{if $.CanFaction}}<div class="faction-card-foot"><span class="hint">Clear the last name to remove that level.</span><button class="btn btn-primary" type="submit">Save rank names</button></div>{{end}}
-        </form>
-        {{end}}
-      </div>
+          <div class="faction-rank-row" role="row">
+            <span class="faction-rank-level">{{inc (len $ranks)}}</span>
+            <input name="name" maxlength="50" placeholder="Add a rank…" aria-label="{{$f}} new rank name" {{if not $.CanFaction}}disabled{{end}}>
+            <input name="short" maxlength="12" aria-label="{{$f}} new rank short name" {{if not $.CanFaction}}disabled{{end}}>
+            <input name="slots" type="number" min="1" max="500" aria-label="{{$f}} new rank slots" placeholder="No limit" {{if not $.CanFaction}}disabled{{end}}>
+            <input type="hidden" name="authority" value="0"><span class="hint">Set after saving</span>
+          </div>
+        </div>
+        {{if $.CanFaction}}<div class="faction-card-foot"><span class="hint">Clear the last name to remove that level. Saving is logged.</span><button class="btn btn-primary" type="submit">Save {{if eq $f "police"}}police{{else}}EMS{{end}} ranks</button></div>{{end}}
+      </form>
+      {{end}}
     </div>
     {{end}}
   </div>

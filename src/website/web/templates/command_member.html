@@ -1,0 +1,46 @@
+{{define "content"}}
+<div class="cmd-shell">
+  {{template "command_sidebar" .}}
+  <div class="cmd-main">
+    <a class="cmd-back" href="/command/{{.Faction}}/roster">&larr; Roster</a>
+    {{$m := .Member}}
+    <div class="cmd-head">
+      <div>
+        <h1>{{$m.Name}}</h1>
+        <p class="cmd-sub">{{$m.Rank.Label}} &middot; level {{$m.Level}} &middot; {{days $m.InRank}} in rank &middot; {{$m.Hours}} h in {{.FactionName}} &middot; {{if $m.Online}}online now{{else if $m.LastSeen}}last seen {{$m.LastSeen.Format "2 Jan 2006"}}{{else}}never seen in-game{{end}}{{if $m.Staff}} &middot; also staff ({{$m.Staff}}){{end}}</p>
+      </div>
+    </div>
+    <div class="cmd-grid">
+      <section class="cmd-card cmd-pad" aria-labelledby="cmd-change">
+        <h2 id="cmd-change">Change rank</h2>
+        {{if .CanChange}}
+        <form method="post" action="/command/{{.Faction}}/members/{{$m.ID}}/rank" class="cmd-form">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+          <div class="field"><label for="cm-level">New rank</label>
+            <select id="cm-level" name="level" required>
+              {{range .Levels}}<option value="{{.Level}}" {{if eq .Level $m.Level}}disabled{{end}}>{{.Label}}{{if eq .Level $m.Level}} (current){{end}}</option>{{end}}
+              <option value="0">Remove from {{.FactionName}}</option>
+            </select></div>
+          <div class="field"><label for="cm-reason">Reason</label><input id="cm-reason" name="reason" required maxlength="300"></div>
+          <button class="btn btn-primary" type="submit">Save change</button>
+          <p class="hint">Logged in the Command log and the Staff Log. Their Discord roles update automatically; in-game it applies on their next load.</p>
+        </form>
+        {{else}}
+        <p class="cmd-dim">{{.Why}}</p>
+        {{end}}
+      </section>
+      <section class="cmd-card" aria-labelledby="cmd-history">
+        <div class="cmd-card-head"><h2 id="cmd-history">Service record</h2></div>
+        {{range .History}}
+        <div class="cmd-history-row">
+          <div><span class="cmd-strong">{{.Change}}</span>{{if eq .Via "staff_override"}} <span class="cmd-tag cmd-tag-override">Staff override{{if .OwnFaction}} · own faction{{end}}</span>{{end}}</div>
+          <div class="cmd-dim">{{.When.Format "2 Jan 2006 15:04"}} &middot; by {{.By}} &middot; {{.Reason}}</div>
+        </div>
+        {{else}}
+        <p class="cmd-empty">No changes recorded on the website yet.</p>
+        {{end}}
+      </section>
+    </div>
+  </div>
+</div>
+{{end}}

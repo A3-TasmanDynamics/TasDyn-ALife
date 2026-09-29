@@ -1,0 +1,51 @@
+{{define "content"}}
+<div class="cmd-shell">
+  {{template "command_sidebar" .}}
+  <div class="cmd-main">
+    <div class="cmd-head">
+      <div>
+        <h1>Roster</h1>
+        <p class="cmd-sub">{{.Total}} member{{if ne .Total 1}}s{{end}}, highest rank first. Select someone to see their service record{{if .CanRecruit}} or change their rank{{end}}.</p>
+      </div>
+      {{if .CanRecruit}}<button class="btn btn-primary" type="button" data-dialog-open="dlg-recruit">Recruit a member</button>{{end}}
+    </div>
+    <form class="cmd-filter" method="get" action="/command/{{.Faction}}/roster" role="search">
+      <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input name="q" value="{{.Q}}" aria-label="Search by name" placeholder="Search by name"></label>
+      {{if .Q}}<a class="hint" href="/command/{{.Faction}}/roster">Clear</a>{{end}}
+    </form>
+    <div class="cmd-table" role="table" aria-label="Roster">
+      <div class="cmd-row cmd-row-head" role="row"><span role="columnheader">Member</span><span role="columnheader">In rank</span><span role="columnheader">Hours</span><span role="columnheader">Last seen</span></div>
+      {{range .Groups}}
+      <div class="cmd-group" role="row"><span class="cmd-group-name">{{.Rank.Label}}</span><span class="cmd-dim">Level {{.Rank.Level}}</span><span class="cmd-dim">{{.Filled}}{{if .Rank.Slots}} of {{.Rank.Slots}} slots{{end}}</span></div>
+        {{range .Members}}
+        <a class="cmd-row" role="row" href="/command/{{$.Faction}}/members/{{.ID}}">
+          <span class="cmd-member"><span class="cmd-strong">{{.Name}}</span>{{if .Online}}<span class="cmd-online">Online</span>{{end}}{{if .Staff}}<span class="cmd-tag">Staff · {{.Staff}}</span>{{end}}</span>
+          <span class="cmd-dim">{{days .InRank}}</span>
+          <span class="cmd-dim">{{.Hours}} h</span>
+          <span class="cmd-dim">{{if .Online}}Online now{{else if .LastSeen}}{{.LastSeen.Format "2 Jan 2006"}}{{else}}Never{{end}}</span>
+        </a>
+        {{end}}
+      {{else}}
+      <p class="cmd-empty">{{if .Q}}Nobody matches &ldquo;{{.Q}}&rdquo;.{{else}}Nobody is in {{.FactionName}} yet.{{end}}</p>
+      {{end}}
+    </div>
+
+    {{if .CanRecruit}}
+    <dialog id="dlg-recruit" class="modal" aria-labelledby="dlg-recruit-title">
+      <form method="post" action="/command/{{.Faction}}/recruit">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <div class="modal-head"><h2 id="dlg-recruit-title">Recruit into {{.FactionName}}</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+        <div class="modal-body">
+          <div class="field"><label for="rc-who">Steam64 ID or exact in-game name</label><input id="rc-who" name="who" required maxlength="64"></div>
+          <div class="field"><label for="rc-level">Starting rank</label><select id="rc-level" name="level">{{range .Levels}}<option value="{{.Level}}">{{.Label}}</option>{{end}}</select></div>
+          <div class="field"><label for="rc-reason">Reason</label><input id="rc-reason" name="reason" required maxlength="300" placeholder="e.g. Passed the entry interview"></div>
+          <p class="hint">They must have joined the server at least once. Logged in the Command log.</p>
+        </div>
+        <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Recruit</button></div>
+      </form>
+    </dialog>
+    {{end}}
+  </div>
+</div>
+<script src="/static/admin.js" defer></script>
+{{end}}
