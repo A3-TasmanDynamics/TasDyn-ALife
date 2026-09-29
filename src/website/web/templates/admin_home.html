@@ -67,6 +67,10 @@
       </div>
 
       <div class="dash-col">
+        <section class="card dash-card note-card" id="notifications" aria-label="Notifications">
+          {{template "notification_list" dict "Items" .Notes "Unread" .Unread "CSRF" .CSRFToken "Back" "/admin#notifications"}}
+          <a class="note-all" href="/notifications">All notifications</a>
+        </section>
         <section class="card dash-card" aria-labelledby="dash-rich">
           <div class="dash-card-head">
             <h2 id="dash-rich">Rich list</h2>

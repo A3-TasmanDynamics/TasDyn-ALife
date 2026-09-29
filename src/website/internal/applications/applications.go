@@ -26,6 +26,7 @@ import (
 	"website/internal/audit"
 	"website/internal/discord"
 	"website/internal/factions"
+	"website/internal/notify"
 	"website/internal/staff"
 )
 
@@ -405,6 +406,9 @@ func ToInterview(ctx context.Context, pool *pgxpool.Pool, actor Actor, id int64)
 	if _, err := tx.Exec(ctx, `INSERT INTO staff_interviews (application_id, interviewer_id) VALUES ($1, $2) ON CONFLICT (application_id) DO NOTHING`, id, actor.PlayerID); err != nil {
 		return err
 	}
+	if err := notify.Send(ctx, tx, playerID, "Staff application: interview", "A staff member will contact you on Discord to arrange a time.", "/staff/apply"); err != nil {
+		return err
+	}
 	if err := dm(ctx, tx, playerID, fmt.Sprintf("staff-app:%d:interview", id),
 		"Your TasDyn-ALife staff application has moved to **interview**. A staff member will contact you on Discord to arrange a time."); err != nil {
 		return err
@@ -488,6 +492,9 @@ func AcceptStaff(ctx context.Context, pool *pgxpool.Pool, actor Actor, id int64,
 		WHERE id = $1`, id, actor.PlayerID, strings.TrimSpace(note)); err != nil {
 		return err
 	}
+	if err := notify.Send(ctx, tx, a.PlayerID, "Staff application accepted", "Welcome to the staff team. The Admin Panel link is in the header.", "/admin"); err != nil {
+		return err
+	}
 	if err := dm(ctx, tx, a.PlayerID, fmt.Sprintf("staff-app:%d:decision", id),
 		"Congratulations! Your TasDyn-ALife **staff application was accepted**. Sign in to the website to find the Admin Panel, and check the staff channels in Discord."); err != nil {
 		return err
@@ -523,6 +530,10 @@ func RejectStaff(ctx context.Context, pool *pgxpool.Pool, actor Actor, id int64,
 	if _, err := tx.Exec(ctx, `
 		UPDATE staff_applications SET status = 'rejected', reviewed_by = $2, review_note = $3, decided_at = now() WHERE id = $1`,
 		id, actor.PlayerID, note); err != nil {
+		return err
+	}
+	if err := notify.Send(ctx, tx, playerID, "Staff application not accepted",
+		"You can apply again from "+time.Now().Add(StaffCooldown).Format("2 Jan 2006")+".", "/staff/apply"); err != nil {
 		return err
 	}
 	if err := dm(ctx, tx, playerID, fmt.Sprintf("staff-app:%d:decision", id),
@@ -721,6 +732,13 @@ func DecideFaction(ctx context.Context, pool *pgxpool.Pool, actor Actor, id int6
 	if !accept {
 		msg = fmt.Sprintf("Your application to **%s** on TasDyn-ALife wasn't accepted this time: %s. You can apply again from %s.",
 			factions.Name(faction), note, time.Now().Add(FactionCooldown).Format("2 Jan 2006"))
+	}
+	title := factions.Name(faction) + " application accepted"
+	if !accept {
+		title = factions.Name(faction) + " application not accepted"
+	}
+	if err := notify.Send(ctx, tx, playerID, title, note, "/factions?faction="+faction); err != nil {
+		return err
 	}
 	if err := dm(ctx, tx, playerID, fmt.Sprintf("faction-app:%d:decision", id), msg); err != nil {
 		return err

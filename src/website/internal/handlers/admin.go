@@ -8,6 +8,7 @@ import (
 	"website/internal/audit"
 	"website/internal/auth"
 	"website/internal/cases"
+	"website/internal/notify"
 	"website/internal/players"
 )
 
@@ -78,6 +79,9 @@ type adminHomeData struct {
 	MyCases       []cases.ListRow
 	MyActivity    cases.Activity
 	CanCases      bool
+
+	Notes  []notify.Item
+	Unread int
 }
 
 type caseBar struct {
@@ -171,6 +175,9 @@ func (d *Deps) AdminHome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data.OpenCaseCount = data.OpenCases
+	if sess, ok := auth.FromContext(ctx); ok {
+		data.Notes, data.Unread, _ = notify.List(ctx, d.Pool, sess.PlayerID, 5)
+	}
 	if data.CanCases = d.can(r, "cases.view"); data.CanCases {
 		if counts, days, err := cases.PerDay(ctx, d.Pool, 14, time.Local); err == nil {
 			top := 1

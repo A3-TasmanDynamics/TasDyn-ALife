@@ -163,6 +163,7 @@ var moderationPhrases = map[string]string{
 	"application.accept":         "accepted a staff application",
 	"application.reject":         "rejected a staff application",
 	"faction.application_reject": "turned down a faction application",
+	"notice.post":                "sent an essential notice",
 }
 
 // discordModeration are the staff_log actions the bot writes for

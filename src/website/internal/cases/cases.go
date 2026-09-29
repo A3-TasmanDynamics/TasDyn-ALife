@@ -20,6 +20,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"website/internal/audit"
+	"website/internal/notify"
 )
 
 // ErrNotAllowed wraps a rule violation with a human-readable reason.
@@ -431,6 +432,13 @@ func AddParticipant(ctx context.Context, pool *pgxpool.Pool, actor Actor, caseID
 		"witness": "witness", "assisting_staff": "assisting staff"}[role]
 	if _, err := addEntry(ctx, tx, caseID, actor.PlayerID, "participant", fmt.Sprintf("Added %s as %s.", who, label), 0, ""); err != nil {
 		return err
+	}
+	if role == "assisting_staff" && playerID != actor.PlayerID {
+		var summary string
+		_ = tx.QueryRow(ctx, `SELECT summary FROM staff_cases WHERE id = $1`, caseID).Scan(&summary)
+		if err := notify.Send(ctx, tx, playerID, fmt.Sprintf("You were added to case #%d", caseID), "Assisting · "+summary, fmt.Sprintf("/admin/cases/%d", caseID)); err != nil {
+			return err
+		}
 	}
 	return tx.Commit(ctx)
 }

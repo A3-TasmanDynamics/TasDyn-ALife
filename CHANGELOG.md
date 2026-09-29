@@ -1025,3 +1025,13 @@
   the Admin Panel. The player dashboard shows staff and faction application progress. Sidebar and command-panel
   badges for open applications. New tables `staff_applications`, `staff_interviews`, `faction_applications`
   (`database/fixes/2026-09-30_recruitment.sql`).
+- **Notifications with acknowledgement (GAMEPANEL_PARITY §7.3).** A **bell** in the site header and the admin sidebar
+  shows the unread count and links to `/notifications`. Both dashboards get a *Notifications* panel (latest five, *Mark
+  all read*), as in the layout plan. Notifications are sent for ticket replies (to the player, or to the assigned staff
+  member), staff and faction application steps and decisions, being added to a case as assisting staff, and ban appeal
+  decisions. **Essential notices** (`/admin/notices`, `announce.post`) go to all staff or to everyone who has used the
+  website. Each recipient sees a banner on every page ("N of M acknowledged", *Read update*, *I've read this*) until they
+  acknowledge it, and the notices page shows progress and who is still outstanding. The rules editor can send one when
+  the rules change. Links are same-site paths only (checked in code and by a table constraint). The unread count and
+  pending banner load with the session, so every page has them. New tables `notifications`, `staff_notices`
+  (`database/fixes/2026-09-30_notifications.sql`). README: how to run the integration tests (stop the site; `-p 1`).

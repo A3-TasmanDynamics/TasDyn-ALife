@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 
 	"website/internal/auth"
 	"website/internal/discord/webhook"
+	"website/internal/notify"
 )
 
 var validPriorities = map[string]bool{"low": true, "normal": true, "high": true, "urgent": true}
@@ -367,6 +369,21 @@ func (d *Deps) ReplyToTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_, _ = d.Pool.Exec(r.Context(), `UPDATE support_tickets SET updated_at = now() WHERE id = $1`, ticketID)
+
+	// Notify the other side (never for internal staff notes).
+	if !internal {
+		link := fmt.Sprintf("/tickets/%d", ticketID)
+		body := r.FormValue("body")
+		if sess.PlayerID != ownerID {
+			_ = notify.Send(r.Context(), d.Pool, ownerID, fmt.Sprintf("Ticket #%d: %s replied", ticketID, sess.Name), body, link)
+		} else {
+			var assigned *int64
+			_ = d.Pool.QueryRow(r.Context(), `SELECT assigned_staff_id FROM support_tickets WHERE id = $1`, ticketID).Scan(&assigned)
+			if assigned != nil && *assigned != sess.PlayerID {
+				_ = notify.Send(r.Context(), d.Pool, *assigned, fmt.Sprintf("Ticket #%d: %s replied", ticketID, sess.Name), body, link)
+			}
+		}
+	}
 
 	http.Redirect(w, r, "/tickets/"+chi.URLParam(r, "id"), http.StatusSeeOther)
 }

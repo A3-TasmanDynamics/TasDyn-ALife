@@ -1,0 +1,29 @@
+{{define "notification_list"}}
+{{/* dot: .Items []notify.Item, .Unread int, .CSRF string, .Back string */}}
+<div class="note-card-head">
+  <h2>Notifications</h2>
+  {{if .Unread}}<span class="note-unread">{{.Unread}} unread</span>{{end}}
+  {{if .Unread}}<form method="post" action="/notifications/read" class="note-readall"><input type="hidden" name="csrf_token" value="{{.CSRF}}"><input type="hidden" name="back" value="{{.Back}}"><button class="btn btn-sm" type="submit">Mark all read</button></form>{{end}}
+</div>
+{{range .Items}}
+<a class="note-row{{if not .Read}} note-row-unread{{end}}" href="/notifications/{{.ID}}">
+  <span class="note-dot{{if not .Read}}{{if .Essential}} note-dot-essential{{else}} note-dot-unread{{end}}{{end}}" aria-hidden="true"></span>
+  <span class="note-text"><span class="note-title">{{if .Essential}}Essential: {{end}}{{.Title}}</span>{{if .Body}}<span class="note-body">{{.Body}}</span>{{end}}</span>
+  <span class="note-when">{{.When}}</span>
+</a>
+{{else}}
+<p class="note-empty">Nothing yet. You'll see ticket replies, application decisions and notices here.</p>
+{{end}}
+{{end}}
+
+{{define "essential_banner"}}
+{{with .Session}}{{with .Essential}}
+<div class="essential-banner" role="alert">
+  <span class="essential-tag">ESSENTIAL</span>
+  <span class="essential-text"><strong>{{.Title}}</strong>{{if .Body}} <span>{{.Body}}</span>{{end}}</span>
+  {{if .Total}}<span class="essential-count">{{.Acked}} of {{.Total}} acknowledged</span>{{end}}
+  {{if .Link}}<a class="essential-link" href="{{.Link}}">Read update</a>{{end}}
+  <form method="post" action="/notifications/{{.ID}}/ack"><input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="back" value="{{$.Path}}"><button class="btn btn-sm btn-primary" type="submit">I've read this</button></form>
+</div>
+{{end}}{{end}}
+{{end}}

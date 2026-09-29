@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"website/internal/audit"
+	"website/internal/notify"
 )
 
 // Ban reasons offered in the Issue ban dialog (layout plan).
@@ -412,6 +413,13 @@ func DecideAppeal(ctx context.Context, pool *pgxpool.Pool, actor Actor, appealID
 	newStatus := "rejected"
 	if accept {
 		newStatus = "accepted"
+	}
+	title := "Ban appeal rejected"
+	if accept {
+		title = "Ban appeal accepted: your ban is lifted"
+	}
+	if err := notify.Send(ctx, tx, playerID, title, decision, "/dashboard"); err != nil {
+		return "", err
 	}
 	if _, err := tx.Exec(ctx, `UPDATE ban_appeals SET status = $2, decided_by = $3, decision = $4, decided_at = now() WHERE id = $1`,
 		appealID, newStatus, actor.PlayerID, decision); err != nil {

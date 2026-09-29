@@ -1,0 +1,9 @@
+{{define "content"}}
+<div class="notes-page">
+  <h1 class="apply-title">Notifications</h1>
+  <p class="apply-sub">Ticket replies, application decisions, cases you've been added to, and essential notices. Essential ones stay as a banner until you press "I've read this".</p>
+  <section class="card note-card">
+    {{template "notification_list" dict "Items" .Items "Unread" .Unread "CSRF" .CSRFToken "Back" "/notifications"}}
+  </section>
+</div>
+{{end}}
