@@ -1,0 +1,97 @@
+{{define "content"}}
+<div class="dbb">
+  <div class="dbb-security">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    <span><strong>Read-only.</strong> {{if .Dedicated}}This connection uses a SELECT-only database role, so writes are impossible at the connection level.{{else}}Every query runs in a read-only transaction, which Postgres enforces; functions that affect other sessions are refused. For the strongest guarantee, set DATABASE_READONLY_URL to a SELECT-only role.{{end}} Every console query is written to the Staff Log. Secret columns are masked.</span>
+    <span class="dbb-security-who">Head Admin only</span>
+  </div>
+  <div class="dbb-top">
+    <a class="btn btn-sm" href="/admin">&larr; Admin</a>
+    <h1>Database</h1>
+    <span class="dbb-chip">alife_db &middot; PostgreSQL</span>
+    <nav class="seg dbb-tabs" aria-label="Database views">
+      <a class="seg-item {{if eq .Tab "data"}}active{{end}}" href="/admin/database?table={{.Table}}">Data</a>
+      <a class="seg-item {{if eq .Tab "schema"}}active{{end}}" href="/admin/database?tab=schema&amp;table={{.Table}}">Schema</a>
+      <a class="seg-item {{if eq .Tab "sql"}}active{{end}}" href="/admin/database?tab=sql&amp;table={{.Table}}">SQL Console</a>
+    </nav>
+    <span class="dbb-who">Signed in as <strong>{{.Session.Name}}</strong></span>
+  </div>
+
+  <div class="dbb-body">
+    <aside class="dbb-tables" aria-label="Tables">
+      <form method="get" action="/admin/database" class="dbb-tsearch">
+        <input type="hidden" name="tab" value="{{.Tab}}">
+        <input name="tq" value="{{.TableQ}}" aria-label="Search tables" placeholder="Search tables…">
+      </form>
+      <div class="dbb-tlabel">Public schema &middot; {{len .Tables}} tables</div>
+      {{range .Tables}}
+      <a class="dbb-trow{{if eq .Name $.Table}} active{{end}}" href="/admin/database?table={{.Name}}{{if ne $.Tab "data"}}&amp;tab={{$.Tab}}{{end}}"><span>{{.Name}}</span><span class="dbb-tcount">{{.Rows}}</span></a>
+      {{end}}
+    </aside>
+
+    {{if eq .Tab "data"}}
+    <section class="dbb-data">
+      <form class="dbb-datahead" method="get" action="/admin/database">
+        <input type="hidden" name="table" value="{{.Table}}">
+        <strong>{{.Table}}</strong><span class="mod-dim">{{.Page.Total}} rows{{if .Filter}} matching{{end}}</span>
+        <input name="q" value="{{.Filter}}" aria-label="Filter rows" placeholder="Filter rows…">
+      </form>
+      <div class="dbb-grid-wrap">
+        <table class="dbb-grid">
+          <thead><tr>{{range .Page.Columns}}<th title="{{.Type}}{{if .Ref}} → {{.Ref}}{{end}}">{{if .PK}}<span class="dbb-pk">PK</span> {{end}}{{.Name}}</th>{{end}}</tr></thead>
+          <tbody>
+            {{range $i, $row := .Page.Rows}}{{$k := index $.Page.Keys $i}}
+            <tr class="{{if and $k (eq $k $.RowKey)}}active{{end}}">{{range $row}}<td>{{if $k}}<a href="/admin/database?table={{$.Table}}&amp;page={{$.PageN}}{{if $.Filter}}&amp;q={{$.Filter}}{{end}}&amp;row={{$k}}">{{.}}</a>{{else}}{{.}}{{end}}</td>{{end}}</tr>
+            {{else}}<tr><td class="mod-dim">No rows.</td></tr>{{end}}
+          </tbody>
+        </table>
+      </div>
+      <div class="dbb-pager">
+        <span class="mod-dim">Page {{.PageN}} of {{if .Pages}}{{.Pages}}{{else}}1{{end}}</span>
+        {{if gt .PageN 1}}<a class="btn btn-sm" href="/admin/database?table={{.Table}}&amp;page={{dec .PageN}}{{if .Filter}}&amp;q={{.Filter}}{{end}}">Prev</a>{{end}}
+        {{if lt .PageN .Pages}}<a class="btn btn-sm" href="/admin/database?table={{.Table}}&amp;page={{inc .PageN}}{{if .Filter}}&amp;q={{.Filter}}{{end}}">Next</a>{{end}}
+      </div>
+    </section>
+    <aside class="dbb-inspector" aria-label="Inspector">
+      <div class="dbb-tlabel">Inspector</div>
+      {{if .RowKey}}
+      <div class="strong">{{.Table}} #{{.RowKey}}</div>
+      {{range $i, $c := .Row}}<div class="dbb-field"><div class="mod-dim">{{$c.Name}}{{if $c.Ref}} → {{$c.Ref}}{{end}}</div><div class="mono">{{index $.RowVals $i}}</div></div>{{end}}
+      <div class="dbb-tlabel dbb-rel">Relationships</div>
+      {{range .Refs}}<a class="dbb-reflink" href="/admin/database?table={{.Table}}&amp;q={{$.RowKey}}">&rarr; {{.Count}} row{{if ne .Count 1}}s{{end}} in <strong>{{.Table}}</strong> <span class="mod-dim">({{.Column}})</span></a>{{else}}<p class="mod-dim">Nothing else points at this row.</p>{{end}}
+      {{else}}<p class="mod-dim">Pick a row.</p>{{end}}
+    </aside>
+    {{end}}
+
+    {{if eq .Tab "schema"}}
+    <section class="dbb-schema">
+      <p class="mod-dim">Foreign-key relationships, read from information_schema. Not editable here.</p>
+      <div class="dbb-fks">
+        {{range .FKs}}<div class="dbb-fk"><span><strong>{{.Table}}</strong>.{{.Column}}</span><span class="mod-dim">&rarr;</span><span><strong>{{.RefTable}}</strong>.{{.RefColumn}}</span></div>{{else}}<p class="mod-dim">No foreign keys.</p>{{end}}
+      </div>
+    </section>
+    {{end}}
+
+    {{if eq .Tab "sql"}}
+    <section class="dbb-sql">
+      <p class="mod-dim">SELECT statements only, one at a time. Results are capped at 500 rows and queries stop after 5 seconds.</p>
+      <form method="post" action="/admin/database/query">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <textarea name="sql" rows="6" spellcheck="false" aria-label="SQL query" placeholder="SELECT id, name, civ_cash, cop_level FROM players WHERE cop_level > 0 ORDER BY civ_cash DESC LIMIT 50;">{{.SQL}}</textarea>
+        <div class="dbb-sql-actions"><button class="btn btn-primary" type="submit">&#9654; Run query</button><span class="hint">Logged to the Staff Log as database.query.</span></div>
+      </form>
+      {{if .QueryErr}}<div class="banner banner-error">{{.QueryErr}}</div>{{end}}
+      {{with .Result}}
+      <div class="dbb-grid-wrap">
+        <table class="dbb-grid">
+          <thead><tr>{{range .Columns}}<th>{{.}}</th>{{end}}</tr></thead>
+          <tbody>{{range .Rows}}<tr>{{range .}}<td>{{.}}</td>{{end}}</tr>{{else}}<tr><td class="mod-dim">No rows.</td></tr>{{end}}</tbody>
+        </table>
+      </div>
+      <p class="hint">{{len .Rows}} row{{if ne (len .Rows) 1}}s{{end}}{{if .Capped}} (capped at 500){{end}} &middot; {{.Elapsed.Milliseconds}} ms &middot; logged to the Staff Log</p>
+      {{end}}
+    </section>
+    {{end}}
+  </div>
+</div>
+{{end}}

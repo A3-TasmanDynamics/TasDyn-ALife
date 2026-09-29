@@ -14,6 +14,7 @@ import (
 	"website/internal/auth"
 	"website/internal/config"
 	"website/internal/csrf"
+	"website/internal/dbbrowser"
 	"website/internal/discord"
 	"website/internal/render"
 	"website/internal/rolesync"
@@ -44,6 +45,9 @@ type Deps struct {
 	// the role sync page then explains why instead of failing.
 	Bot            *discord.Bot
 	RoleSyncEngine *rolesync.Engine
+
+	// DB is the read-only database browser (internal/dbbrowser).
+	DB *dbbrowser.Browser
 }
 
 // Base is the common template data every page needs -- embedded into each

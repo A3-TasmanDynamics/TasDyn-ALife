@@ -11,12 +11,18 @@ import (
 // the OS config dir (not the repo, not the Arma 3 Server install) -- this
 // app is a tool a server host runs locally, its own settings are local too.
 type Settings struct {
-	ArmaServerPath  string `json:"armaServerPath"`
-	PostgresHost    string `json:"postgresHost"`
-	PostgresPort    string `json:"postgresPort"`
-	PostgresDB      string `json:"postgresDb"`
-	PostgresUser    string `json:"postgresUser"`
+	ArmaServerPath   string `json:"armaServerPath"`
+	PostgresHost     string `json:"postgresHost"`
+	PostgresPort     string `json:"postgresPort"`
+	PostgresDB       string `json:"postgresDb"`
+	PostgresUser     string `json:"postgresUser"`
 	PostgresPassword string `json:"postgresPassword"`
+
+	// Control API for the website's Server Control page (controlapi.go).
+	// Enabled unless ControlAPIDisabled; the token is generated on first run.
+	ControlAPIDisabled bool   `json:"controlApiDisabled"`
+	ControlAPIAddr     string `json:"controlApiAddr"`
+	ControlAPIToken    string `json:"controlApiToken"`
 }
 
 func defaultSettings() Settings {

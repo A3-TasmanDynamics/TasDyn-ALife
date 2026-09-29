@@ -14,12 +14,14 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"website/internal/audit"
 	"website/internal/auth"
 	"website/internal/config"
 	"website/internal/csrf"
 	"website/internal/db"
+	"website/internal/dbbrowser"
 	"website/internal/discord"
 	"website/internal/handlers"
 	"website/internal/render"
@@ -95,6 +97,18 @@ func run() error {
 		Cfg:    cfg,
 	}
 	d.Auth.Denied = d.Denied
+
+	// Database browser (Admin → Database): a SELECT-only role if configured,
+	// otherwise the main pool in READ ONLY transactions (internal/dbbrowser).
+	d.DB = &dbbrowser.Browser{Pool: pool}
+	if cfg.DatabaseReadonlyURL != "" {
+		if ro, err := pgxpool.New(ctx, cfg.DatabaseReadonlyURL); err != nil {
+			slog.Error("database browser: DATABASE_READONLY_URL failed, using read-only transactions instead", "error", err)
+		} else {
+			defer ro.Close()
+			d.DB = &dbbrowser.Browser{Pool: ro, Dedicated: true}
+		}
+	}
 
 	// Discord bot (account linking via `/link`) -- optional. Its absence
 	// must never stop the website from serving HTTP; see
@@ -336,6 +350,13 @@ func run() error {
 			r.Use(d.Auth.RequirePermission("announce.post"))
 			r.Get("/admin/notices", d.AdminNotices)
 			r.Post("/admin/notices", d.AdminNoticePost)
+		})
+
+		// Read-only database browser (layout plan; GAMEPANEL_PARITY #39).
+		r.Group(func(r chi.Router) {
+			r.Use(d.Auth.RequirePermission("database.query"))
+			r.Get("/admin/database", d.Database)
+			r.Post("/admin/database/query", d.DatabaseQuery)
 		})
 
 		// Server rules editor (public page is /rules).

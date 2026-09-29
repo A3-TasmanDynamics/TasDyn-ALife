@@ -34,7 +34,7 @@
 
   <div class="admin-nav-group">Server</div>
   <span class="admin-nav-item disabled">Server Control <span class="admin-nav-tag">Soon</span></span>
-  <span class="admin-nav-item disabled">Database <span class="admin-nav-tag">Soon</span></span>
+  <a href="/admin/database" class="admin-nav-item {{if eq .AdminTab "database"}}active{{end}}" {{if eq .AdminTab "database"}}aria-current="page"{{end}}>Database <span class="admin-nav-new">NEW</span></a>
   <span class="admin-nav-item disabled">Item Prices <span class="admin-nav-tag">Soon</span></span>
   <a href="/admin/notices" class="admin-nav-item {{if eq .AdminTab "notices"}}active{{end}}" {{if eq .AdminTab "notices"}}aria-current="page"{{end}}>Essential Notices</a>
   <a href="/admin/rules" class="admin-nav-item {{if eq .AdminTab "rules"}}active{{end}}" {{if eq .AdminTab "rules"}}aria-current="page"{{end}}>Server Rules</a>
