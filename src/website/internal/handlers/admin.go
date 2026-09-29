@@ -30,6 +30,7 @@ type AdminShell struct {
 	OpenCases  int
 	ActiveBans int
 	OpenFlags  int
+	OpenApps   int
 }
 
 // adminShell looks up the signed-in staff member's rank display name for
@@ -45,10 +46,11 @@ func (d *Deps) adminShell(r *http.Request, tab string) AdminShell {
 		SELECT COALESCE(sr.display_name, ''),
 		       (SELECT count(*) FROM staff_cases WHERE status = 'open'),
 		       (SELECT count(*) FROM banlist WHERE expires_at IS NULL OR expires_at > now()),
-		       (SELECT count(*) FROM anti_cheat_flags WHERE resolution IS NULL)
+		       (SELECT count(*) FROM anti_cheat_flags WHERE resolution IS NULL),
+		       (SELECT count(*) FROM staff_applications WHERE status IN ('pending', 'interview'))
 		FROM players p LEFT JOIN staff_ranks sr ON sr.id = p.staff_rank_id
 		WHERE p.id = $1
-	`, sess.PlayerID).Scan(&s.StaffRank, &s.OpenCases, &s.ActiveBans, &s.OpenFlags)
+	`, sess.PlayerID).Scan(&s.StaffRank, &s.OpenCases, &s.ActiveBans, &s.OpenFlags, &s.OpenApps)
 	return s
 }
 

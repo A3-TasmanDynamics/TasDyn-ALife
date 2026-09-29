@@ -5,7 +5,9 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"time"
 
+	"website/internal/applications"
 	"website/internal/auth"
 	"website/internal/bank"
 	"website/internal/cases"
@@ -38,6 +40,9 @@ type dashboardData struct {
 	ActivePoints int
 	Ban          *cases.Ban    // current ban, nil if none
 	Appeal       *cases.Appeal // latest appeal against it
+
+	StaffApp    *applications.StaffApp    // open or recently decided staff application
+	FactionApps []applications.FactionApp // open faction applications
 }
 
 // Dashboard is the player dashboard (layout plan "Player — Dashboard").
@@ -64,6 +69,18 @@ func (d *Deps) renderDashboard(w http.ResponseWriter, r *http.Request, linkCode 
 	data.JoinURL = joinURL(d.Cfg.GameQueryAddr)
 	data.Gang = d.loadGang(r, sess.PlayerID)
 	_, data.ActivePoints = d.playerPoints(r.Context(), sess.PlayerID)
+	if e, err := applications.StaffEligibility(r.Context(), d.Pool, sess.PlayerID); err == nil && e.Latest != nil {
+		if e.Open != nil || (e.Latest.DecidedAt != nil && time.Since(*e.Latest.DecidedAt) < 30*24*time.Hour && e.Latest.Status != "withdrawn") {
+			data.StaffApp = e.Latest
+		}
+	}
+	if apps, err := applications.PlayerFactionApps(r.Context(), d.Pool, sess.PlayerID); err == nil {
+		for _, a := range apps {
+			if a.Status == "pending" {
+				data.FactionApps = append(data.FactionApps, a)
+			}
+		}
+	}
 	if data.Ban, data.Appeal, err = cases.ActiveBan(r.Context(), d.Pool, sess.PlayerID); err != nil {
 		slog.Error("dashboard: ban lookup failed", "error", err)
 	}

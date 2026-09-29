@@ -11,13 +11,17 @@ import (
 // access-denied pages: a suspended or on-leave staff member sees why and
 // until when, not a generic 403.
 type DeniedInfo struct {
-	Kind       string // "suspended", "loa", "not_staff", "no_permission"
+	Kind       string // "suspended", "loa", "awaiting", "not_staff", "no_permission", "not_command"
 	Area       string // "admin" or "support"
 	Since      *time.Time
 	Until      *time.Time
 	Reason     string
 	By         string
 	Permission string // no_permission: the missing permission's label
+
+	// awaiting: their open staff application.
+	AppID     int64
+	AppStatus string // pending / interview
 }
 
 // deny answers a refused request with a.Denied (the rendered page), or
@@ -25,6 +29,18 @@ type DeniedInfo struct {
 func (a *Authenticator) deny(w http.ResponseWriter, r *http.Request, playerID int64, area, perm string) {
 	info := a.denialInfo(r.Context(), playerID)
 	info.Area = area
+	if info.Kind == "" && perm == "" {
+		// Not staff, but an application is in progress: say so instead
+		// of the generic page (layout plan "Denied — Application in review").
+		var created time.Time
+		err := a.Pool.QueryRow(r.Context(), `
+			SELECT id, status, created_at FROM staff_applications
+			WHERE player_id = $1 AND status IN ('pending', 'interview') ORDER BY id DESC LIMIT 1`, playerID).
+			Scan(&info.AppID, &info.AppStatus, &created)
+		if err == nil {
+			info.Kind, info.Since = "awaiting", &created
+		}
+	}
 	if info.Kind == "" {
 		info.Kind = "not_staff"
 		if perm != "" {

@@ -30,6 +30,7 @@ type commandShell struct {
 	ReadOnly    bool
 	AuthorityTo string // label of the highest rank they can set
 	MemberCount int
+	OpenApps    int // pending faction applications
 }
 
 type commandBase struct {
@@ -70,6 +71,7 @@ func (d *Deps) commandAccess(w http.ResponseWriter, r *http.Request, tab string)
 	}
 	col := map[string]string{"police": "cop_level", "ems": "medic_level"}[faction]
 	_ = d.Pool.QueryRow(r.Context(), `SELECT count(*) FROM players WHERE `+col+` > 0`).Scan(&cb.MemberCount)
+	_ = d.Pool.QueryRow(r.Context(), `SELECT count(*) FROM faction_applications WHERE faction = $1 AND status = 'pending'`, faction).Scan(&cb.OpenApps)
 	return cb, true
 }
 

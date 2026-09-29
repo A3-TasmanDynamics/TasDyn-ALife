@@ -1,0 +1,82 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content mod-page ac-page">
+    <div class="ac-list">
+      <h1 class="page-title admin-title">Applications</h1>
+      <p class="admin-sub">Signed-in players apply from the website. One open application per player.</p>
+      <nav class="seg" aria-label="Status">
+        {{range $k := (list "pending" "interview" "accepted" "rejected" "all")}}
+        <a class="seg-item {{if eq $k $.Status}}active{{end}}" href="/admin/applications?status={{$k}}">{{if eq $k "pending"}}Pending{{else if eq $k "interview"}}Interview{{else if eq $k "accepted"}}Accepted{{else if eq $k "rejected"}}Rejected{{else}}All{{end}} &middot; {{if eq $k "all"}}{{index $.Counts ""}}{{else}}{{index $.Counts $k}}{{end}}</a>
+        {{end}}
+      </nav>
+      <div class="ac-items">
+        {{range .List}}
+        <a class="ac-item{{if and $.Selected (eq .ID $.Selected.ID)}} active{{end}}" href="/admin/applications?status={{$.Status}}&amp;id={{.ID}}">
+          <span class="ac-item-top"><strong>{{.Name}}</strong><span class="ac-status ac-status-{{if or (eq .Status "pending") (eq .Status "interview")}}open{{else}}closed{{end}}">{{.StatusText}}</span></span>
+          <span class="mod-dim">#{{.ID}} &middot; submitted {{.CreatedAt.Format "2 Jan"}}{{if .TZ}} &middot; {{.TZ}}{{end}}</span>
+        </a>
+        {{else}}
+        <p class="mod-empty">Nothing here.</p>
+        {{end}}
+      </div>
+    </div>
+
+    <div class="ac-detail card app-detail">
+      {{with .Selected}}
+      <div class="app-detail-head">
+        <div><h2 class="ac-title">{{.Name}}</h2><p class="mod-dim">Application #{{.ID}} &middot; submitted {{.CreatedAt.Format "2 Jan 2006"}}</p></div>
+        <span class="mod-pill mod-pill-{{if or (eq .Status "pending") (eq .Status "interview")}}open{{else}}closed{{end}}">{{.StatusText}}</span>
+      </div>
+      <div class="app-badges"><span class="app-badge">✓ Steam verified</span><span class="app-badge">Discord {{if .Discord}}@{{.Discord}}{{else}}not linked{{end}}</span></div>
+      <div class="app-stats">
+        <div><span class="mod-dim">Playtime</span><strong>{{.PlaytimeH}} h</strong></div>
+        <div><span class="mod-dim">Active points</span><strong>{{.Points}}</strong></div>
+        <div><span class="mod-dim">Past bans</span><strong>{{if .PastBans}}{{.PastBans}}{{else}}None{{end}}</strong></div>
+        <div><span class="mod-dim">Player record</span><a href="/admin/players?id={{.PlayerID}}">Open profile &rarr;</a></div>
+      </div>
+      <h3 class="app-h3">Application answers</h3>
+      {{range .Answers}}<div class="apply-answer"><span>{{.Q}}</span><span>{{.A}}</span></div>{{end}}
+
+      {{if or (eq .Status "interview") .Interview}}
+      <form class="app-interview" method="post" action="/admin/applications/{{.ID}}">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="status_tab" value="{{$.Status}}">
+        <div class="app-interview-head"><h3 class="app-h3">Interview</h3><span class="mod-dim">{{with .Interview}}{{if .Interviewer}}Interviewer: <strong>{{.Interviewer}}</strong>{{end}}{{if .Outcome}} &middot; {{.Outcome}}{{else}} &middot; in progress{{end}}{{end}}</span></div>
+        {{$iv := .Interview}}
+        {{range $.IVQs}}<div class="field"><label for="iv-{{.Key}}">{{.Label}}</label><input id="iv-{{.Key}}" name="iv_{{.Key}}" maxlength="{{.Max}}" value="{{if $iv}}{{index $iv.Answers .Key}}{{end}}" {{if or (not $.CanDecide) (ne $.Selected.Status "interview")}}disabled{{end}}></div>{{end}}
+        {{if and $.CanDecide (eq .Status "interview")}}
+        <div class="app-outcome"><span class="mod-dim">Outcome</span>
+          <label class="mod-check"><input type="radio" name="outcome" value="" {{if or (not $iv) (not $iv.Outcome)}}checked{{end}}> Not decided</label>
+          <label class="mod-check"><input type="radio" name="outcome" value="pass" {{if and $iv (eq $iv.Outcome "pass")}}checked{{end}}> Pass</label>
+          <label class="mod-check"><input type="radio" name="outcome" value="fail" {{if and $iv (eq $iv.Outcome "fail")}}checked{{end}}> Fail</label>
+          <button class="btn" type="submit" name="action" value="save_interview">Save interview</button>
+        </div>
+        {{end}}
+      </form>
+      {{end}}
+
+      {{if and $.CanDecide (or (eq .Status "pending") (eq .Status "interview"))}}
+      <form class="app-decide" method="post" action="/admin/applications/{{.ID}}">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="status_tab" value="{{$.Status}}">
+        <div class="mod-form-row">
+          <div class="field"><label for="ap-rank">Entry rank</label><select id="ap-rank" name="rank">{{range $.Ranks}}<option value="{{.ID}}">{{.Name}} ({{.Level}})</option>{{end}}</select></div>
+          <div class="field"><label for="ap-team">Team</label><input id="ap-team" name="team" list="ap-teams" maxlength="50" placeholder="e.g. Support"><datalist id="ap-teams">{{range $.Teams}}<option value="{{.}}">{{end}}</datalist></div>
+          <div class="field mod-grow"><label for="ap-note">Review note (required to reject)</label><input id="ap-note" name="note" maxlength="1000" placeholder="Shown to other reviewers, not the applicant"></div>
+        </div>
+        <div class="app-decide-foot">
+          <span class="hint">The applicant sees the new status on the website and gets a Discord message.</span>
+          {{if eq .Status "pending"}}<button class="btn" type="submit" name="action" value="interview">Move to interview</button>{{end}}
+          <button class="btn btn-danger-outline" type="submit" name="action" value="reject">Reject</button>
+          <button class="btn btn-primary" type="submit" name="action" value="accept">Accept</button>
+        </div>
+      </form>
+      {{else if or (eq .Status "accepted") (eq .Status "rejected")}}
+      <p class="app-decided">{{if eq .Status "accepted"}}Accepted{{else}}Rejected{{end}}{{if .ReviewedBy}} by {{.ReviewedBy}}{{end}}{{if .DecidedAt}} on {{.DecidedAt.Format "2 Jan 2006"}}{{end}}.{{if .ReviewNote}} Note: {{.ReviewNote}}{{end}}</p>
+      {{end}}
+      {{else}}
+      <p class="mod-empty">No applications here.</p>
+      {{end}}
+    </div>
+  </div>
+</div>
+{{end}}

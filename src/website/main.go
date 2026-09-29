@@ -211,6 +211,15 @@ func run() error {
 		r.Post("/dashboard/transfer", d.Transfer)
 		r.Post("/dashboard/leaderboards", d.SetLeaderboardOptIn)
 		r.Post("/dashboard/appeal", d.SubmitAppeal)
+
+		// Recruitment (GAMEPANEL_PARITY §4, §6.2).
+		r.Get("/staff/apply", d.StaffApply)
+		r.Post("/staff/apply", d.StaffApplySubmit)
+		r.Post("/staff/apply/withdraw", d.StaffApplyWithdraw)
+		r.Get("/factions", d.FactionApply)
+		r.Post("/factions", d.FactionApplySubmit)
+		r.Get("/command/{faction}/recruits", d.CommandRecruits)
+		r.Post("/command/{faction}/recruits/{id}", d.CommandDecideApp)
 		r.Post("/dashboard/gang/invite", d.InviteToGang)
 		r.Post("/dashboard/gang/remove", d.RemoveFromGang)
 		r.Post("/dashboard/gang/rank", d.SetGangRank)
@@ -309,6 +318,12 @@ func run() error {
 			r.Use(d.Auth.RequirePermission("anticheat.review"))
 			r.Get("/admin/anticheat", d.AntiCheat)
 			r.Post("/admin/anticheat/{id}", d.FlagReview)
+		})
+
+		r.Group(func(r chi.Router) {
+			r.Use(d.Auth.RequirePermission("applications.view"))
+			r.Get("/admin/applications", d.Applications)
+			r.Post("/admin/applications/{id}", d.ApplicationAction)
 		})
 
 		// Server rules editor (public page is /rules).

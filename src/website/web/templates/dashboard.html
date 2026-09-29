@@ -170,6 +170,21 @@
         {{end}}
       </section>
       {{end}}
+      {{with .StaffApp}}
+      <section class="pdash-card pdash-pad" aria-labelledby="pd-app">
+        <div class="pdash-app-head"><h2 id="pd-app">Staff application #{{.ID}}</h2><span class="mod-pill mod-pill-{{if or (eq .Status "pending") (eq .Status "interview")}}open{{else}}closed{{end}}">{{.StatusText}}</span></div>
+        <ol class="pdash-steps">
+          <li class="done"><span></span><strong>Submitted</strong><small>{{.CreatedAt.Format "2 Jan"}}</small></li>
+          <li class="done"><span></span><strong>Review</strong><small>{{if eq .Status "pending"}}Now{{else}}Done{{end}}</small></li>
+          <li class="{{if or (eq .Status "interview") (eq .Status "accepted")}}done{{end}}"><span></span><strong>Interview</strong><small>{{if eq .Status "interview"}}Now{{end}}</small></li>
+          <li class="{{if or (eq .Status "accepted") (eq .Status "rejected")}}done{{end}}"><span></span><strong>Decision</strong><small>{{if .DecidedAt}}{{.DecidedAt.Format "2 Jan"}}{{end}}</small></li>
+        </ol>
+        <p class="hint">You'll get a Discord message when it moves. <a href="/staff/apply">View application</a></p>
+      </section>
+      {{end}}
+      {{range .FactionApps}}
+      <section class="pdash-card pdash-pad"><div class="pdash-app-head"><h2>{{if eq .Faction "police"}}Police{{else}}EMS{{end}} application</h2><span class="mod-pill mod-pill-open">Waiting for command</span></div><p class="hint">Sent {{.CreatedAt.Format "2 Jan 2006"}}. <a href="/factions?faction={{.Faction}}">View</a></p></section>
+      {{end}}
       <section class="pdash-card" aria-labelledby="pd-tickets">
         <div class="pdash-card-head"><h2 id="pd-tickets">My tickets</h2><a class="pdash-head-link" href="/tickets">All tickets</a></div>
         {{range .Tickets}}

@@ -1009,3 +1009,19 @@
   `ban_appeals`; `banlist` gains `case_id`, `player_id`, `scope`, `note` and lift columns; `anti_cheat_flags` gains
   `watch`/`case` outcomes and a note (`database/fixes/2026-09-30_moderation.sql`). The expired Discord sign-in message
   now says what to do.
+- **Recruitment: staff and faction applications (GAMEPANEL_PARITY §4, §6.2).** *Join the staff team* (`/staff/apply`,
+  header link for non-staff) shows the plan's form (age, timezone and hours, about you, why you, experience, rules
+  agreement), a *Before you apply* checklist (Discord linked, not staff, not banned, no open application, not in the
+  14-day cooldown after a rejection) and afterwards the status with Submitted → Review → Interview → Decision and a
+  *Withdraw* button. *Admin → Applications* (`applications.view`; decisions need `applications.decide`) has a queue
+  by status, the applicant's playtime, active points, past bans and profile link, their answers, an **interview**
+  record (the plan's five questions, pass or fail), and Accept (entry rank below yours, plus team, through
+  `internal/staff`) or Reject (with a reviewer-only note). The applicant gets a Discord DM (outbox) at interview and
+  decision. *Join a faction* (`/factions`, header link) lets players apply to Police or EMS (why, hours, anything
+  else), shows each faction's size, entry rank, queue and ranks, and lists the player's own applications. Faction
+  **command** reviews them on the command panel's new *Recruits & training* page, where accepting recruits the player
+  at level 1 through `internal/factions` (authority, slots, Command log) and they get a DM. There's a 7-day cooldown
+  after a faction rejection. New **"Your application is still in review"** access-denied page for applicants who try
+  the Admin Panel. The player dashboard shows staff and faction application progress. Sidebar and command-panel
+  badges for open applications. New tables `staff_applications`, `staff_interviews`, `faction_applications`
+  (`database/fixes/2026-09-30_recruitment.sql`).

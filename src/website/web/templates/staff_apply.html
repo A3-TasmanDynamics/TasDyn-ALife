@@ -1,0 +1,64 @@
+{{define "content"}}
+<div class="apply-page">
+  <div class="apply-main">
+    {{with .Show}}
+      <h1 class="apply-title">{{if eq .Status "accepted"}}Welcome to the staff team{{else if eq .Status "rejected"}}Your application wasn't accepted{{else if eq .Status "withdrawn"}}Application withdrawn{{else}}Your application is in review{{end}}</h1>
+      <p class="apply-sub">Application #{{.ID}} &middot; submitted {{.CreatedAt.Format "2 Jan 2006"}}</p>
+      <ol class="apply-steps">
+        {{$st := .Status}}
+        <li class="apply-step done"><span class="apply-dot"></span><span><strong>Submitted</strong><span>{{.CreatedAt.Format "2 Jan"}}</span></span></li>
+        <li class="apply-step {{if or (eq $st "pending") (eq $st "interview") (eq $st "accepted") (eq $st "rejected")}}done{{end}}"><span class="apply-dot"></span><span><strong>Review</strong><span>A senior staff member reads your answers and history.</span></span></li>
+        <li class="apply-step {{if or (eq $st "interview") (eq $st "accepted")}}done{{end}}"><span class="apply-dot"></span><span><strong>Interview</strong><span>A short chat on Discord.</span></span></li>
+        <li class="apply-step {{if or (eq $st "accepted") (eq $st "rejected")}}done{{end}}"><span class="apply-dot"></span><span><strong>Decision</strong><span>{{if eq $st "accepted"}}Accepted{{if .DecidedAt}} on {{.DecidedAt.Format "2 Jan"}}{{end}}. Sign in to find the Admin Panel.{{else if eq $st "rejected"}}Not accepted this time.{{else}}You'll get a Discord message.{{end}}</span></span></li>
+      </ol>
+      <section class="card apply-answers">
+        <h2>Your answers</h2>
+        {{range .Answers}}<div class="apply-answer"><span>{{.Q}}</span><span>{{.A}}</span></div>{{end}}
+      </section>
+      <div class="apply-actions">
+        {{if or (eq .Status "pending") (eq .Status "interview")}}
+        <form method="post" action="/staff/apply/withdraw"><input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><button class="btn" type="submit">Withdraw application</button></form>
+        {{else if $.E.CanApply}}<a class="btn btn-primary" href="/staff/apply?new=1">Start a new application</a>{{end}}
+        <a class="btn" href="/dashboard">Back to dashboard</a>
+      </div>
+    {{else}}
+      <h1 class="apply-title">Join the staff team</h1>
+      <p class="apply-sub">Tell us a bit about yourself. Your application is tied to your Steam account, so reviewers can see your playtime and history on the server. It usually takes a few days to hear back.</p>
+      {{if not .E.CanApply}}<div class="banner banner-warn">{{.E.Reason}}</div>{{end}}
+      <form class="card apply-form" method="post" action="/staff/apply">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <fieldset {{if not .E.CanApply}}disabled{{end}}>
+          <div class="apply-row">
+            {{range .Questions}}{{if not .Long}}
+            <div class="field"><label for="q-{{.Key}}">{{.Label}}</label><input id="q-{{.Key}}" name="{{.Key}}" value="{{index $.Form .Key}}" maxlength="{{.Max}}" {{if eq .Key "age"}}type="number" min="13" max="99"{{end}} {{if .Hint}}placeholder="{{.Hint}}"{{end}} required></div>
+            {{end}}{{end}}
+          </div>
+          {{range .Questions}}{{if .Long}}
+          <div class="field"><label for="q-{{.Key}}">{{.Label}} <span class="hint">up to {{.Max}} characters</span></label><textarea id="q-{{.Key}}" name="{{.Key}}" rows="4" maxlength="{{.Max}}" placeholder="{{.Hint}}" required>{{index $.Form .Key}}</textarea></div>
+          {{end}}{{end}}
+          <label class="apply-agree"><input type="checkbox" name="agree" {{if .Agreed}}checked{{end}} required> I've read the <a href="/rules" target="_blank" rel="noopener">server rules</a> and understand staff are held to them more strictly than players.</label>
+          <div class="apply-submit"><button class="btn btn-primary" type="submit">Submit application</button></div>
+        </fieldset>
+      </form>
+    {{end}}
+  </div>
+  <aside class="apply-side">
+    <section class="card apply-side-card">
+      <h2>Before you apply</h2>
+      <div class="apply-check {{if true}}ok{{end}}"><span class="apply-tick" aria-hidden="true">✓</span><span><strong>Signed in with Steam</strong><span>{{.E.PlaytimeH}} h on the server</span></span></div>
+      <div class="apply-check {{if .E.DiscordName}}ok{{end}}"><span class="apply-tick" aria-hidden="true">{{if .E.DiscordName}}✓{{else}}!{{end}}</span><span><strong>Discord linked</strong><span>{{if .E.DiscordName}}@{{.E.DiscordName}}, so we can reach you for an interview{{else}}<a href="/dashboard">Link it from your Dashboard</a>{{end}}</span></span></div>
+      <div class="apply-check {{if not .E.Open}}ok{{end}}"><span class="apply-tick" aria-hidden="true">{{if not .E.Open}}✓{{else}}!{{end}}</span><span><strong>No other open application</strong><span>You can have one at a time</span></span></div>
+      <div class="apply-check {{if .E.CanApply}}ok{{end}}"><span class="apply-tick" aria-hidden="true">{{if .E.CanApply}}✓{{else}}!{{end}}</span><span><strong>{{if .E.CanApply}}Ready to apply{{else}}Not right now{{end}}</strong><span>{{if .E.CanApply}}Not in a cooldown{{else}}{{.E.Reason}}{{end}}</span></span></div>
+    </section>
+    <section class="card apply-side-card">
+      <h2>What happens next</h2>
+      <ol class="apply-next">
+        <li>A senior staff member reviews your answers and player history.</li>
+        <li>If it's a good fit, you're invited to a short interview on Discord.</li>
+        <li>Accepted applicants join at an entry rank.</li>
+      </ol>
+      <p class="hint">One application at a time. If you're not accepted, there's a two-week cooldown before you can apply again.</p>
+    </section>
+  </aside>
+</div>
+{{end}}
