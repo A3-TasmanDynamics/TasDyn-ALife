@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"website/internal/auth"
+	"website/internal/factions"
 	"website/internal/roles"
 )
 
@@ -24,8 +25,8 @@ type rolesData struct {
 
 	CanRanks   bool
 	CanFaction bool
-	Police     []string
-	EMS        []string
+	Police     []factions.Rank
+	EMS        []factions.Rank
 }
 
 type rankRow struct {
@@ -136,9 +137,9 @@ func (d *Deps) Roles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if data.Tab == "faction" {
-		names, err := roles.FactionNames(r.Context(), d.Pool)
+		ranks, err := roles.FactionRanks(r.Context(), d.Pool)
 		if err == nil {
-			data.Police, data.EMS = names["police"], names["ems"]
+			data.Police, data.EMS = ranks["police"], ranks["ems"]
 		}
 	}
 	d.Render.Render(w, "roles.html", data)
@@ -199,6 +200,26 @@ func (d *Deps) RoleFactionNames(w http.ResponseWriter, r *http.Request) {
 	}
 	faction := r.FormValue("faction")
 	sess, _ := auth.FromContext(r.Context())
-	err := roles.SaveFactionNames(r.Context(), d.Pool, sess.PlayerID, faction, r.Form["name"])
-	finishRolesAction(w, r, back, err, "Rank names saved.")
+	names, shorts, slots, auth := r.Form["name"], r.Form["short"], r.Form["slots"], r.Form["authority"]
+	ranks := make([]factions.Rank, len(names))
+	at := func(list []string, i int) string {
+		if i < len(list) {
+			return strings.TrimSpace(list[i])
+		}
+		return ""
+	}
+	for i := range names {
+		ranks[i] = factions.Rank{Level: i + 1, Name: names[i], Short: at(shorts, i)}
+		if v := at(slots, i); v != "" {
+			n, err := strconv.Atoi(v)
+			if err != nil || n <= 0 {
+				finishRolesAction(w, r, back, fmt.Errorf("%w: level %d's slots must be a whole number, or blank for no limit", roles.ErrNotAllowed, i+1), "")
+				return
+			}
+			ranks[i].Slots = n
+		}
+		ranks[i].PromoteUpTo, _ = strconv.Atoi(at(auth, i))
+	}
+	err := roles.SaveFactionRanks(r.Context(), d.Pool, sess.PlayerID, faction, ranks)
+	finishRolesAction(w, r, back, err, "Faction ranks saved.")
 }

@@ -35,6 +35,7 @@ type Session struct {
 	StaffStatus string // active / loa / suspended
 	PoliceRank  string // rank name (or "Level n"), "" = not police
 	EMSRank     string
+	HasCommand  bool // faction command in police or EMS (command panel link)
 }
 
 // Subtitle is the line under the player's name in the site header, e.g.
@@ -242,13 +243,15 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 			SELECT p.id, COALESCE(NULLIF(p.name, ''), NULLIF(p.steam_name, ''), 'Player #' || p.id), ws.admin_panel_access, ws.support_panel_access, ws.expires_at,
 			       COALESCE(sr.display_name, ''), p.staff_status,
 			       CASE WHEN COALESCE(p.cop_level, 0) > 0 THEN COALESCE((SELECT name FROM faction_rank_names WHERE faction = 'police' AND level = p.cop_level), 'Level ' || p.cop_level) ELSE '' END,
-			       CASE WHEN COALESCE(p.medic_level, 0) > 0 THEN COALESCE((SELECT name FROM faction_rank_names WHERE faction = 'ems' AND level = p.medic_level), 'Level ' || p.medic_level) ELSE '' END
+			       CASE WHEN COALESCE(p.medic_level, 0) > 0 THEN COALESCE((SELECT name FROM faction_rank_names WHERE faction = 'ems' AND level = p.medic_level), 'Level ' || p.medic_level) ELSE '' END,
+			       EXISTS (SELECT 1 FROM faction_rank_names r WHERE r.promote_up_to > 0
+			               AND ((r.faction = 'police' AND r.level = p.cop_level) OR (r.faction = 'ems' AND r.level = p.medic_level)))
 			FROM web_sessions ws
 			JOIN players p ON p.id = ws.player_id
 			LEFT JOIN staff_ranks sr ON sr.id = p.staff_rank_id
 			WHERE ws.token_hash = $1
 		`, hash).Scan(&sess.PlayerID, &sess.Name, &sess.AdminPanelAccess, &sess.SupportPanelAccess, &expiresAt,
-			&sess.StaffRank, &sess.StaffStatus, &sess.PoliceRank, &sess.EMSRank)
+			&sess.StaffRank, &sess.StaffStatus, &sess.PoliceRank, &sess.EMSRank, &sess.HasCommand)
 
 		if err != nil || time.Now().After(expiresAt) {
 			// Invalid, unknown, or expired token -- proceed unauthenticated

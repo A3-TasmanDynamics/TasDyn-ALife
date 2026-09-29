@@ -18,15 +18,22 @@ type deniedData struct {
 // even under /admin, because the admin sidebar is exactly what's refused.
 func (d *Deps) Denied(w http.ResponseWriter, r *http.Request, info auth.DeniedInfo) {
 	title := map[string]string{
-		"suspended": "Access suspended", "loa": "You're on leave", "no_permission": "No access",
+		"suspended": "Access suspended", "loa": "You're on leave", "no_permission": "No access", "not_command": "Command only",
 	}[info.Kind]
 	if title == "" {
 		title = "Staff only"
 	}
 	data := deniedData{Base: baseFrom(r, title), Info: info, AreaName: "admin panel"}
 	data.Panel = false
-	if info.Area == "support" {
+	switch info.Area {
+	case "support":
 		data.AreaName = "support panel"
+	case "police", "ems":
+		data.AreaName = map[string]string{"police": "Police", "ems": "EMS"}[info.Area]
+	case "":
+		if info.Kind == "not_command" {
+			data.AreaName = ""
+		}
 	}
 	d.Render.RenderStatus(w, http.StatusForbidden, "denied.html", data)
 }

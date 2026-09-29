@@ -1,0 +1,20 @@
+{{define "command_sidebar"}}
+<nav class="cmd-nav" aria-label="Command sections">
+  <div class="cmd-nav-head">
+    <span class="cmd-nav-badge cmd-nav-badge-{{.Faction}}" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/></svg></span>
+    <span class="cmd-nav-title"><span>{{.FactionName}} command</span><span class="cmd-nav-you">{{if .ReadOnly}}Staff view (read-only){{else}}You: {{.Command.Rank.Label}}{{end}}</span></span>
+  </div>
+  <a class="cmd-nav-item {{if eq .Tab "overview"}}active{{end}}" href="/command/{{.Faction}}" {{if eq .Tab "overview"}}aria-current="page"{{end}}>Overview</a>
+  <a class="cmd-nav-item {{if eq .Tab "roster"}}active{{end}}" href="/command/{{.Faction}}/roster" {{if eq .Tab "roster"}}aria-current="page"{{end}}>Roster <span class="cmd-nav-count">{{.MemberCount}}</span></a>
+  <span class="cmd-nav-item disabled">Recruits &amp; training <span class="admin-nav-tag">Soon</span></span>
+  <span class="cmd-nav-item disabled">Discipline <span class="admin-nav-tag">Soon</span></span>
+  <span class="cmd-nav-item disabled">Divisions &amp; quals <span class="admin-nav-tag">Soon</span></span>
+  <span class="cmd-nav-item disabled">Ranks &amp; gear <span class="admin-nav-tag">Soon</span></span>
+  <a class="cmd-nav-item {{if eq .Tab "log"}}active{{end}}" href="/command/{{.Faction}}/log" {{if eq .Tab "log"}}aria-current="page"{{end}}>Command log</a>
+  <div class="cmd-authority">
+    <div class="cmd-authority-label">Your authority</div>
+    {{if .ReadOnly}}You can see this faction's roster and command log because you have <code class="perm-key">factions.audit</code>. Changes are made by its command, or by Management from Player Lookup.
+    {{else}}You can recruit, promote, demote and remove members up to <strong>{{.AuthorityTo}}</strong>. Never yourself, and never anyone above that.{{end}}
+  </div>
+</nav>
+{{end}}

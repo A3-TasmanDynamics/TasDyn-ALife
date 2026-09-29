@@ -14,6 +14,7 @@ import (
 
 	"website/internal/audit"
 	"website/internal/auth"
+	"website/internal/factions"
 	"website/internal/players"
 )
 
@@ -135,8 +136,17 @@ func (d *Deps) PlayerSetFactionLevel(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, back+"&error="+errMsg("Enter a level number."), http.StatusSeeOther)
 		return
 	}
-	err = players.SetFactionLevel(r.Context(), d.Pool, playerActor(r), id, faction, level, r.FormValue("reason"))
-	finishPlayerAction(w, r, back, err, "Faction level updated.")
+	sess, _ := auth.FromContext(r.Context())
+	ch, err := factions.SetLevel(r.Context(), d.Pool, factions.Actor{PlayerID: sess.PlayerID, Source: audit.SourceWebsite, Via: factions.ViaStaffOverride},
+		faction, id, level, r.FormValue("reason"))
+	if errors.Is(err, factions.ErrNotAllowed) {
+		err = fmt.Errorf("%w: %s", players.ErrNotAllowed, strings.TrimPrefix(err.Error(), factions.ErrNotAllowed.Error()+": "))
+	}
+	msg := "Faction rank changed. It's in the faction's Command log as a staff override."
+	if ch.OwnFaction {
+		msg = "Faction rank changed. You're in this faction yourself, so it's flagged \"own faction\" in the Command log and Staff Log."
+	}
+	finishPlayerAction(w, r, back, err, msg)
 }
 
 func (d *Deps) PlayerCompensate(w http.ResponseWriter, r *http.Request) {

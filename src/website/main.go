@@ -215,6 +215,16 @@ func run() error {
 		r.Post("/dashboard/gang/rank", d.SetGangRank)
 		r.Get("/auth/discord/connect", d.DiscordConnect)
 
+		// Faction command panel (GAMEPANEL_PARITY §6.1): access comes from
+		// the player's faction rank, checked in each handler.
+		r.Get("/command", d.CommandHome)
+		r.Get("/command/{faction}", d.CommandOverview)
+		r.Get("/command/{faction}/roster", d.CommandRoster)
+		r.Post("/command/{faction}/recruit", d.CommandRecruit)
+		r.Get("/command/{faction}/members/{id}", d.CommandMember)
+		r.Post("/command/{faction}/members/{id}/rank", d.CommandSetRank)
+		r.Get("/command/{faction}/log", d.CommandLog)
+
 		r.Get("/tickets", d.MyTickets)
 		r.Post("/tickets", d.CreateTicket)
 		r.Get("/tickets/{id}", d.TicketThread) // ownership/staff check inside -- shared with Support Panel

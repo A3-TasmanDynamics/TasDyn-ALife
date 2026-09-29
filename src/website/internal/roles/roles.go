@@ -26,6 +26,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"website/internal/audit"
+	"website/internal/factions"
 	"website/internal/auth"
 )
 
@@ -393,59 +394,112 @@ func FactionNames(ctx context.Context, pool *pgxpool.Pool) (map[string][]string,
 	return out, rows.Err()
 }
 
-// SaveFactionNames replaces one faction's level names (level 1 = first).
-// Blank trailing entries are dropped; a blank in the middle is refused so
-// levels never shift unexpectedly. Caller checks factions.configure.
+// FactionRanks returns each faction's configured ranks, lowest first.
+func FactionRanks(ctx context.Context, pool *pgxpool.Pool) (map[string][]factions.Rank, error) {
+	out := map[string][]factions.Rank{}
+	for _, f := range factions.Factions {
+		r, err := factions.Ranks(ctx, pool, f)
+		if err != nil {
+			return nil, err
+		}
+		out[f] = r
+	}
+	return out, nil
+}
+
+// SaveFactionNames replaces one faction's level names, keeping each
+// level's other settings (short name, slots, command authority).
 func SaveFactionNames(ctx context.Context, pool *pgxpool.Pool, actorID int64, faction string, names []string) error {
-	if faction != "police" && faction != "ems" {
+	cur, err := factions.Ranks(ctx, pool, faction)
+	if err != nil {
+		return err
+	}
+	ranks := make([]factions.Rank, len(names))
+	for i, n := range names {
+		ranks[i] = factions.RankFor(cur, i+1)
+		ranks[i].Level, ranks[i].Name = i+1, n
+	}
+	return SaveFactionRanks(ctx, pool, actorID, faction, ranks)
+}
+
+// SaveFactionRanks replaces one faction's ranks (level 1 = first): name,
+// short name, slots (0 = no limit) and command authority (the highest
+// level this rank may set others to; 0 = not command). Blank trailing
+// ranks are dropped; a blank in the middle is refused so levels never
+// shift unexpectedly. Caller checks factions.configure.
+func SaveFactionRanks(ctx context.Context, pool *pgxpool.Pool, actorID int64, faction string, ranks []factions.Rank) error {
+	if !factions.Valid(faction) {
 		return notAllowed("unknown faction")
 	}
-	for len(names) > 0 && strings.TrimSpace(names[len(names)-1]) == "" {
-		names = names[:len(names)-1]
+	for len(ranks) > 0 && strings.TrimSpace(ranks[len(ranks)-1].Name) == "" {
+		ranks = ranks[:len(ranks)-1]
 	}
-	for i := range names {
-		names[i] = strings.TrimSpace(names[i])
-		if names[i] == "" {
-			return notAllowed("level %d has no name; remove levels from the end instead", i+1)
-		}
-		if len(names[i]) > 50 {
-			return notAllowed("level %d's name is too long (50 characters max)", i+1)
-		}
-	}
-	if len(names) > 30 {
+	if len(ranks) > 30 {
 		return notAllowed("at most 30 levels")
+	}
+	for i := range ranks {
+		r := &ranks[i]
+		r.Level = i + 1
+		r.Name, r.Short = strings.TrimSpace(r.Name), strings.TrimSpace(r.Short)
+		switch {
+		case r.Name == "":
+			return notAllowed("level %d has no name; remove levels from the end instead", r.Level)
+		case len(r.Name) > 50:
+			return notAllowed("level %d's name is too long (50 characters max)", r.Level)
+		case len(r.Short) > 12:
+			return notAllowed("level %d's short name is too long (12 characters max)", r.Level)
+		case r.Slots < 0 || r.Slots > 500:
+			return notAllowed("level %d's slots must be between 1 and 500, or blank for no limit", r.Level)
+		case r.PromoteUpTo < 0 || r.PromoteUpTo >= r.Level:
+			return notAllowed("%s can only be given authority over ranks below it", r.Name)
+		}
 	}
 	tx, err := pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback(ctx)
-	var before []string
-	rows, err := tx.Query(ctx, `SELECT name FROM faction_rank_names WHERE faction = $1 ORDER BY level`, faction)
+	before, err := factions.Ranks(ctx, tx, faction)
 	if err != nil {
 		return err
 	}
-	for rows.Next() {
-		var n string
-		if rows.Scan(&n) == nil {
-			before = append(before, n)
-		}
-	}
-	rows.Close()
-	if strings.Join(before, "\x00") == strings.Join(names, "\x00") {
+	if fmt.Sprint(before) == fmt.Sprint(ranks) {
 		return notAllowed("nothing changed")
 	}
 	if _, err := tx.Exec(ctx, `DELETE FROM faction_rank_names WHERE faction = $1`, faction); err != nil {
 		return err
 	}
-	for i, n := range names {
-		if _, err := tx.Exec(ctx, `INSERT INTO faction_rank_names (faction, level, name) VALUES ($1, $2, $3)`, faction, i+1, n); err != nil {
+	for _, r := range ranks {
+		var short *string
+		var slots *int
+		if r.Short != "" {
+			short = &r.Short
+		}
+		if r.Slots > 0 {
+			slots = &r.Slots
+		}
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO faction_rank_names (faction, level, name, short_name, slots, promote_up_to)
+			VALUES ($1, $2, $3, $4, $5, $6)`, faction, r.Level, r.Name, short, slots, r.PromoteUpTo); err != nil {
 			return err
 		}
 	}
+	summary := func(rs []factions.Rank) []string {
+		out := make([]string, len(rs))
+		for i, r := range rs {
+			out[i] = r.Name
+			if r.PromoteUpTo > 0 {
+				out[i] += fmt.Sprintf(" (command: up to level %d)", r.PromoteUpTo)
+			}
+			if r.Slots > 0 {
+				out[i] += fmt.Sprintf(" [%d slots]", r.Slots)
+			}
+		}
+		return out
+	}
 	if err := audit.LogStaffAction(ctx, tx, audit.Entry{
 		StaffID: actorID, Action: "faction_rank_names:" + faction,
-		Before: map[string]any{"names": before}, After: map[string]any{"names": names},
+		Before: map[string]any{"names": summary(before)}, After: map[string]any{"names": summary(ranks)},
 	}); err != nil {
 		return err
 	}

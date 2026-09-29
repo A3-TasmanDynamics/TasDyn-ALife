@@ -61,8 +61,10 @@ var Catalogue = []Permission{
 
 	{Key: "players.view", Label: "Look up players", Group: "Players", SeedLevel: LevelTrialMod},
 	{Key: "players.vehicles", Label: "View vehicles tab", Group: "Players", SeedLevel: LevelModerator},
-	{Key: "players.edit_police", Label: "Set police level", Group: "Players", SeedLevel: LevelAdmin},
-	{Key: "players.edit_medic", Label: "Set EMS level", Group: "Players", SeedLevel: LevelAdmin},
+	// Faction levels are faction command's job; these are the Management-only
+	// staff override (GAMEPANEL_PARITY §5.2), never granted per-player.
+	{Key: "players.edit_police", Label: "Override police rank (Management)", Group: "Players", SeedLevel: LevelHeadAdmin, NoOverride: true},
+	{Key: "players.edit_medic", Label: "Override EMS rank (Management)", Group: "Players", SeedLevel: LevelHeadAdmin, NoOverride: true},
 	{Key: "players.compensate", Label: "Compensate players", Group: "Players", SeedLevel: LevelAdmin},
 	{Key: "players.compensate_large", Label: "Compensate above threshold", Group: "Players", SeedLevel: LevelHeadAdmin},
 

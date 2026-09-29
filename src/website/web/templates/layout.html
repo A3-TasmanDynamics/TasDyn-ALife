@@ -16,6 +16,7 @@
     </a>
     <nav class="site-nav-main" aria-label="Main">
       <a class="nav-pill {{if hasPrefix .Path "/dashboard"}}active{{end}}" href="/dashboard" {{if hasPrefix .Path "/dashboard"}}aria-current="page"{{end}}>Dashboard</a>
+      {{if and .Session .Session.HasCommand}}<a class="nav-pill {{if hasPrefix .Path "/command"}}active{{end}}" href="/command" {{if hasPrefix .Path "/command"}}aria-current="page"{{end}}>Command</a>{{end}}
       <a class="nav-pill {{if hasPrefix .Path "/rules"}}active{{end}}" href="/rules" {{if hasPrefix .Path "/rules"}}aria-current="page"{{end}}>Rules</a>
       <a class="nav-pill {{if hasPrefix .Path "/tickets"}}active{{end}}" href="/tickets" {{if hasPrefix .Path "/tickets"}}aria-current="page"{{end}}>Support</a>
       <a class="nav-pill {{if hasPrefix .Path "/devlog"}}active{{end}}" href="/devlog" {{if hasPrefix .Path "/devlog"}}aria-current="page"{{end}}>Devlog</a>

@@ -1,0 +1,38 @@
+{{define "content"}}
+<div class="cmd-shell">
+  {{template "command_sidebar" .}}
+  <div class="cmd-main">
+    <div class="cmd-head">
+      <div>
+        <h1>Command log</h1>
+        <p class="cmd-sub">Every roster change, by {{.FactionName}} command or by Management as a staff override. Visible to {{.FactionName}} command and to staff with factions.audit. Entries can't be edited or deleted.</p>
+      </div>
+    </div>
+    <form class="cmd-filter" method="get" action="/command/{{.Faction}}/log" role="search">
+      <nav class="filter-pills" aria-label="Type">
+        {{$q := .Q}}{{$f := .Faction}}
+        <a class="filter-pill {{if not .Kind}}active{{end}}" href="/command/{{$f}}/log{{if $q}}?q={{$q}}{{end}}">All</a>
+        {{range $k := (list "recruit" "promote" "demote" "remove")}}
+        <a class="filter-pill {{if eq $k $.Kind}}active{{end}}" href="/command/{{$f}}/log?kind={{$k}}{{if $q}}&amp;q={{$q}}{{end}}">{{if eq $k "recruit"}}Recruited{{else if eq $k "promote"}}Promotions{{else if eq $k "demote"}}Demotions{{else}}Removals{{end}}</a>
+        {{end}}
+      </nav>
+      {{if .Kind}}<input type="hidden" name="kind" value="{{.Kind}}">{{end}}
+      <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input name="q" value="{{.Q}}" aria-label="Search the log" placeholder="Member or reason"></label>
+    </form>
+    <div class="cmd-table" role="table" aria-label="Command log">
+      <div class="cmd-row cmd-row-log cmd-row-head" role="row"><span role="columnheader">When</span><span role="columnheader">By</span><span role="columnheader">Member</span><span role="columnheader">Change</span><span role="columnheader">Reason</span></div>
+      {{range .Entries}}
+      <div class="cmd-row cmd-row-log" role="row">
+        <span class="cmd-dim">{{.When.Format "2 Jan 15:04"}}</span>
+        <span>{{.By}}{{if eq .Via "staff_override"}} <span class="cmd-tag cmd-tag-override">Staff override{{if .OwnFaction}} · own faction{{end}}</span>{{end}}</span>
+        <span>{{if .TargetID}}<a href="/command/{{$.Faction}}/members/{{.TargetID}}">{{.Target}}</a>{{else}}{{.Target}}{{end}}</span>
+        <span>{{.Change}}</span>
+        <span class="cmd-dim">{{.Reason}}</span>
+      </div>
+      {{else}}
+      <p class="cmd-empty">Nothing matches.</p>
+      {{end}}
+    </div>
+  </div>
+</div>
+{{end}}
