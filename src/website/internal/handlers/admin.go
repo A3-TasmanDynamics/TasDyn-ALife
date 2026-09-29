@@ -57,7 +57,7 @@ type adminHomeData struct {
 	// GAMEPANEL_PARITY §5.4). Staff-only: never shown publicly.
 	PoliceCount int
 	EMSCount    int
-	MoneyCents  int64
+	Money       int64 // whole dollars
 	RichList    []richRow
 }
 
@@ -68,7 +68,7 @@ type richRow struct {
 	Flag  bool // has an unreviewed anti-cheat flag
 }
 
-func (d adminHomeData) Money() string { return players.Dollars(d.MoneyCents) }
+func (d adminHomeData) MoneySupply() string { return players.Dollars(d.Money) }
 
 // AdminHome is the Admin Panel landing page: headline counts plus the
 // read-only staff log. Player lookup, bans, anti-cheat review, the database
@@ -93,7 +93,7 @@ func (d *Deps) AdminHome(w http.ResponseWriter, r *http.Request) {
 		SELECT count(*), count(*) FILTER (WHERE cop_level > 0), count(*) FILTER (WHERE medic_level > 0),
 		       COALESCE(sum(COALESCE(civ_cash, 0) + COALESCE(cop_cash, 0) + COALESCE(medic_cash, 0)), 0)
 		         + COALESCE((SELECT sum(balance) FROM bank_accounts), 0)
-		FROM players`).Scan(&data.TotalPlayers, &data.PoliceCount, &data.EMSCount, &data.MoneyCents); err != nil {
+		FROM players`).Scan(&data.TotalPlayers, &data.PoliceCount, &data.EMSCount, &data.Money); err != nil {
 		slog.Error("admin home: population/economy counts failed", "error", err)
 	}
 	if rows, err := d.Pool.Query(ctx, `
@@ -106,9 +106,9 @@ func (d *Deps) AdminHome(w http.ResponseWriter, r *http.Request) {
 	} else {
 		for rows.Next() {
 			var rr richRow
-			var cents int64
-			if rows.Scan(&rr.ID, &rr.Name, &cents, &rr.Flag) == nil {
-				rr.Total = players.Dollars(cents)
+			var total int64
+			if rows.Scan(&rr.ID, &rr.Name, &total, &rr.Flag) == nil {
+				rr.Total = players.Dollars(total)
 				data.RichList = append(data.RichList, rr)
 			}
 		}

@@ -7,11 +7,11 @@ import (
 
 func TestDollars(t *testing.T) {
 	cases := map[int64]string{
-		0: "0", 5: "0.05", 100: "1", 150000: "1,500", 123456789: "1,234,567.89", -250: "-2.50",
+		0: "0", 5: "5", 999: "999", 1500: "1,500", 1234567: "1,234,567", -2500: "-2,500",
 	}
-	for cents, want := range cases {
-		if got := dollars(cents); got != want {
-			t.Errorf("dollars(%d) = %q, want %q", cents, got, want)
+	for amount, want := range cases {
+		if got := Dollars(amount); got != want {
+			t.Errorf("Dollars(%d) = %q, want %q", amount, got, want)
 		}
 	}
 }
