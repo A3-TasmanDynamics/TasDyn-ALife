@@ -10,6 +10,7 @@
   <a class="cmd-nav-item {{if eq .Tab "roster"}}active{{end}}" href="/command/{{.Faction}}/roster" {{if eq .Tab "roster"}}aria-current="page"{{end}}>Roster <span class="cmd-nav-count">{{.MemberCount}}</span></a>
   <a class="cmd-nav-item {{if eq .Tab "divisions"}}active{{end}}" href="/command/{{.Faction}}/divisions" {{if eq .Tab "divisions"}}aria-current="page"{{end}}>Divisions &amp; quals</a>
   <a class="cmd-nav-item {{if eq .Tab "ranks"}}active{{end}}" href="/command/{{.Faction}}/ranks" {{if eq .Tab "ranks"}}aria-current="page"{{end}}>Ranks &amp; gear</a>
+  <a class="cmd-nav-item {{if eq .Tab "drive"}}active{{end}}" href="/command/{{.Faction}}/drive" {{if eq .Tab "drive"}}aria-current="page"{{end}}>Drive</a>
 
   <div class="cmd-nav-group">Divisions</div>
   {{range .NavDivisions}}{{$tab := printf "div-%s" .Key}}

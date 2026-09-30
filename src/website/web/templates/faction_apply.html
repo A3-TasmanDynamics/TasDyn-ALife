@@ -14,7 +14,8 @@
 
     {{with .Selected}}
     {{if .Level}}
-      <section class="card apply-form"><h2>You're already in {{.Name}}</h2><p class="apply-sub">Rank changes come from {{.Name}} command. You can apply to join its divisions below.</p></section>
+      <section class="card apply-form"><h2>You're already in {{.Name}}</h2><p class="apply-sub">Rank changes come from {{.Name}} command. You can apply to join its divisions below.</p>
+        <a class="btn" href="/factions/{{.Key}}/docs">{{.Name}} documents &amp; SOPs</a></section>
 
       <section class="card apply-form" id="divisions" aria-labelledby="divs-h">
         <h2 id="divs-h">{{.Name}} divisions</h2>
