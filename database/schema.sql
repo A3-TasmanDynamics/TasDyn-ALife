@@ -150,11 +150,19 @@ CREATE TABLE players (
     steam_community_banned BOOLEAN,
     steam_refreshed_at     TIMESTAMPTZ,
 
+    -- Profile page: a website display name (players.name comes from the
+    -- game) and a linked TeamSpeak identity.
+    display_name            TEXT CHECK (display_name IS NULL OR length(display_name) BETWEEN 3 AND 24),
+    display_name_changed_at TIMESTAMPTZ,
+    teamspeak_uid           TEXT UNIQUE,
+    teamspeak_linked_at     TIMESTAMPTZ,
+
     created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_players_staff_rank_id ON players(staff_rank_id);
+CREATE UNIQUE INDEX idx_players_display_name ON players (lower(display_name)) WHERE display_name IS NOT NULL;
 
 -- General gameplay event log (job payouts, deaths, revives, licence
 -- purchases, faction switches, ...). Distinct from staff_log (admin

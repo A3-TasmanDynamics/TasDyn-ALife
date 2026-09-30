@@ -245,6 +245,12 @@ func run() error {
 		r.Post("/dashboard/gang/remove", d.RemoveFromGang)
 		r.Post("/dashboard/gang/rank", d.SetGangRank)
 		r.Get("/auth/discord/connect", d.DiscordConnect)
+		r.Get("/auth/discord/reconnect", d.DiscordReconnect)
+		r.Get("/profile", d.Profile)
+		r.Post("/profile/name", d.ProfileName)
+		r.Post("/profile/teamspeak", d.ProfileTeamSpeak)
+		r.Post("/profile/steam/sync", d.ProfileSteamSync)
+		r.Post("/profile/discord/sync", d.ProfileDiscordSync)
 
 		// Faction command panel (GAMEPANEL_PARITY §6.1): access comes from
 		// the player's faction rank, checked in each handler.

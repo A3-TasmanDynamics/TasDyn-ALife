@@ -256,7 +256,7 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 		// everywhere this session's Name gets displayed (top nav, ticket
 		// "Requester" columns, ...) rather than an honest placeholder.
 		err = a.Pool.QueryRow(r.Context(), `
-			SELECT p.id, COALESCE(NULLIF(p.name, ''), NULLIF(p.steam_name, ''), 'Player #' || p.id), ws.admin_panel_access, ws.support_panel_access, ws.expires_at,
+			SELECT p.id, COALESCE(NULLIF(p.display_name, ''), NULLIF(p.name, ''), NULLIF(p.steam_name, ''), 'Player #' || p.id), ws.admin_panel_access, ws.support_panel_access, ws.expires_at,
 			       COALESCE(sr.display_name, ''), p.staff_status,
 			       CASE WHEN COALESCE(p.cop_level, 0) > 0 THEN COALESCE((SELECT name FROM faction_rank_names WHERE faction = 'police' AND level = p.cop_level), 'Level ' || p.cop_level) ELSE '' END,
 			       CASE WHEN COALESCE(p.medic_level, 0) > 0 THEN COALESCE((SELECT name FROM faction_rank_names WHERE faction = 'ems' AND level = p.medic_level), 'Level ' || p.medic_level) ELSE '' END,

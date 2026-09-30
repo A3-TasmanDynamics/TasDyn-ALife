@@ -74,6 +74,15 @@ func (d *Deps) DiscordConnect(w http.ResponseWriter, r *http.Request) {
 	d.beginDiscordFlow(w, r, auth.IntentConnect)
 }
 
+// DiscordReconnect starts the profile page's Discord re-sync.
+func (d *Deps) DiscordReconnect(w http.ResponseWriter, r *http.Request) {
+	if d.Cfg.DiscordOAuthClientID == "" {
+		http.Redirect(w, r, "/profile?error="+errMsg("Discord sign-in isn't configured on this server yet."), http.StatusSeeOther)
+		return
+	}
+	d.beginDiscordFlow(w, r, auth.IntentReconnect)
+}
+
 func (d *Deps) beginDiscordFlow(w http.ResponseWriter, r *http.Request, intent string) {
 	if d.Cfg.DiscordOAuthClientID == "" {
 		http.Redirect(w, r, "/?error="+errMsg("Discord sign-in isn't configured on this server yet."), http.StatusSeeOther)
@@ -129,6 +138,14 @@ func (d *Deps) DiscordCallback(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		http.Redirect(w, r, "/dashboard?notice="+errMsg("Discord account connected."), http.StatusSeeOther)
+
+	case auth.IntentReconnect:
+		sess, ok := auth.FromContext(r.Context())
+		if !ok {
+			http.Redirect(w, r, "/?login_required=1", http.StatusSeeOther)
+			return
+		}
+		d.reconnectDiscord(w, r, sess.PlayerID, discordID, username)
 
 	case auth.IntentLogin:
 		playerID, found, err := auth.FindPlayerByDiscordID(r.Context(), d.Pool, discordID)

@@ -29,6 +29,15 @@ func (r *Refresher) RefreshOne(ctx context.Context, steam64 string) {
 	}
 }
 
+// Refresh refreshes a single player now and reports the error -- the
+// profile page's "re-sync Steam" button. ErrNoAPIKey means it's off.
+func (r *Refresher) Refresh(ctx context.Context, steam64 string) error {
+	if r == nil || r.Client == nil {
+		return ErrNoAPIKey
+	}
+	return r.refresh(ctx, []string{steam64})
+}
+
 // Run sweeps stale players in batches until ctx is cancelled. BattlEye
 // GUIDs are backfilled every pass whether or not an API key is set -- they
 // need no Steam call, and players first created by the game server (the
