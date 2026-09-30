@@ -8,7 +8,7 @@ ALTER TABLE faction_log DROP CONSTRAINT IF EXISTS faction_log_kind_check;
 ALTER TABLE faction_log ADD CONSTRAINT faction_log_kind_check CHECK (kind IN (
     'recruit', 'promote', 'demote', 'remove',
     'probation', 'training', 'discipline', 'discharge', 'blacklist', 'division', 'qual', 'rank_rules', 'settings',
-    'roster', 'roll_call'));
+    'roster', 'roll_call', 'drive'));
 
 -- Personnel roster (Roster page): per-member details command keeps, and
 -- the monthly roll call. Rows are created the first time someone is
