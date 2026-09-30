@@ -124,6 +124,22 @@ type factionApplyData struct {
 	Questions []applications.Question
 	Form      map[string]string
 	Mine      []applications.FactionApp
+
+	// Divisions of the selected faction, for its members.
+	DivOptions []divisionOption
+	DivApps    []factions.DivisionApp
+	DivForm    map[string]string
+}
+
+// divisionOption is one division a member can see and apply to.
+type divisionOption struct {
+	factions.Division
+	In      string // their role, if they're in it
+	Auto    bool   // Administration automatically (cabinet)
+	Pending int64  // their pending application's ID
+	Blocked string // why they can't apply, if they can't
+	HasQual bool   // holds the division's required qualification
+	Members int
 }
 
 func (d *Deps) factionApplyData(r *http.Request, selected string, form map[string]string) (factionApplyData, error) {
@@ -159,6 +175,42 @@ func (d *Deps) factionApplyData(r *http.Request, selected string, form map[strin
 		}
 	}
 	data.Questions = applications.FactionQuestions(selected)
+	if data.Selected != nil && data.Selected.Level > 0 {
+		divs, _ := factions.Divisions(ctx, d.Pool, selected)
+		posts, _ := factions.MemberDivisions(ctx, d.Pool, selected)
+		admins, _ := factions.AdminPostings(ctx, d.Pool, selected)
+		held, _ := factions.MemberQuals(ctx, d.Pool, selected)
+		data.DivApps, _ = factions.MyDivisionApps(ctx, d.Pool, selected, sess.PlayerID)
+		for _, dv := range divs {
+			o := divisionOption{Division: dv}
+			for id, p := range posts {
+				if p.Key == dv.Key {
+					o.Members++
+					if id == sess.PlayerID {
+						o.In = p.Role
+					}
+				}
+			}
+			if dv.IsAdmin {
+				o.Members = len(admins)
+				if p, ok := admins[sess.PlayerID]; ok {
+					o.In, o.Auto = p.Role, p.Auto
+				}
+			}
+			for _, a := range data.DivApps {
+				if a.Division == dv.Key && a.Status == "pending" {
+					o.Pending = a.ID
+				}
+			}
+			if data.Selected.Level < dv.MinLevel {
+				o.Blocked = "Needs " + factions.RankFor(data.Selected.Ranks, dv.MinLevel).Label() + " or above"
+			}
+			// Missing the division's qualification doesn't block applying:
+			// command records the pass before accepting.
+			o.HasQual = dv.RequiredQual == "" || held[sess.PlayerID][dv.RequiredQual]
+			data.DivOptions = append(data.DivOptions, o)
+		}
+	}
 	return data, nil
 }
 
@@ -322,4 +374,20 @@ func (d *Deps) CommandDecideApp(w http.ResponseWriter, r *http.Request) {
 		msg = "Accepted and recruited at the entry rank. Logged in the Command log."
 	}
 	finishAppAction(w, r, "/command/"+faction+"/recruits", err, msg)
+}
+
+// DivisionApplySubmit applies to (or withdraws from) a division, from the
+// Factions page.
+func (d *Deps) DivisionApplySubmit(w http.ResponseWriter, r *http.Request) {
+	sess, _ := auth.FromContext(r.Context())
+	faction := r.FormValue("faction")
+	back := "/factions?faction=" + faction + "#divisions"
+	if id, _ := strconv.ParseInt(r.FormValue("withdraw"), 10, 64); id > 0 {
+		err := factions.WithdrawDivisionApp(r.Context(), d.Pool, sess.PlayerID, id)
+		finishCommandAction(w, r, back, err, "Application withdrawn.")
+		return
+	}
+	err := factions.ApplyToDivision(r.Context(), d.Pool, sess.PlayerID, faction, r.FormValue("division"),
+		r.FormValue("why"), r.FormValue("availability"), r.FormValue("experience"))
+	finishCommandAction(w, r, back, err, "Application sent. The division's command and Administration will review it; you'll get a notification with the decision.")
 }

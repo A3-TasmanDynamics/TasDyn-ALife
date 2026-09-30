@@ -5,63 +5,24 @@
     <div class="cmd-head">
       <div>
         <h1>Divisions &amp; qualifications</h1>
-        <p class="cmd-sub">Every member holds a {{.FactionName}} rank plus, optionally, a role in one specialist division. {{.General}} member{{if ne .General 1}}s are{{else}} is{{end}} in general duties. The Administration division runs and maintains this panel and can be held alongside a specialist division.</p>
+        <p class="cmd-sub">Every member holds a {{.FactionName}} rank plus, optionally, a role in one specialist division. {{.General}} member{{if ne .General 1}}s are{{else}} is{{end}} in general duties. The Administration division runs and maintains this panel and can be held alongside a specialist division. Open a division for its members and applications.</p>
       </div>
     </div>
 
     {{if .Divisions}}
     <div class="div-cards">
+      <a class="div-card" href="/command/{{.Faction}}/division/GD" style="--div: #93c5fd">
+        <span class="div-name"><span class="div-dot" aria-hidden="true"></span>General Duties</span>
+        <span class="cmd-dim">{{.General}} member{{if ne .General 1}}s{{end}} &middot; no specialist division</span>
+      </a>
       {{range .Divisions}}
-      <a class="div-card{{if .IsAdmin}} div-card-admin{{end}}{{if and $.Cur (eq .Key $.Cur.Key)}} active{{end}}" href="/command/{{$.Faction}}/divisions?div={{.Key}}" style="--div: {{.Color}}" {{if and $.Cur (eq .Key $.Cur.Key)}}aria-current="page"{{end}}>
+      <a class="div-card{{if .IsAdmin}} div-card-admin{{end}}" href="/command/{{$.Faction}}/division/{{.Key}}" style="--div: {{.Color}}">
         <span class="div-name"><span class="div-dot" aria-hidden="true"></span>{{.Name}}{{if .IsAdmin}} <span class="cmd-tag cmd-tag-cab">Panel</span>{{end}}</span>
         <span class="cmd-dim">{{.Count}} member{{if ne .Count 1}}s{{end}} &middot; {{if .Lead}}led by {{.Lead}}{{else}}no {{index .Roles 0}}{{end}}</span>
       </a>
       {{end}}
     </div>
 
-    {{with .Cur}}
-    <section class="cmd-card">
-      <div class="cmd-card-head"><h2>{{.Name}} members</h2>
-        <span class="cmd-dim">Roles, most senior first: {{range $i, $r := .Roles}}{{if $i}} &middot; {{end}}{{$r}}{{end}}</span></div>
-      {{if .IsAdmin}}<p class="div-admin-note">Administration members administrate and maintain the command panel whatever their rank: personnel files, roll call, certifications, training, division postings, rank rules and settings. They can't change ranks or issue discipline. Cabinet members are part of it automatically. Only cabinet, Management and the {{.CommanderRole}} appoint to it; only cabinet and Management appoint the {{.CommanderRole}}.</p>{{end}}
-      {{range $.Members}}
-      <div class="div-row">
-        <span><a class="cmd-strong" href="/command/{{$.Faction}}/members/{{.ID}}">{{.Name}}</a><span class="cmd-dim div-sub">{{.Rank.Label}}</span></span>
-        {{if .CanEdit}}
-        <form method="post" action="/command/{{$.Faction}}/divisions/{{$.Cur.Key}}" class="div-actions">
-          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="who" value="{{.ID}}">
-          <label class="visually-hidden" for="role-{{.ID}}">Role for {{.Name}}</label>
-          <select id="role-{{.ID}}" name="role">{{$role := .Role}}{{range $.Roles}}<option {{if eq . $role}}selected{{end}}>{{.}}</option>{{end}}</select>
-          <button class="btn btn-sm" type="submit" name="action" value="role">Set role</button>
-          <button class="btn btn-sm" type="submit" name="action" value="remove">Remove</button>
-        </form>
-        {{else if .Auto}}<span class="cmd-tag cmd-tag-cab" title="Cabinet members are part of Administration automatically">Automatic · cabinet</span>{{else}}<span class="cmd-tag">{{.Role}}</span>{{end}}
-      </div>
-      {{else}}
-      <p class="cmd-empty">Nobody is in {{.Name}} yet.</p>
-      {{end}}
-      {{if $.CanAppoint}}
-      <form method="post" action="/command/{{$.Faction}}/divisions/{{.Key}}" class="div-add">
-        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="action" value="add">
-        {{if $.Addable}}
-        <label class="visually-hidden" for="div-add">Member to add</label>
-        <select id="div-add" name="who">{{range $.Addable}}<option value="{{.ID}}">{{.Name}} &middot; {{.Rank.Label}}</option>{{end}}</select>
-        <label class="visually-hidden" for="div-add-role">Role</label>
-        <select id="div-add-role" name="role">{{range $.Roles}}<option {{if eq . $.EntryRole}}selected{{end}}>{{.}}</option>{{end}}</select>
-        <button class="btn btn-sm btn-primary" type="submit">{{if .IsAdmin}}Appoint to{{else}}Add to{{end}} {{.Name}}</button>
-        {{else}}<span class="cmd-dim">Nobody else you can add meets the requirements.</span>{{end}}
-        {{if .IsAdmin}}<span class="hint">{{if $.ReadOnly}}Appointing as Management (staff override).{{end}}</span>{{else}}<span class="hint">{{if .RequiredQual}}Needs the {{.RequiredQual}} qualification.{{end}}{{if .MinLevel}} Needs {{.MinLevel}}+ rank level.{{end}}{{if not (or .RequiredQual .MinLevel)}}No entry requirements.{{end}}</span>{{end}}
-      </form>
-      {{end}}
-    </section>
-
-    {{if not .IsAdmin}}
-    <section class="cmd-card cmd-pad">
-      <h2>{{.Name}} gear</h2>
-      <p class="cmd-dim">Division gear is set in the mission's loadout config for now, so it isn't listed here yet. It'll show here once loadouts move to the database.</p>
-    </section>
-    {{end}}
-    {{end}}
     {{else}}
     <p class="cmd-empty cmd-card">{{.FactionName}} has no specialist divisions set up yet. Everyone is in general duties.</p>
     {{end}}

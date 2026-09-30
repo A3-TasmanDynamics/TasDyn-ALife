@@ -260,8 +260,12 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 			       COALESCE(sr.display_name, ''), p.staff_status,
 			       CASE WHEN COALESCE(p.cop_level, 0) > 0 THEN COALESCE((SELECT name FROM faction_rank_names WHERE faction = 'police' AND level = p.cop_level), 'Level ' || p.cop_level) ELSE '' END,
 			       CASE WHEN COALESCE(p.medic_level, 0) > 0 THEN COALESCE((SELECT name FROM faction_rank_names WHERE faction = 'ems' AND level = p.medic_level), 'Level ' || p.medic_level) ELSE '' END,
-			       EXISTS (SELECT 1 FROM faction_rank_names r WHERE r.is_command
-			               AND ((r.faction = 'police' AND r.level = p.cop_level) OR (r.faction = 'ems' AND r.level = p.medic_level))),
+			       (EXISTS (SELECT 1 FROM faction_rank_names r WHERE r.is_command
+			               AND ((r.faction = 'police' AND r.level = p.cop_level) OR (r.faction = 'ems' AND r.level = p.medic_level)))
+			        OR EXISTS (SELECT 1 FROM faction_member_divisions md JOIN faction_divisions d ON d.faction = md.faction AND d.key = md.division_key
+			               WHERE md.player_id = p.id
+			                 AND ((d.faction = 'police' AND p.cop_level > 0) OR (d.faction = 'ems' AND p.medic_level > 0))
+			                 AND (d.is_admin OR md.role = d.roles[1] OR (cardinality(d.roles) >= 3 AND md.role = d.roles[2])))),
 			       (SELECT count(*) FROM notifications n WHERE n.player_id = p.id AND n.read_at IS NULL),
 			       COALESCE(e.id, 0), COALESCE(e.title, ''), COALESCE(e.body, ''), COALESCE(e.link, ''),
 			       COALESCE((SELECT count(*) FILTER (WHERE x.acknowledged_at IS NOT NULL) FROM notifications x WHERE x.notice_id = e.notice_id), 0),

@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -132,7 +133,17 @@ type Command struct {
 	Admin          bool
 	AdminRole      string
 	AdminCommander bool
+
+	// Leads are the specialist divisions they command (Commander or Second
+	// in Command): they review that division's applications.
+	Leads []string
 }
+
+// LeadOnly reports whether their only access is leading a division.
+func (c Command) LeadOnly() bool { return !c.Rank.IsCommand && !c.Admin && len(c.Leads) > 0 }
+
+// Maintains reports whether they maintain the panel (rank rules, settings).
+func (c Command) Maintains() bool { return c.Rank.IsCommand || c.Admin }
 
 // IsCommand reports whether their rank is a command rank (rank changes and
 // discipline), as opposed to Administration-only access.
@@ -174,7 +185,11 @@ func CommandOf(ctx context.Context, pool *pgxpool.Pool, playerID int64) ([]Comma
 }
 
 // CommandIn reports whether the player has command authority in faction.
-func CommandIn(ctx context.Context, pool *pgxpool.Pool, playerID int64, faction string) (Command, bool, error) {
+//
+// Access to the panel comes from a command rank, the Administration
+// division, or leading a division (its Commander or Second in Command:
+// their own division's page and applications only).
+func CommandIn(ctx context.Context, pool dbtx, playerID int64, faction string) (Command, bool, error) {
 	if !Valid(faction) {
 		return Command{}, false, nil
 	}
@@ -208,7 +223,28 @@ func CommandIn(ctx context.Context, pool *pgxpool.Pool, playerID int64, faction 
 	if c.Cabinet && !c.Admin { // cabinet is part of Administration automatically
 		c.Admin, c.AdminRole = true, CabinetRole
 	}
-	return c, c.Level > 0 && (c.Rank.IsCommand || c.Admin), nil
+	if c.Level > 0 {
+		rows, err := pool.Query(ctx, `
+			SELECT d.key, md.role, d.roles FROM faction_member_divisions md
+			JOIN faction_divisions d ON d.faction = md.faction AND d.key = md.division_key
+			WHERE md.faction = $1 AND md.player_id = $2 AND NOT d.is_admin`, faction, playerID)
+		if err != nil {
+			return c, false, err
+		}
+		for rows.Next() {
+			var d Division
+			var role string
+			if err := rows.Scan(&d.Key, &role, &d.Roles); err != nil {
+				rows.Close()
+				return c, false, err
+			}
+			if len(d.Roles) > 0 && slices.Contains(d.LeadRoles(), role) {
+				c.Leads = append(c.Leads, d.Key)
+			}
+		}
+		rows.Close()
+	}
+	return c, c.Level > 0 && (c.Rank.IsCommand || c.Admin || len(c.Leads) > 0), nil
 }
 
 // Actor is who is making a change, and under which authority.

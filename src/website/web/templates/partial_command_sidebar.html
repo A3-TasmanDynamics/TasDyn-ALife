@@ -2,21 +2,32 @@
 <nav class="cmd-nav" aria-label="Command sections">
   <div class="cmd-nav-head">
     <span class="cmd-nav-badge cmd-nav-badge-{{.Faction}}" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/></svg></span>
-    <span class="cmd-nav-title"><span>{{.FactionName}} command</span><span class="cmd-nav-you">{{if and .ReadOnly .Management}}Management{{else if .ReadOnly}}Staff view (read-only){{else}}You: {{.Command.Rank.Label}}{{end}}</span></span>
+    <span class="cmd-nav-title"><span>{{.FactionName}} command</span><span class="cmd-nav-you">{{if .Command.LeadOnly}}You: {{.Command.Rank.Label}}{{else if and .ReadOnly .Management}}Management{{else if .ReadOnly}}Staff view (read-only){{else}}You: {{.Command.Rank.Label}}{{end}}</span></span>
   </div>
+
+  <div class="cmd-nav-group">General</div>
   <a class="cmd-nav-item {{if eq .Tab "overview"}}active{{end}}" href="/command/{{.Faction}}" {{if eq .Tab "overview"}}aria-current="page"{{end}}>Overview</a>
   <a class="cmd-nav-item {{if eq .Tab "roster"}}active{{end}}" href="/command/{{.Faction}}/roster" {{if eq .Tab "roster"}}aria-current="page"{{end}}>Roster <span class="cmd-nav-count">{{.MemberCount}}</span></a>
-  <a class="cmd-nav-item {{if eq .Tab "recruits"}}active{{end}}" href="/command/{{.Faction}}/recruits" {{if eq .Tab "recruits"}}aria-current="page"{{end}}>Recruits &amp; training{{if .OpenApps}} <span class="cmd-nav-count cmd-nav-count-hot">{{.OpenApps}}</span>{{end}}</a>
-  <a class="cmd-nav-item {{if eq .Tab "discipline"}}active{{end}}" href="/command/{{.Faction}}/discipline" {{if eq .Tab "discipline"}}aria-current="page"{{end}}>Discipline</a>
   <a class="cmd-nav-item {{if eq .Tab "divisions"}}active{{end}}" href="/command/{{.Faction}}/divisions" {{if eq .Tab "divisions"}}aria-current="page"{{end}}>Divisions &amp; quals</a>
   <a class="cmd-nav-item {{if eq .Tab "ranks"}}active{{end}}" href="/command/{{.Faction}}/ranks" {{if eq .Tab "ranks"}}aria-current="page"{{end}}>Ranks &amp; gear</a>
+
+  <div class="cmd-nav-group">Divisions</div>
+  {{range .NavDivisions}}{{$tab := printf "div-%s" .Key}}
+  <a class="cmd-nav-item {{if eq $.Tab $tab}}active{{end}}" href="/command/{{$.Faction}}/division/{{.Key}}" {{if eq $.Tab $tab}}aria-current="page"{{end}}><span class="cmd-nav-dot" style="--div: {{.Color}}" aria-hidden="true"></span>{{.Name}}{{if .Pending}} <span class="cmd-nav-count cmd-nav-count-hot" title="{{.Pending}} application{{if ne .Pending 1}}s{{end}} to review">{{.Pending}}</span>{{end}}</a>
+  {{end}}
+
+  <div class="cmd-nav-group">Command</div>
+  <a class="cmd-nav-item {{if eq .Tab "recruits"}}active{{end}}" href="/command/{{.Faction}}/recruits" {{if eq .Tab "recruits"}}aria-current="page"{{end}}>Recruits &amp; training{{if .OpenApps}} <span class="cmd-nav-count cmd-nav-count-hot">{{.OpenApps}}</span>{{end}}</a>
+  <a class="cmd-nav-item {{if eq .Tab "discipline"}}active{{end}}" href="/command/{{.Faction}}/discipline" {{if eq .Tab "discipline"}}aria-current="page"{{end}}>Discipline</a>
   <a class="cmd-nav-item {{if eq .Tab "log"}}active{{end}}" href="/command/{{.Faction}}/log" {{if eq .Tab "log"}}aria-current="page"{{end}}>Command log</a>
+
   <div class="cmd-authority">
     <div class="cmd-authority-label">Your authority</div>
-    {{if .ReadOnly}}You can see this faction's roster and command log because you have <code class="perm-key">factions.audit</code>. Changes are made by its command, or by Management from Player Lookup.
-    {{if .Management}} As <strong>Management</strong>, you can also appoint to Administration and edit rank rules.{{end}}
-    {{else if not .Command.IsCommand}}You're in <strong>Administration</strong>{{if .Command.AdminRole}} ({{.Command.AdminRole}}){{end}}: you administrate and maintain this panel: personnel files, roll call, certifications, training, divisions, rank rules and settings.{{if .Command.AdminCommander}} As its Commander you can also appoint to Administration.{{end}} Rank changes and discipline are for command ranks.
-    {{else}}{{if .AuthorityTo}}You can recruit, promote, demote and remove members up to <strong>{{.AuthorityTo}}</strong>, and{{else}}Your rank can't change ranks, but you can{{end}} discipline, train and post anyone ranked below you.{{if .Command.Cabinet}} As <strong>cabinet</strong> you can overwrite everything: act on anyone but yourself, change Command and Cabinet ranks, appoint to Administration, lift blacklists early and blacklist permanently.{{else}} You also maintain this panel.{{end}}{{if and .Command.Admin (not .Command.Cabinet)}} You're in Administration{{if .Command.AdminCommander}} as its Commander, so you can appoint to it{{end}}.{{end}} Never yourself.{{end}}
+    {{if .Command.LeadOnly}}You lead {{range $i, $k := .Command.Leads}}{{if $i}}, {{end}}{{range $.NavDivisions}}{{if eq .Key $k}}<strong>{{.Name}}</strong>{{end}}{{end}}{{end}}: you review its applications. The rest of this panel is read-only for you.
+    {{else if .ReadOnly}}You can see this faction's roster and command log because you have <code class="perm-key">factions.audit</code>. Changes are made by its command, or by Management from Player Lookup.
+    {{if .Management}} As <strong>Management</strong>, you can also appoint to Administration, review division applications and edit rank rules.{{end}}
+    {{else if not .Command.IsCommand}}You're in <strong>Administration</strong>{{if .Command.AdminRole}} ({{.Command.AdminRole}}){{end}}: you administrate and maintain this panel: personnel files, roll call, certifications, training, divisions and their applications, rank rules and settings.{{if .Command.AdminCommander}} As its Commander you can also appoint to Administration.{{end}} Rank changes and discipline are for command ranks.
+    {{else}}{{if .AuthorityTo}}You can recruit, promote, demote and remove members up to <strong>{{.AuthorityTo}}</strong>, and{{else}}Your rank can't change ranks, but you can{{end}} discipline, train and post anyone ranked below you.{{if .Command.Cabinet}} As <strong>cabinet</strong> you can overwrite everything: act on anyone but yourself, change Command and Cabinet ranks, appoint to Administration, review any division's applications, lift blacklists early and blacklist permanently.{{else}} You also maintain this panel.{{end}}{{if and .Command.Admin (not .Command.Cabinet)}} You're in Administration{{if .Command.AdminCommander}} as its Commander, so you can appoint to it{{end}}.{{end}} Never yourself.{{end}}
   </div>
 </nav>
 {{end}}

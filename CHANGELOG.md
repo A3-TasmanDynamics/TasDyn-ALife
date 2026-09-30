@@ -1089,3 +1089,14 @@
   rank. Run `database/fixes/2026-09-30_admin_division.sql`.
 - Cabinet members are part of the Administration division automatically (shown as "Automatic · cabinet"); they can't be removed from it while their rank is Cabinet.
 - Cabinet (and Management) can keep their own records on the command panel: personnel file, roll call, certifications and division postings. Nobody changes their own rank or disciplines themselves.
+- **Division pages and applications.** The command panel sidebar is grouped into General (Overview,
+  Roster, Divisions & quals, Ranks & gear), Divisions (General Duties, Administration and each specialist
+  division, with a count of applications to review) and Command (Recruits & training, Discipline, Command
+  log). Each division has its own page: members and roles, requirements, gear, and applications.
+  Faction members apply to divisions from the Factions page (why, availability, experience) and can
+  withdraw; they're notified of the decision. Administration, the division's command (Commander and
+  Second in Command) and cabinet review; Administration's own applications only cabinet, Management and
+  its Commander. Accepting posts them at the entry role (the division's qualification must be recorded
+  first); turning down needs a note and starts a 7-day wait before reapplying. Division command get the
+  panel read-only plus their division's applications. Run
+  `database/fixes/2026-09-30_division_applications.sql`.

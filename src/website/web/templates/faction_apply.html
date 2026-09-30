@@ -14,7 +14,48 @@
 
     {{with .Selected}}
     {{if .Level}}
-      <section class="card apply-form"><h2>You're already in {{.Name}}</h2><p class="apply-sub">Rank changes come from {{.Name}} command.</p></section>
+      <section class="card apply-form"><h2>You're already in {{.Name}}</h2><p class="apply-sub">Rank changes come from {{.Name}} command. You can apply to join its divisions below.</p></section>
+
+      <section class="card apply-form" id="divisions" aria-labelledby="divs-h">
+        <h2 id="divs-h">{{.Name}} divisions</h2>
+        <p class="apply-sub">Each division's command and Administration review applications. You can be in one specialist division, plus Administration.</p>
+        <div class="fac-divs">
+          {{range $.DivOptions}}
+          <div class="fac-div" style="--div: {{.Color}}">
+            <div class="fac-div-head"><span class="div-dot" aria-hidden="true"></span><strong>{{.Name}}</strong><span class="mod-dim">{{.Members}} member{{if ne .Members 1}}s{{end}}</span></div>
+            <div class="mod-dim fac-div-req">{{if .RequiredQual}}Needs the {{.RequiredQual}} qualification{{if not .HasQual}} (command records it before accepting){{end}}.{{else if .MinLevel}}Needs a higher rank.{{else}}No entry requirements.{{end}}</div>
+            {{if .In}}<span class="roster-status roster-status-Active">{{if .Auto}}Part of it as cabinet{{else}}You're in it · {{.In}}{{end}}</span>
+            {{else if .Pending}}
+              <form method="post" action="/factions/divisions" class="fac-div-actions">
+                <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="faction" value="{{$.Selected.Key}}"><input type="hidden" name="withdraw" value="{{.Pending}}">
+                <span class="mod-pill mod-pill-open">Application waiting</span><button class="btn btn-sm" type="submit">Withdraw</button>
+              </form>
+            {{else if .Blocked}}<span class="mod-dim">{{.Blocked}}</span>
+            {{else}}<button class="btn btn-sm btn-primary" type="button" data-dialog-open="dlg-div-{{.Key}}">Apply</button>
+            <dialog id="dlg-div-{{.Key}}" class="modal" aria-labelledby="dlg-div-{{.Key}}-t">
+              <form method="post" action="/factions/divisions">
+                <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="faction" value="{{$.Selected.Key}}"><input type="hidden" name="division" value="{{.Key}}">
+                <div class="modal-head"><h2 id="dlg-div-{{.Key}}-t">Apply to {{.Name}}</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+                <div class="modal-body">
+                  <div class="field"><label for="dv-why-{{.Key}}">Why do you want to join {{.Name}}?</label><textarea id="dv-why-{{.Key}}" name="why" rows="3" maxlength="1000" required></textarea></div>
+                  <div class="field"><label for="dv-av-{{.Key}}">When are you usually on?</label><input id="dv-av-{{.Key}}" name="availability" maxlength="300" required placeholder="e.g. Weeknights after 7pm AEST"></div>
+                  <div class="field"><label for="dv-exp-{{.Key}}">Relevant experience (optional)</label><textarea id="dv-exp-{{.Key}}" name="experience" rows="2" maxlength="1000"></textarea></div>
+                  <p class="hint">{{.Name}}'s command and Administration see your rank, hours and active points with it. You'll get a notification with the decision.</p>
+                </div>
+                <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Send application</button></div>
+              </form>
+            </dialog>
+            {{end}}
+          </div>
+          {{else}}
+          <p class="hint">{{.Name}} has no divisions set up yet.</p>
+          {{end}}
+        </div>
+        {{if $.DivApps}}
+        <h3 class="fac-div-hist-h">Your division applications</h3>
+        {{range $.DivApps}}<div class="fac-rank"><span>{{.DivisionName}} &middot; {{.Created.Format "2 Jan 2006"}}</span><span class="mod-dim">{{if eq .Status "pending"}}Waiting{{else if eq .Status "accepted"}}Accepted{{else if eq .Status "rejected"}}Not accepted{{if .Note}}: {{.Note}}{{end}}{{else}}Withdrawn{{end}}</span></div>{{end}}
+        {{end}}
+      </section>
     {{else if .Open}}
       <section class="card apply-form">
         <div class="fac-sent-head"><h2>Your {{.Name}} application</h2><span class="mod-pill mod-pill-open">Waiting for command</span></div>
@@ -47,4 +88,5 @@
     </section>
   </aside>
 </div>
+<script src="/static/admin.js" defer></script>
 {{end}}

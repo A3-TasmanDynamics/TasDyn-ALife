@@ -346,6 +346,54 @@ func TestCommandExtras(t *testing.T) {
 	pool.Exec(ctx, `DELETE FROM faction_roll_call WHERE player_id = ANY($1)`, []int64{ids["civ"]})
 	pool.Exec(ctx, `DELETE FROM faction_members WHERE player_id = ANY($1)`, []int64{ids["civ"], ids["para"], ids["para2"]})
 
+	// Division applications: members apply; Administration, the division's
+	// command, cabinet and Management review; Administration's own
+	// applications only cabinet, Management and its Commander.
+	appID := func(who, div string) int64 {
+		var id int64
+		pool.QueryRow(ctx, `SELECT id FROM faction_division_applications WHERE player_id = $1 AND division_key = $2 AND status = 'pending'`, ids[who], div).Scan(&id)
+		return id
+	}
+	denied("non-member applies", ApplyToDivision(ctx, pool, ids["civ2"], f, "TAIR", "fun", "nights", ""))
+	denied("apply without saying why", ApplyToDivision(ctx, pool, ids["civ"], f, "TAIR", "", "nights", ""))
+	must("member applies", ApplyToDivision(ctx, pool, ids["civ"], f, "TAIR", "I love flying", "Weeknights", "Flew on another server"))
+	denied("apply twice", ApplyToDivision(ctx, pool, ids["civ"], f, "TAIR", "again", "nights", ""))
+	if n, _ := PendingDivisionApps(ctx, pool, f); n["TAIR"] != 1 {
+		t.Errorf("pending count: want 1, got %v", n)
+	}
+	civApp := appID("civ", "TAIR")
+	denied("command (not division command) reviews", DecideDivisionApp(ctx, pool, cmd("sup"), f, civApp, true, ""))
+	denied("accept without the division's qual", DecideDivisionApp(ctx, pool, cmd("clerk"), f, civApp, true, ""))
+	must("Administration records the qual", SetQual(ctx, pool, cmd("clerk"), f, ids["civ"], "AQ", true, ""))
+	must("Administration accepts", DecideDivisionApp(ctx, pool, cmd("clerk"), f, civApp, true, ""))
+	denied("decide twice", DecideDivisionApp(ctx, pool, cmd("clerk"), f, civApp, false, "x"))
+	if spec, _ := MemberDivisions(ctx, pool, f); spec[ids["civ"]].Key != "TAIR" || spec[ids["civ"]].Role != "Pilot" {
+		t.Errorf("accepted applicant should be posted at the entry role, got %+v", spec[ids["civ"]])
+	}
+	must("make them division command", SetDivision(ctx, pool, cmd("chief"), f, ids["civ"], "TAIR", "Lead", false, ""))
+	if c, ok, _ := CommandIn(ctx, pool, ids["civ"], f); !ok || !c.LeadOnly() || len(c.Leads) != 1 || c.Leads[0] != "TAIR" {
+		t.Errorf("division command should get panel access as lead only, got %v %+v", ok, c)
+	}
+	must("second applicant", ApplyToDivision(ctx, pool, ids["clerk2"], f, "TAIR", "Want to fly", "Weekends", ""))
+	c2 := appID("clerk2", "TAIR")
+	denied("turn down without a note", DecideDivisionApp(ctx, pool, cmd("civ"), f, c2, false, ""))
+	must("division command turns down", DecideDivisionApp(ctx, pool, cmd("civ"), f, c2, false, "Needs more hours first"))
+	denied("reapply inside the cooldown", ApplyToDivision(ctx, pool, ids["clerk2"], f, "TAIR", "again", "weekends", ""))
+	var notes int
+	pool.QueryRow(ctx, `SELECT count(*) FROM notifications WHERE player_id = ANY($1)`, []int64{ids["civ"], ids["clerk2"]}).Scan(&notes)
+	if notes < 2 {
+		t.Errorf("applicants should be notified of decisions, got %d notifications", notes)
+	}
+	must("apply to Administration", ApplyToDivision(ctx, pool, ids["sup"], f, "ADMIN", "Keep the files tidy", "Evenings", ""))
+	supApp := appID("sup", "ADMIN")
+	denied("division command reviews Administration", DecideDivisionApp(ctx, pool, cmd("civ"), f, supApp, true, ""))
+	denied("Administrator reviews Administration", DecideDivisionApp(ctx, pool, Actor{PlayerID: ids["clerk2"], Source: "website", Via: ViaCommand}, f, supApp, true, ""))
+	must("Administration Commander accepts", DecideDivisionApp(ctx, pool, cmd("clerk"), f, supApp, true, ""))
+	denied("cabinet applies to Administration", ApplyToDivision(ctx, pool, ids["chief"], f, "ADMIN", "x", "y", ""))
+	must("apply then withdraw", ApplyToDivision(ctx, pool, ids["sup"], f, "TAIR", "x", "y", ""))
+	must("withdraw", WithdrawDivisionApp(ctx, pool, ids["sup"], appID("sup", "TAIR")))
+	pool.Exec(ctx, `DELETE FROM notifications WHERE player_id = ANY($1)`, []int64{ids["civ"], ids["clerk2"], ids["sup"]})
+
 	var kinds int
 	pool.QueryRow(ctx, `SELECT count(DISTINCT kind) FROM faction_log WHERE faction = 'ems' AND actor_id = ANY($1)`,
 		[]int64{ids["chief"], ids["sup"]}).Scan(&kinds)

@@ -367,7 +367,7 @@ type RankRules struct {
 // CanEditRank says whether the viewer may edit rank level's rules: anyone
 // who maintains the panel, for ranks other than their own; cabinet, any.
 func (c Command) CanEditRank(level int) bool {
-	return c.Cabinet || level != c.Level
+	return c.Maintains() && (c.Cabinet || level != c.Level)
 }
 
 // CanEditRankType says whether they may change the Command / Cabinet ticks
@@ -516,4 +516,10 @@ func listText(l []string) string {
 		return "none"
 	}
 	return strings.Join(l, ", ")
+}
+
+// isUnique reports whether err is a unique-constraint violation.
+func isUnique(err error) bool {
+	var pg *pgconn.PgError
+	return errors.As(err, &pg) && pg.Code == "23505"
 }
