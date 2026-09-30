@@ -5,7 +5,7 @@
     <div class="rules-edit-head">
       <div>
         <h1 class="page-title admin-title">Server Rules</h1>
-        <p class="admin-sub">What players see on <a href="/rules">/rules</a>. Build it from sections (General, Gameplay, TeamSpeak and so on), each with numbered rules and dot points. Rules are numbered for you in order.</p>
+        <p class="admin-sub">What players see on <a href="/rules">/rules</a>. Build it from sections (General, Gameplay, TeamSpeak and so on), each with numbered rules and dot points. Rules are numbered 1, 2, 3 in each section for you.</p>
       </div>
       {{if .HasLive}}<a class="btn" href="/rules" target="_blank" rel="noopener">View live page</a>{{end}}
     </div>
@@ -26,7 +26,7 @@
         </div>
 
         <div class="re-text" data-rules-text {{if not .TextMode}}hidden{{end}}>
-          <p class="hint">Start each section with <code>#</code> and each rule with its number. <code>&gt;</code> adds a section intro, <code>-</code> a dot point under the rule above, and an indented <code>-</code> a second-level point.</p>
+          <p class="hint">Start each section with <code>#</code> and each rule with its number. <code><code>&gt;</code> adds a section intro,gt;</code> lines before the first section are the introduction, and after a heading its intro; <code>-</code> a dot point under the rule above, and an indented <code>-</code> a second-level point.</p>
           <label class="visually-hidden" for="rules-body">Rulebook</label>
           <textarea id="rules-body" name="body" rows="26" spellcheck="true" placeholder="# General rules&#10;1.1 Treat other players and staff with respect.&#10;&#10;# Safe zones&#10;2.1 These areas are safe zones:&#10;- Kavala Markets&#10;- Kavala Hospital">{{.Body}}</textarea>
         </div>

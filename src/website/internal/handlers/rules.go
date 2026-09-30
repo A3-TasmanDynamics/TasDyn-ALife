@@ -13,8 +13,12 @@ import (
 	"website/internal/rules"
 )
 
+// defaultRulesIntro shows until an introduction is written in the editor.
+const defaultRulesIntro = "Welcome to TasDyn-ALife. These rules keep the server fair and fun for everyone, and they apply to every player, including staff. Not knowing a rule isn't an excuse, so please read them before you play. If something isn't covered here, use common sense and ask staff."
+
 type rulesData struct {
 	Base
+	Intro     []string // the rulebook's introduction, one entry per paragraph
 	Doc       rules.Doc
 	Published bool
 	TOC       []rules.Section
@@ -36,6 +40,11 @@ func (d *Deps) Rules(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data.Doc, data.Published = doc, ok
+	intro := doc.Intro
+	if intro == "" {
+		intro = defaultRulesIntro
+	}
+	data.Intro = strings.Split(intro, "\n")
 	data.TOC = doc.Sections
 	data.Sections = rules.Filter(doc.Sections, data.Q)
 	if doc.Recent {
@@ -64,7 +73,12 @@ type rulesEditData struct {
 	HasLive  bool
 }
 
-// editSection is the section editor's JSON: rules are numbered on save.
+// editDoc is the section editor's JSON: rules are numbered on save.
+type editDoc struct {
+	Intro    string        `json:"intro"`
+	Sections []editSection `json:"sections"`
+}
+
 type editSection struct {
 	Title string     `json:"title"`
 	Intro string     `json:"intro"`
@@ -81,7 +95,7 @@ type editPoint struct {
 	Sub  []string `json:"sub"`
 }
 
-func sectionsJSON(secs []rules.Section) string {
+func sectionsJSON(intro string, secs []rules.Section) string {
 	out := []editSection{}
 	for _, s := range secs {
 		es := editSection{Title: s.Title, Intro: s.Intro, Rules: []editRule{}}
@@ -94,7 +108,7 @@ func sectionsJSON(secs []rules.Section) string {
 		}
 		out = append(out, es)
 	}
-	b, _ := json.Marshal(out)
+	b, _ := json.Marshal(editDoc{Intro: intro, Sections: out})
 	return string(b)
 }
 
@@ -102,12 +116,12 @@ func sectionsJSON(secs []rules.Section) string {
 // document. Blank dot points are dropped; a blank title or rule is an
 // error, so nothing is silently lost.
 func bodyFromSections(raw string) (string, error) {
-	var in []editSection
+	var in editDoc
 	if err := json.Unmarshal([]byte(raw), &in); err != nil {
 		return "", fmt.Errorf("%w: the editor sent something unreadable; reload and try again", rules.ErrInvalid)
 	}
 	var secs []rules.Section
-	for i, es := range in {
+	for i, es := range in.Sections {
 		s := rules.Section{Title: strings.TrimSpace(es.Title), Intro: es.Intro}
 		if s.Title == "" {
 			return "", fmt.Errorf("%w: section %d needs a title", rules.ErrInvalid, i+1)
@@ -115,7 +129,7 @@ func bodyFromSections(raw string) (string, error) {
 		for j, er := range es.Rules {
 			r := rules.Rule{Text: strings.TrimSpace(er.Text)}
 			if r.Text == "" {
-				return "", fmt.Errorf("%w: rule %d.%d is empty; write it or delete it", rules.ErrInvalid, i+1, j+1)
+				return "", fmt.Errorf("%w: rule %d in %q is empty; write it or delete it", rules.ErrInvalid, j+1, s.Title)
 			}
 			for _, ep := range er.Points {
 				pt := rules.Point{Text: strings.TrimSpace(ep.Text)}
@@ -125,7 +139,7 @@ func bodyFromSections(raw string) (string, error) {
 					}
 				}
 				if pt.Text == "" && len(pt.Sub) > 0 {
-					return "", fmt.Errorf("%w: rule %d.%d has sub-points under an empty dot point", rules.ErrInvalid, i+1, j+1)
+					return "", fmt.Errorf("%w: rule %d in %q has sub-points under an empty dot point", rules.ErrInvalid, j+1, s.Title)
 				}
 				if pt.Text != "" {
 					r.Points = append(r.Points, pt)
@@ -135,7 +149,7 @@ func bodyFromSections(raw string) (string, error) {
 		}
 		secs = append(secs, s)
 	}
-	return rules.Format(secs), nil
+	return rules.FormatDoc(in.Intro, secs), nil
 }
 
 // RulesEdit is /admin/rules: the rulebook as one text document, plus the
@@ -149,7 +163,7 @@ func (d *Deps) RulesEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data.Body, data.HasLive = doc.Body, ok
-	data.Sections = sectionsJSON(doc.Sections)
+	data.Sections = sectionsJSON(doc.Intro, doc.Sections)
 	if data.History, err = rules.History(r.Context(), d.Pool, 15); err != nil {
 		slog.Error("rules: history failed", "error", err)
 	}
@@ -172,14 +186,18 @@ func (d *Deps) RulesSave(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err == nil:
 		msg := "Rules published."
-		if len(changed) > 0 {
-			msg = fmt.Sprintf("Rules published. Highlighted as changed: %s.", strings.Join(changed, ", "))
+		labels := changed
+		if doc, ok, _ := rules.Current(r.Context(), d.Pool); ok {
+			labels = doc.ChangedLabels()
+		}
+		if len(labels) > 0 {
+			msg = fmt.Sprintf("Rules published. Highlighted as changed: %s.", strings.Join(labels, ", "))
 		}
 		// Optionally make every staff member acknowledge it (GAMEPANEL_PARITY §7.3).
 		if r.FormValue("essential") == "on" {
 			title := "Server rules updated"
-			if len(changed) > 0 {
-				title = "Rules updated: " + strings.Join(changed, ", ")
+			if len(labels) > 0 {
+				title = "Rules updated: " + strings.Join(labels, ", ")
 			}
 			if tx, terr := d.Pool.Begin(r.Context()); terr == nil {
 				if _, n, berr := notify.Broadcast(r.Context(), tx, sess.PlayerID, title, strings.TrimSpace(note), "/rules", "staff"); berr == nil && tx.Commit(r.Context()) == nil {
@@ -199,10 +217,10 @@ func (d *Deps) RulesSave(w http.ResponseWriter, r *http.Request) {
 		data := rulesEditData{Base: baseFrom(r, "Server Rules"), AdminShell: d.adminShell(r, "rules"), Body: body, Note: note, HasLive: true}
 		if fromSections {
 			data.Sections = r.FormValue("sections") // keep their unsaved sections
-		} else if secs, perr := rules.Parse(body); perr == nil {
-			data.Sections = sectionsJSON(secs)
+		} else if intro, secs, perr := rules.ParseDoc(body); perr == nil {
+			data.Sections = sectionsJSON(intro, secs)
 		} else {
-			data.Sections, data.TextMode = "[]", true
+			data.Sections, data.TextMode = `{"intro":"","sections":[]}`, true
 		}
 		msg := strings.TrimPrefix(err.Error(), rules.ErrInvalid.Error()+": ")
 		data.Error = "Not published: " + msg + "."

@@ -10,8 +10,11 @@
   var textarea = textPane.querySelector("textarea");
   var tabs = form.querySelectorAll("[data-rules-tab]");
 
-  var model = [];
-  try { model = JSON.parse(root.getAttribute("data-rules") || "[]") || []; } catch (e) { model = []; }
+  var doc = { intro: "", sections: [] };
+  try { doc = JSON.parse(root.getAttribute("data-rules") || "{}") || doc; } catch (e) { /* keep empty */ }
+  if (Array.isArray(doc)) doc = { intro: "", sections: doc };
+  doc.sections = doc.sections || [];
+  var model = doc.sections;
   var textDirty = false;
 
   var SUGGESTED = ["General rules", "Gameplay rules", "Roleplay rules", "Safe zones", "TeamSpeak rules", "Discord rules", "Police rules", "EMS rules", "Gang rules"];
@@ -55,6 +58,12 @@
 
   function render() {
     root.textContent = "";
+    var introBox = h("textarea", { class: "re-input re-book-intro", rows: "3", id: "re-book-intro", placeholder: "A short welcome shown at the top of the rules, before the contents. Leave empty to use the default.", on: { input: function (e) { doc.intro = e.target.value; grow(e.target); } } });
+    introBox.value = doc.intro || "";
+    root.appendChild(h("div", { class: "re-book" }, [
+      h("label", { class: "re-book-label", for: "re-book-intro", text: "Introduction" }),
+      introBox
+    ]));
     if (!model.length) {
       root.appendChild(h("p", { class: "re-empty", text: "No sections yet. Add your first one below." }));
     }
@@ -86,7 +95,7 @@
         var ta = h("textarea", { class: "re-input re-rule-text", rows: "1", "aria-label": "Rule " + n + "." + (ri + 1), placeholder: "Write the rule", on: { input: function (e) { rule.text = e.target.value; grow(e.target); } } });
         ta.value = rule.text || "";
         rulesBox.appendChild(h("div", { class: "re-rule" }, [
-          h("span", { class: "re-num", text: n + "." + (ri + 1) }),
+          h("span", { class: "re-num", text: (ri + 1) + "." }),
           h("div", { class: "re-rule-body" }, [
             ta,
             rule.points.length ? pts : null,
@@ -96,7 +105,7 @@
             iconBtn("Move rule up", "↑", function () { move(sec.rules, ri, -1); }),
             iconBtn("Move rule down", "↓", function () { move(sec.rules, ri, 1); }),
             iconBtn("Delete rule", "×", function () {
-              if (!rule.text || confirm("Delete rule " + n + "." + (ri + 1) + "?")) { sec.rules.splice(ri, 1); render(); }
+              if (!rule.text || confirm("Delete rule " + (ri + 1) + " in “" + (sec.title || "this section") + "”?")) { sec.rules.splice(ri, 1); render(); }
             }, "re-del")
           ])
         ]));
@@ -144,7 +153,8 @@
   // The text form, matching the server's rules.Format.
   function one(s) { return String(s || "").split(/\s+/).filter(Boolean).join(" "); }
   function toText() {
-    return model.map(function (s, i) {
+    var head = String(doc.intro || "").split("\n").map(one).filter(Boolean).map(function (p) { return "> " + p + "\n"; }).join("");
+    return (head ? head + "\n" : "") + model.map(function (s, i) {
       var out = "# " + one(s.title) + "\n";
       if (one(s.intro)) out += "> " + one(s.intro) + "\n";
       (s.rules || []).forEach(function (r, j) {
@@ -181,7 +191,7 @@
   tabs.forEach(function (t) { t.addEventListener("click", function () { setMode(t.getAttribute("data-rules-tab")); }); });
   textarea.addEventListener("input", function () { textDirty = true; });
   form.addEventListener("submit", function () {
-    if (modeInput.value === "sections") jsonInput.value = JSON.stringify(model);
+    if (modeInput.value === "sections") jsonInput.value = JSON.stringify(doc);
   });
 
   render();
