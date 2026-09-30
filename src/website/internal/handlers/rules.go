@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -55,10 +56,86 @@ func (d *Deps) Rules(w http.ResponseWriter, r *http.Request) {
 type rulesEditData struct {
 	Base
 	AdminShell
-	Body    string
-	Note    string
-	History []rules.Version
-	HasLive bool
+	Body     string
+	Sections string // the rulebook as JSON, for the section editor
+	TextMode bool   // open on the text editor (unsaved text that didn't parse)
+	Note     string
+	History  []rules.Version
+	HasLive  bool
+}
+
+// editSection is the section editor's JSON: rules are numbered on save.
+type editSection struct {
+	Title string     `json:"title"`
+	Intro string     `json:"intro"`
+	Rules []editRule `json:"rules"`
+}
+
+type editRule struct {
+	Text   string      `json:"text"`
+	Points []editPoint `json:"points"`
+}
+
+type editPoint struct {
+	Text string   `json:"text"`
+	Sub  []string `json:"sub"`
+}
+
+func sectionsJSON(secs []rules.Section) string {
+	out := []editSection{}
+	for _, s := range secs {
+		es := editSection{Title: s.Title, Intro: s.Intro, Rules: []editRule{}}
+		for _, r := range s.Rules {
+			er := editRule{Text: r.Text, Points: []editPoint{}}
+			for _, p := range r.Points {
+				er.Points = append(er.Points, editPoint{Text: p.Text, Sub: append([]string{}, p.Sub...)})
+			}
+			es.Rules = append(es.Rules, er)
+		}
+		out = append(out, es)
+	}
+	b, _ := json.Marshal(out)
+	return string(b)
+}
+
+// bodyFromSections turns the section editor's JSON into the rules
+// document. Blank dot points are dropped; a blank title or rule is an
+// error, so nothing is silently lost.
+func bodyFromSections(raw string) (string, error) {
+	var in []editSection
+	if err := json.Unmarshal([]byte(raw), &in); err != nil {
+		return "", fmt.Errorf("%w: the editor sent something unreadable; reload and try again", rules.ErrInvalid)
+	}
+	var secs []rules.Section
+	for i, es := range in {
+		s := rules.Section{Title: strings.TrimSpace(es.Title), Intro: es.Intro}
+		if s.Title == "" {
+			return "", fmt.Errorf("%w: section %d needs a title", rules.ErrInvalid, i+1)
+		}
+		for j, er := range es.Rules {
+			r := rules.Rule{Text: strings.TrimSpace(er.Text)}
+			if r.Text == "" {
+				return "", fmt.Errorf("%w: rule %d.%d is empty; write it or delete it", rules.ErrInvalid, i+1, j+1)
+			}
+			for _, ep := range er.Points {
+				pt := rules.Point{Text: strings.TrimSpace(ep.Text)}
+				for _, sp := range ep.Sub {
+					if sp = strings.TrimSpace(sp); sp != "" {
+						pt.Sub = append(pt.Sub, sp)
+					}
+				}
+				if pt.Text == "" && len(pt.Sub) > 0 {
+					return "", fmt.Errorf("%w: rule %d.%d has sub-points under an empty dot point", rules.ErrInvalid, i+1, j+1)
+				}
+				if pt.Text != "" {
+					r.Points = append(r.Points, pt)
+				}
+			}
+			s.Rules = append(s.Rules, r)
+		}
+		secs = append(secs, s)
+	}
+	return rules.Format(secs), nil
 }
 
 // RulesEdit is /admin/rules: the rulebook as one text document, plus the
@@ -72,6 +149,7 @@ func (d *Deps) RulesEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data.Body, data.HasLive = doc.Body, ok
+	data.Sections = sectionsJSON(doc.Sections)
 	if data.History, err = rules.History(r.Context(), d.Pool, 15); err != nil {
 		slog.Error("rules: history failed", "error", err)
 	}
@@ -82,7 +160,15 @@ func (d *Deps) RulesSave(w http.ResponseWriter, r *http.Request) {
 	const back = "/admin/rules"
 	body, note := r.FormValue("body"), r.FormValue("note")
 	sess, _ := auth.FromContext(r.Context())
-	changed, err := rules.Save(r.Context(), d.Pool, sess.PlayerID, body, note)
+	var err error
+	fromSections := r.FormValue("mode") == "sections"
+	if fromSections {
+		body, err = bodyFromSections(r.FormValue("sections"))
+	}
+	var changed []string
+	if err == nil {
+		changed, err = rules.Save(r.Context(), d.Pool, sess.PlayerID, body, note)
+	}
 	switch {
 	case err == nil:
 		msg := "Rules published."
@@ -111,6 +197,13 @@ func (d *Deps) RulesSave(w http.ResponseWriter, r *http.Request) {
 	case errors.Is(err, rules.ErrInvalid):
 		// Keep the unsaved text: re-render the editor instead of redirecting.
 		data := rulesEditData{Base: baseFrom(r, "Server Rules"), AdminShell: d.adminShell(r, "rules"), Body: body, Note: note, HasLive: true}
+		if fromSections {
+			data.Sections = r.FormValue("sections") // keep their unsaved sections
+		} else if secs, perr := rules.Parse(body); perr == nil {
+			data.Sections = sectionsJSON(secs)
+		} else {
+			data.Sections, data.TextMode = "[]", true
+		}
 		msg := strings.TrimPrefix(err.Error(), rules.ErrInvalid.Error()+": ")
 		data.Error = "Not published: " + msg + "."
 		data.History, _ = rules.History(r.Context(), d.Pool, 15)

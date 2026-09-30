@@ -5,19 +5,35 @@
     <div class="rules-edit-head">
       <div>
         <h1 class="page-title admin-title">Server Rules</h1>
-        <p class="admin-sub">What players see on <a href="/rules">/rules</a>. Start each section with <code>#</code> and each rule with its number. A line without a number continues the rule above it.</p>
+        <p class="admin-sub">What players see on <a href="/rules">/rules</a>. Build it from sections (General, Gameplay, TeamSpeak and so on), each with numbered rules and dot points. Rules are numbered for you in order.</p>
       </div>
       {{if .HasLive}}<a class="btn" href="/rules" target="_blank" rel="noopener">View live page</a>{{end}}
     </div>
 
     <div class="rules-edit-grid">
-      <form class="card rules-edit-form" method="post" action="/admin/rules/save">
+      <form class="card rules-edit-form" method="post" action="/admin/rules/save" data-rules-form>
         <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-        <label class="card-label" for="rules-body">Rulebook</label>
-        <textarea id="rules-body" name="body" rows="26" spellcheck="true" required placeholder="# General conduct&#10;1.1 Stay in character while in-game.&#10;1.2 Treat other players and staff with respect.&#10;&#10;# Combat&#10;2.1 No random deathmatch (RDM).">{{.Body}}</textarea>
+        <input type="hidden" name="mode" value="{{if .TextMode}}text{{else}}sections{{end}}" data-rules-mode>
+        <input type="hidden" name="sections" data-rules-json>
+
+        <div class="re-tabs" role="tablist" aria-label="Editor">
+          <button type="button" role="tab" class="re-tab{{if not .TextMode}} active{{end}}" aria-selected="{{if .TextMode}}false{{else}}true{{end}}" data-rules-tab="sections">Sections</button>
+          <button type="button" role="tab" class="re-tab{{if .TextMode}} active{{end}}" aria-selected="{{if .TextMode}}true{{else}}false{{end}}" data-rules-tab="text">Edit as text</button>
+        </div>
+
+        <div class="re-editor" data-rules-editor data-rules="{{.Sections}}" {{if .TextMode}}hidden{{end}}>
+          <noscript><p class="banner banner-error">The section editor needs JavaScript. Use "Edit as text" instead.</p></noscript>
+        </div>
+
+        <div class="re-text" data-rules-text {{if not .TextMode}}hidden{{end}}>
+          <p class="hint">Start each section with <code>#</code> and each rule with its number. <code>&gt;</code> adds a section intro, <code>-</code> a dot point under the rule above, and an indented <code>-</code> a second-level point.</p>
+          <label class="visually-hidden" for="rules-body">Rulebook</label>
+          <textarea id="rules-body" name="body" rows="26" spellcheck="true" placeholder="# General rules&#10;1.1 Treat other players and staff with respect.&#10;&#10;# Safe zones&#10;2.1 These areas are safe zones:&#10;- Kavala Markets&#10;- Kavala Hospital">{{.Body}}</textarea>
+        </div>
+
         <div class="field">
           <label for="rules-note">What changed{{if not .HasLive}} (optional for the first version){{end}}</label>
-          <input id="rules-note" name="note" maxlength="300" value="{{.Note}}" placeholder="e.g. Rule 4.3 (VDM) now covers hitting players on foot near hospitals.">
+          <input id="rules-note" name="note" maxlength="300" value="{{.Note}}" placeholder="e.g. Added TeamSpeak rules; 2.1 now lists the Kavala car park.">
           <span class="hint">Shown to players at the top of the rules for 30 days, with the changed rules highlighted.</span>
         </div>
         <label class="mod-check"><input type="checkbox" name="essential"> Also send an essential notice so every staff member has to acknowledge it</label>
@@ -42,4 +58,5 @@
     </div>
   </div>
 </div>
+<script src="/static/rules_editor.js" defer></script>
 {{end}}

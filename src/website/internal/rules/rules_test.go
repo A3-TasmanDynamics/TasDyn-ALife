@@ -65,3 +65,47 @@ func TestFilter(t *testing.T) {
 		t.Errorf("no match: %+v", got)
 	}
 }
+
+func TestParsePointsAndIntro(t *testing.T) {
+	secs, err := Parse("# Safe zones\n> Where combat is never allowed.\n4 Safe zones are:\n- Kavala Markets\n  - Including the car park.\n    Even at night.\n- Kavala Hospital\n4.1 Next rule.")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := secs[0]
+	if s.Intro != "Where combat is never allowed." || len(s.Rules) != 2 {
+		t.Fatalf("section = %+v", s)
+	}
+	want := []Point{{Text: "Kavala Markets", Sub: []string{"Including the car park. Even at night."}}, {Text: "Kavala Hospital"}}
+	if !reflect.DeepEqual(s.Rules[0].Points, want) {
+		t.Errorf("points = %+v", s.Rules[0].Points)
+	}
+	for name, body := range map[string]string{
+		"point before a rule": "# A\n- x\n1.1 y",
+		"intro after a rule":  "# A\n1.1 y\n> late intro",
+	} {
+		if _, err := Parse(body); !errors.Is(err, ErrInvalid) {
+			t.Errorf("%s: err = %v", name, err)
+		}
+	}
+}
+
+func TestFormatRoundTrip(t *testing.T) {
+	secs, _ := Parse("# General\n> Intro   text\n7 Be   nice.\n- a\n  - b\n# TeamSpeak\n9.9 Use push to talk.")
+	body := Format(secs)
+	want := "# General\n> Intro text\n1.1 Be nice.\n- a\n  - b\n\n# TeamSpeak\n2.1 Use push to talk.\n"
+	if body != want {
+		t.Fatalf("Format:\n%s\nwant:\n%s", body, want)
+	}
+	again, err := Parse(body)
+	if err != nil || Format(again) != body {
+		t.Errorf("round trip: %v\n%s", err, Format(again))
+	}
+}
+
+func TestChangedIgnoresRenumbering(t *testing.T) {
+	prev, _ := Parse("# A\n1.1 One.\n1.2 Two.\n- x")
+	next, _ := Parse("# A\n1.1 New first.\n1.2 One.\n1.3 Two.\n- y")
+	if got := Changed(prev, next); !reflect.DeepEqual(got, []string{"1.1", "1.3"}) {
+		t.Errorf("changed = %v (a moved rule isn't new; a changed dot point is)", got)
+	}
+}

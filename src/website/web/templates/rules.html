@@ -28,15 +28,27 @@
       </div>
       {{end}}
 
+      {{if and (not .Q) (gt (len .TOC) 1)}}
+      <nav class="rules-contents" aria-labelledby="rules-contents-h">
+        <h2 id="rules-contents-h">Contents</h2>
+        <ol>
+          {{range .TOC}}<li><a href="#{{.Anchor}}"><span class="rules-contents-n">{{.N}}.</span><span>{{.Title}}</span><span class="rules-contents-count">{{len .Rules}} rule{{if ne (len .Rules) 1}}s{{end}}</span></a></li>{{end}}
+        </ol>
+      </nav>
+      {{end}}
+
       {{if .Q}}<p class="rules-meta">Showing rules matching &ldquo;{{.Q}}&rdquo; &middot; <a href="/rules">Show all</a></p>{{end}}
 
       {{range .Sections}}
       <section id="{{.Anchor}}" class="rules-section">
         <h2><span class="rules-section-n">{{.N}}.</span>{{.Title}}</h2>
+        {{if .Intro}}<p class="rules-intro">{{.Intro}}</p>{{end}}
         {{range .Rules}}
         <div class="rule{{if .Changed}} rule-changed{{end}}" id="rule-{{.Number}}">
           <span class="rule-n">{{.Number}}</span>
-          <span class="rule-text">{{.Text}}{{if .Changed}} <span class="rule-changed-tag">Changed</span>{{end}}</span>
+          <div class="rule-text">{{.Text}}{{if .Changed}} <span class="rule-changed-tag">Changed</span>{{end}}
+            {{if .Points}}<ul class="rule-points">{{range .Points}}<li>{{.Text}}{{if .Sub}}<ul>{{range .Sub}}<li>{{.}}</li>{{end}}</ul>{{end}}</li>{{end}}</ul>{{end}}
+          </div>
         </div>
         {{end}}
       </section>
