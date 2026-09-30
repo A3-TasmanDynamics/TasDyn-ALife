@@ -235,6 +235,12 @@ func run() error {
 		r.Post("/command/{faction}/members/{id}/rank", d.CommandSetRank)
 		r.Get("/command/{faction}/log", d.CommandLog)
 
+		// Notifications (GAMEPANEL_PARITY §7.3).
+		r.Get("/notifications", d.Notifications)
+		r.Get("/notifications/{id}", d.NotificationOpen)
+		r.Post("/notifications/read", d.NotificationsReadAll)
+		r.Post("/notifications/{id}/ack", d.NotificationAck)
+
 		r.Get("/tickets", d.MyTickets)
 		r.Post("/tickets", d.CreateTicket)
 		r.Get("/tickets/{id}", d.TicketThread) // ownership/staff check inside -- shared with Support Panel
@@ -324,6 +330,12 @@ func run() error {
 			r.Use(d.Auth.RequirePermission("applications.view"))
 			r.Get("/admin/applications", d.Applications)
 			r.Post("/admin/applications/{id}", d.ApplicationAction)
+		})
+
+		r.Group(func(r chi.Router) {
+			r.Use(d.Auth.RequirePermission("announce.post"))
+			r.Get("/admin/notices", d.AdminNotices)
+			r.Post("/admin/notices", d.AdminNoticePost)
 		})
 
 		// Server rules editor (public page is /rules).

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"website/internal/auth"
+	"website/internal/notify"
 	"website/internal/rules"
 )
 
@@ -87,6 +88,22 @@ func (d *Deps) RulesSave(w http.ResponseWriter, r *http.Request) {
 		msg := "Rules published."
 		if len(changed) > 0 {
 			msg = fmt.Sprintf("Rules published. Highlighted as changed: %s.", strings.Join(changed, ", "))
+		}
+		// Optionally make every staff member acknowledge it (GAMEPANEL_PARITY §7.3).
+		if r.FormValue("essential") == "on" {
+			title := "Server rules updated"
+			if len(changed) > 0 {
+				title = "Rules updated: " + strings.Join(changed, ", ")
+			}
+			if tx, terr := d.Pool.Begin(r.Context()); terr == nil {
+				if _, n, berr := notify.Broadcast(r.Context(), tx, sess.PlayerID, title, strings.TrimSpace(note), "/rules", "staff"); berr == nil && tx.Commit(r.Context()) == nil {
+					msg += fmt.Sprintf(" Essential notice sent to %d staff.", n)
+				} else {
+					tx.Rollback(r.Context())
+					slog.Error("rules: essential notice failed", "error", berr)
+					msg += " The essential notice couldn't be sent; post it from Essential Notices."
+				}
+			}
 		}
 		http.Redirect(w, r, back+"?notice="+errMsg(msg), http.StatusSeeOther)
 	case errors.Is(err, rules.ErrUnchanged):

@@ -12,6 +12,7 @@ import (
 	"website/internal/bank"
 	"website/internal/cases"
 	"website/internal/dashboard"
+	"website/internal/notify"
 )
 
 type gangMember struct {
@@ -43,6 +44,9 @@ type dashboardData struct {
 
 	StaffApp    *applications.StaffApp    // open or recently decided staff application
 	FactionApps []applications.FactionApp // open faction applications
+
+	Notes  []notify.Item
+	Unread int
 }
 
 // Dashboard is the player dashboard (layout plan "Player — Dashboard").
@@ -81,6 +85,7 @@ func (d *Deps) renderDashboard(w http.ResponseWriter, r *http.Request, linkCode 
 			}
 		}
 	}
+	data.Notes, data.Unread, _ = notify.List(r.Context(), d.Pool, sess.PlayerID, 5)
 	if data.Ban, data.Appeal, err = cases.ActiveBan(r.Context(), d.Pool, sess.PlayerID); err != nil {
 		slog.Error("dashboard: ban lookup failed", "error", err)
 	}

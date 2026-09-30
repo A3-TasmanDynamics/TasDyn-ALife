@@ -36,6 +36,21 @@ type Session struct {
 	PoliceRank  string // rank name (or "Level n"), "" = not police
 	EMSRank     string
 	HasCommand  bool // faction command in police or EMS (command panel link)
+
+	// Notifications (docs/GAMEPANEL_PARITY.md §7.3): the bell's unread count,
+	// and the oldest essential notice not yet acknowledged (the banner).
+	Unread    int
+	Essential *EssentialNotice
+}
+
+// EssentialNotice is the banner shown until the player acknowledges it.
+type EssentialNotice struct {
+	ID    int64 // notification id
+	Title string
+	Body  string
+	Link  string
+	Acked int
+	Total int
 }
 
 // Subtitle is the line under the player's name in the site header, e.g.
@@ -232,6 +247,7 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 		hash := hex.EncodeToString(sum[:])
 
 		var sess Session
+		var ess EssentialNotice
 		var expiresAt time.Time
 		// COALESCE/NULLIF: players.name defaults to '' and is only ever set
 		// by the game's own save path -- a website-first signup (Steam
@@ -245,19 +261,30 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 			       CASE WHEN COALESCE(p.cop_level, 0) > 0 THEN COALESCE((SELECT name FROM faction_rank_names WHERE faction = 'police' AND level = p.cop_level), 'Level ' || p.cop_level) ELSE '' END,
 			       CASE WHEN COALESCE(p.medic_level, 0) > 0 THEN COALESCE((SELECT name FROM faction_rank_names WHERE faction = 'ems' AND level = p.medic_level), 'Level ' || p.medic_level) ELSE '' END,
 			       EXISTS (SELECT 1 FROM faction_rank_names r WHERE r.promote_up_to > 0
-			               AND ((r.faction = 'police' AND r.level = p.cop_level) OR (r.faction = 'ems' AND r.level = p.medic_level)))
+			               AND ((r.faction = 'police' AND r.level = p.cop_level) OR (r.faction = 'ems' AND r.level = p.medic_level))),
+			       (SELECT count(*) FROM notifications n WHERE n.player_id = p.id AND n.read_at IS NULL),
+			       COALESCE(e.id, 0), COALESCE(e.title, ''), COALESCE(e.body, ''), COALESCE(e.link, ''),
+			       COALESCE((SELECT count(*) FILTER (WHERE x.acknowledged_at IS NOT NULL) FROM notifications x WHERE x.notice_id = e.notice_id), 0),
+			       COALESCE((SELECT count(*) FROM notifications x WHERE x.notice_id = e.notice_id), 0)
 			FROM web_sessions ws
 			JOIN players p ON p.id = ws.player_id
 			LEFT JOIN staff_ranks sr ON sr.id = p.staff_rank_id
+			LEFT JOIN LATERAL (SELECT id, title, body, link, notice_id FROM notifications
+			                   WHERE player_id = p.id AND essential AND acknowledged_at IS NULL ORDER BY id LIMIT 1) e ON true
 			WHERE ws.token_hash = $1
 		`, hash).Scan(&sess.PlayerID, &sess.Name, &sess.AdminPanelAccess, &sess.SupportPanelAccess, &expiresAt,
-			&sess.StaffRank, &sess.StaffStatus, &sess.PoliceRank, &sess.EMSRank, &sess.HasCommand)
+			&sess.StaffRank, &sess.StaffStatus, &sess.PoliceRank, &sess.EMSRank, &sess.HasCommand,
+			&sess.Unread, &ess.ID, &ess.Title, &ess.Body, &ess.Link, &ess.Acked, &ess.Total)
 
 		if err != nil || time.Now().After(expiresAt) {
 			// Invalid, unknown, or expired token -- proceed unauthenticated
 			// rather than erroring; a stale cookie is not this site's fault.
 			next.ServeHTTP(w, r)
 			return
+		}
+
+		if ess.ID != 0 {
+			sess.Essential = &ess
 		}
 
 		// Best-effort activity touch; a failure here must never break the request.

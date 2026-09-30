@@ -59,6 +59,22 @@ Discord OAuth login/connect and the `/link` bot command are both optional at run
 and the website-generated link code still work; the bot-side half of linking just won't be
 available). See `.env.example` for what each variable is for and where to get it.
 
+## Tests
+
+```bash
+go test ./...                                   # unit tests only
+TEST_DATABASE_URL=postgres://alife_admin:alife_admin@127.0.0.1:5432/alife_db go test -p 1 ./...
+```
+
+With `TEST_DATABASE_URL` set, the `*_integration_test.go` files run against a real database. They
+create their own test players (Steam64 IDs starting `765611900000`) and delete everything they
+made afterwards. Two rules:
+
+- **Stop the website first.** The tests write `staff_log` rows and queue Discord DMs; a running
+  site would post those to #staff-log and try to send the DMs.
+- **Use `-p 1`.** Packages share the database, and `go test` runs packages in parallel by default,
+  so the outbox test's worker could pick up another package's queued DMs.
+
 ## Smoke-testing without a real Steam/Discord login
 
 Steam OpenID and Discord OAuth both require a real account and a reachable callback URL, so they

@@ -1,0 +1,32 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content mod-page">
+    <div>
+      <h1 class="page-title admin-title">Essential notices</h1>
+      <p class="admin-sub">For policy and rule changes everyone must see. Each person gets a notification and a banner on every page until they press "I've read this", and you can see who hasn't yet.</p>
+    </div>
+    <form class="card mod-form" method="post" action="/admin/notices">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      <div class="field"><label for="nt-title">Title</label><input id="nt-title" name="title" maxlength="120" required value="{{index .Form "title"}}" placeholder="e.g. Rule 4.3 (VDM) has changed"></div>
+      <div class="field"><label for="nt-body">Message</label><textarea id="nt-body" name="body" rows="3" maxlength="2000" placeholder="What changed and what people need to do.">{{index .Form "body"}}</textarea></div>
+      <div class="mod-form-row">
+        <div class="field mod-grow"><label for="nt-link">Link (optional, a page on this site)</label><input id="nt-link" name="link" maxlength="200" value="{{index .Form "link"}}" placeholder="/rules#r4"></div>
+        <div class="field"><label for="nt-aud">Send to</label><select id="nt-aud" name="audience"><option value="staff" {{if eq (index .Form "audience") "staff"}}selected{{end}}>All staff</option><option value="everyone" {{if eq (index .Form "audience") "everyone"}}selected{{end}}>Everyone who has used the website</option></select></div>
+      </div>
+      <div class="sync-form-foot"><span class="hint">Logged to the Staff Log. Suspended staff aren't included.</span><button class="btn btn-primary" type="submit">Send notice</button></div>
+    </form>
+
+    <h2 class="admin-section-title">Sent</h2>
+    {{range .Notices}}
+    <section class="card mod-appeal">
+      <div class="mod-appeal-head"><strong>{{.Title}}</strong><span class="mod-dim">{{.CreatedAt.Format "2 Jan 2006 15:04"}} by {{.By}} &middot; {{if eq .Audience "staff"}}staff{{else}}everyone{{end}}</span><span class="mod-pill {{if eq .Acked .Total}}mod-pill-closed{{else}}mod-pill-open{{end}}">{{.Acked}} of {{.Total}} acknowledged</span></div>
+      {{if .Body}}<p class="mod-dim">{{.Body}}</p>{{end}}
+      {{if .Waiting}}<p class="hint">Waiting on: {{range $i, $n := .Waiting}}{{if $i}}, {{end}}{{$n}}{{end}}{{if gt (len .Waiting) 19}}…{{end}}</p>{{end}}
+    </section>
+    {{else}}
+    <p class="mod-empty card">No notices sent yet.</p>
+    {{end}}
+  </div>
+</div>
+{{end}}

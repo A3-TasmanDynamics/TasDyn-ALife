@@ -196,6 +196,11 @@
         {{end}}
       </section>
 
+      <section class="pdash-card note-card" id="notifications" aria-label="Notifications">
+        {{template "notification_list" dict "Items" .Notes "Unread" .Unread "CSRF" .CSRFToken "Back" "/dashboard#notifications"}}
+        <a class="note-all" href="/notifications">All notifications</a>
+      </section>
+
       {{if not .DiscordUsername}}
       <section class="pdash-card pdash-pad" aria-labelledby="pd-discord">
         <h2 id="pd-discord">Connect Discord</h2>

@@ -4,6 +4,7 @@
 <nav class="admin-sidebar" aria-label="Admin sections">
   <div class="admin-sidebar-head">
     <a href="/admin" class="admin-sidebar-home"><span class="brand-mark admin-sidebar-mark" aria-hidden="true"></span><span>Admin Panel</span></a>
+    <a class="bell" href="/notifications" aria-label="Notifications{{if .Session.Unread}}, {{.Session.Unread}} unread{{end}}"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>{{if .Session.Unread}}<span class="bell-count">{{.Session.Unread}}</span>{{end}}</a>
   </div>
   <form class="admin-sidebar-search" method="get" action="/admin/players" role="search">
     <label>
@@ -35,6 +36,7 @@
   <span class="admin-nav-item disabled">Server Control <span class="admin-nav-tag">Soon</span></span>
   <span class="admin-nav-item disabled">Database <span class="admin-nav-tag">Soon</span></span>
   <span class="admin-nav-item disabled">Item Prices <span class="admin-nav-tag">Soon</span></span>
+  <a href="/admin/notices" class="admin-nav-item {{if eq .AdminTab "notices"}}active{{end}}" {{if eq .AdminTab "notices"}}aria-current="page"{{end}}>Essential Notices</a>
   <a href="/admin/rules" class="admin-nav-item {{if eq .AdminTab "rules"}}active{{end}}" {{if eq .AdminTab "rules"}}aria-current="page"{{end}}>Server Rules</a>
   <a href="/admin/discord" class="admin-nav-item {{if eq .AdminTab "discord"}}active{{end}}" {{if eq .AdminTab "discord"}}aria-current="page"{{end}}>Discord Bot</a>
   {{if .Session.SupportPanelAccess}}<a href="/support" class="admin-nav-item admin-nav-switch">Switch to Support Panel</a>{{end}}
