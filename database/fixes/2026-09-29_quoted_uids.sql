@@ -72,6 +72,7 @@ BEGIN
     END LOOP;
 END $$;
 
+ALTER TABLE players DROP CONSTRAINT IF EXISTS players_uid_check;
 ALTER TABLE players ADD CONSTRAINT players_uid_check CHECK (uid ~ '^[0-9]{17}$');
 
 COMMIT;

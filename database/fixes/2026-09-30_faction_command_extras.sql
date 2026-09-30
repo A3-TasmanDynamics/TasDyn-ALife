@@ -16,7 +16,8 @@ ALTER TABLE faction_rank_names ADD COLUMN IF NOT EXISTS description TEXT NOT NUL
 ALTER TABLE faction_log DROP CONSTRAINT IF EXISTS faction_log_kind_check;
 ALTER TABLE faction_log ADD CONSTRAINT faction_log_kind_check CHECK (kind IN (
     'recruit', 'promote', 'demote', 'remove',
-    'probation', 'training', 'discipline', 'discharge', 'blacklist', 'division', 'qual', 'rank_rules', 'settings'));
+    'probation', 'training', 'discipline', 'discharge', 'blacklist', 'division', 'qual', 'rank_rules', 'settings',
+    'roster', 'roll_call', 'drive'));
 ALTER TABLE faction_log ADD COLUMN IF NOT EXISTS detail TEXT NOT NULL DEFAULT '';
 
 -- ---------------------------------------------------------------------------
