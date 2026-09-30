@@ -1087,3 +1087,4 @@
   Commander appoint to Administration; only cabinet and Management appoint its Commander. Administration
   can be held alongside a specialist division. Nobody can take Command or Cabinet away from their own
   rank. Run `database/fixes/2026-09-30_admin_division.sql`.
+- Cabinet members are part of the Administration division automatically (shown as "Automatic · cabinet"); they can't be removed from it while their rank is Cabinet.

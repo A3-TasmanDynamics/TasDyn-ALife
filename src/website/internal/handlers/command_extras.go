@@ -366,6 +366,7 @@ type divisionMember struct {
 	factions.Member
 	Role    string
 	CanEdit bool
+	Auto    bool // Administration by being cabinet
 }
 
 type qualRow struct {
@@ -483,7 +484,7 @@ func (d *Deps) CommandDivisions(w http.ResponseWriter, r *http.Request) {
 		}
 		for _, m := range members {
 			if p, ok := postingIn(cur.Division, m.ID); ok {
-				dm := divisionMember{Member: m, Role: p.Role, CanEdit: canEdit(m)}
+				dm := divisionMember{Member: m, Role: p.Role, CanEdit: canEdit(m) && !p.Auto, Auto: p.Auto}
 				if cur.IsAdmin && p.Role == cur.CommanderRole() && !cb.Management && !cb.Command.Cabinet {
 					dm.CanEdit = false
 				}

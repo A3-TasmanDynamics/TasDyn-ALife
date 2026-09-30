@@ -149,6 +149,31 @@ func Divisions(ctx context.Context, q dbtx, faction string) ([]Division, error) 
 type Posting struct {
 	Key, Role string
 	Since     time.Time
+	Auto      bool // Administration by being cabinet, not by appointment
+}
+
+// CabinetRole is the Administration role shown for cabinet members, who
+// are part of Administration automatically.
+const CabinetRole = "Cabinet"
+
+// cabinetMembers lists members whose rank is ticked as cabinet.
+func cabinetMembers(ctx context.Context, q dbtx, faction string) ([]int64, error) {
+	rows, err := q.Query(ctx, `
+		SELECT p.id FROM players p JOIN faction_rank_names r ON r.faction = $1 AND r.level = p.`+column[faction]+`
+		WHERE r.is_cabinet AND r.is_command`, faction)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		out = append(out, id)
+	}
+	return out, rows.Err()
 }
 
 func postings(ctx context.Context, q dbtx, faction string, admin bool) (map[int64]Posting, error) {
@@ -178,8 +203,25 @@ func MemberDivisions(ctx context.Context, q dbtx, faction string) (map[int64]Pos
 }
 
 // AdminPostings maps player ID → their Administration division posting.
+// Cabinet members are part of Administration automatically (Role
+// CabinetRole, Auto) unless they also hold an appointed role.
 func AdminPostings(ctx context.Context, q dbtx, faction string) (map[int64]Posting, error) {
-	return postings(ctx, q, faction, true)
+	out, err := postings(ctx, q, faction, true)
+	if err != nil {
+		return nil, err
+	}
+	cab, err := cabinetMembers(ctx, q, faction)
+	if err != nil {
+		return nil, err
+	}
+	var key string
+	_ = q.QueryRow(ctx, `SELECT key FROM faction_divisions WHERE faction = $1 AND is_admin`, faction).Scan(&key)
+	for _, id := range cab {
+		if _, ok := out[id]; !ok && key != "" {
+			out[id] = Posting{Key: key, Role: CabinetRole, Auto: true}
+		}
+	}
+	return out, nil
 }
 
 // SetDivision posts a member to a division in role, or takes them out of it
@@ -269,6 +311,9 @@ func SetDivision(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction s
 
 	var detail string
 	if remove {
+		if cur.Key == "" && d.IsAdmin && a.TargetCabinet {
+			return notAllowed("cabinet members are part of %s automatically while their rank is Cabinet", d.Name)
+		}
 		if cur.Key == "" {
 			return notAllowed("they aren't in %s", d.Name)
 		}

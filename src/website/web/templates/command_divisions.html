@@ -23,7 +23,7 @@
     <section class="cmd-card">
       <div class="cmd-card-head"><h2>{{.Name}} members</h2>
         <span class="cmd-dim">Roles, most senior first: {{range $i, $r := .Roles}}{{if $i}} &middot; {{end}}{{$r}}{{end}}</span></div>
-      {{if .IsAdmin}}<p class="div-admin-note">Administration members administrate and maintain the command panel whatever their rank: personnel files, roll call, certifications, training, division postings, rank rules and settings. They can't change ranks or issue discipline. Only cabinet, Management and the {{.CommanderRole}} appoint to it; only cabinet and Management appoint the {{.CommanderRole}}.</p>{{end}}
+      {{if .IsAdmin}}<p class="div-admin-note">Administration members administrate and maintain the command panel whatever their rank: personnel files, roll call, certifications, training, division postings, rank rules and settings. They can't change ranks or issue discipline. Cabinet members are part of it automatically. Only cabinet, Management and the {{.CommanderRole}} appoint to it; only cabinet and Management appoint the {{.CommanderRole}}.</p>{{end}}
       {{range $.Members}}
       <div class="div-row">
         <span><a class="cmd-strong" href="/command/{{$.Faction}}/members/{{.ID}}">{{.Name}}</a><span class="cmd-dim div-sub">{{.Rank.Label}}</span></span>
@@ -35,7 +35,7 @@
           <button class="btn btn-sm" type="submit" name="action" value="role">Set role</button>
           <button class="btn btn-sm" type="submit" name="action" value="remove">Remove</button>
         </form>
-        {{else}}<span class="cmd-tag">{{.Role}}</span>{{end}}
+        {{else if .Auto}}<span class="cmd-tag cmd-tag-cab" title="Cabinet members are part of Administration automatically">Automatic · cabinet</span>{{else}}<span class="cmd-tag">{{.Role}}</span>{{end}}
       </div>
       {{else}}
       <p class="cmd-empty">Nobody is in {{.Name}} yet.</p>

@@ -368,7 +368,8 @@ read-only. Everything is recorded in the Command log.
   cabinet maintain the panel too, but nobody edits their own rank unless cabinet, and nobody takes
   Command / Cabinet away from their own rank. Only cabinet, Management (`factions.configure`) and the
   Administration Commander appoint to Administration; only cabinet and Management appoint its
-  Commander. Administration can be held alongside a specialist division.
+  Commander. Administration can be held alongside a specialist division, and cabinet members are part of it
+  automatically.
 - **Roster and personnel files.** The Roster lists rank, badge / callsign, name, division and
   status (Active / Semi-active / LOA / Reserve, with Probation and Suspended shown automatically).
   Each member's profile is their personnel file: region, enrollment date, last promotion, time in

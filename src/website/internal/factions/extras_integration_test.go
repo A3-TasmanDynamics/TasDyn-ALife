@@ -273,8 +273,19 @@ func TestCommandExtras(t *testing.T) {
 	// Administration sits alongside a specialist division.
 	must("grant AQ to clerk", SetQual(ctx, pool, cmd("chief"), f, ids["clerk"], "AQ", true, ""))
 	must("clerk joins a specialist division", SetDivision(ctx, pool, cmd("chief"), f, ids["clerk"], "TAIR", "", false, ""))
+	// Cabinet is part of Administration automatically, and can't be removed from it.
+	if c, _, _ := CommandIn(ctx, pool, ids["chief"], f); !c.Admin || c.AdminRole != CabinetRole {
+		t.Errorf("cabinet should be in Administration automatically, got %+v", c)
+	}
+	denied("remove cabinet from Administration", SetDivision(ctx, pool, mgmt, f, ids["chief"], "ADMIN", "", true, ""))
 	spec, _ := MemberDivisions(ctx, pool, f)
 	adm, _ := AdminPostings(ctx, pool, f)
+	if p := adm[ids["chief"]]; !p.Auto || p.Role != CabinetRole {
+		t.Errorf("cabinet should be listed in Administration automatically, got %+v", p)
+	}
+	if _, ok := adm[ids["sup"]]; ok {
+		t.Error("non-cabinet command isn't in Administration unless appointed")
+	}
 	if spec[ids["clerk"]].Key != "TAIR" || adm[ids["clerk"]].Role != "Commander" {
 		t.Errorf("Administration and a specialist division should both hold: %+v %+v", spec[ids["clerk"]], adm[ids["clerk"]])
 	}
