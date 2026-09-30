@@ -1,0 +1,99 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content mod-page">
+    <div>
+      <h1 class="page-title admin-title">Server control</h1>
+      <p class="admin-sub">Start, stop and restart the game server, and read its live log. Every action goes through server_manager on the game host and is written to the Staff Log with your reason.</p>
+    </div>
+
+    {{if not .Configured}}
+    <section class="card">
+      <h2 class="admin-section-title">server_manager isn't connected</h2>
+      <p class="mod-dim">The website controls the game server through server_manager's control API. To connect it, copy <span class="mono">ControlAPIToken</span> from server_manager's <span class="mono">settings.json</span> and set these in the website's environment, then restart the website:</p>
+      <pre class="mono srv-env">SERVER_MANAGER_URL=http://127.0.0.1:8095
+SERVER_MANAGER_TOKEN=&lt;ControlAPIToken&gt;</pre>
+    </section>
+    {{else if .ConnErr}}
+    <div class="banner banner-error">Can't reach server_manager: {{.ConnErr}}. Check it's running on the game host.</div>
+    {{else}}
+    <section class="card srv-status">
+      <div class="srv-head">
+        <span class="mod-pill {{if .Status.Running}}mod-pill-closed{{else}}mod-pill-banned{{end}}">{{if .Status.Running}}Online{{else}}Offline{{end}}</span>
+        <strong class="mono">{{.ServerID}}</strong>
+        {{if .RestartAt}}<span class="mod-pill mod-pill-open">Restart scheduled for {{.RestartAt}}</span>{{end}}
+      </div>
+      <div class="srv-stats">
+        <div><div class="mod-dim">Players</div><div class="strong">{{if .Players}}{{.Players}}{{else}}&mdash;{{end}}</div></div>
+        <div><div class="mod-dim">Uptime</div><div class="strong">{{if .Status.Running}}{{.Uptime}}{{else}}&mdash;{{end}}</div></div>
+        <div><div class="mod-dim">Server FPS</div><div class="strong">{{if ge .Status.ServerFPS 0.0}}{{printf "%.0f" .Status.ServerFPS}}{{else}}&mdash;{{end}}</div></div>
+        <div><div class="mod-dim">Last restart from here</div><div class="strong">{{if .LastRestart}}{{.LastRestart}}{{else}}&mdash;{{end}}</div></div>
+      </div>
+      {{if .CanControl}}
+      <div class="srv-actions">
+        {{if .Status.Running}}
+          {{if .RestartAt}}
+          <form method="post" action="/admin/server" class="inline-form">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="action" value="cancel">
+            <button class="btn" type="submit">Cancel scheduled restart</button>
+          </form>
+          {{else}}
+          <button class="btn btn-primary" type="button" data-dialog-open="dlg-restart" {{if .Cooldown}}disabled title="Next restart allowed at {{.Cooldown}}"{{end}}>Restart</button>
+          {{end}}
+          <button class="btn btn-danger" type="button" data-dialog-open="dlg-stop">Stop</button>
+        {{else}}
+          <form method="post" action="/admin/server" class="inline-form">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="action" value="start">
+            <button class="btn btn-primary" type="submit">Start server</button>
+          </form>
+        {{end}}
+        {{if .Cooldown}}<span class="hint">Restarted recently; the next restart is allowed at {{.Cooldown}}.</span>{{end}}
+      </div>
+
+      <dialog id="dlg-restart" class="modal" aria-labelledby="dlg-restart-t">
+        <form method="post" action="/admin/server">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="action" value="restart">
+          <div class="modal-head"><h2 id="dlg-restart-t">Restart {{.ServerID}}</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+          <div class="modal-body">
+            <div class="field"><label for="rs-warn">Warning time</label><select id="rs-warn" name="warn"><option value="0">Restart now</option><option value="1">1 minute</option><option value="5" selected>5 minutes</option><option value="10">10 minutes</option><option value="15">15 minutes</option><option value="30">30 minutes</option></select></div>
+            <div class="field"><label for="rs-reason">Reason</label><input id="rs-reason" name="reason" required maxlength="500" placeholder="e.g. Server FPS dropped below 10"></div>
+            <div class="field"><label for="rs-confirm">Type <span class="mono">{{.ServerID}}</span> to confirm</label><input id="rs-confirm" name="confirm" required autocomplete="off" pattern="{{.ServerID}}"></div>
+            <p class="hint">With a warning time, players are told in #server-status on Discord (there's no in-game message yet). At most one restart every 5 minutes.</p>
+          </div>
+          <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Schedule restart</button></div>
+        </form>
+      </dialog>
+      <dialog id="dlg-stop" class="modal" aria-labelledby="dlg-stop-t">
+        <form method="post" action="/admin/server">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="action" value="stop">
+          <div class="modal-head"><h2 id="dlg-stop-t">Stop {{.ServerID}}</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+          <div class="modal-body">
+            <p>Everyone on the server is disconnected straight away, and it stays down until someone starts it again.</p>
+            <div class="field"><label for="st-reason">Reason</label><input id="st-reason" name="reason" required maxlength="500"></div>
+            <div class="field"><label for="st-confirm">Type <span class="mono">{{.ServerID}}</span> to confirm</label><input id="st-confirm" name="confirm" required autocomplete="off" pattern="{{.ServerID}}"></div>
+          </div>
+          <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-danger" type="submit">Stop server</button></div>
+        </form>
+      </dialog>
+      {{else}}
+      <p class="hint">You can read the log. Restarting, stopping and starting need the "Restart, stop and start servers" permission (Head Admin).</p>
+      {{end}}
+    </section>
+    {{end}}
+
+    {{if and .CanLogs .Configured (not .ConnErr)}}
+    <h2 class="admin-section-title">Live log</h2>
+    <section class="card srv-logs" data-srv-logs="/admin/server/logs.json">
+      <div class="mod-form-row">
+        <div class="field mod-grow"><label for="lg-filter">Filter</label><input id="lg-filter" data-srv-filter placeholder="Show only lines containing…"></div>
+        <button class="btn" type="button" data-srv-pause aria-pressed="false">Pause</button>
+      </div>
+      <pre class="mono srv-log" data-srv-out aria-live="off">Loading…</pre>
+      <p class="hint" data-srv-note>Refreshes every 5 seconds. The last 300 lines of the server's RPT log.</p>
+    </section>
+    {{end}}
+  </div>
+</div>
+<script src="/static/admin.js" defer></script>
+<script src="/static/server.js" defer></script>
+{{end}}

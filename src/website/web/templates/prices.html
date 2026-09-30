@@ -1,0 +1,29 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content mod-page">
+    <div>
+      <h1 class="page-title admin-title">Item prices</h1>
+      <p class="admin-sub">A read-only reference for compensation. Editing comes later, once it's decided whether prices live in the database or the mission.</p>
+    </div>
+
+    <section class="card">
+      <h2 class="admin-section-title">Shop items and vehicles</h2>
+      <p class="mod-dim">The mission doesn't have an economy config yet, so there are no shop or vehicle prices to show. They'll appear here as soon as one exists. Until then, check the price in game before compensating.</p>
+    </section>
+
+    <h2 class="admin-section-title">Houses <span class="mod-dim">{{len .Houses}}{{if .Q}} matching{{end}} &middot; {{.Owned}} owned</span></h2>
+    <form method="get" action="/admin/prices" class="mod-form-row">
+      <div class="field mod-grow"><label for="pr-q">Search houses</label><input id="pr-q" name="q" value="{{.Q}}" placeholder="House key"></div>
+    </form>
+    <div class="mod-table" role="table" aria-label="House prices">
+      <div class="mod-row mod-price-row mod-row-head" role="row"><span>House</span><span>Price</span><span>Owner</span></div>
+      {{range .Houses}}
+      <div class="mod-row mod-price-row" role="row"><span class="mono">{{.Key}}</span><span>${{money .Price}}</span><span class="mod-dim">{{if .Owner}}{{.Owner}}{{else}}Unowned{{end}}</span></div>
+      {{else}}
+      <p class="mod-empty">{{if .Q}}No houses match.{{else}}No houses in the database yet.{{end}}</p>
+      {{end}}
+    </div>
+  </div>
+</div>
+{{end}}

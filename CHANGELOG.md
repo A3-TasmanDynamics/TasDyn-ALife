@@ -1035,3 +1035,15 @@
   the rules change. Links are same-site paths only (checked in code and by a table constraint). The unread count and
   pending banner load with the session, so every page has them. New tables `notifications`, `staff_notices`
   (`database/fixes/2026-09-30_notifications.sql`). README: how to run the integration tests (stop the site; `-p 1`).
+- **Server tools (GAMEPANEL_PARITY §5.5, §8, layout plan).** **Admin → Database**: a read-only browser for Head Admin
+  (`database.query`) with the table list, paged and filterable rows, a row inspector showing what else points at the row,
+  the foreign-key map, and a SQL console (SELECT only, one statement, 500-row cap, 5-second timeout, every query in the
+  Staff Log). It runs in READ ONLY transactions, refuses functions that affect other sessions, and hides secret columns;
+  set `DATABASE_READONLY_URL` to a SELECT-only role (`database/fixes/2026-09-30_readonly_role.sql`) for a harder
+  guarantee. **Admin → Server Control**: status (online, players, uptime, server FPS), restart with a warning time
+  (announced in #server-status), stop, start and cancel, each needing a reason and, for restart/stop, the server name
+  typed to confirm; a live log that refreshes every 5 seconds with a filter and pause, with IPs masked below Head Admin.
+  It all goes through **server_manager's new control API** (127.0.0.1:8095, bearer token generated into
+  `settings.json`, at most one restart per 5 minutes); set `SERVER_MANAGER_URL`/`SERVER_MANAGER_TOKEN` in the website.
+  **Admin → Item Prices**: a read-only reference for compensation; house prices from the database, and an honest note
+  that shop and vehicle prices appear once the mission has an economy config.

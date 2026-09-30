@@ -22,6 +22,7 @@ import (
 	"website/internal/csrf"
 	"website/internal/db"
 	"website/internal/dbbrowser"
+	"website/internal/servercontrol"
 	"website/internal/discord"
 	"website/internal/handlers"
 	"website/internal/render"
@@ -97,6 +98,7 @@ func run() error {
 		Cfg:    cfg,
 	}
 	d.Auth.Denied = d.Denied
+	d.ServerMgr = &servercontrol.Client{URL: cfg.ServerManagerURL, Token: cfg.ServerManagerToken}
 
 	// Database browser (Admin → Database): a SELECT-only role if configured,
 	// otherwise the main pool in READ ONLY transactions (internal/dbbrowser).
@@ -357,6 +359,18 @@ func run() error {
 			r.Use(d.Auth.RequirePermission("database.query"))
 			r.Get("/admin/database", d.Database)
 			r.Post("/admin/database/query", d.DatabaseQuery)
+		})
+
+		// Server Control (GAMEPANEL_PARITY §8): the page opens for either
+		// permission; each action checks its own.
+		r.Get("/admin/server", d.ServerControl)
+		r.Get("/admin/server/logs.json", d.ServerLogs)
+		r.Post("/admin/server", d.ServerAction)
+
+		// Item prices (GAMEPANEL_PARITY §5.5), read-only.
+		r.Group(func(r chi.Router) {
+			r.Use(d.Auth.RequirePermission("players.compensate"))
+			r.Get("/admin/prices", d.ItemPrices)
 		})
 
 		// Server rules editor (public page is /rules).
