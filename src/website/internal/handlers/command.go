@@ -267,6 +267,8 @@ type commandMemberData struct {
 	RollCall []factions.RollCallMonth
 	Regions  []string
 	Statuses []struct{ Key, Label string }
+	Initials string
+	Held     int // certifications held
 }
 
 func (d *Deps) CommandMember(w http.ResponseWriter, r *http.Request) {
@@ -302,9 +304,14 @@ func (d *Deps) CommandMember(w http.ResponseWriter, r *http.Request) {
 		slog.Error("command: member history failed", "error", err)
 	}
 	for _, e := range history {
-		if e.Kind != "discipline" { // shown in its own card
-			data.History = append(data.History, e)
+		if e.Kind == "discipline" { // shown in its own card
+			continue
 		}
+		// On their own profile, "Kaz_N: roll call present" reads as "Roll call present".
+		if d := strings.TrimPrefix(strings.TrimPrefix(e.Detail, data.Member.Name+": "), data.Member.Name+" "); d != e.Detail && d != "" {
+			e.Detail = strings.ToUpper(d[:1]) + d[1:]
+		}
+		data.History = append(data.History, e)
 	}
 	sess, _ := auth.FromContext(ctx)
 	if data.Standing, err = factions.StandingOf(ctx, d.Pool, cb.Faction, id); err != nil {
@@ -333,6 +340,7 @@ func (d *Deps) CommandMember(w http.ResponseWriter, r *http.Request) {
 	}
 	data.CanAct = !cb.ReadOnly && id != sess.PlayerID && data.Member.Level < cb.Command.Level
 	data.Regions, data.Statuses = factions.Regions, factions.Statuses
+	data.Initials = initials(data.Member.Name)
 	if rows, err := factions.PersonnelRoster(ctx, d.Pool, cb.Faction, time.Now()); err == nil {
 		for _, p := range rows {
 			if p.ID == id {
@@ -347,6 +355,11 @@ func (d *Deps) CommandMember(w http.ResponseWriter, r *http.Request) {
 	}
 	if data.RollCall, err = factions.RollCallHistory(ctx, d.Pool, cb.Faction, id, 6); err != nil {
 		slog.Error("command: roll call history failed", "error", err)
+	}
+	for _, q := range data.AllQuals {
+		if data.File.Quals[q.Key] {
+			data.Held++
+		}
 	}
 	switch {
 	case cb.ReadOnly:

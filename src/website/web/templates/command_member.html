@@ -2,129 +2,192 @@
 <div class="cmd-shell">
   {{template "command_sidebar" .}}
   <div class="cmd-main">
-    <a class="cmd-back" href="/command/{{.Faction}}/roster">&larr; Roster</a>
     {{$m := .Member}}{{$f := .File}}
-    <div class="pf-head">
-      <div>
-        <h1>{{$m.Name}}{{if $f.Badge}}<span class="pf-badge" title="Badge number / callsign">{{$f.Badge}}</span>{{end}}</h1>
-        <p class="cmd-sub">{{$m.Rank.Label}}{{if .RankInfo.IsCabinet}} &middot; Cabinet{{else if .RankInfo.IsCommand}} &middot; Command{{end}} &middot; {{$f.Department}} &middot; {{if $m.Online}}online now{{else if $m.LastSeen}}last seen {{$m.LastSeen.Format "2 Jan 2006"}}{{else}}never seen in-game{{end}}{{if $m.Staff}} &middot; also staff ({{$m.Staff}}){{end}}</p>
-        <div class="member-tags">
+    <a class="cmd-back" href="/command/{{.Faction}}/roster">&larr; Roster</a>
+
+    <section class="pf-hero">
+      <div class="pf-avatar" aria-hidden="true">{{.Initials}}</div>
+      <div class="pf-id">
+        <div class="pf-name">
+          <h1>{{$m.Name}}</h1>
+          {{if $f.Badge}}<span class="pf-badge" title="Badge number / callsign">{{$f.Badge}}</span>{{end}}
           <span class="roster-status roster-status-{{$f.Shown}}">{{$f.Shown}}</span>
-          {{if .Probation}}<a class="cmd-tag cmd-tag-override" href="/command/{{.Faction}}/recruits?sheet={{.Probation.ID}}">Probation · day {{.Probation.Day}} of {{.Probation.Days}}</a>{{end}}
-          {{if .Standing.Suspended}}<span class="mod-pill mod-pill-banned">Suspended until {{.Standing.Suspended.Format "2 Jan 15:04"}}</span>{{end}}
+          {{if .RankInfo.IsCabinet}}<span class="cmd-tag cmd-tag-cab">CAB</span>{{else if .RankInfo.IsCommand}}<span class="cmd-tag cmd-tag-override">CMD</span>{{end}}
+        </div>
+        <div class="pf-sub">{{$m.Rank.Label}} <span class="pf-dot">&middot;</span> {{$f.Department}}</div>
+        <div class="pf-meta">
+          {{if $m.Online}}<span class="cmd-online">Online</span>{{else if $m.LastSeen}}<span>Last seen {{$m.LastSeen.Format "2 Jan 2006"}}</span>{{else}}<span>Never seen in-game</span>{{end}}
+          <span>{{$m.Hours}} h in {{.FactionName}}</span>
+          {{if $m.Staff}}<span>Staff &middot; {{$m.Staff}}</span>{{end}}
+          {{if .Probation}}<a href="/command/{{.Faction}}/recruits?sheet={{.Probation.ID}}">Probation day {{.Probation.Day}} of {{.Probation.Days}}</a>{{end}}
+          {{if .Standing.Suspended}}<span class="pf-alert">Suspended until {{.Standing.Suspended.Format "2 Jan 15:04"}}</span>{{end}}
         </div>
       </div>
-      {{if .CanAct}}<a class="btn" href="/command/{{.Faction}}/discipline?who={{$m.ID}}">Issue discipline</a>{{end}}
-    </div>
-
-    <section class="cmd-card" id="file" aria-labelledby="pf-h">
-      <div class="cmd-card-head"><h2 id="pf-h">Personnel file</h2></div>
-      <dl class="pf-facts">
-        <div class="pf-fact"><dt>Rank</dt><dd>{{$m.Rank.Label}}</dd></div>
-        <div class="pf-fact"><dt>Badge / callsign</dt><dd>{{if $f.Badge}}{{$f.Badge}}{{else}}—{{end}}</dd></div>
-        <div class="pf-fact"><dt>Division</dt><dd title="{{$f.Department}}">{{$f.Department}}</dd></div>
-        <div class="pf-fact"><dt>Status</dt><dd>{{$f.Shown}}</dd></div>
-        <div class="pf-fact"><dt>Region</dt><dd>{{if $f.Region}}{{$f.Region}}{{else}}—{{end}}</dd></div>
-        <div class="pf-fact"><dt>Enrollment date</dt><dd>{{if $f.Enrolled}}{{$f.Enrolled.Format "2 Jan 2006"}}{{else}}—{{end}}</dd></div>
-        <div class="pf-fact"><dt>Last promotion</dt><dd>{{if $f.Promoted}}{{$f.Promoted.Format "2 Jan 2006"}}{{else}}—{{end}}</dd></div>
-        <div class="pf-fact"><dt>Time in grade</dt><dd>{{if ge $f.TiG 0}}{{$f.TiG}} day{{if ne $f.TiG 1}}s{{end}}{{else}}—{{end}}</dd></div>
-        <div class="pf-fact"><dt>Hours in {{.FactionName}}</dt><dd>{{$m.Hours}} h</dd></div>
-        <div class="pf-fact"><dt>Active warnings</dt><dd class="{{if $f.Warnings}}pf-warm{{end}}">{{$f.Warnings}}</dd></div>
-        <div class="pf-fact"><dt>Active points</dt><dd class="{{if ge $f.Points 20}}pf-hot{{else if $f.Points}}pf-warm{{end}}">{{$f.Points}}{{if .Band}} · {{.Band.Label}}{{end}}</dd></div>
-      </dl>
       {{if .CanAct}}
-      <form method="post" action="/command/{{.Faction}}/members/{{$m.ID}}/file" class="pf-form">
-        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="action" value="details">
-        <div class="field"><label for="pf-badge">Badge / callsign</label><input id="pf-badge" name="badge" maxlength="12" value="{{$f.Badge}}" placeholder="e.g. L02S"></div>
-        <div class="field"><label for="pf-region">Region</label><select id="pf-region" name="region"><option value="">Not set</option>{{range .Regions}}<option {{if eq . $f.Region}}selected{{end}}>{{.}}</option>{{end}}</select></div>
-        <div class="field"><label for="pf-status">Status</label><select id="pf-status" name="status">{{range .Statuses}}<option value="{{.Key}}" {{if eq .Key $f.Status}}selected{{end}}>{{.Label}}</option>{{end}}</select></div>
-        <div class="field"><label for="pf-enrolled">Enrollment date</label><input id="pf-enrolled" type="date" name="enrolled" value="{{if $f.Enrolled}}{{$f.Enrolled.Format "2006-01-02"}}{{end}}"></div>
-        <div class="field pf-wide"><label for="pf-notes">Additional notes</label><input id="pf-notes" name="notes" maxlength="300" value="{{$f.Notes}}" placeholder="Anything command should know"></div>
-        <div class="pf-form-foot"><button class="btn btn-primary" type="submit">Save personnel file</button><span class="hint">Probation and Suspended show automatically. Changes go in the Command log.</span></div>
-      </form>
-      {{else if $f.Notes}}
-      <div class="pf-notes"><span class="cmd-dim">Notes:</span> {{$f.Notes}}</div>
+      <div class="pf-actions">
+        <button class="btn btn-primary" type="button" data-dialog-open="dlg-file">Edit file</button>
+        {{if .CanChange}}<button class="btn" type="button" data-dialog-open="dlg-rank">Change rank</button>{{end}}
+        <a class="btn" href="/command/{{.Faction}}/discipline?who={{$m.ID}}">Issue discipline</a>
+      </div>
       {{end}}
     </section>
 
-    <div class="cmd-grid">
-      <section class="cmd-card" id="quals" aria-labelledby="pf-certs-h">
-        <div class="cmd-card-head"><h2 id="pf-certs-h">Certifications</h2><a class="cmd-head-link" href="/command/{{.Faction}}/divisions#quals">All qualifications</a></div>
-        <div class="pf-certs">
-          {{range .AllQuals}}{{$k := .Key}}{{$held := index $f.Quals $k}}
-          <span class="pf-cert {{if $held}}pf-cert-held{{else}}pf-cert-none{{end}}" title="{{.Name}}{{range $.Quals}}{{if eq .Key $k}}: passed {{.At.Format "2 Jan 2006"}}{{if .By}}, signed by {{.By}}{{end}}{{end}}{{end}}">
-            <span class="qual-cell{{if $held}} qual-cell-held{{end}}" aria-hidden="true">{{if $held}}&#10003;{{end}}</span>
-            <span><strong>{{.Key}}</strong> {{.Name}}</span>
-            {{if $.CanAct}}<form method="post" action="/command/{{$.Faction}}/members/{{$m.ID}}/quals">
-              <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="qual" value="{{.Key}}"><input type="hidden" name="grant" value="{{if $held}}0{{else}}1{{end}}">
-              <button class="link-button" type="submit">{{if $held}}Remove{{else}}Record pass{{end}}</button></form>{{end}}
-          </span>
-          {{else}}
-          <p class="cmd-dim">{{.FactionName}} has no qualifications set up yet.</p>
-          {{end}}
-        </div>
-      </section>
+    <div class="pf-layout">
+      <div class="pf-col">
+        <section class="cmd-card" id="file" aria-labelledby="pf-details-h">
+          <div class="cmd-card-head"><h2 id="pf-details-h">Personnel details</h2></div>
+          <dl class="pf-list">
+            <div><dt>Rank</dt><dd>{{$m.Rank.Label}}</dd></div>
+            <div><dt>Badge / callsign</dt><dd>{{if $f.Badge}}<span class="pf-mono">{{$f.Badge}}</span>{{else}}<span class="pf-none">Not set</span>{{end}}</dd></div>
+            <div><dt>Division</dt><dd>{{$f.Department}}</dd></div>
+            <div><dt>Status</dt><dd>{{$f.Shown}}</dd></div>
+            <div><dt>Region</dt><dd>{{if $f.Region}}{{$f.Region}}{{else}}<span class="pf-none">Not set</span>{{end}}</dd></div>
+            <div><dt>Enrollment date</dt><dd>{{if $f.Enrolled}}{{$f.Enrolled.Format "2 January 2006"}}{{else}}<span class="pf-none">Not set</span>{{end}}</dd></div>
+            <div><dt>Last promotion</dt><dd>{{if $f.Promoted}}{{$f.Promoted.Format "2 January 2006"}}{{else}}<span class="pf-none">None yet</span>{{end}}</dd></div>
+            <div><dt>Time in grade</dt><dd>{{if ge $f.TiG 0}}{{$f.TiG}} day{{if ne $f.TiG 1}}s{{end}}{{else}}<span class="pf-none">Unknown</span>{{end}}</dd></div>
+          </dl>
+          <div class="pf-notes">
+            <div class="pf-notes-label">Notes</div>
+            {{if $f.Notes}}<p>{{$f.Notes}}</p>{{else}}<p class="pf-none">No notes.</p>{{end}}
+          </div>
+        </section>
 
-      <section class="cmd-card" id="rollcall" aria-labelledby="pf-rc-h">
-        <div class="cmd-card-head"><h2 id="pf-rc-h">Monthly roll call</h2><span class="cmd-dim">Last 6 months</span></div>
-        {{range .RollCall}}
-        <div class="pf-rc">
-          <span class="cmd-strong">{{.Month.Format "January 2006"}}</span>
-          <span>{{if eq .Mark "present"}}<span class="roster-status roster-status-Active">Present</span>{{else if eq .Mark "excused"}}<span class="roster-status roster-status-LOA">Excused</span>{{else}}<span class="roster-dim">Not marked</span>{{end}}</span>
-          {{if $.CanAct}}<form method="post" action="/command/{{$.Faction}}/members/{{$m.ID}}/file">
-            <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="action" value="rollcall"><input type="hidden" name="month" value="{{.Value}}">
-            {{if ne .Mark "present"}}<button class="btn btn-sm" type="submit" name="mark" value="present">Present</button>{{end}}
-            {{if ne .Mark "excused"}}<button class="btn btn-sm" type="submit" name="mark" value="excused">Excused</button>{{end}}
-            {{if .Mark}}<button class="link-button" type="submit" name="mark" value="">Clear</button>{{end}}
-          </form>{{else if .By}}<span class="cmd-dim">by {{.By}}</span>{{end}}
-        </div>
-        {{end}}
-      </section>
+        <section class="cmd-card" aria-labelledby="cmd-history">
+          <div class="cmd-card-head"><h2 id="cmd-history">Service record</h2></div>
+          <ol class="pf-timeline">
+            {{range .History}}
+            <li>
+              <div class="pf-tl-main">{{.Change}}{{if eq .Via "staff_override"}} <span class="cmd-tag cmd-tag-override">Staff override{{if .OwnFaction}} · own faction{{end}}</span>{{end}}</div>
+              <div class="pf-tl-meta">{{.When.Format "2 Jan 2006"}} &middot; {{.By}}{{if .Reason}} &middot; {{.Reason}}{{end}}</div>
+            </li>
+            {{else}}
+            <li class="pf-tl-empty">Nothing recorded on the website yet.</li>
+            {{end}}
+          </ol>
+        </section>
+      </div>
+
+      <div class="pf-col">
+        <section class="cmd-card" id="quals" aria-labelledby="pf-certs-h">
+          <div class="cmd-card-head"><h2 id="pf-certs-h">Certifications</h2><span class="cmd-dim">{{.Held}} of {{len .AllQuals}}</span>
+            {{if and .CanAct .AllQuals}}<button class="link-button cmd-head-link" type="button" data-dialog-open="dlg-certs">Manage</button>{{end}}</div>
+          <ul class="pf-certs">
+            {{range .AllQuals}}{{$held := index $f.Quals .Key}}
+            <li class="{{if $held}}is-held{{end}}"><span class="pf-check" aria-hidden="true">{{if $held}}&#10003;{{end}}</span><span class="pf-cert-key">{{.Key}}</span><span class="pf-cert-name">{{.Name}}</span><span class="visually-hidden">{{if $held}}held{{else}}not held{{end}}</span></li>
+            {{else}}
+            <li class="pf-none">No qualifications set up yet.</li>
+            {{end}}
+          </ul>
+        </section>
+
+        <section class="cmd-card" id="rollcall" aria-labelledby="pf-rc-h">
+          <div class="cmd-card-head"><h2 id="pf-rc-h">Roll call</h2><span class="cmd-dim">Last 6 months</span>
+            {{if .CanAct}}<button class="link-button cmd-head-link" type="button" data-dialog-open="dlg-rc">Mark</button>{{end}}</div>
+          <ul class="pf-months">
+            {{range .RollCall}}
+            <li class="pf-month pf-month-{{if .Mark}}{{.Mark}}{{else}}none{{end}}" title="{{.Month.Format "January 2006"}}: {{if eq .Mark "present"}}present{{else if eq .Mark "excused"}}excused{{else}}not marked{{end}}{{if .By}} ({{.By}}){{end}}">
+              <span class="pf-month-name">{{.Month.Format "Jan"}}</span>
+              <span class="pf-month-mark">{{if eq .Mark "present"}}Present{{else if eq .Mark "excused"}}Excused{{else}}—{{end}}</span>
+            </li>
+            {{end}}
+          </ul>
+        </section>
+
+        <section class="cmd-card" aria-labelledby="cmd-disc">
+          <div class="cmd-card-head"><h2 id="cmd-disc">Discipline</h2><a class="cmd-head-link" href="/command/{{.Faction}}/discipline">Punishment log</a></div>
+          <div class="pf-disc-stats">
+            <div><span class="pf-stat{{if ge $f.Points 20}} pf-hot{{else if $f.Points}} pf-warm{{end}}">{{$f.Points}}</span><span class="pf-stat-label">active points</span></div>
+            <div><span class="pf-stat{{if $f.Warnings}} pf-warm{{end}}">{{$f.Warnings}}</span><span class="pf-stat-label">active warnings</span></div>
+          </div>
+          {{if .Band}}<p class="pf-band">In the <strong>{{.Band.Label}}</strong> band.</p>{{end}}
+          <ol class="pf-timeline pf-timeline-tight">
+            {{range .Discipline}}
+            <li class="{{if not .Active}}is-old{{end}}">
+              <div class="pf-tl-main"><strong>{{.Given}}</strong> &middot; {{.Offence}}{{if .Corrected}} <span class="cmd-tag">Corrected</span>{{else if not .Active}} <span class="cmd-tag">Expired</span>{{end}}</div>
+              <div class="pf-tl-meta">{{.When.Format "2 Jan 2006"}} &middot; {{.By}}{{if .Action}} &middot; {{.Action}}{{end}}</div>
+            </li>
+            {{else}}
+            <li class="pf-tl-empty">No discipline on record.</li>
+            {{end}}
+          </ol>
+        </section>
+
+        {{if and (not .CanChange) (not .ReadOnly)}}<p class="hint">{{.Why}}</p>{{end}}
+      </div>
     </div>
 
-    <div class="cmd-grid">
-      <section class="cmd-card cmd-pad" aria-labelledby="cmd-change">
-        <h2 id="cmd-change">Change rank</h2>
-        {{if .CanChange}}
-        <form method="post" action="/command/{{.Faction}}/members/{{$m.ID}}/rank" class="cmd-form">
-          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+    {{if .CanAct}}
+    <dialog id="dlg-file" class="modal" aria-labelledby="dlg-file-t">
+      <form method="post" action="/command/{{.Faction}}/members/{{$m.ID}}/file">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="action" value="details">
+        <div class="modal-head"><h2 id="dlg-file-t">Edit {{$m.Name}}'s file</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+        <div class="modal-body pf-dialog-grid">
+          <div class="field"><label for="pf-badge">Badge / callsign</label><input id="pf-badge" name="badge" maxlength="12" value="{{$f.Badge}}" placeholder="e.g. L02S"></div>
+          <div class="field"><label for="pf-region">Region</label><select id="pf-region" name="region"><option value="">Not set</option>{{range .Regions}}<option {{if eq . $f.Region}}selected{{end}}>{{.}}</option>{{end}}</select></div>
+          <div class="field"><label for="pf-status">Status</label><select id="pf-status" name="status">{{range .Statuses}}<option value="{{.Key}}" {{if eq .Key $f.Status}}selected{{end}}>{{.Label}}</option>{{end}}</select></div>
+          <div class="field"><label for="pf-enrolled">Enrollment date</label><input id="pf-enrolled" type="date" name="enrolled" value="{{if $f.Enrolled}}{{$f.Enrolled.Format "2006-01-02"}}{{end}}"></div>
+          <div class="field pf-wide"><label for="pf-notes">Notes</label><textarea id="pf-notes" name="notes" rows="3" maxlength="300" placeholder="Anything command should know">{{$f.Notes}}</textarea></div>
+          <p class="hint pf-wide">Probation and Suspended show automatically. Changes go in the Command log.</p>
+        </div>
+        <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Save</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="dlg-rc" class="modal" aria-labelledby="dlg-rc-t">
+      <form method="post" action="/command/{{.Faction}}/members/{{$m.ID}}/file">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="action" value="rollcall">
+        <div class="modal-head"><h2 id="dlg-rc-t">Mark roll call</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+        <div class="modal-body">
+          <div class="field"><label for="rc-month">Month</label><select id="rc-month" name="month">{{range .RollCall}}<option value="{{.Value}}">{{.Month.Format "January 2006"}}{{if .Mark}} (currently {{.Mark}}){{end}}</option>{{end}}</select></div>
+          <fieldset class="pf-radio"><legend>Mark</legend>
+            <label><input type="radio" name="mark" value="present" checked> Present</label>
+            <label><input type="radio" name="mark" value="excused"> Excused absence</label>
+            <label><input type="radio" name="mark" value=""> Not marked</label>
+          </fieldset>
+        </div>
+        <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Save</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="dlg-certs" class="modal" aria-labelledby="dlg-certs-t">
+      <div class="modal-head"><h2 id="dlg-certs-t">{{$m.Name}}'s certifications</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+      <div class="modal-body">
+        <ul class="pf-cert-manage">
+          {{range .AllQuals}}{{$held := index $f.Quals .Key}}
+          <li>
+            <span class="pf-check{{if $held}} on{{end}}" aria-hidden="true">{{if $held}}&#10003;{{end}}</span>
+            <span><strong>{{.Key}}</strong> {{.Name}}</span>
+            <form method="post" action="/command/{{$.Faction}}/members/{{$m.ID}}/quals">
+              <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="qual" value="{{.Key}}"><input type="hidden" name="grant" value="{{if $held}}0{{else}}1{{end}}">
+              <button class="btn btn-sm{{if not $held}} btn-primary{{end}}" type="submit">{{if $held}}Remove{{else}}Record pass{{end}}</button>
+            </form>
+          </li>
+          {{end}}
+        </ul>
+        <p class="hint">Each pass or removal goes in the service record.</p>
+      </div>
+    </dialog>
+    {{end}}
+
+    {{if .CanChange}}
+    <dialog id="dlg-rank" class="modal" aria-labelledby="dlg-rank-t">
+      <form method="post" action="/command/{{.Faction}}/members/{{$m.ID}}/rank">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <div class="modal-head"><h2 id="dlg-rank-t">Change {{$m.Name}}'s rank</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+        <div class="modal-body">
           <div class="field"><label for="cm-level">New rank</label>
             <select id="cm-level" name="level" required>
               {{range .Levels}}<option value="{{.Level}}" {{if eq .Level $m.Level}}disabled{{end}}>{{.Label}}{{if eq .Level $m.Level}} (current){{end}}</option>{{end}}
               <option value="0">Remove from {{.FactionName}}</option>
             </select></div>
           <div class="field"><label for="cm-reason">Reason</label><input id="cm-reason" name="reason" required maxlength="300"></div>
-          <button class="btn btn-primary" type="submit">Save change</button>
           <p class="hint">Logged in the Command log and the Staff Log. Their Discord roles update automatically; in-game it applies on their next load.</p>
-        </form>
-        {{else}}
-        <p class="cmd-dim">{{.Why}}</p>
-        {{end}}
-      </section>
-      <section class="cmd-card" aria-labelledby="cmd-disc">
-        <div class="cmd-card-head"><h2 id="cmd-disc">Discipline</h2><a class="cmd-head-link" href="/command/{{.Faction}}/discipline">Punishment log</a></div>
-        {{range .Discipline}}
-        <div class="cmd-history-row{{if not .Active}} disc-row-old{{end}}">
-          <div><span class="cmd-strong">{{.Given}}</span> &middot; {{.Offence}}{{if .Corrected}} <span class="cmd-tag">Corrected</span>{{else if not .Active}} <span class="cmd-tag">Expired</span>{{end}}</div>
-          <div class="cmd-dim">{{.When.Format "2 Jan 2006"}} &middot; by {{.By}} &middot; {{.Notes}}{{if .Action}} &middot; {{.Action}}{{end}}</div>
         </div>
-        {{else}}
-        <p class="cmd-empty">No discipline on record.</p>
-        {{end}}
-      </section>
-    </div>
-
-    <section class="cmd-card" aria-labelledby="cmd-history">
-      <div class="cmd-card-head"><h2 id="cmd-history">Service record</h2><span class="cmd-dim">Rank changes, training, divisions, certifications and file changes</span></div>
-      {{range .History}}
-      <div class="cmd-history-row">
-        <div><span class="cmd-strong">{{.Change}}</span>{{if eq .Via "staff_override"}} <span class="cmd-tag cmd-tag-override">Staff override{{if .OwnFaction}} · own faction{{end}}</span>{{end}}</div>
-        <div class="cmd-dim">{{.When.Format "2 Jan 2006 15:04"}} &middot; by {{.By}}{{if .Reason}} &middot; {{.Reason}}{{end}}</div>
-      </div>
-      {{else}}
-      <p class="cmd-empty">No changes recorded on the website yet.</p>
-      {{end}}
-    </section>
+        <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Save change</button></div>
+      </form>
+    </dialog>
+    {{end}}
   </div>
 </div>
+<script src="/static/admin.js" defer></script>
 {{end}}
