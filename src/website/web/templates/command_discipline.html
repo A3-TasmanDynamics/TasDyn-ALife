@@ -56,17 +56,17 @@
 
     <div class="cmd-filter">
       <nav class="seg" aria-label="Discipline records">
-        <a class="seg-item {{if eq .Tab "log"}}active{{end}}" href="/command/{{.Faction}}/discipline">Punishment log</a>
-        <a class="seg-item {{if eq .Tab "dis"}}active{{end}}" href="/command/{{.Faction}}/discipline?tab=dis">Discharges</a>
-        <a class="seg-item {{if eq .Tab "bl"}}active{{end}}" href="/command/{{.Faction}}/discipline?tab=bl">Blacklist</a>
+        <a class="seg-item {{if eq .View "log"}}active{{end}}" href="/command/{{.Faction}}/discipline">Punishment log</a>
+        <a class="seg-item {{if eq .View "dis"}}active{{end}}" href="/command/{{.Faction}}/discipline?tab=dis">Discharges</a>
+        <a class="seg-item {{if eq .View "bl"}}active{{end}}" href="/command/{{.Faction}}/discipline?tab=bl">Blacklist</a>
       </nav>
       {{if not .ReadOnly}}
-      {{if eq .Tab "dis"}}<button class="btn btn-sm disc-tab-btn" type="button" data-dialog-open="dlg-discharge">Record a discharge</button>{{end}}
-      {{if eq .Tab "bl"}}<button class="btn btn-sm disc-tab-btn" type="button" data-dialog-open="dlg-blacklist">Blacklist a player</button>{{end}}
+      {{if eq .View "dis"}}<button class="btn btn-sm disc-tab-btn" type="button" data-dialog-open="dlg-discharge">Record a discharge</button>{{end}}
+      {{if eq .View "bl"}}<button class="btn btn-sm disc-tab-btn" type="button" data-dialog-open="dlg-blacklist">Blacklist a player</button>{{end}}
       {{end}}
     </div>
 
-    {{if eq .Tab "log"}}
+    {{if eq .View "log"}}
     <div class="cmd-table" role="table" aria-label="Punishment log">
       <div class="cmd-row disc-row cmd-row-head" role="row"><span>Date</span><span>Officer</span><span>Offence</span><span>Given</span><span>Action</span><span>By</span></div>
       {{range .Entries}}
@@ -97,7 +97,7 @@
     <p class="hint">Entries can't be edited. To reverse one, issue a correction.</p>
     {{end}}
 
-    {{if eq .Tab "dis"}}
+    {{if eq .View "dis"}}
     <div class="cmd-table" role="table" aria-label="Discharges">
       <div class="cmd-row dis-row cmd-row-head" role="row"><span>Date</span><span>Member</span><span>Rank</span><span>Type</span><span>Notes</span><span>By</span></div>
       {{range .Discharges}}
@@ -116,7 +116,7 @@
     <p class="hint">Types: resigned, inactivity, honourable discharge, contract termination, and probation ended.</p>
     {{end}}
 
-    {{if eq .Tab "bl"}}
+    {{if eq .View "bl"}}
     <div class="cmd-table" role="table" aria-label="Blacklist">
       <div class="cmd-row bl-row cmd-row-head" role="row"><span>Player</span><span>Last rank</span><span>Reason</span><span>From</span><span>Until</span><span>By</span></div>
       {{range .Blacklist}}

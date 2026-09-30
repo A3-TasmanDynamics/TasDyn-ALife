@@ -128,6 +128,7 @@
       el.addEventListener("change", () => {
         if (el === rc && rc.checked && ea) ea.checked = false;
         if (el === ea && ea.checked && rc) rc.checked = false;
+        if (el.dataset.status !== undefined) el.dataset.status = el.value;
         save(form);
       });
     });

@@ -9,13 +9,14 @@
       </div>
       {{if .CanRecruit}}<button class="btn btn-primary" type="button" data-dialog-open="dlg-recruit">Recruit a member</button>{{end}}
     </div>
-    <form class="cmd-filter" method="get" action="/command/{{.Faction}}/roster" role="search">
-      <label><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input name="q" value="{{.Q}}" aria-label="Search by name, badge or department" placeholder="Name, badge or department"></label>
-      <span class="roster-month"><label for="rs-month" class="cmd-dim">Roll call</label>
-        <select id="rs-month" name="month" onchange="this.form.submit()">{{range .Months}}<option value="{{.Value}}" {{if eq .Value $.Month}}selected{{end}}>{{.Label}}</option>{{end}}</select>
-        <noscript><button class="btn btn-sm" type="submit">Show</button></noscript></span>
-      <span class="cmd-dim roster-rc-sum">{{.RollCall}} of {{.Total}} present{{if .Excused}}, {{.Excused}} excused{{end}}</span>
+    <form class="roster-bar" method="get" action="/command/{{.Faction}}/roster" role="search">
+      <label class="roster-search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input name="q" value="{{.Q}}" aria-label="Search by name, badge or department" placeholder="Name, badge or department"></label>
       {{if .Q}}<a class="hint" href="/command/{{.Faction}}/roster?month={{.Month}}">Clear</a>{{end}}
+      <span class="roster-legend" aria-hidden="true"><span class="lg-p">Personnel</span><span class="lg-s">Statistical</span><span class="lg-c">Certification</span><span class="lg-m">Miscellaneous</span></span>
+      <span class="roster-rc">Roll call
+        <select name="month" aria-label="Roll call month" onchange="this.form.submit()">{{range .Months}}<option value="{{.Value}}" {{if eq .Value $.Month}}selected{{end}}>{{.Label}}</option>{{end}}</select>
+        <noscript><button class="btn btn-sm" type="submit">Show</button></noscript>
+        <span><strong>{{.RollCall}}</strong> of {{.Total}} present{{if .Excused}}, <strong>{{.Excused}}</strong> excused{{end}}</span></span>
     </form>
 
     <div class="banner roster-msg" data-roster-msg role="status" aria-live="polite" hidden></div>
@@ -23,17 +24,17 @@
       <table class="roster-sheet">
         <thead>
           <tr class="roster-groups">
-            <th colspan="5" scope="colgroup">Personnel information</th>
-            <th colspan="5" scope="colgroup">Statistical information</th>
-            {{if .Quals}}<th colspan="{{len .Quals}}" scope="colgroup">Certification information</th>{{end}}
-            <th colspan="5" scope="colgroup">Miscellaneous information</th>
+            <th colspan="5" scope="colgroup" class="rg-p">Personnel information</th>
+            <th colspan="5" scope="colgroup" class="rg-s gstart">Statistical information</th>
+            {{if .Quals}}<th colspan="{{len .Quals}}" scope="colgroup" class="rg-c gstart">Certification information</th>{{end}}
+            <th colspan="5" scope="colgroup" class="rg-m gstart">Miscellaneous information</th>
           </tr>
-          <tr>
-            <th scope="col" title="Insignia: ★ cabinet, ☆ command">Ins</th><th scope="col">Rank</th><th scope="col" title="Badge / callsign">BDG</th><th scope="col">Name</th><th scope="col">Department</th>
-            <th scope="col">Region</th><th scope="col">Status</th><th scope="col">Enrollment date</th><th scope="col">Last promotion</th><th scope="col" title="Time in grade, days">TiG</th>
-            {{range .Quals}}<th scope="col" title="{{.Name}}">{{.Key}}</th>{{end}}
-            <th scope="col" title="Active marked verbal warnings">Warnings</th><th scope="col" title="Active discipline points">Points</th><th scope="col">Additional notes</th>
-            <th scope="col" title="Roll call: present in {{.MonthLabel}}">RC</th><th scope="col" title="Excused absence in {{.MonthLabel}}">EA</th>
+          <tr class="roster-cols">
+            <th scope="col" class="rg-p" title="Insignia: ★ cabinet, ☆ command">Ins</th><th scope="col" class="rg-p roster-rank">Rank</th><th scope="col" class="rg-p" title="Badge / callsign">BDG</th><th scope="col" class="rg-p roster-name">Name</th><th scope="col" class="rg-p roster-dept">Department</th>
+            <th scope="col" class="rg-s gstart">Region</th><th scope="col" class="rg-s">Status</th><th scope="col" class="rg-s">Enrollment date</th><th scope="col" class="rg-s">Last promotion</th><th scope="col" class="rg-s" title="Time in grade, days">TiG</th>
+            {{range $i, $q := .Quals}}<th scope="col" class="rg-c{{if eq $i 0}} gstart{{end}}" title="{{$q.Name}}">{{$q.Key}}</th>{{end}}
+            <th scope="col" class="rg-m gstart" title="Active marked verbal warnings">Warnings</th><th scope="col" class="rg-m" title="Active discipline points">Points</th><th scope="col" class="rg-m roster-notes">Additional notes</th>
+            <th scope="col" class="rg-m" title="Present at the {{.MonthLabel}} roll call">RC</th><th scope="col" class="rg-m" title="Excused absence, {{.MonthLabel}}">EA</th>
           </tr>
         </thead>
         <tbody>
@@ -42,20 +43,20 @@
           <tr class="{{if and (ne $prev -1) (ne $prev .Level)}}roster-break{{end}}" data-roster-row="{{$f}}">
             <td class="roster-ins">{{if $rk.IsCabinet}}<span title="Cabinet">&#9733;</span>{{else if $rk.IsCommand}}<span title="Command">&#9734;</span>{{end}}</td>
             <td class="roster-rank">{{.Rank.Label}}</td>
-            <td>{{if $edit}}<input form="{{$f}}" name="badge" value="{{.Badge}}" maxlength="12" aria-label="Badge for {{.Name}}" class="roster-in roster-in-badge">{{else}}{{.Badge}}{{end}}</td>
+            <td>{{if $edit}}<input form="{{$f}}" name="badge" value="{{.Badge}}" maxlength="12" aria-label="Badge for {{.Name}}" class="roster-in roster-in-badge" placeholder="—">{{else}}{{if .Badge}}{{.Badge}}{{else}}<span class="roster-dim">—</span>{{end}}{{end}}</td>
             <td class="roster-name"><a href="/command/{{$.Faction}}/members/{{.ID}}">{{.Name}}</a>{{if .Online}} <span class="cmd-online">Online</span>{{end}}</td>
             <td class="roster-dept">{{.Department}}</td>
-            <td>{{if $edit}}<select form="{{$f}}" name="region" aria-label="Region for {{.Name}}" class="roster-in"><option value=""></option>{{$r := .Region}}{{range $.Regions}}<option {{if eq . $r}}selected{{end}}>{{.}}</option>{{end}}</select>{{else}}{{.Region}}{{end}}</td>
-            <td>{{if and $edit (ne .Shown "Suspended") (ne .Shown "Probation")}}<select form="{{$f}}" name="status" aria-label="Status for {{.Name}}" class="roster-in">{{$s := .Status}}{{range $.Statuses}}<option value="{{.Key}}" {{if eq .Key $s}}selected{{end}}>{{.Label}}</option>{{end}}</select>{{else}}{{if $edit}}<input type="hidden" form="{{$f}}" name="status" value="{{.Status}}">{{end}}<span class="roster-status roster-status-{{.Shown}}">{{.Shown}}</span>{{end}}</td>
-            <td>{{if $edit}}<input form="{{$f}}" type="date" name="enrolled" value="{{if .Enrolled}}{{.Enrolled.Format "2006-01-02"}}{{end}}" aria-label="Enrollment date for {{.Name}}" class="roster-in roster-in-date">{{else if .Enrolled}}{{.Enrolled.Format "2 Jan 2006"}}{{end}}</td>
-            <td class="cmd-dim">{{if .Promoted}}{{.Promoted.Format "2 Jan 2006"}}{{else}}&mdash;{{end}}</td>
-            <td class="roster-num">{{if ge .TiG 0}}{{.TiG}}{{else}}&mdash;{{end}}</td>
-            {{$q := .Quals}}{{range $.Quals}}<td class="roster-cert"><span class="qual-cell{{if index $q .Key}} qual-cell-held{{end}}" aria-label="{{.Key}}: {{if index $q .Key}}held{{else}}not held{{end}}">{{if index $q .Key}}&#10003;{{end}}</span></td>{{end}}
-            <td class="roster-num{{if .Warnings}} disc-hot-amber{{end}}">{{if .Warnings}}{{.Warnings}}{{end}}</td>
-            <td class="roster-num{{if ge .Points 20}} disc-hot{{else if .Points}} disc-hot-amber{{end}}">{{if .Points}}{{.Points}}{{end}}</td>
-            <td class="roster-notes">{{if $edit}}<input form="{{$f}}" name="notes" value="{{.Notes}}" maxlength="300" aria-label="Notes for {{.Name}}" class="roster-in">{{else}}{{.Notes}}{{end}}</td>
-            <td class="roster-cert">{{if $edit}}<input form="{{$f}}" type="checkbox" name="rc" value="1" {{if eq .RollCall "present"}}checked{{end}} aria-label="{{.Name}} present at {{$.MonthLabel}} roll call" data-roster-rc>{{else if eq .RollCall "present"}}&#10003;{{end}}</td>
-            <td class="roster-cert">{{if $edit}}<input form="{{$f}}" type="checkbox" name="ea" value="1" {{if eq .RollCall "excused"}}checked{{end}} aria-label="{{.Name}} excused from {{$.MonthLabel}} roll call" data-roster-ea>{{else if eq .RollCall "excused"}}&#10003;{{end}}
+            <td class="gstart">{{if $edit}}<select form="{{$f}}" name="region" aria-label="Region for {{.Name}}" class="roster-in"><option value="">—</option>{{$r := .Region}}{{range $.Regions}}<option {{if eq . $r}}selected{{end}}>{{.}}</option>{{end}}</select>{{else}}{{if .Region}}{{.Region}}{{else}}<span class="roster-dim">—</span>{{end}}{{end}}</td>
+            <td>{{if and $edit (ne .Shown "Suspended") (ne .Shown "Probation")}}<select form="{{$f}}" name="status" aria-label="Status for {{.Name}}" class="roster-in" data-status="{{.Status}}">{{$s := .Status}}{{range $.Statuses}}<option value="{{.Key}}" {{if eq .Key $s}}selected{{end}}>{{.Label}}</option>{{end}}</select>{{else}}{{if $edit}}<input type="hidden" form="{{$f}}" name="status" value="{{.Status}}">{{end}}<span class="roster-status roster-status-{{.Shown}}">{{.Shown}}</span>{{end}}</td>
+            <td>{{if $edit}}<input form="{{$f}}" type="date" name="enrolled" value="{{if .Enrolled}}{{.Enrolled.Format "2006-01-02"}}{{end}}" aria-label="Enrollment date for {{.Name}}" class="roster-in roster-in-date">{{else if .Enrolled}}{{.Enrolled.Format "02/01/2006"}}{{else}}<span class="roster-dim">—</span>{{end}}</td>
+            <td>{{if .Promoted}}{{.Promoted.Format "02/01/2006"}}{{else}}<span class="roster-dim">—</span>{{end}}</td>
+            <td class="roster-num">{{if ge .TiG 0}}{{.TiG}}{{else}}<span class="roster-dim">—</span>{{end}}</td>
+            {{$q := .Quals}}{{range $i, $c := $.Quals}}<td class="roster-cert{{if eq $i 0}} gstart{{end}}"><span class="qual-cell{{if index $q $c.Key}} qual-cell-held{{end}}" aria-label="{{$c.Key}}: {{if index $q $c.Key}}held{{else}}not held{{end}}">{{if index $q $c.Key}}&#10003;{{end}}</span></td>{{end}}
+            <td class="roster-num gstart{{if .Warnings}} disc-hot-amber{{end}}">{{if .Warnings}}{{.Warnings}}{{else}}<span class="roster-dim">0</span>{{end}}</td>
+            <td class="roster-num{{if ge .Points 20}} disc-hot{{else if .Points}} disc-hot-amber{{end}}">{{if .Points}}{{.Points}}{{else}}<span class="roster-dim">0</span>{{end}}</td>
+            <td class="roster-notes">{{if $edit}}<input form="{{$f}}" name="notes" value="{{.Notes}}" maxlength="300" aria-label="Notes for {{.Name}}" class="roster-in" placeholder="Add a note">{{else}}{{.Notes}}{{end}}</td>
+            <td class="roster-cert">{{if $edit}}<input form="{{$f}}" type="checkbox" name="rc" value="1" {{if eq .RollCall "present"}}checked{{end}} aria-label="{{.Name}} present at {{$.MonthLabel}} roll call" data-roster-rc>{{else if eq .RollCall "present"}}<span class="qual-cell qual-cell-held">&#10003;</span>{{end}}</td>
+            <td class="roster-cert">{{if $edit}}<input form="{{$f}}" type="checkbox" name="ea" value="1" {{if eq .RollCall "excused"}}checked{{end}} aria-label="{{.Name}} excused from {{$.MonthLabel}} roll call" data-roster-ea>{{else if eq .RollCall "excused"}}<span class="qual-cell qual-cell-held">&#10003;</span>{{end}}
               {{if $edit}}<button class="btn btn-sm roster-save" type="submit" form="{{$f}}">Save</button>{{end}}</td>
           </tr>
           {{$prev = .Level}}
