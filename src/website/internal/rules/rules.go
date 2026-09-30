@@ -4,6 +4,7 @@
 // The rules are stored as one plain-text document. /admin/rules edits it
 // section by section; the text form is also editable directly:
 //
+//	> An optional introduction to the whole rulebook (before any section).
 //	# General conduct
 //	> An optional intro shown under the section title.
 //	1.1 Stay in character while in-game.
@@ -41,7 +42,8 @@ const ChangedFor = 30 * 24 * time.Hour
 const MaxBody = 100_000
 
 type Rule struct {
-	Number  string
+	Number  string // unique "section.rule", for anchors and change tracking
+	N       int    // position in its section: players see "1.", "2."...
 	Text    string
 	Points  []Point
 	Changed bool
@@ -79,6 +81,7 @@ func (r Rule) content() string {
 type Doc struct {
 	Version    int64
 	Body       string
+	Intro      string // the rulebook's introduction, "" = none written
 	Sections   []Section
 	UpdatedAt  time.Time
 	UpdatedBy  string
@@ -95,10 +98,16 @@ var ruleLine = regexp.MustCompile(`^(\d+(?:\.\d+)*)[.)]?\s+(.+)$`)
 // pointLine is a dot point: "- text", "* text" or "• text".
 var pointLine = regexp.MustCompile(`^[-*\x{2022}]\s+(.+)$`)
 
-// Parse turns the document into sections. It rejects a rule before the
-// first heading, duplicate rule numbers and an empty document.
+// Parse turns the document into sections (see ParseDoc).
 func Parse(body string) ([]Section, error) {
-	var out []Section
+	_, secs, err := ParseDoc(body)
+	return secs, err
+}
+
+// ParseDoc turns the document into its introduction and sections. It
+// rejects a rule before the first heading, duplicate rule numbers and an
+// empty document.
+func ParseDoc(body string) (intro string, out []Section, err error) {
 	seen := map[string]bool{}
 	inPoint := false // continuation lines extend the last dot point
 	for i, raw := range strings.Split(strings.ReplaceAll(body, "\r\n", "\n"), "\n") {
@@ -107,17 +116,22 @@ func Parse(body string) ([]Section, error) {
 		case line == "":
 			continue
 		case strings.HasPrefix(line, ">"):
+			text := strings.TrimSpace(strings.TrimPrefix(line, ">"))
 			if len(out) == 0 {
-				return nil, fmt.Errorf("%w: line %d: start with a section heading, e.g. \"# General conduct\"", ErrInvalid, i+1)
+				if intro != "" {
+					intro += "\n"
+				}
+				intro += text
+				continue
 			}
 			s := &out[len(out)-1]
 			if len(s.Rules) > 0 {
-				return nil, fmt.Errorf("%w: line %d: a section's intro (>) goes before its first rule", ErrInvalid, i+1)
+				return "", nil, fmt.Errorf("%w: line %d: a section's intro (>) goes before its first rule", ErrInvalid, i+1)
 			}
-			s.Intro = strings.TrimSpace(s.Intro + " " + strings.TrimSpace(strings.TrimPrefix(line, ">")))
+			s.Intro = strings.TrimSpace(s.Intro + " " + text)
 		case pointLine.MatchString(line) && !ruleLine.MatchString(line):
 			if len(out) == 0 || len(out[len(out)-1].Rules) == 0 {
-				return nil, fmt.Errorf("%w: line %d: a dot point needs a rule above it", ErrInvalid, i+1)
+				return "", nil, fmt.Errorf("%w: line %d: a dot point needs a rule above it", ErrInvalid, i+1)
 			}
 			rs := out[len(out)-1].Rules
 			r := &rs[len(rs)-1]
@@ -133,26 +147,26 @@ func Parse(body string) ([]Section, error) {
 		case strings.HasPrefix(line, "#"):
 			title := strings.TrimSpace(strings.TrimLeft(line, "#"))
 			if title == "" {
-				return nil, fmt.Errorf("%w: line %d: a heading needs a title after the #", ErrInvalid, i+1)
+				return "", nil, fmt.Errorf("%w: line %d: a heading needs a title after the #", ErrInvalid, i+1)
 			}
 			n := len(out) + 1
 			out = append(out, Section{N: n, Title: title, Anchor: fmt.Sprintf("r%d", n)})
 		default:
 			if len(out) == 0 {
-				return nil, fmt.Errorf("%w: line %d: start with a section heading, e.g. \"# General conduct\"", ErrInvalid, i+1)
+				return "", nil, fmt.Errorf("%w: line %d: start with a section heading, e.g. \"# General conduct\"", ErrInvalid, i+1)
 			}
 			s := &out[len(out)-1]
 			if m := ruleLine.FindStringSubmatch(line); m != nil {
 				if seen[m[1]] {
-					return nil, fmt.Errorf("%w: line %d: rule %s appears twice", ErrInvalid, i+1, m[1])
+					return "", nil, fmt.Errorf("%w: line %d: rule %s appears twice", ErrInvalid, i+1, m[1])
 				}
 				seen[m[1]] = true
-				s.Rules = append(s.Rules, Rule{Number: m[1], Text: m[2]})
+				s.Rules = append(s.Rules, Rule{Number: m[1], N: len(s.Rules) + 1, Text: m[2]})
 				inPoint = false
 				continue
 			}
 			if len(s.Rules) == 0 {
-				return nil, fmt.Errorf("%w: line %d: expected a numbered rule, e.g. \"1.1 Stay in character\"", ErrInvalid, i+1)
+				return "", nil, fmt.Errorf("%w: line %d: expected a numbered rule, e.g. \"1.1 Stay in character\"", ErrInvalid, i+1)
 			}
 			r := &s.Rules[len(s.Rules)-1]
 			if inPoint && len(r.Points) > 0 {
@@ -168,9 +182,9 @@ func Parse(body string) ([]Section, error) {
 		}
 	}
 	if len(seen) == 0 {
-		return nil, fmt.Errorf("%w: there are no rules yet", ErrInvalid)
+		return "", nil, fmt.Errorf("%w: there are no rules yet", ErrInvalid)
 	}
-	return out, nil
+	return intro, out, nil
 }
 
 // Changed lists the numbers of rules that are new or whose text or dot
@@ -195,10 +209,21 @@ func Changed(prev, next []Section) []string {
 	return out
 }
 
-// Format writes sections back as the rules document, numbering rules
-// section.rule in order (the editor's output).
-func Format(secs []Section) string {
+// Format writes sections back as the rules document (see FormatDoc).
+func Format(secs []Section) string { return FormatDoc("", secs) }
+
+// FormatDoc writes the introduction and sections back as the rules
+// document, numbering rules section.rule in order (the editor's output).
+func FormatDoc(intro string, secs []Section) string {
 	var b strings.Builder
+	for _, para := range strings.Split(strings.ReplaceAll(intro, "\r\n", "\n"), "\n") {
+		if para = oneLine(para); para != "" {
+			b.WriteString("> " + para + "\n")
+		}
+	}
+	if b.Len() > 0 {
+		b.WriteString("\n")
+	}
 	for i, s := range secs {
 		if i > 0 {
 			b.WriteString("\n")
@@ -241,7 +266,7 @@ func Current(ctx context.Context, pool *pgxpool.Pool) (Doc, bool, error) {
 		d.ChangeNote = *note
 	}
 	d.Recent = time.Since(d.UpdatedAt) < ChangedFor
-	d.Sections, err = Parse(d.Body)
+	d.Intro, d.Sections, err = ParseDoc(d.Body)
 	if err != nil {
 		return Doc{}, false, err // saved versions are always valid; this is corruption
 	}
@@ -383,4 +408,22 @@ func Save(ctx context.Context, pool *pgxpool.Pool, actorID int64, body, note str
 		return nil, err
 	}
 	return changed, tx.Commit(ctx)
+}
+
+// ChangedLabels names the changed rules the way players see them, e.g.
+// "General rules 1".
+func (d Doc) ChangedLabels() []string {
+	want := map[string]bool{}
+	for _, n := range d.Changed {
+		want[n] = true
+	}
+	var out []string
+	for _, s := range d.Sections {
+		for _, r := range s.Rules {
+			if want[r.Number] {
+				out = append(out, fmt.Sprintf("%s %d", s.Title, r.N))
+			}
+		}
+	}
+	return out
 }

@@ -20,15 +20,16 @@
       <p class="rules-meta">The rules haven't been published on the website yet. Ask in the Discord in the meantime.</p>
     {{else}}
       <p class="rules-meta">Last updated {{.Doc.UpdatedAt.Format "2 Jan 2006"}} &middot; applies to everyone on the server, including staff</p>
+      {{if not .Q}}<div class="rules-intro-main">{{range .Intro}}<p>{{.}}</p>{{end}}</div>{{end}}
 
       {{if and .Doc.Recent .Doc.ChangeNote}}
       <div class="rules-changed">
         <span class="rules-changed-tag">CHANGED</span>
-        <div><strong>{{.Doc.UpdatedAt.Format "2 Jan"}}{{if .Doc.Changed}}: rule{{if gt (len .Doc.Changed) 1}}s{{end}} {{range $i, $n := .Doc.Changed}}{{if $i}}, {{end}}{{$n}}{{end}}{{end}}</strong> &mdash; {{.Doc.ChangeNote}}{{if .FirstHit}} <a href="/rules#{{.FirstHit}}">Read the change</a>{{end}}</div>
+        <div><strong>{{.Doc.UpdatedAt.Format "2 Jan"}}{{with .Doc.ChangedLabels}}: {{range $i, $n := .}}{{if $i}}, {{end}}{{$n}}{{end}}{{end}}</strong> &mdash; {{.Doc.ChangeNote}}{{if .FirstHit}} <a href="/rules#{{.FirstHit}}">Read the change</a>{{end}}</div>
       </div>
       {{end}}
 
-      {{if and (not .Q) (gt (len .TOC) 1)}}
+      {{if and (not .Q) .TOC}}
       <nav class="rules-contents" aria-labelledby="rules-contents-h">
         <h2 id="rules-contents-h">Contents</h2>
         <ol>
@@ -45,7 +46,7 @@
         {{if .Intro}}<p class="rules-intro">{{.Intro}}</p>{{end}}
         {{range .Rules}}
         <div class="rule{{if .Changed}} rule-changed{{end}}" id="rule-{{.Number}}">
-          <span class="rule-n">{{.Number}}</span>
+          <span class="rule-n">{{.N}}.</span>
           <div class="rule-text">{{.Text}}{{if .Changed}} <span class="rule-changed-tag">Changed</span>{{end}}
             {{if .Points}}<ul class="rule-points">{{range .Points}}<li>{{.Text}}{{if .Sub}}<ul>{{range .Sub}}<li>{{.}}</li>{{end}}</ul>{{end}}</li>{{end}}</ul>{{end}}
           </div>

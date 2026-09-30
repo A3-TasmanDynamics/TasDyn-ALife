@@ -109,3 +109,21 @@ func TestChangedIgnoresRenumbering(t *testing.T) {
 		t.Errorf("changed = %v (a moved rule isn't new; a changed dot point is)", got)
 	}
 }
+
+func TestDocIntroAndNumbering(t *testing.T) {
+	intro, secs, err := ParseDoc("> Welcome.\n> Read these.\n# General rules\n1.1 Respect everyone.\n1.2 No cheating.\n# Gameplay rules\n2.1 Safe zones:\n- Kavala")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if intro != "Welcome.\nRead these." || secs[1].Rules[0].N != 1 || secs[0].Rules[1].N != 2 {
+		t.Errorf("intro %q, numbering %+v", intro, secs)
+	}
+	body := FormatDoc(intro, secs)
+	if i2, s2, err := ParseDoc(body); err != nil || i2 != intro || FormatDoc(i2, s2) != body {
+		t.Errorf("round trip: %v\n%s", err, body)
+	}
+	d := Doc{Sections: secs, Changed: []string{"2.1", "1.2"}}
+	if got := d.ChangedLabels(); !reflect.DeepEqual(got, []string{"General rules 2", "Gameplay rules 1"}) {
+		t.Errorf("labels = %v", got)
+	}
+}
