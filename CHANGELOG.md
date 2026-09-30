@@ -1076,3 +1076,4 @@
   ranked below them; every change is in the Command log. Probation and Suspended show automatically,
   and recruiting records the enrollment date. Command pages now use the full width of the window. Run
   `database/fixes/2026-09-30_faction_roster.sql` (it back-fills enrollment dates from rank history).
+- The site footer now always sits at the bottom of the window on short pages (it used to float up under short content).

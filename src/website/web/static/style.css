@@ -122,6 +122,13 @@ a { color: var(--amber-bright); }
 
 /* ---------- Layout ---------- */
 
+/* The footer always sits at the bottom of the window: the page is a column
+   at least one screen tall, and the main area takes the spare height. */
+body:not(.panel-body) { min-height: 100vh; display: flex; flex-direction: column; }
+body:not(.panel-body) > .site-main { flex: 1 0 auto; }
+body:not(.panel-body) > .site-footer { flex-shrink: 0; }
+body:not(.panel-body) > * { min-width: 0; }
+
 .site-main {
   width: 100%;
   padding: 32px 40px 64px;
