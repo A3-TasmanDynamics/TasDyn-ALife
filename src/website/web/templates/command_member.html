@@ -10,7 +10,7 @@
       <div class="pf-id">
         <div class="pf-name">
           <h1>{{$m.Name}}</h1>
-          {{if $f.Badge}}<span class="pf-badge" title="Badge number / callsign">{{$f.Badge}}</span>{{end}}
+          {{if $f.Badge}}<span class="pf-badge" title="{{$.CallsignLabel}}">{{$f.Badge}}</span>{{end}}
           <span class="roster-status roster-status-{{$f.Shown}}">{{$f.Shown}}</span>
           {{if .RankInfo.IsCabinet}}<span class="cmd-tag cmd-tag-cab">CAB</span>{{else if .RankInfo.IsCommand}}<span class="cmd-tag cmd-tag-override">CMD</span>{{end}}
           {{if $f.AdminRole}}<span class="cmd-tag cmd-tag-cab" title="Administration division{{if eq $f.AdminRole "Cabinet"}}, automatically as cabinet{{end}}">Admin · {{$f.AdminRole}}</span>{{end}}
@@ -39,7 +39,7 @@
           <div class="cmd-card-head"><h2 id="pf-details-h">Personnel details</h2></div>
           <dl class="pf-list">
             <div><dt>Rank</dt><dd>{{$m.Rank.Label}}</dd></div>
-            <div><dt>Badge / callsign</dt><dd>{{if $f.Badge}}<span class="pf-mono">{{$f.Badge}}</span>{{else}}<span class="pf-none">Not set</span>{{end}}</dd></div>
+            <div><dt>{{$.CallsignLabel}}</dt><dd>{{if $f.Badge}}<span class="pf-mono">{{$f.Badge}}</span>{{else}}<span class="pf-none">Not set</span>{{end}}</dd></div>
             <div><dt>Division</dt><dd>{{$f.Department}}</dd></div>
             {{if $f.AdminRole}}<div><dt>Administration</dt><dd>{{if eq $f.AdminRole "Cabinet"}}Automatic (cabinet){{else}}{{$f.AdminRole}}{{end}}</dd></div>{{end}}
             <div><dt>Status</dt><dd>{{$f.Shown}}</dd></div>
@@ -124,7 +124,7 @@
         <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="action" value="details">
         <div class="modal-head"><h2 id="dlg-file-t">Edit {{$m.Name}}'s file</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
         <div class="modal-body pf-dialog-grid">
-          <div class="field"><label for="pf-badge">Badge / callsign</label><input id="pf-badge" name="badge" maxlength="12" value="{{$f.Badge}}" placeholder="e.g. L02S"></div>
+          <div class="field"><label for="pf-badge">{{$.CallsignLabel}}</label><input id="pf-badge" name="badge" maxlength="12" value="{{$f.Badge}}" placeholder="{{$.CallsignExample}}"></div>
           <div class="field"><label for="pf-region">Region</label><select id="pf-region" name="region"><option value="">Not set</option>{{range .Regions}}<option {{if eq . $f.Region}}selected{{end}}>{{.}}</option>{{end}}</select></div>
           <div class="field"><label for="pf-status">Status</label><select id="pf-status" name="status">{{range .Statuses}}<option value="{{.Key}}" {{if eq .Key $f.Status}}selected{{end}}>{{.Label}}</option>{{end}}</select></div>
           <div class="field"><label for="pf-enrolled">Enrollment date</label><input id="pf-enrolled" type="date" name="enrolled" value="{{if $f.Enrolled}}{{$f.Enrolled.Format "2006-01-02"}}{{end}}"></div>

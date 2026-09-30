@@ -1903,7 +1903,7 @@ a.points-case { color: var(--text); text-decoration: none; grid-template-columns
 .fac-div-hist-h { font-size: 14px; margin: 18px 0 6px; }
 
 /* Faction drive, documents and the editor. */
-.drive-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+.drive-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; flex-shrink: 0; }
 .drive-actions .btn { text-decoration: none; }
 .drive-crumbs { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13.5px; color: var(--text-dim); }
 .drive-crumbs a { color: var(--amber-bright); text-decoration: none; }

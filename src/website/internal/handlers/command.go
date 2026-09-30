@@ -42,6 +42,38 @@ type commandShell struct {
 	Panels []panelLink
 }
 
+// Noun is what the faction calls a member: "Officer" or "Medic".
+func (c commandShell) Noun() string {
+	if c.Faction == "ems" {
+		return "Medic"
+	}
+	return "Officer"
+}
+
+// CallsignLabel names the roster's identifier column.
+func (c commandShell) CallsignLabel() string {
+	if c.Faction == "ems" {
+		return "Callsign"
+	}
+	return "Badge / callsign"
+}
+
+// CallsignExample is a placeholder callsign in the faction's style.
+func (c commandShell) CallsignExample() string {
+	if c.Faction == "ems" {
+		return "e.g. AMB-12"
+	}
+	return "e.g. L02S"
+}
+
+// FolderExample is a placeholder drive folder name.
+func (c commandShell) FolderExample() string {
+	if c.Faction == "ems" {
+		return "e.g. Clinical guidelines"
+	}
+	return "e.g. S.R.G. SOPs"
+}
+
 // panelLink is one faction in the sidebar's panel switcher.
 type panelLink struct {
 	Faction, Name string

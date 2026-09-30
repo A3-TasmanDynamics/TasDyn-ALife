@@ -10,12 +10,12 @@
       {{if .CanRecruit}}<button class="btn btn-primary" type="button" data-dialog-open="dlg-recruit">Recruit a member</button>{{end}}
     </div>
     <form class="roster-bar" method="get" action="/command/{{.Faction}}/roster" role="search">
-      <label class="roster-search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input name="q" value="{{.Q}}" aria-label="Search by rank, badge, name or division" placeholder="Rank, badge, name or division"></label>
+      <label class="roster-search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input name="q" value="{{.Q}}" aria-label="Search by rank, callsign, name or division" placeholder="Rank, callsign, name or division"></label>
       {{if .Q}}<a class="hint" href="/command/{{.Faction}}/roster">Clear</a>{{end}}
     </form>
 
     <div class="cmd-table roster-list" role="table" aria-label="{{.FactionName}} roster">
-      <div class="cmd-row roster-row cmd-row-head" role="row"><span role="columnheader">Rank</span><span role="columnheader">Badge / callsign</span><span role="columnheader">Name</span><span role="columnheader">Division</span><span role="columnheader">Status</span></div>
+      <div class="cmd-row roster-row cmd-row-head" role="row"><span role="columnheader">Rank</span><span role="columnheader">{{.CallsignLabel}}</span><span role="columnheader">Name</span><span role="columnheader">Division</span><span role="columnheader">Status</span></div>
       {{$prev := -1}}
       {{range .Rows}}{{$rk := index $.Ranks .Level}}
       <a class="cmd-row roster-row{{if and (ne $prev -1) (ne $prev .Level)}} roster-break{{end}}" role="row" href="/command/{{$.Faction}}/members/{{.ID}}">
