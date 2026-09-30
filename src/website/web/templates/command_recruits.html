@@ -9,13 +9,13 @@
       </div>
     </div>
     <nav class="seg" aria-label="Recruits views">
-      <a class="seg-item {{if eq .Tab "apps"}}active{{end}}" href="/command/{{.Faction}}/recruits?tab=apps">Applications{{if .OpenApps}} &middot; {{.OpenApps}}{{end}}</a>
-      <a class="seg-item {{if eq .Tab "prob"}}active{{end}}" href="/command/{{.Faction}}/recruits?tab=prob">On probation &middot; {{len .Probations}}</a>
-      <a class="seg-item {{if eq .Tab "sheet"}}active{{end}}" href="/command/{{.Faction}}/recruits?tab=sheet">Training sheet</a>
-      <a class="seg-item {{if eq .Tab "done"}}active{{end}}" href="/command/{{.Faction}}/recruits?tab=done">Finished</a>
+      <a class="seg-item {{if eq .View "apps"}}active{{end}}" href="/command/{{.Faction}}/recruits?tab=apps">Applications{{if .OpenApps}} &middot; {{.OpenApps}}{{end}}</a>
+      <a class="seg-item {{if eq .View "prob"}}active{{end}}" href="/command/{{.Faction}}/recruits?tab=prob">On probation &middot; {{len .Probations}}</a>
+      <a class="seg-item {{if eq .View "sheet"}}active{{end}}" href="/command/{{.Faction}}/recruits?tab=sheet">Training sheet</a>
+      <a class="seg-item {{if eq .View "done"}}active{{end}}" href="/command/{{.Faction}}/recruits?tab=done">Finished</a>
     </nav>
 
-    {{if eq .Tab "apps"}}
+    {{if eq .View "apps"}}
     {{range .Apps}}
     <section class="cmd-card recruit-card">
       <div class="recruit-who">
@@ -46,7 +46,7 @@
     <p class="hint">Blacklisted players can't apply until their blacklist ends. See Discipline.</p>
     {{end}}
 
-    {{if eq .Tab "prob"}}
+    {{if eq .View "prob"}}
     <div class="prob-grid">
       {{range .Probations}}
       <section class="cmd-card cmd-pad prob-card{{if .Ending}} prob-card-ending{{end}}">
@@ -70,7 +70,7 @@
     </div>
     {{end}}
 
-    {{if eq .Tab "sheet"}}
+    {{if eq .View "sheet"}}
     {{with .Sheet}}{{$p := .}}
     <section class="cmd-card">
       <div class="cmd-card-head">
@@ -144,7 +144,7 @@
     {{end}}
     {{end}}
 
-    {{if eq .Tab "done"}}
+    {{if eq .View "done"}}
     <div class="cmd-table" role="table" aria-label="Finished probations">
       <div class="cmd-row cmd-row-done cmd-row-head" role="row"><span>Recruit</span><span>Result</span><span>Training</span><span>Decided</span></div>
       {{range .Finished}}

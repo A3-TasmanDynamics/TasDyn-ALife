@@ -158,9 +158,14 @@ func afterLevelChange(ctx context.Context, q dbtx, faction string, targetID int6
 		if err != nil {
 			return err
 		}
-		_, err = q.Exec(ctx, `
+		if _, err := q.Exec(ctx, `
 			INSERT INTO faction_probations (faction, player_id, ends_at) VALUES ($1, $2, now() + make_interval(days => $3))
-			ON CONFLICT DO NOTHING`, faction, targetID, s.ProbationDays)
+			ON CONFLICT DO NOTHING`, faction, targetID, s.ProbationDays); err != nil {
+			return err
+		}
+		_, err = q.Exec(ctx, `
+			INSERT INTO faction_members (faction, player_id, enrolled_on) VALUES ($1, $2, current_date)
+			ON CONFLICT (faction, player_id) DO UPDATE SET enrolled_on = current_date, status = 'active', updated_at = now()`, faction, targetID)
 		return err
 	case "remove":
 		if _, err := q.Exec(ctx, `UPDATE faction_probations SET status = 'ended', decided_at = now(),

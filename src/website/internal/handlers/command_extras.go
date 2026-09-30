@@ -67,7 +67,7 @@ func (d *Deps) findPlayer(r *http.Request, who string) (int64, error) {
 
 type commandRecruitsData struct {
 	commandBase
-	Tab        string // apps / prob / sheet / done
+	View       string // apps / prob / sheet / done
 	Apps       []applications.FactionApp
 	Probations []factions.Probation
 	Finished   []factions.Probation
@@ -83,7 +83,7 @@ func (d *Deps) CommandRecruits(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := r.Context()
 	q := r.URL.Query()
-	data := commandRecruitsData{commandBase: cb, Tab: q.Get("tab")}
+	data := commandRecruitsData{commandBase: cb, View: q.Get("tab")}
 	var err error
 	if data.Apps, err = applications.FactionQueue(ctx, d.Pool, cb.Faction); err != nil {
 		slog.Error("command: recruits failed", "error", err)
@@ -98,21 +98,21 @@ func (d *Deps) CommandRecruits(w http.ResponseWriter, r *http.Request) {
 	}
 	if id, _ := strconv.ParseInt(q.Get("sheet"), 10, 64); id > 0 {
 		if p, err := factions.GetProbation(ctx, d.Pool, cb.Faction, id); err == nil {
-			data.Sheet, data.Tab = &p, "sheet"
+			data.Sheet, data.View = &p, "sheet"
 		}
 	}
-	switch data.Tab {
+	switch data.View {
 	case "apps", "prob", "sheet", "done":
 	default:
-		data.Tab = "prob"
+		data.View = "prob"
 		if cb.OpenApps > 0 || len(data.Probations) == 0 {
-			data.Tab = "apps"
+			data.View = "apps"
 		}
 	}
-	if data.Tab == "sheet" && data.Sheet == nil && len(data.Probations) > 0 {
+	if data.View == "sheet" && data.Sheet == nil && len(data.Probations) > 0 {
 		data.Sheet = &data.Probations[0]
 	}
-	if data.Tab == "done" {
+	if data.View == "done" {
 		if data.Finished, err = factions.Probations(ctx, d.Pool, cb.Faction, false); err != nil {
 			slog.Error("command: finished probations failed", "error", err)
 		}
@@ -190,7 +190,7 @@ type offenceGroup struct {
 
 type commandDisciplineData struct {
 	commandBase
-	Tab        string // log / dis / bl
+	View       string // log / dis / bl
 	Who        int64
 	Officers   []officerOption
 	Offences   []offenceGroup
@@ -210,10 +210,10 @@ func (d *Deps) CommandDiscipline(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := r.Context()
 	q := r.URL.Query()
-	data := commandDisciplineData{commandBase: cb, Tab: q.Get("tab"), Ladder: factions.Ladder, Types: factions.DischargeTypes}
+	data := commandDisciplineData{commandBase: cb, View: q.Get("tab"), Ladder: factions.Ladder, Types: factions.DischargeTypes}
 	data.Who, _ = strconv.ParseInt(q.Get("who"), 10, 64)
-	if data.Tab != "dis" && data.Tab != "bl" {
-		data.Tab = "log"
+	if data.View != "dis" && data.View != "bl" {
+		data.View = "log"
 	}
 	var err error
 	if data.Settings, err = factions.GetSettings(ctx, d.Pool, cb.Faction); err != nil {
@@ -246,7 +246,7 @@ func (d *Deps) CommandDiscipline(w http.ResponseWriter, r *http.Request) {
 		data.Offences = []offenceGroup{low, high}
 		data.CanLift = cb.Command.Cabinet
 	}
-	switch data.Tab {
+	switch data.View {
 	case "log":
 		data.Entries, err = factions.DisciplineLog(ctx, d.Pool, cb.Faction, 0, 200)
 	case "dis":
@@ -255,7 +255,7 @@ func (d *Deps) CommandDiscipline(w http.ResponseWriter, r *http.Request) {
 		data.Blacklist, err = factions.Blacklist(ctx, d.Pool, cb.Faction, 200)
 	}
 	if err != nil {
-		slog.Error("command: discipline list failed", "tab", data.Tab, "error", err)
+		slog.Error("command: discipline list failed", "tab", data.View, "error", err)
 	}
 	d.Render.Render(w, "command_discipline.html", data)
 }

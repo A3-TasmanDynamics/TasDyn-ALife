@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -230,6 +231,49 @@ func TestCommandExtras(t *testing.T) {
 		t.Errorf("rank rules not saved: %+v", r)
 	}
 	denied("settings by a non-top rank", UpdateSettings(ctx, pool, cmd("sup"), f, Settings{ProbationDays: 10, PointsExpiryDays: 60, MVWDays: 7, BlacklistDays: 90}, ""))
+
+	// Personnel roster: details and roll call, for members ranked below you.
+	now := time.Now()
+	var enrolled *time.Time
+	pool.QueryRow(ctx, `SELECT enrolled_on FROM faction_members WHERE faction = 'ems' AND player_id = $1`, ids["civ"]).Scan(&enrolled)
+	if enrolled == nil {
+		t.Fatal("recruiting should record the enrollment date")
+	}
+	md := MemberDetails{Badge: "Z21B", Region: "NZ", Status: "loa", Notes: "back in Nov", Enrolled: enrolled.Format("2006-01-02")}
+	changed, err2 := UpdateMember(ctx, pool, cmd("sup"), f, ids["civ"], md)
+	must("update personnel file", err2)
+	if len(changed) == 0 {
+		t.Error("personnel file update should report changes")
+	}
+	if again, _ := UpdateMember(ctx, pool, cmd("sup"), f, ids["civ"], md); len(again) != 0 {
+		t.Errorf("saving the same file again should change nothing, got %v", again)
+	}
+	_, err = UpdateMember(ctx, pool, cmd("sup"), f, ids["chief"], md)
+	denied("edit someone ranked above you", err)
+	_, err = UpdateMember(ctx, pool, cmd("sup"), f, ids["civ"], MemberDetails{Region: "Mars", Status: "active", Enrolled: md.Enrolled})
+	denied("unknown region", err)
+	must("roll call", SetRollCall(ctx, pool, cmd("sup"), f, ids["civ"], now, "present"))
+	denied("same roll call mark twice", SetRollCall(ctx, pool, cmd("sup"), f, ids["civ"], now, "present"))
+	denied("roll call for a future month", SetRollCall(ctx, pool, cmd("sup"), f, ids["civ"], now.AddDate(0, 2, 0), "present"))
+	denied("roll call for someone ranked above you", SetRollCall(ctx, pool, cmd("sup"), f, ids["chief"], now, "present"))
+	hist, err := RollCallHistory(ctx, pool, f, ids["civ"], 6)
+	must("roll call history", err)
+	if len(hist) != 6 || hist[0].Mark != "present" || hist[1].Mark != "" {
+		t.Errorf("roll call history: want 6 months, this one present; got %+v", hist)
+	}
+	roster, err := PersonnelRoster(ctx, pool, f, now)
+	must("personnel roster", err)
+	var row Personnel
+	for _, p := range roster {
+		if p.ID == ids["civ"] {
+			row = p
+		}
+	}
+	if row.Badge != "Z21B" || row.Region != "NZ" || row.Shown != "LOA" || row.RollCall != "present" || row.Enrolled == nil {
+		t.Errorf("roster row not as saved: %+v", row)
+	}
+	pool.Exec(ctx, `DELETE FROM faction_roll_call WHERE player_id = ANY($1)`, []int64{ids["civ"]})
+	pool.Exec(ctx, `DELETE FROM faction_members WHERE player_id = ANY($1)`, []int64{ids["civ"], ids["para"], ids["para2"]})
 
 	var kinds int
 	pool.QueryRow(ctx, `SELECT count(DISTINCT kind) FROM faction_log WHERE faction = 'ems' AND actor_id = ANY($1)`,

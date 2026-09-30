@@ -340,15 +340,16 @@ func setLevel(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction stri
 
 // Member is one roster row.
 type Member struct {
-	ID       int64
-	Name     string
-	Level    int
-	Rank     Rank
-	InRank   time.Duration // since their last level change (0 if unknown)
-	LastSeen *time.Time
-	Online   bool
-	Hours    int64 // playtime in this faction
-	Staff    string
+	ID        int64
+	Name      string
+	Level     int
+	Rank      Rank
+	InRank    time.Duration // since their last level change (0 if unknown)
+	RankSince *time.Time    // their last level change, if recorded
+	LastSeen  *time.Time
+	Online    bool
+	Hours     int64 // playtime in this faction
+	Staff     string
 }
 
 // Roster returns the faction's members, highest rank first.
@@ -384,7 +385,7 @@ func Roster(ctx context.Context, pool *pgxpool.Pool, faction string) ([]Member, 
 		}
 		m.Rank = RankFor(ranks, m.Level)
 		if since != nil {
-			m.InRank = time.Since(*since)
+			m.InRank, m.RankSince = time.Since(*since), since
 		}
 		out = append(out, m)
 	}

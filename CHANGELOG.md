@@ -1068,3 +1068,12 @@
   blacklist permanently. The staff rank-names editor (Roles & Permissions) now updates ranks in place
   instead of deleting and re-adding them, so it no longer wipes the Ranks & gear rules. Run
   `database/fixes/2026-09-30_rank_command_cabinet.sql`, then tick your command and cabinet ranks.
+- **Roster and personnel files.** The command panel's Roster lists rank, badge number / callsign, name,
+  division and status. Each member's profile is their personnel file: rank, badge, division, status,
+  region, enrollment date, last promotion, time in grade, hours, active warnings and points, notes,
+  certifications (record or remove passes), the monthly roll call (present / excused, last 6 months),
+  rank changes, discipline and the service record. Command edits files and roll call for members
+  ranked below them; every change is in the Command log. Probation and Suspended show automatically,
+  and recruiting records the enrollment date. Command pages now use the full width of the window. Run
+  `database/fixes/2026-09-30_faction_roster.sql` (it back-fills enrollment dates from rank history).
+- The site footer now always sits at the bottom of the window on short pages (it used to float up under short content).
