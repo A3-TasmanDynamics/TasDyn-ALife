@@ -44,25 +44,37 @@ func playerName(ctx context.Context, q dbtx, id int64) string {
 	return n
 }
 
-// authority is the actor's standing for a command action.
+// authority is the actor's standing on the command panel.
+//
+//   - Command: their rank is ticked as command. Rank changes and discipline
+//     for members ranked below them (up to "promotes up to" for ranks);
+//     records for members below them; maintaining the panel.
+//   - Cabinet: their rank is ticked as cabinet (always also command). Can
+//     overwrite everything: acts on anyone except themselves.
+//   - Administration: a member of the faction's Administration division,
+//     whatever their rank. Records for anyone except cabinet members, and
+//     maintaining the panel. No rank changes or discipline.
+//   - Management: staff with factions.configure (ViaStaffOverride), checked
+//     by the caller. Records, maintenance and Administration appointments.
 type authority struct {
-	Level     int // actor's rank
-	UpTo      int // highest level they may set others to (0 = none)
-	Top       bool
-	Cabinet   bool
-	Ranks     []Rank
-	TargetLvl int
+	Level          int // actor's rank
+	UpTo           int // highest level they may set others to (0 = none)
+	IsCommand      bool
+	Cabinet        bool
+	Admin          bool // in the Administration division
+	AdminCommander bool // the Administration division's Commander
+	Management     bool
+	Ranks          []Rank
+	TargetLvl      int
+	TargetCabinet  bool
 }
 
-// commandOver checks the actor is faction command and, when targetID > 0,
-// that the target is someone else ranked below them.
-func commandOver(ctx context.Context, q dbtx, actor Actor, faction string, targetID int64) (authority, error) {
+// standing loads the actor's authority; it refuses anyone with no access
+// to the command panel.
+func standing(ctx context.Context, q dbtx, actor Actor, faction string) (authority, error) {
 	var a authority
 	if !Valid(faction) {
 		return a, notAllowed("unknown faction")
-	}
-	if actor.Via != ViaCommand {
-		return a, notAllowed("only %s command can do that", Name(faction))
 	}
 	var err error
 	if a.Ranks, err = Ranks(ctx, q, faction); err != nil {
@@ -71,27 +83,111 @@ func commandOver(ctx context.Context, q dbtx, actor Actor, faction string, targe
 	if a.Level, err = levelOf(ctx, q, faction, actor.PlayerID); err != nil {
 		return a, err
 	}
-	r := RankFor(a.Ranks, a.Level)
-	if a.Level == 0 || !r.Command() {
+	switch actor.Via {
+	case ViaStaffOverride:
+		a.Management = true
+		return a, nil
+	case ViaCommand:
+	default:
+		return a, notAllowed("unknown authority")
+	}
+	if a.Level == 0 {
 		return a, notAllowed("only %s command can do that", Name(faction))
 	}
+	r := RankFor(a.Ranks, a.Level)
+	a.IsCommand, a.Cabinet = r.IsCommand, r.IsCabinet && r.IsCommand
 	if r.CanPromote() {
 		a.UpTo = r.PromoteUpTo
 	}
-	a.Cabinet = r.IsCabinet
-	a.Top = len(a.Ranks) > 0 && a.Level >= a.Ranks[len(a.Ranks)-1].Level
+	var role, top string
+	err = q.QueryRow(ctx, `
+		SELECT md.role, d.roles[1] FROM faction_member_divisions md
+		JOIN faction_divisions d ON d.faction = md.faction AND d.key = md.division_key
+		WHERE md.faction = $1 AND md.player_id = $2 AND d.is_admin`, faction, actor.PlayerID).Scan(&role, &top)
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+	case err != nil:
+		return a, err
+	default:
+		a.Admin, a.AdminCommander = true, role == top
+	}
+	if !a.IsCommand && !a.Admin {
+		return a, notAllowed("only %s command can do that", Name(faction))
+	}
+	return a, nil
+}
+
+// target loads targetID's rank for a check against the actor.
+func (a *authority) target(ctx context.Context, q dbtx, actor Actor, faction string, targetID int64) error {
+	if targetID == actor.PlayerID {
+		return notAllowed("you can't do that to yourself")
+	}
+	var err error
+	if a.TargetLvl, err = levelOf(ctx, q, faction, targetID); err != nil {
+		return err
+	}
+	a.TargetCabinet = a.TargetLvl > 0 && RankFor(a.Ranks, a.TargetLvl).IsCabinet
+	return nil
+}
+
+// canRecord reports whether the actor may change the target's records
+// (personnel file, roll call, certifications, training, divisions).
+func (a authority) canRecord() error {
+	switch {
+	case a.Management, a.Cabinet:
+		return nil
+	case a.Admin && !a.TargetCabinet:
+		return nil
+	case a.Admin && !a.IsCommand:
+		return notAllowed("only cabinet can change a cabinet member's records")
+	case a.IsCommand && a.TargetLvl < a.Level:
+		return nil
+	}
+	return notAllowed("you can only act on members ranked below you")
+}
+
+// commandOver is for rank authority: rank changes, discipline, discharges
+// and blacklists. It needs a command rank; the target (targetID > 0) must
+// be someone else ranked below them, unless the actor is cabinet.
+func commandOver(ctx context.Context, q dbtx, actor Actor, faction string, targetID int64) (authority, error) {
+	if actor.Via != ViaCommand {
+		return authority{}, notAllowed("only %s command can do that", Name(faction))
+	}
+	a, err := standing(ctx, q, actor, faction)
+	if err != nil {
+		return a, err
+	}
+	if !a.IsCommand {
+		return a, notAllowed("only %s command can do that; Administration keeps the records", Name(faction))
+	}
 	if targetID > 0 {
-		if targetID == actor.PlayerID {
-			return a, notAllowed("you can't do that to yourself")
-		}
-		if a.TargetLvl, err = levelOf(ctx, q, faction, targetID); err != nil {
+		if err := a.target(ctx, q, actor, faction, targetID); err != nil {
 			return a, err
 		}
-		if a.TargetLvl >= a.Level {
+		if !a.Cabinet && a.TargetLvl >= a.Level {
 			return a, notAllowed("you can only act on members ranked below you")
 		}
 	}
 	return a, nil
+}
+
+// recordsOver is for keeping records on a member: command (members below
+// them), Administration (anyone but cabinet), cabinet and Management.
+func recordsOver(ctx context.Context, q dbtx, actor Actor, faction string, targetID int64) (authority, error) {
+	a, err := standing(ctx, q, actor, faction)
+	if err != nil {
+		return a, err
+	}
+	if err := a.target(ctx, q, actor, faction, targetID); err != nil {
+		return a, err
+	}
+	return a, a.canRecord()
+}
+
+// maintainOver is for maintaining the panel itself (rank rules, settings,
+// head trainers): command, cabinet, Administration and Management.
+func maintainOver(ctx context.Context, q dbtx, actor Actor, faction string) (authority, error) {
+	return standing(ctx, q, actor, faction)
 }
 
 // logEvent writes a non-rank Command log entry.
@@ -214,12 +310,9 @@ func UpdateSettings(ctx context.Context, pool *pgxpool.Pool, actor Actor, factio
 		return err
 	}
 	defer tx.Rollback(ctx)
-	a, err := commandOver(ctx, tx, actor, faction, 0)
+	a, err := maintainOver(ctx, tx, actor, faction)
 	if err != nil {
 		return err
-	}
-	if !a.Top {
-		return notAllowed("only the top rank can change these settings")
 	}
 	old, err := GetSettings(ctx, tx, faction)
 	if err != nil {
@@ -265,15 +358,21 @@ type RankRules struct {
 	Cabinet     bool // cabinet rank (CAB); must also be command
 }
 
-// CanEditRank says whether the actor may edit rank level's rules: the
-// faction's top rank can edit every rank below their own.
-func (c Command) CanEditRank(ranks []Rank, level int) bool {
-	return len(ranks) > 0 && c.Level >= ranks[len(ranks)-1].Level && level < c.Level
+// CanEditRank says whether the viewer may edit rank level's rules: anyone
+// who maintains the panel, for ranks other than their own; cabinet, any.
+func (c Command) CanEditRank(level int) bool {
+	return c.Cabinet || level != c.Level
 }
 
-// UpdateRank changes a rank's rules. ViaCommand: the top rank, for ranks
-// below their own. ViaStaffOverride: staff with factions.configure (checked
-// by the caller), any rank.
+// CanEditRankType says whether they may change the Command / Cabinet ticks
+// and "promotes up to" (cabinet only; Management via staff override).
+func (c Command) CanEditRankType() bool { return c.Cabinet }
+
+// UpdateRank changes a rank's rules. ViaCommand: command, cabinet and the
+// Administration division, for ranks other than their own; only cabinet can
+// change the Command / Cabinet ticks and "promotes up to", or edit their
+// own rank. ViaStaffOverride: Management (factions.configure, checked by
+// the caller), anything.
 func UpdateRank(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction string, level int, rr RankRules) error {
 	var err error
 	if rr.Name, err = cleanText(rr.Name, 60, "the rank name", true); err != nil {
@@ -300,24 +399,11 @@ func UpdateRank(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction st
 		return err
 	}
 	defer tx.Rollback(ctx)
-	actorLevel := 0
-	switch actor.Via {
-	case ViaCommand:
-		a, err := commandOver(ctx, tx, actor, faction, 0)
-		if err != nil {
-			return err
-		}
-		if !a.Top {
-			return notAllowed("only the top rank can edit rank rules")
-		}
-		if level >= a.Level {
-			return notAllowed("you can't edit your own rank's rules; staff with factions.configure can")
-		}
-		actorLevel = a.Level
-	case ViaStaffOverride:
-	default:
-		return notAllowed("unknown authority")
+	a, err := maintainOver(ctx, tx, actor, faction)
+	if err != nil {
+		return err
 	}
+	actorLevel := a.Level
 	ranks, err := Ranks(ctx, tx, faction)
 	if err != nil {
 		return err
@@ -330,6 +416,17 @@ func UpdateRank(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction st
 	}
 	if old.Level == 0 {
 		return notAllowed("that rank isn't set up yet; add it on Roles → Faction rank names")
+	}
+	if !a.Management && level == a.Level && (!rr.Command || (old.IsCabinet && !rr.Cabinet)) {
+		return notAllowed("you can't take Command or Cabinet away from your own rank; Management can")
+	}
+	if !a.Management && !a.Cabinet {
+		if level == a.Level {
+			return notAllowed("you can't edit your own rank's rules; cabinet can")
+		}
+		if rr.Command != old.IsCommand || rr.Cabinet != old.IsCabinet || rr.PromoteUpTo != old.PromoteUpTo {
+			return notAllowed("only cabinet or Management can change Command, Cabinet or \"promotes up to\"")
+		}
 	}
 	quals, err := Quals(ctx, tx, faction)
 	if err != nil {

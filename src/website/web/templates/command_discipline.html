@@ -9,7 +9,10 @@
       </div>
     </div>
 
-    {{if not .ReadOnly}}
+    {{if and (not .ReadOnly) (not .Command.IsCommand)}}
+    <p class="cmd-empty cmd-card">You're in Administration: you can see the discipline records, but issuing discipline, discharges and blacklists is for command ranks.</p>
+    {{end}}
+    {{if and (not .ReadOnly) .Command.IsCommand}}
     <div class="disc-grid">
       <section class="cmd-card cmd-pad" aria-labelledby="disc-issue">
         <h2 id="disc-issue">Issue discipline</h2>
@@ -60,7 +63,7 @@
         <a class="seg-item {{if eq .View "dis"}}active{{end}}" href="/command/{{.Faction}}/discipline?tab=dis">Discharges</a>
         <a class="seg-item {{if eq .View "bl"}}active{{end}}" href="/command/{{.Faction}}/discipline?tab=bl">Blacklist</a>
       </nav>
-      {{if not .ReadOnly}}
+      {{if and (not .ReadOnly) .Command.IsCommand}}
       {{if eq .View "dis"}}<button class="btn btn-sm disc-tab-btn" type="button" data-dialog-open="dlg-discharge">Record a discharge</button>{{end}}
       {{if eq .View "bl"}}<button class="btn btn-sm disc-tab-btn" type="button" data-dialog-open="dlg-blacklist">Blacklist a player</button>{{end}}
       {{end}}
@@ -76,7 +79,7 @@
         <span>{{.Offence}}<span class="cmd-dim disc-sub" title="{{.Notes}}">{{.Notes}}</span></span>
         <span class="{{if ge .Points 15}}disc-hot{{end}}">{{.Given}}{{if .Corrected}} <span class="cmd-tag">Corrected</span>{{else if not .Active}} <span class="cmd-tag">Expired</span>{{end}}</span>
         <span class="cmd-dim">{{if .Action}}{{.Action}}{{else}}&mdash;{{end}}</span>
-        <span class="cmd-dim">{{.By}}{{if and (not $.ReadOnly) .Correctable}}
+        <span class="cmd-dim">{{.By}}{{if and (not $.ReadOnly) $.Command.IsCommand .Correctable}}
           <button class="link-button disc-correct" type="button" data-dialog-open="dlg-correct-{{.ID}}">Correct</button>
           <dialog id="dlg-correct-{{.ID}}" class="modal" aria-labelledby="dlg-correct-{{.ID}}-t">
             <form method="post" action="/command/{{$.Faction}}/discipline/{{.ID}}/correct">
@@ -144,7 +147,7 @@
     <p class="hint">Blacklisted players can't apply to {{.FactionName}} or be recruited until the end date. Only cabinet can lift one early or blacklist permanently.</p>
     {{end}}
 
-    {{if not .ReadOnly}}
+    {{if and (not .ReadOnly) .Command.IsCommand}}
     <dialog id="dlg-discharge" class="modal" aria-labelledby="dlg-discharge-t">
       <form method="post" action="/command/{{.Faction}}/discharge">
         <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">

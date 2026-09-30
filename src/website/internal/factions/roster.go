@@ -43,6 +43,7 @@ type Personnel struct {
 	Enrolled   *time.Time
 	Promoted   *time.Time // last rank change
 	Department string
+	AdminRole  string // role in the Administration division, if any
 	Quals      map[string]bool
 	Warnings   int
 	Points     int
@@ -83,6 +84,10 @@ func PersonnelRoster(ctx context.Context, pool *pgxpool.Pool, faction string, mo
 		return nil, err
 	}
 	divs, err := Divisions(ctx, pool, faction)
+	if err != nil {
+		return nil, err
+	}
+	adminPosts, err := AdminPostings(ctx, pool, faction)
 	if err != nil {
 		return nil, err
 	}
@@ -175,6 +180,9 @@ func PersonnelRoster(ctx context.Context, pool *pgxpool.Pool, faction string, mo
 		if post, ok := posts[m.ID]; ok {
 			p.Department = divName[post.Key] + " · " + post.Role
 		}
+		if post, ok := adminPosts[m.ID]; ok {
+			p.AdminRole = post.Role
+		}
 		switch {
 		case standing[m.ID].Suspended != nil:
 			p.Shown = "Suspended"
@@ -228,7 +236,7 @@ func UpdateMember(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction 
 		return nil, err
 	}
 	defer tx.Rollback(ctx)
-	a, err := commandOver(ctx, tx, actor, faction, targetID)
+	a, err := recordsOver(ctx, tx, actor, faction, targetID)
 	if err != nil {
 		return nil, err
 	}
@@ -342,7 +350,7 @@ func SetRollCall(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction s
 		return err
 	}
 	defer tx.Rollback(ctx)
-	a, err := commandOver(ctx, tx, actor, faction, targetID)
+	a, err := recordsOver(ctx, tx, actor, faction, targetID)
 	if err != nil {
 		return err
 	}

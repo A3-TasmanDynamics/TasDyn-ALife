@@ -1077,3 +1077,13 @@
   and recruiting records the enrollment date. Command pages now use the full width of the window. Run
   `database/fixes/2026-09-30_faction_roster.sql` (it back-fills enrollment dates from rank history).
 - The site footer now always sits at the bottom of the window on short pages (it used to float up under short content).
+- **Administration division and who can maintain the command panel.** Each faction has an
+  Administration division (Commander, Deputy Commander, Administrator) whose members get the command
+  panel whatever their rank, to administrate and maintain it: personnel files, roll call,
+  certifications, training, division postings, rank rules and settings (not rank changes or
+  discipline). Command and cabinet maintain it too. Cabinet can overwrite everything: act on anyone but
+  themselves, edit any rank including their own, and change the Command / Cabinet ticks and "promotes up
+  to" (which only cabinet and Management can change). Only cabinet, Management and the Administration
+  Commander appoint to Administration; only cabinet and Management appoint its Commander. Administration
+  can be held alongside a specialist division. Nobody can take Command or Cabinet away from their own
+  rank. Run `database/fixes/2026-09-30_admin_division.sql`.

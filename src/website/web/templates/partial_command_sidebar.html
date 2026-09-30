@@ -2,7 +2,7 @@
 <nav class="cmd-nav" aria-label="Command sections">
   <div class="cmd-nav-head">
     <span class="cmd-nav-badge cmd-nav-badge-{{.Faction}}" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/></svg></span>
-    <span class="cmd-nav-title"><span>{{.FactionName}} command</span><span class="cmd-nav-you">{{if .ReadOnly}}Staff view (read-only){{else}}You: {{.Command.Rank.Label}}{{end}}</span></span>
+    <span class="cmd-nav-title"><span>{{.FactionName}} command</span><span class="cmd-nav-you">{{if and .ReadOnly .Management}}Management{{else if .ReadOnly}}Staff view (read-only){{else}}You: {{.Command.Rank.Label}}{{end}}</span></span>
   </div>
   <a class="cmd-nav-item {{if eq .Tab "overview"}}active{{end}}" href="/command/{{.Faction}}" {{if eq .Tab "overview"}}aria-current="page"{{end}}>Overview</a>
   <a class="cmd-nav-item {{if eq .Tab "roster"}}active{{end}}" href="/command/{{.Faction}}/roster" {{if eq .Tab "roster"}}aria-current="page"{{end}}>Roster <span class="cmd-nav-count">{{.MemberCount}}</span></a>
@@ -14,7 +14,9 @@
   <div class="cmd-authority">
     <div class="cmd-authority-label">Your authority</div>
     {{if .ReadOnly}}You can see this faction's roster and command log because you have <code class="perm-key">factions.audit</code>. Changes are made by its command, or by Management from Player Lookup.
-    {{else}}{{if .AuthorityTo}}You can recruit, promote, demote and remove members up to <strong>{{.AuthorityTo}}</strong>, and{{else}}Your rank can't change ranks, but you can{{end}} discipline, train and post anyone ranked below you.{{if .Command.Cabinet}} As <strong>cabinet</strong>, you can also lift blacklists early and blacklist permanently.{{end}} Never yourself.{{end}}
+    {{if .Management}} As <strong>Management</strong>, you can also appoint to Administration and edit rank rules.{{end}}
+    {{else if not .Command.IsCommand}}You're in <strong>Administration</strong>{{if .Command.AdminRole}} ({{.Command.AdminRole}}){{end}}: you administrate and maintain this panel: personnel files, roll call, certifications, training, divisions, rank rules and settings.{{if .Command.AdminCommander}} As its Commander you can also appoint to Administration.{{end}} Rank changes and discipline are for command ranks.
+    {{else}}{{if .AuthorityTo}}You can recruit, promote, demote and remove members up to <strong>{{.AuthorityTo}}</strong>, and{{else}}Your rank can't change ranks, but you can{{end}} discipline, train and post anyone ranked below you.{{if .Command.Cabinet}} As <strong>cabinet</strong> you can overwrite everything: act on anyone but yourself, change Command and Cabinet ranks, appoint to Administration, lift blacklists early and blacklist permanently.{{else}} You also maintain this panel.{{end}}{{if and .Command.Admin (not .Command.Cabinet)}} You're in Administration{{if .Command.AdminCommander}} as its Commander, so you can appoint to it{{end}}.{{end}} Never yourself.{{end}}
   </div>
 </nav>
 {{end}}

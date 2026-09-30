@@ -42,9 +42,10 @@ func TestCommandExtras(t *testing.T) {
 	pool.Exec(ctx, `INSERT INTO faction_quals (faction, key, name) VALUES ('ems', 'TQ', 'Test qual'), ('ems', 'AQ', 'Air qual')`)
 	pool.Exec(ctx, `INSERT INTO faction_divisions (faction, key, name, roles, required_qual) VALUES ('ems', 'TAIR', 'Test Air', '{Lead,Pilot}', 'AQ')`)
 	ids := map[string]int64{}
-	for name, lvl := range map[string]int{"chief": 5, "sup": 4, "para": 2, "para2": 2, "civ": 0, "civ2": 0} {
+	for name, lvl := range map[string]int{"chief": 5, "sup": 4, "para": 2, "para2": 2, "civ": 0, "civ2": 0, "clerk": 1, "clerk2": 1} {
 		uid := map[string]string{"chief": "76561190000000181", "sup": "76561190000000182", "para": "76561190000000183",
-			"para2": "76561190000000184", "civ": "76561190000000185", "civ2": "76561190000000186"}[name]
+			"para2": "76561190000000184", "civ": "76561190000000185", "civ2": "76561190000000186",
+			"clerk": "76561190000000187", "clerk2": "76561190000000188"}[name]
 		var id int64
 		if err := pool.QueryRow(ctx, `INSERT INTO players (uid, name, medic_level) VALUES ($1, $2, $3) RETURNING id`, uid, "t_"+name, lvl).Scan(&id); err != nil {
 			t.Fatal(err)
@@ -121,11 +122,11 @@ func TestCommandExtras(t *testing.T) {
 	denied("grant a qual to someone ranked above you", SetQual(ctx, pool, cmd("sup"), f, ids["chief"], "TQ", true, ""))
 
 	// Divisions need the division's qual.
-	denied("join a division without its qual", SetDivision(ctx, pool, cmd("sup"), f, ids["para2"], "TAIR", "", ""))
+	denied("join a division without its qual", SetDivision(ctx, pool, cmd("sup"), f, ids["para2"], "TAIR", "", false, ""))
 	must("grant AQ", SetQual(ctx, pool, cmd("sup"), f, ids["para2"], "AQ", true, ""))
-	must("join division", SetDivision(ctx, pool, cmd("sup"), f, ids["para2"], "TAIR", "", ""))
-	must("change role", SetDivision(ctx, pool, cmd("sup"), f, ids["para2"], "TAIR", "Lead", ""))
-	denied("unknown role", SetDivision(ctx, pool, cmd("sup"), f, ids["para2"], "TAIR", "Captain", ""))
+	must("join division", SetDivision(ctx, pool, cmd("sup"), f, ids["para2"], "TAIR", "", false, ""))
+	must("change role", SetDivision(ctx, pool, cmd("sup"), f, ids["para2"], "TAIR", "Lead", false, ""))
+	denied("unknown role", SetDivision(ctx, pool, cmd("sup"), f, ids["para2"], "TAIR", "Captain", false, ""))
 
 	// Discipline: offence ranges, the ladder, applied actions, warnings.
 	var mvwOff, smallOff, bigOff int64
@@ -207,10 +208,16 @@ func TestCommandExtras(t *testing.T) {
 		t.Error("discharged member should be out")
 	}
 
-	// Rank rules: only the top rank, never their own rank.
+	// Rank rules: anyone who maintains the panel, for ranks other than their
+	// own; only cabinet (or Management) changes the rank type and "promotes
+	// up to", or edits their own rank; nobody unticks their own rank.
 	rr := RankRules{Name: "Paramedic II", Slots: 4, MinDays: 7, Quals: []string{"TQ"}}
-	denied("non-top rank edits rules", UpdateRank(ctx, pool, cmd("sup"), f, 2, rr))
-	denied("top rank edits own rank", UpdateRank(ctx, pool, cmd("chief"), f, 5, RankRules{Name: "Boss", PromoteUpTo: 4}))
+	must("command edits another rank's rules", UpdateRank(ctx, pool, cmd("sup"), f, 2, RankRules{Name: "Paramedic", MinDays: 3}))
+	denied("command changes promotes-up-to", UpdateRank(ctx, pool, cmd("sup"), f, 2, RankRules{Name: "Paramedic", PromoteUpTo: 1}))
+	denied("command ticks a rank as command", UpdateRank(ctx, pool, cmd("sup"), f, 2, RankRules{Name: "Paramedic", Command: true}))
+	denied("command edits own rank", UpdateRank(ctx, pool, cmd("sup"), f, 4, RankRules{Name: "Sup", PromoteUpTo: 2, Command: true}))
+	denied("cabinet unticks own rank", UpdateRank(ctx, pool, cmd("chief"), f, 5, RankRules{Name: "Boss", PromoteUpTo: 4}))
+	must("cabinet edits own rank", UpdateRank(ctx, pool, cmd("chief"), f, 5, RankRules{Name: "Chief Paramedic", PromoteUpTo: 4, Command: true, Cabinet: true}))
 	denied("unknown qual", UpdateRank(ctx, pool, cmd("chief"), f, 2, RankRules{Name: "x", Quals: []string{"ZZ"}}))
 	denied("cabinet without command", UpdateRank(ctx, pool, cmd("chief"), f, 2, RankRules{Name: "x", Cabinet: true}))
 
@@ -225,12 +232,52 @@ func TestCommandExtras(t *testing.T) {
 	}
 	_, err = SetLevel(ctx, pool, cmd("sup"), f, ids["civ"], 1, "x")
 	denied("command rank that can't change ranks", err)
-	must("top rank edits rules", UpdateRank(ctx, pool, cmd("chief"), f, 2, rr))
+	must("cabinet edits rules", UpdateRank(ctx, pool, cmd("chief"), f, 2, rr))
 	ranks, _ := Ranks(ctx, pool, f)
 	if r := RankFor(ranks, 2); r.Name != "Paramedic II" || r.MinDays != 7 || len(r.Quals) != 1 {
 		t.Errorf("rank rules not saved: %+v", r)
 	}
-	denied("settings by a non-top rank", UpdateSettings(ctx, pool, cmd("sup"), f, Settings{ProbationDays: 10, PointsExpiryDays: 60, MVWDays: 7, BlacklistDays: 90}, ""))
+	must("command maintains settings", UpdateSettings(ctx, pool, cmd("sup"), f, Settings{ProbationDays: 10, PointsExpiryDays: 60, MVWDays: 7, BlacklistDays: 90}, ""))
+
+	// Administration division: panel access whatever the rank; records and
+	// maintenance, not rank changes or discipline. Only cabinet, Management
+	// and the Administration Commander appoint to it.
+	mgmt := Actor{PlayerID: ids["civ2"], Source: "website", Via: ViaStaffOverride}
+	if _, isCmd, _ := CommandIn(ctx, pool, ids["clerk"], f); isCmd {
+		t.Error("a trainee outside Administration has no panel access")
+	}
+	denied("command appoints to Administration", SetDivision(ctx, pool, cmd("sup"), f, ids["clerk"], "ADMIN", "Administrator", false, ""))
+	must("cabinet appoints to Administration", SetDivision(ctx, pool, cmd("chief"), f, ids["clerk"], "ADMIN", "Administrator", false, ""))
+	if c, isCmd, _ := CommandIn(ctx, pool, ids["clerk"], f); !isCmd || !c.Admin || c.IsCommand() || c.AdminCommander {
+		t.Errorf("Administration member: want panel access as Admin, not command; got %v %+v", isCmd, c)
+	}
+	must("Administration keeps records", func() error {
+		_, err := UpdateMember(ctx, pool, cmd("clerk"), f, ids["sup"], MemberDetails{Badge: "S01", Status: "active"})
+		return err
+	}())
+	_, err = UpdateMember(ctx, pool, cmd("clerk"), f, ids["chief"], MemberDetails{Status: "active"})
+	denied("Administration edits a cabinet member", err)
+	must("Administration maintains settings", UpdateSettings(ctx, pool, cmd("clerk"), f, Settings{ProbationDays: 12, PointsExpiryDays: 60, MVWDays: 7, BlacklistDays: 90}, ""))
+	must("Administration edits rank rules", UpdateRank(ctx, pool, cmd("clerk"), f, 2, RankRules{Name: "Paramedic II", Slots: 5, MinDays: 7, Quals: []string{"TQ"}}))
+	_, err = IssueDiscipline(ctx, pool, cmd("clerk"), f, Issue{TargetID: ids["clerk2"], OffenceID: smallOff, Points: 5, Notes: "x"})
+	denied("Administration issues discipline", err)
+	_, err = SetLevel(ctx, pool, cmd("clerk"), f, ids["clerk2"], 2, "x")
+	denied("Administration changes a rank", err)
+	denied("Administrator appoints to Administration", SetDivision(ctx, pool, cmd("clerk"), f, ids["clerk2"], "ADMIN", "Administrator", false, ""))
+	must("cabinet makes them Commander", SetDivision(ctx, pool, cmd("chief"), f, ids["clerk"], "ADMIN", "Commander", false, ""))
+	must("Administration Commander appoints", SetDivision(ctx, pool, cmd("clerk"), f, ids["clerk2"], "ADMIN", "Administrator", false, ""))
+	denied("Administration Commander appoints a Commander", SetDivision(ctx, pool, cmd("clerk"), f, ids["clerk2"], "ADMIN", "Commander", false, ""))
+	denied("Administration Commander removes themselves", SetDivision(ctx, pool, cmd("clerk"), f, ids["clerk"], "ADMIN", "", true, ""))
+	must("Management removes from Administration", SetDivision(ctx, pool, mgmt, f, ids["clerk2"], "ADMIN", "", true, ""))
+	must("Management appoints to Administration", SetDivision(ctx, pool, mgmt, f, ids["clerk2"], "ADMIN", "Deputy Commander", false, ""))
+	// Administration sits alongside a specialist division.
+	must("grant AQ to clerk", SetQual(ctx, pool, cmd("chief"), f, ids["clerk"], "AQ", true, ""))
+	must("clerk joins a specialist division", SetDivision(ctx, pool, cmd("chief"), f, ids["clerk"], "TAIR", "", false, ""))
+	spec, _ := MemberDivisions(ctx, pool, f)
+	adm, _ := AdminPostings(ctx, pool, f)
+	if spec[ids["clerk"]].Key != "TAIR" || adm[ids["clerk"]].Role != "Commander" {
+		t.Errorf("Administration and a specialist division should both hold: %+v %+v", spec[ids["clerk"]], adm[ids["clerk"]])
+	}
 
 	// Personnel roster: details and roll call, for members ranked below you.
 	now := time.Now()

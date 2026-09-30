@@ -110,21 +110,26 @@ func QualsOf(ctx context.Context, q dbtx, faction string, playerID int64) ([]Hel
 	return out, rows.Err()
 }
 
-// Division is one specialist division.
+// Division is one division: a specialist division, or the faction's
+// Administration division (IsAdmin).
 type Division struct {
 	Key, Name, Color string
-	Roles            []string // most senior first
+	Roles            []string // most senior first; Roles[0] is the Commander
 	RequiredQual     string
 	MinLevel         int
+	IsAdmin          bool
 }
 
 // EntryRole is the role new members join as.
 func (d Division) EntryRole() string { return d.Roles[len(d.Roles)-1] }
 
+// CommanderRole is the division's most senior role.
+func (d Division) CommanderRole() string { return d.Roles[0] }
+
 func Divisions(ctx context.Context, q dbtx, faction string) ([]Division, error) {
 	rows, err := q.Query(ctx, `
-		SELECT key, name, color, roles, COALESCE(required_qual, ''), min_level
-		FROM faction_divisions WHERE faction = $1 ORDER BY sort, key`, faction)
+		SELECT key, name, color, roles, COALESCE(required_qual, ''), min_level, is_admin
+		FROM faction_divisions WHERE faction = $1 ORDER BY is_admin DESC, sort, key`, faction)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +137,7 @@ func Divisions(ctx context.Context, q dbtx, faction string) ([]Division, error) 
 	var out []Division
 	for rows.Next() {
 		var d Division
-		if err := rows.Scan(&d.Key, &d.Name, &d.Color, &d.Roles, &d.RequiredQual, &d.MinLevel); err != nil {
+		if err := rows.Scan(&d.Key, &d.Name, &d.Color, &d.Roles, &d.RequiredQual, &d.MinLevel, &d.IsAdmin); err != nil {
 			return nil, err
 		}
 		out = append(out, d)
@@ -140,15 +145,17 @@ func Divisions(ctx context.Context, q dbtx, faction string) ([]Division, error) 
 	return out, rows.Err()
 }
 
-// Posting is a member's specialist division and role.
+// Posting is a member's place in a division.
 type Posting struct {
 	Key, Role string
 	Since     time.Time
 }
 
-// MemberDivisions maps player ID → their division posting.
-func MemberDivisions(ctx context.Context, q dbtx, faction string) (map[int64]Posting, error) {
-	rows, err := q.Query(ctx, `SELECT player_id, division_key, role, since FROM faction_member_divisions WHERE faction = $1`, faction)
+func postings(ctx context.Context, q dbtx, faction string, admin bool) (map[int64]Posting, error) {
+	rows, err := q.Query(ctx, `
+		SELECT md.player_id, md.division_key, md.role, md.since
+		FROM faction_member_divisions md JOIN faction_divisions d ON d.faction = md.faction AND d.key = md.division_key
+		WHERE md.faction = $1 AND d.is_admin = $2`, faction, admin)
 	if err != nil {
 		return nil, err
 	}
@@ -165,16 +172,35 @@ func MemberDivisions(ctx context.Context, q dbtx, faction string) (map[int64]Pos
 	return out, rows.Err()
 }
 
-// SetDivision posts a member to a division in role, or takes them out of
-// their division (divKey ""). Command, for members ranked below them.
-func SetDivision(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction string, targetID int64, divKey, role, reason string) error {
+// MemberDivisions maps player ID → their specialist division posting.
+func MemberDivisions(ctx context.Context, q dbtx, faction string) (map[int64]Posting, error) {
+	return postings(ctx, q, faction, false)
+}
+
+// AdminPostings maps player ID → their Administration division posting.
+func AdminPostings(ctx context.Context, q dbtx, faction string) (map[int64]Posting, error) {
+	return postings(ctx, q, faction, true)
+}
+
+// SetDivision posts a member to a division in role, or takes them out of it
+// (remove). A member holds at most one specialist division, and may also
+// be in Administration.
+//
+// Specialist divisions: anyone who keeps records on the member (command
+// for members below them, Administration, cabinet, Management).
+// Administration: only cabinet, Management and the Administration
+// Commander; only cabinet and Management appoint or remove its Commander.
+func SetDivision(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction string, targetID int64, divKey, role string, remove bool, reason string) error {
 	tx, err := pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback(ctx)
-	a, err := commandOver(ctx, tx, actor, faction, targetID)
+	a, err := standing(ctx, tx, actor, faction)
 	if err != nil {
+		return err
+	}
+	if err := a.target(ctx, tx, actor, faction, targetID); err != nil {
 		return err
 	}
 	if a.TargetLvl == 0 {
@@ -183,50 +209,81 @@ func SetDivision(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction s
 	if reason, err = cleanText(reason, 300, "the reason", false); err != nil {
 		return err
 	}
-	name := playerName(ctx, tx, targetID)
-	var cur Posting
-	err = tx.QueryRow(ctx, `SELECT division_key, role FROM faction_member_divisions WHERE faction = $1 AND player_id = $2`, faction, targetID).Scan(&cur.Key, &cur.Role)
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		return err
-	}
 	divs, err := Divisions(ctx, tx, faction)
 	if err != nil {
 		return err
 	}
-	divName := func(k string) string {
-		for _, d := range divs {
-			if d.Key == k {
-				return d.Name
-			}
+	var d Division
+	for _, x := range divs {
+		if x.Key == divKey {
+			d = x
 		}
-		return k
 	}
-	var detail string
-	if divKey == "" {
-		if cur.Key == "" {
-			return notAllowed("they aren't in a division")
-		}
-		if _, err := tx.Exec(ctx, `DELETE FROM faction_member_divisions WHERE faction = $1 AND player_id = $2`, faction, targetID); err != nil {
+	if d.Key == "" {
+		return notAllowed("unknown division")
+	}
+	name := playerName(ctx, tx, targetID)
+
+	// Where they are now: in this division, and (for a specialist move) any
+	// other specialist division.
+	var cur, other Posting
+	rows, err := tx.Query(ctx, `
+		SELECT md.division_key, md.role, d.is_admin FROM faction_member_divisions md
+		JOIN faction_divisions d ON d.faction = md.faction AND d.key = md.division_key
+		WHERE md.faction = $1 AND md.player_id = $2`, faction, targetID)
+	if err != nil {
+		return err
+	}
+	for rows.Next() {
+		var p Posting
+		var isAdmin bool
+		if err := rows.Scan(&p.Key, &p.Role, &isAdmin); err != nil {
+			rows.Close()
 			return err
 		}
-		detail = name + " left " + divName(cur.Key)
-	} else {
-		var d Division
-		for _, x := range divs {
-			if x.Key == divKey {
-				d = x
+		switch {
+		case p.Key == divKey:
+			cur = p
+		case !isAdmin:
+			other = p
+		}
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	if d.IsAdmin {
+		switch {
+		case a.Management, a.Cabinet:
+		case a.AdminCommander:
+			if role == d.CommanderRole() || cur.Role == d.CommanderRole() {
+				return notAllowed("only cabinet or Management can appoint or remove the %s %s", d.Name, d.CommanderRole())
 			}
+		default:
+			return notAllowed("only cabinet, Management or the %s %s can appoint to %s", d.Name, d.CommanderRole(), d.Name)
 		}
-		if d.Key == "" {
-			return notAllowed("unknown division")
+	} else if err := a.canRecord(); err != nil {
+		return err
+	}
+
+	var detail string
+	if remove {
+		if cur.Key == "" {
+			return notAllowed("they aren't in %s", d.Name)
 		}
+		if _, err := tx.Exec(ctx, `DELETE FROM faction_member_divisions WHERE faction = $1 AND player_id = $2 AND division_key = $3`, faction, targetID, divKey); err != nil {
+			return err
+		}
+		detail = name + " left " + d.Name
+	} else {
 		if role == "" {
 			role = d.EntryRole()
 		}
 		if !slices.Contains(d.Roles, role) {
 			return notAllowed("%s has no %q role", d.Name, role)
 		}
-		if cur.Key == divKey && cur.Role == role {
+		if cur.Role == role {
 			return notAllowed("they're already %s in %s", role, d.Name)
 		}
 		if a.TargetLvl < d.MinLevel {
@@ -241,18 +298,30 @@ func SetDivision(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction s
 				return notAllowed("%s needs the %s qualification", d.Name, d.RequiredQual)
 			}
 		}
+		if !d.IsAdmin && other.Key != "" {
+			if _, err := tx.Exec(ctx, `DELETE FROM faction_member_divisions WHERE faction = $1 AND player_id = $2 AND division_key = $3`, faction, targetID, other.Key); err != nil {
+				return err
+			}
+		}
 		if _, err := tx.Exec(ctx, `
 			INSERT INTO faction_member_divisions (faction, player_id, division_key, role) VALUES ($1, $2, $3, $4)
-			ON CONFLICT (faction, player_id) DO UPDATE SET division_key = $3, role = $4,
-			    since = CASE WHEN faction_member_divisions.division_key = $3 THEN faction_member_divisions.since ELSE now() END`,
+			ON CONFLICT (faction, player_id, division_key) DO UPDATE SET role = $4`,
 			faction, targetID, divKey, role); err != nil {
 			return err
 		}
+		divName := func(k string) string {
+			for _, x := range divs {
+				if x.Key == k {
+					return x.Name
+				}
+			}
+			return k
+		}
 		switch {
-		case cur.Key == divKey:
-			detail = name + ": " + d.Name + " role " + cur.Role + " → " + role
 		case cur.Key != "":
-			detail = name + " moved from " + divName(cur.Key) + " to " + d.Name + " as " + role
+			detail = name + ": " + d.Name + " role " + cur.Role + " → " + role
+		case other.Key != "" && !d.IsAdmin:
+			detail = name + " moved from " + divName(other.Key) + " to " + d.Name + " as " + role
 		default:
 			detail = name + " joined " + d.Name + " as " + role
 		}
@@ -263,15 +332,15 @@ func SetDivision(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction s
 	return tx.Commit(ctx)
 }
 
-// SetQual grants or removes a qualification. Command, for members ranked
-// below them.
+// SetQual grants or removes a qualification. Anyone who keeps records on
+// the member (command for members below them, Administration, cabinet).
 func SetQual(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction string, targetID int64, key string, grant bool, reason string) error {
 	tx, err := pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback(ctx)
-	a, err := commandOver(ctx, tx, actor, faction, targetID)
+	a, err := recordsOver(ctx, tx, actor, faction, targetID)
 	if err != nil {
 		return err
 	}
@@ -325,7 +394,7 @@ func SetQualHead(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction, 
 		return err
 	}
 	defer tx.Rollback(ctx)
-	a, err := commandOver(ctx, tx, actor, faction, 0)
+	a, err := maintainOver(ctx, tx, actor, faction)
 	if err != nil {
 		return err
 	}
