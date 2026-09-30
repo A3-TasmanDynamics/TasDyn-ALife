@@ -1,0 +1,57 @@
+{{define "content"}}
+<div class="cmd-shell">
+  {{template "command_sidebar" .}}
+  <div class="cmd-main">
+    <a class="cmd-back" href="/command/{{.Faction}}/drive{{if .ID}}/doc/{{.ID}}{{else if .Item.FolderID}}?folder={{.Item.FolderID}}{{end}}">&larr; {{if .ID}}Back to the document{{else}}Drive{{end}}</a>
+    <form method="post" action="/command/{{.Faction}}/drive/{{if .ID}}doc/{{.ID}}{{else}}docs{{end}}" class="ed-form" data-editor-form>
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      <input type="hidden" name="body" data-editor-body>
+      <div class="ed-top">
+        <label class="visually-hidden" for="ed-title">Title</label>
+        <input id="ed-title" class="ed-title" name="title" value="{{.Item.Title}}" maxlength="120" required placeholder="Document title">
+        <div class="ed-top-actions">
+          <span class="hint" data-editor-status>{{if .ID}}Each save keeps the previous version.{{else}}Not saved yet.{{end}}</span>
+          <button class="btn btn-primary" type="submit">{{if .ID}}Save{{else}}Create document{{end}}</button>
+        </div>
+      </div>
+      <div class="ed-meta">
+        <div class="field"><label for="ed-cat">Type</label><select id="ed-cat" name="category">{{range .Categories}}<option value="{{.Key}}" {{if eq .Key $.Item.Category}}selected{{end}}>{{.Label}}</option>{{end}}</select></div>
+        <div class="field"><label for="ed-div">Division</label><select id="ed-div" name="division">{{if .Viewer.CanCreateAnywhere}}<option value="">Whole faction</option>{{end}}{{range .Divisions}}{{if $.Viewer.CanEdit .Key}}<option value="{{.Key}}" {{if eq .Key $.Item.Division}}selected{{end}}>{{.Name}}</option>{{end}}{{end}}</select></div>
+        <div class="field"><label for="ed-vis">Shown to</label><select id="ed-vis" name="visibility"><option value="members" {{if eq .Item.Visibility "members"}}selected{{end}}>Members (a division's: its members)</option><option value="command" {{if eq .Item.Visibility "command"}}selected{{end}}>Command panel only</option></select></div>
+        <div class="field"><label for="ed-folder">Folder</label><select id="ed-folder" name="folder"><option value="0">Drive (top level)</option>{{range .Folders}}<option value="{{.ID}}" {{if eq .ID $.Item.FolderID}}selected{{end}}>{{.Name}}</option>{{end}}</select></div>
+      </div>
+
+      <div class="ed-toolbar" role="toolbar" aria-label="Formatting" data-editor-toolbar>
+        <select data-cmd="formatBlock" aria-label="Paragraph style">
+          <option value="p">Normal text</option><option value="h1">Title</option><option value="h2">Heading</option><option value="h3">Subheading</option><option value="blockquote">Quote</option>
+        </select>
+        <span class="ed-sep" aria-hidden="true"></span>
+        <button type="button" data-cmd="bold" title="Bold (Ctrl+B)" aria-label="Bold"><strong>B</strong></button>
+        <button type="button" data-cmd="italic" title="Italic (Ctrl+I)" aria-label="Italic"><em>I</em></button>
+        <button type="button" data-cmd="underline" title="Underline (Ctrl+U)" aria-label="Underline"><u>U</u></button>
+        <button type="button" data-cmd="strikeThrough" title="Strikethrough" aria-label="Strikethrough"><s>S</s></button>
+        <span class="ed-sep" aria-hidden="true"></span>
+        <button type="button" data-cmd="insertUnorderedList" title="Bulleted list" aria-label="Bulleted list">&#8226; List</button>
+        <button type="button" data-cmd="insertOrderedList" title="Numbered list" aria-label="Numbered list">1. List</button>
+        <button type="button" data-cmd="outdent" title="Decrease indent" aria-label="Decrease indent">&#8676;</button>
+        <button type="button" data-cmd="indent" title="Increase indent" aria-label="Increase indent">&#8677;</button>
+        <span class="ed-sep" aria-hidden="true"></span>
+        <button type="button" data-cmd="justifyLeft" title="Align left" aria-label="Align left">&#8676;&#8801;</button>
+        <button type="button" data-cmd="justifyCenter" title="Centre" aria-label="Centre">&#8801;</button>
+        <button type="button" data-cmd="justifyRight" title="Align right" aria-label="Align right">&#8801;&#8677;</button>
+        <span class="ed-sep" aria-hidden="true"></span>
+        <button type="button" data-cmd="createLink" title="Link" aria-label="Insert link">Link</button>
+        <button type="button" data-cmd="insertTable" title="Table" aria-label="Insert table">Table</button>
+        <button type="button" data-cmd="insertHorizontalRule" title="Divider" aria-label="Insert divider">&#8212;</button>
+        <span class="ed-sep" aria-hidden="true"></span>
+        <button type="button" data-cmd="removeFormat" title="Clear formatting" aria-label="Clear formatting">Clear</button>
+        <button type="button" data-cmd="undo" title="Undo (Ctrl+Z)" aria-label="Undo">&#8630;</button>
+        <button type="button" data-cmd="redo" title="Redo (Ctrl+Y)" aria-label="Redo">&#8631;</button>
+      </div>
+      <div class="doc-page ed-page" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true" aria-label="Document text" data-editor>{{.Body}}</div>
+      <noscript><p class="banner banner-error">The editor needs JavaScript.</p></noscript>
+    </form>
+  </div>
+</div>
+<script src="/static/editor.js" defer></script>
+{{end}}

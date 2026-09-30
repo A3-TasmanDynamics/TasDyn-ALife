@@ -1,0 +1,123 @@
+{{define "content"}}
+<div class="cmd-shell">
+  {{template "command_sidebar" .}}
+  <div class="cmd-main">
+    <div class="cmd-head">
+      <div>
+        <h1>Drive</h1>
+        <p class="cmd-sub">SOPs, training documents, policies and files. Members read what's shown to them from the Factions page; a division's items only its members.</p>
+      </div>
+      {{if .CanAdd}}
+      <div class="drive-actions">
+        <button class="btn btn-primary" type="button" data-dialog-open="dlg-new">New document</button>
+        <button class="btn" type="button" data-dialog-open="dlg-upload">Upload</button>
+        <button class="btn" type="button" data-dialog-open="dlg-folder">New folder</button>
+      </div>
+      {{end}}
+    </div>
+
+    <nav class="drive-crumbs" aria-label="Folder">
+      <a href="/command/{{.Faction}}/drive">Drive</a>
+      {{range .List.Path}}<span aria-hidden="true">/</span><a href="/command/{{$.Faction}}/drive?folder={{.ID}}">{{.Name}}</a>{{end}}
+      {{if .List.Folder.ID}}<span aria-hidden="true">/</span><strong>{{.List.Folder.Name}}</strong>
+        {{if .List.Folder.Division}}<span class="cmd-tag">{{.List.Folder.Division}}</span>{{end}}{{if eq .List.Folder.Visibility "command"}}<span class="cmd-tag cmd-tag-override">Command only</span>{{end}}{{end}}
+    </nav>
+
+    {{if .Recent}}
+    <section class="drive-recent" aria-label="Recently updated">
+      {{range .Recent}}
+      <a class="drive-card" href="/command/{{$.Faction}}/drive/{{if eq .Kind "doc"}}doc{{else}}file{{end}}/{{.ID}}">
+        <span class="drive-icon drive-icon-{{if eq .Kind "doc"}}{{.Category}}{{else}}file{{end}}" aria-hidden="true">{{if eq .Kind "doc"}}{{.CategoryLabel}}{{else}}FILE{{end}}</span>
+        <span class="drive-card-title">{{.Title}}</span>
+        <span class="cmd-dim">Updated {{.Updated.Format "2 Jan"}} by {{.UpdatedBy}}</span>
+      </a>
+      {{end}}
+    </section>
+    {{end}}
+
+    <div class="cmd-table drive-table" role="table" aria-label="Folder contents">
+      <div class="cmd-row drive-row cmd-row-head" role="row"><span>Name</span><span>Type</span><span>Shown to</span><span>Updated</span><span></span></div>
+      {{if .List.Folder.ID}}
+      <a class="cmd-row drive-row" role="row" href="/command/{{.Faction}}/drive{{if .List.Folder.ParentID}}?folder={{.List.Folder.ParentID}}{{end}}"><span class="drive-name"><span class="drive-folder" aria-hidden="true">&#8617;</span> Up one level</span><span></span><span></span><span></span><span></span></a>
+      {{end}}
+      {{range .List.Folders}}
+      <div class="cmd-row drive-row" role="row">
+        <a class="drive-name" href="/command/{{$.Faction}}/drive?folder={{.ID}}"><span class="drive-folder" aria-hidden="true">&#128193;</span> <span class="cmd-strong">{{.Name}}</span></a>
+        <span class="cmd-dim">Folder &middot; {{.Items}} item{{if ne .Items 1}}s{{end}}</span>
+        <span class="cmd-dim">{{if eq .Visibility "command"}}Command{{else if .Division}}{{.Division}} members{{else}}All members{{end}}</span>
+        <span></span>
+        <span>{{if and ($.Viewer.CanEdit .Division) (eq .Items 0)}}<form method="post" action="/command/{{$.Faction}}/drive/folders/{{.ID}}/remove" class="inline-form"><input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="parent" value="{{$.FolderID}}"><button class="link-button" type="submit">Remove</button></form>{{end}}</span>
+      </div>
+      {{end}}
+      {{range .List.Items}}
+      <div class="cmd-row drive-row" role="row">
+        <a class="drive-name" href="/command/{{$.Faction}}/drive/{{if eq .Kind "doc"}}doc{{else}}file{{end}}/{{.ID}}"><span class="drive-icon drive-icon-sm drive-icon-{{if eq .Kind "doc"}}{{.Category}}{{else}}file{{end}}" aria-hidden="true">{{if eq .Kind "doc"}}DOC{{else}}FILE{{end}}</span> <span class="cmd-strong">{{.Title}}</span></a>
+        <span class="cmd-dim">{{if eq .Kind "doc"}}{{.CategoryLabel}}{{else}}{{.FileName}} &middot; {{.SizeText}}{{end}}</span>
+        <span class="cmd-dim">{{if eq .Visibility "command"}}Command{{else if .Division}}{{.Division}} members{{else}}All members{{end}}</span>
+        <span class="cmd-dim">{{.Updated.Format "2 Jan 2006"}} &middot; {{.UpdatedBy}}</span>
+        <span class="drive-row-actions">
+          {{if eq .Kind "doc"}}<a class="link-button" href="/command/{{$.Faction}}/drive/doc/{{.ID}}/word">Word</a>{{if $.Viewer.CanEdit .Division}}<a class="link-button" href="/command/{{$.Faction}}/drive/doc/{{.ID}}/edit">Edit</a>{{end}}{{else}}<a class="link-button" href="/command/{{$.Faction}}/drive/file/{{.ID}}">Open</a>{{end}}
+          {{if $.Viewer.CanEdit .Division}}<button class="link-button" type="button" data-dialog-open="dlg-rm-{{.ID}}">Remove</button>
+          <dialog id="dlg-rm-{{.ID}}" class="modal" aria-labelledby="dlg-rm-{{.ID}}-t">
+            <form method="post" action="/command/{{$.Faction}}/drive/item/{{.ID}}/remove">
+              <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+              <div class="modal-head"><h2 id="dlg-rm-{{.ID}}-t">Remove {{.Title}}?</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+              <div class="modal-body"><p>It disappears from the drive for everyone. It's kept in the database, not deleted, so it can be recovered.</p></div>
+              <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-danger" type="submit">Remove</button></div>
+            </form>
+          </dialog>{{end}}
+        </span>
+      </div>
+      {{end}}
+      {{if and (not .List.Folders) (not .List.Items)}}<p class="cmd-empty">{{if .List.Folder.ID}}This folder is empty.{{else}}Nothing here yet. Start with a new document, an upload or a folder.{{end}}</p>{{end}}
+    </div>
+
+    {{if .CanAdd}}
+    <dialog id="dlg-new" class="modal" aria-labelledby="dlg-new-t">
+      <div class="modal-head"><h2 id="dlg-new-t">New document</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+      <div class="modal-body drive-templates">
+        <a class="drive-template" href="/command/{{.Faction}}/drive/new?template=sop&amp;folder={{.FolderID}}{{if .Division}}&amp;division={{.Division}}{{end}}"><span class="drive-icon drive-icon-sop" aria-hidden="true">SOP</span><strong>Standard operating procedure</strong><span class="cmd-dim">Purpose, scope, procedure, radio, dos and don'ts.</span></a>
+        <a class="drive-template" href="/command/{{.Faction}}/drive/new?template=training&amp;folder={{.FolderID}}{{if .Division}}&amp;division={{.Division}}{{end}}"><span class="drive-icon drive-icon-training" aria-hidden="true">TRN</span><strong>Training document</strong><span class="cmd-dim">Outcomes, session plan and assessment.</span></a>
+        <a class="drive-template" href="/command/{{.Faction}}/drive/new?template=blank&amp;folder={{.FolderID}}{{if .Division}}&amp;division={{.Division}}{{end}}"><span class="drive-icon drive-icon-other" aria-hidden="true">DOC</span><strong>Blank document</strong><span class="cmd-dim">Start from nothing.</span></a>
+      </div>
+    </dialog>
+
+    <dialog id="dlg-upload" class="modal" aria-labelledby="dlg-upload-t">
+      <form method="post" action="/command/{{.Faction}}/drive/upload" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="folder" value="{{.FolderID}}">
+        <div class="modal-head"><h2 id="dlg-upload-t">Upload a file</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+        <div class="modal-body">
+          <div class="field"><label for="up-file">File (up to {{.MaxMB}} MB)</label><input id="up-file" type="file" name="file" required accept="{{.Accept}}"></div>
+          <div class="field"><label for="up-title">Title (optional)</label><input id="up-title" name="title" maxlength="120" placeholder="Defaults to the file name"></div>
+          {{template "drive_fields" .}}
+        </div>
+        <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Upload</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="dlg-folder" class="modal" aria-labelledby="dlg-folder-t">
+      <form method="post" action="/command/{{.Faction}}/drive/folders">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="parent" value="{{.FolderID}}">
+        <div class="modal-head"><h2 id="dlg-folder-t">New folder</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+        <div class="modal-body">
+          <div class="field"><label for="fd-name">Name</label><input id="fd-name" name="name" maxlength="80" required placeholder="e.g. S.R.G. SOPs"></div>
+          {{template "drive_fields" .}}
+        </div>
+        <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Create folder</button></div>
+      </form>
+    </dialog>
+    {{end}}
+  </div>
+</div>
+<script src="/static/admin.js" defer></script>
+{{end}}
+
+{{define "drive_fields"}}
+<div class="mod-form-row">
+  <div class="field mod-grow"><label>Division</label>
+    <select name="division">{{if .Viewer.CanCreateAnywhere}}<option value="">Whole faction</option>{{end}}{{range .Divisions}}{{if $.Viewer.CanEdit .Key}}<option value="{{.Key}}" {{if eq .Key $.Division}}selected{{end}}>{{.Name}}</option>{{end}}{{end}}</select></div>
+  <div class="field mod-grow"><label>Shown to</label>
+    <select name="visibility"><option value="members">Members (a division's: its members)</option><option value="command">Command panel only</option></select></div>
+</div>
+{{if .Categories}}<div class="field"><label>Type</label><select name="category">{{range .Categories}}<option value="{{.Key}}">{{.Label}}</option>{{end}}</select></div>{{end}}
+{{end}}

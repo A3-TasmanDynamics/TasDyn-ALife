@@ -13,6 +13,7 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"net/http"
+	"strings"
 )
 
 const CookieName = "csrf_token"
@@ -56,6 +57,10 @@ func ensure(w http.ResponseWriter, r *http.Request, secure bool) string {
 // the request context for handlers/templates to read via FromContext, then
 // -- for anything other than GET/HEAD/OPTIONS -- requires the request's
 // parsed form to carry a "csrf_token" field matching it exactly.
+// MaxUpload is the largest multipart request accepted (the drive's file
+// limit plus room for the other form fields).
+const MaxUpload = 20 << 20
+
 func Middleware(secure bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -68,11 +73,22 @@ func Middleware(secure bool) func(http.Handler) http.Handler {
 				return
 			}
 
-			if err := r.ParseForm(); err != nil {
+			// File uploads (multipart) are capped at MaxUpload; parts
+			// larger than 8 MB spill to temporary files, not memory.
+			if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
+				r.Body = http.MaxBytesReader(w, r.Body, MaxUpload)
+				if err := r.ParseMultipartForm(8 << 20); err != nil {
+					http.Error(w, "400 Bad Request: upload too large or malformed", http.StatusBadRequest)
+					return
+				}
+			} else if err := r.ParseForm(); err != nil {
 				http.Error(w, "400 Bad Request", http.StatusBadRequest)
 				return
 			}
 			submitted := r.PostForm.Get("csrf_token")
+			if submitted == "" && r.MultipartForm != nil && len(r.MultipartForm.Value["csrf_token"]) > 0 {
+				submitted = r.MultipartForm.Value["csrf_token"][0]
+			}
 			if token == "" || subtle.ConstantTimeCompare([]byte(token), []byte(submitted)) != 1 {
 				http.Error(w, "403 Forbidden: CSRF token missing or invalid", http.StatusForbidden)
 				return

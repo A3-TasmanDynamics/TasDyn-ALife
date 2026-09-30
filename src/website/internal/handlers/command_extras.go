@@ -486,6 +486,9 @@ type commandDivisionData struct {
 	CanReview  bool
 	Pending    []factions.DivisionApp
 	Decided    []factions.DivisionApp
+
+	Docs         []factions.Item
+	CanWriteDocs bool
 }
 
 // CommandDivision is one division's page: its members and roles, and its
@@ -581,6 +584,12 @@ func (d *Deps) CommandDivision(w http.ResponseWriter, r *http.Request) {
 	data.Decided, _ = factions.DivisionQueue(ctx, d.Pool, cb.Faction, key, false)
 	if len(data.Decided) > 10 {
 		data.Decided = data.Decided[:10]
+	}
+	if v, err := d.driveViewer(r, cb.Faction); err == nil {
+		if l, err := factions.ListDrive(ctx, d.Pool, v, 0, key); err == nil {
+			data.Docs = l.Items
+		}
+		data.CanWriteDocs = v.CanEdit(key)
 	}
 	d.Render.Render(w, "command_division.html", data)
 }

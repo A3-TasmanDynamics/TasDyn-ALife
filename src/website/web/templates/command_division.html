@@ -90,6 +90,18 @@
       {{end}}
     </section>
 
+    {{if not .IsGD}}
+    <section class="cmd-card" aria-labelledby="docs-h">
+      <div class="cmd-card-head"><h2 id="docs-h">{{$d.Name}} documents</h2><span class="cmd-dim">SOPs, training and files for this division</span>
+        {{if .CanWriteDocs}}<a class="cmd-head-link" href="/command/{{.Faction}}/drive/new?template=sop&amp;division={{$d.Key}}">New SOP</a>{{end}}</div>
+      {{range .Docs}}
+      <a class="cmd-history-row div-doc-row" href="/command/{{$.Faction}}/drive/{{if eq .Kind "doc"}}doc{{else}}file{{end}}/{{.ID}}"><span><span class="drive-icon drive-icon-sm drive-icon-{{if eq .Kind "doc"}}{{.Category}}{{else}}file{{end}}" aria-hidden="true">{{if eq .Kind "doc"}}DOC{{else}}FILE{{end}}</span> <span class="cmd-strong">{{.Title}}</span></span><span class="cmd-dim">{{if eq .Kind "doc"}}{{.CategoryLabel}}{{else}}{{.FileName}}{{end}} &middot; updated {{.Updated.Format "2 Jan"}}{{if eq .Visibility "command"}} &middot; command only{{end}}</span></a>
+      {{else}}
+      <p class="cmd-empty">No {{$d.Name}} documents yet.{{if .CanWriteDocs}} Add one here or from the Drive.{{end}}</p>
+      {{end}}
+    </section>
+    {{end}}
+
     {{if and (not .IsGD) (not $d.IsAdmin)}}
     <section class="cmd-card cmd-pad">
       <h2>{{$d.Name}} gear</h2>

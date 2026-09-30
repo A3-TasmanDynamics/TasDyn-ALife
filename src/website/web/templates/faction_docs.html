@@ -1,0 +1,25 @@
+{{define "content"}}
+<div class="doc-member">
+  <a class="cmd-back" href="/factions?faction={{.Faction}}">&larr; Factions</a>
+  <div class="cmd-head"><div>
+    <h1>{{.FactionName}} documents</h1>
+    <p class="cmd-sub">SOPs, training documents and policies for {{.FactionName}} members, including your divisions' documents.</p>
+  </div></div>
+  <nav class="drive-crumbs" aria-label="Folder">
+    <a href="/factions/{{.Faction}}/docs">Documents</a>
+    {{range .List.Path}}<span aria-hidden="true">/</span><a href="/factions/{{$.Faction}}/docs?folder={{.ID}}">{{.Name}}</a>{{end}}
+    {{if .List.Folder.ID}}<span aria-hidden="true">/</span><strong>{{.List.Folder.Name}}</strong>{{end}}
+  </nav>
+  <div class="cmd-table drive-table" role="table" aria-label="Documents">
+    <div class="cmd-row drive-row drive-row-member cmd-row-head" role="row"><span>Name</span><span>Type</span><span>Updated</span></div>
+    {{if .List.Folder.ID}}<a class="cmd-row drive-row drive-row-member" role="row" href="/factions/{{.Faction}}/docs{{if .List.Folder.ParentID}}?folder={{.List.Folder.ParentID}}{{end}}"><span class="drive-name"><span class="drive-folder" aria-hidden="true">&#8617;</span> Up one level</span><span></span><span></span></a>{{end}}
+    {{range .List.Folders}}
+    <a class="cmd-row drive-row drive-row-member" role="row" href="/factions/{{$.Faction}}/docs?folder={{.ID}}"><span class="drive-name"><span class="drive-folder" aria-hidden="true">&#128193;</span> <span class="cmd-strong">{{.Name}}</span></span><span class="cmd-dim">Folder</span><span></span></a>
+    {{end}}
+    {{range .List.Items}}
+    <a class="cmd-row drive-row drive-row-member" role="row" href="/factions/{{$.Faction}}/{{if eq .Kind "doc"}}docs{{else}}files{{end}}/{{.ID}}"><span class="drive-name"><span class="drive-icon drive-icon-sm drive-icon-{{if eq .Kind "doc"}}{{.Category}}{{else}}file{{end}}" aria-hidden="true">{{if eq .Kind "doc"}}DOC{{else}}FILE{{end}}</span> <span class="cmd-strong">{{.Title}}</span>{{if .Division}} <span class="cmd-tag">{{.Division}}</span>{{end}}</span><span class="cmd-dim">{{if eq .Kind "doc"}}{{.CategoryLabel}}{{else}}{{.FileName}} &middot; {{.SizeText}}{{end}}</span><span class="cmd-dim">{{.Updated.Format "2 Jan 2006"}}</span></a>
+    {{end}}
+    {{if and (not .List.Folders) (not .List.Items)}}<p class="cmd-empty">No documents here yet.</p>{{end}}
+  </div>
+</div>
+{{end}}

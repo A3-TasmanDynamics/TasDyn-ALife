@@ -1100,3 +1100,14 @@
   first); turning down needs a note and starts a 7-day wait before reapplying. Division command get the
   panel read-only plus their division's applications. Run
   `database/fixes/2026-09-30_division_applications.sql`.
+- **Faction drive and document editor.** Each faction has a drive (command panel → Drive): nested folders,
+  documents written in a built-in word-processor (headings, bold/italic/underline, lists, quotes, links,
+  tables, alignment, dividers; starter templates for an SOP and a training document) and uploaded files
+  (PDF, images, Word, Excel, PowerPoint, text; up to 15 MB). Items are SOP, Training, Policy or Other,
+  faction-wide or tied to a division, and shown to members or to the command panel only. Every save keeps
+  the previous version (History); documents download as Word or print to PDF. Members read theirs from the
+  Factions page (a division's items only its members); division pages list their documents. Command,
+  Administration, cabinet and Management edit everything; a division's command edits that division's
+  items. Document HTML is sanitised on save and on display (bluemonday); files are checked by type and
+  served with nosniff (and a sandbox for anything that isn't a PDF). Removing archives rather than deletes.
+  Multipart form posts now pass the CSRF check (capped at 20 MB). Run `database/fixes/2026-09-30_faction_drive.sql`.
