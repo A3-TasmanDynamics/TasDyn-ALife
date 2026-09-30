@@ -1,0 +1,94 @@
+{{define "content"}}
+<div class="cmd-shell">
+  {{template "command_sidebar" .}}
+  <div class="cmd-main">
+    <div class="cmd-head">
+      <div>
+        <h1>Ranks &amp; gear</h1>
+        <p class="cmd-sub">Rank rules drive the roster: slots, time in rank, required qualifications and who can promote whom. Names show everywhere the site names a rank.</p>
+      </div>
+    </div>
+
+    {{if .Ranks}}
+    <div class="cmd-table" role="table" aria-label="Ranks">
+      <div class="cmd-row rank-row cmd-row-head" role="row"><span>Lvl</span><span>Rank</span><span>Filled</span><span>Min days</span><span>Needs</span><span>Promotes up to</span></div>
+      {{range .Ranks}}
+      <a class="cmd-row rank-row{{if and $.Sel (eq .Level $.Sel.Level)}} active{{end}}" role="row" href="/command/{{$.Faction}}/ranks?level={{.Level}}" {{if and $.Sel (eq .Level $.Sel.Level)}}aria-current="true"{{end}}>
+        <span class="cmd-dim">{{.Level}}</span>
+        <span><span class="cmd-strong">{{.Label}}</span>{{if .Short}} <span class="cmd-dim">{{.Short}}</span>{{end}}{{if .Command}} <span class="cmd-tag cmd-tag-override">CMD</span>{{end}}</span>
+        <span class="{{if and .Slots (ge .Filled .Slots)}}disc-hot-amber{{else}}cmd-dim{{end}}">{{.Filled}}{{if .Slots}} / {{.Slots}}{{end}}</span>
+        <span class="cmd-dim">{{if .MinDays}}{{.MinDays}} d{{else}}&mdash;{{end}}</span>
+        <span class="cmd-dim">{{if .Quals}}{{range $i, $q := .Quals}}{{if $i}} &middot; {{end}}{{$q}}{{end}}{{else}}&mdash;{{end}}</span>
+        <span class="cmd-dim">{{.UpTo}}</span>
+      </a>
+      {{end}}
+    </div>
+    {{else}}
+    <p class="cmd-empty cmd-card">{{.FactionName}} has no ranks set up yet. Staff add them on Roles &amp; Permissions → Faction rank names.</p>
+    {{end}}
+
+    {{with .Sel}}
+    <div class="cmd-grid">
+      <section class="cmd-card cmd-pad" aria-labelledby="rk-edit">
+        <h2 id="rk-edit">Level {{.Level}}: {{.Label}}</h2>
+        {{if $.CanEdit}}
+        <form method="post" action="/command/{{$.Faction}}/ranks/{{.Level}}" class="cmd-form">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+          <div class="mod-form-row">
+            <div class="field mod-grow"><label for="rk-name">Rank name</label><input id="rk-name" name="name" required maxlength="60" value="{{.Name}}"></div>
+            <div class="field"><label for="rk-short">Short name</label><input id="rk-short" name="short" maxlength="12" value="{{.Short}}" placeholder="e.g. Sgt"></div>
+          </div>
+          <div class="mod-form-row">
+            <div class="field"><label for="rk-slots">Slots (0 = no limit)</label><input id="rk-slots" type="number" name="slots" min="0" max="500" value="{{.Slots}}"></div>
+            <div class="field"><label for="rk-days">Min days in rank</label><input id="rk-days" type="number" name="min_days" min="0" max="365" value="{{.MinDays}}"></div>
+            <div class="field mod-grow"><label for="rk-upto">Promotes up to</label>
+              <select id="rk-upto" name="up_to"><option value="0">Can't promote</option>{{$u := .PromoteUpTo}}{{range $.UpTo}}<option value="{{.Level}}" {{if eq .Level $u}}selected{{end}}>{{.Label}}</option>{{end}}</select></div>
+          </div>
+          {{if $.Quals}}
+          <fieldset class="rank-quals"><legend>Qualifications needed to hold this rank</legend>
+            {{$held := .Quals}}{{range $.Quals}}<label class="rank-qual"><input type="checkbox" name="quals" value="{{.Key}}" {{if has $held .Key}}checked{{end}}> <span>{{.Key}}</span></label>{{end}}
+          </fieldset>
+          {{end}}
+          <div class="field"><label for="rk-desc">Description (shown on the public faction page)</label><textarea id="rk-desc" name="description" rows="3" maxlength="500">{{.Description}}</textarea></div>
+          <button class="btn btn-primary" type="submit">Save rank</button>
+          <p class="hint">Logged in the Command log with the before and after values. A rank that can promote is a command rank and gets this panel.</p>
+        </form>
+        {{else}}
+        <dl class="rank-facts">
+          <div><dt>Short name</dt><dd>{{if .Short}}{{.Short}}{{else}}&mdash;{{end}}</dd></div>
+          <div><dt>Slots</dt><dd>{{if .Slots}}{{.Slots}}{{else}}No limit{{end}}</dd></div>
+          <div><dt>Min days in rank</dt><dd>{{.MinDays}}</dd></div>
+          <div><dt>Promotes up to</dt><dd>{{.UpTo}}</dd></div>
+          <div><dt>Needs</dt><dd>{{if .Quals}}{{range $i, $q := .Quals}}{{if $i}}, {{end}}{{$q}}{{end}}{{else}}Nothing{{end}}</dd></div>
+        </dl>
+        {{if .Description}}<p class="cmd-dim">{{.Description}}</p>{{end}}
+        <p class="hint">{{$.Why}}</p>
+        {{end}}
+      </section>
+      <section class="cmd-card cmd-pad">
+        <h2>Gear unlocked at this rank</h2>
+        <p class="cmd-dim">Rank gear comes from the mission's loadout config, so it isn't listed here yet. It'll show here once loadouts move to the database. Each rank also keeps everything from the ranks below it.</p>
+      </section>
+    </div>
+    {{end}}
+
+    {{if .CanConfig}}
+    <section class="cmd-card cmd-pad" id="settings" aria-labelledby="st-h">
+      <h2 id="st-h">{{.FactionName}} settings</h2>
+      <form method="post" action="/command/{{.Faction}}/settings" class="cmd-form">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <div class="mod-form-row">
+          <div class="field"><label for="st-prob">Probation length (days)</label><input id="st-prob" type="number" name="probation_days" min="1" max="90" value="{{.Settings.ProbationDays}}"></div>
+          <div class="field"><label for="st-pts">Points expire after (days)</label><input id="st-pts" type="number" name="points_expiry_days" min="7" max="730" value="{{.Settings.PointsExpiryDays}}"></div>
+          <div class="field"><label for="st-mvw">Warnings expire after (days)</label><input id="st-mvw" type="number" name="mvw_days" min="1" max="90" value="{{.Settings.MVWDays}}"></div>
+          <div class="field"><label for="st-bl">Default blacklist (days)</label><input id="st-bl" type="number" name="blacklist_days" min="1" max="3650" value="{{.Settings.BlacklistDays}}"></div>
+        </div>
+        <div class="field"><label for="st-reason">Reason (optional)</label><input id="st-reason" name="reason" maxlength="300"></div>
+        <button class="btn" type="submit">Save settings</button>
+        <p class="hint">Only the top rank can change these. New entries use them; existing ones keep their dates.</p>
+      </form>
+    </section>
+    {{end}}
+  </div>
+</div>
+{{end}}

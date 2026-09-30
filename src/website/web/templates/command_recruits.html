@@ -5,14 +5,22 @@
     <div class="cmd-head">
       <div>
         <h1>Recruits &amp; training</h1>
-        <p class="cmd-sub">Applications come in from the player site. Accepting recruits the player at the entry rank; it's logged in the Command log and they get a Discord message.</p>
+        <p class="cmd-sub">Applications come in from the player site. Accepted recruits start a {{.Days}}-day probation; assign an FTO, sign off their training sheet, then confirm them or end it.</p>
       </div>
     </div>
+    <nav class="seg" aria-label="Recruits views">
+      <a class="seg-item {{if eq .Tab "apps"}}active{{end}}" href="/command/{{.Faction}}/recruits?tab=apps">Applications{{if .OpenApps}} &middot; {{.OpenApps}}{{end}}</a>
+      <a class="seg-item {{if eq .Tab "prob"}}active{{end}}" href="/command/{{.Faction}}/recruits?tab=prob">On probation &middot; {{len .Probations}}</a>
+      <a class="seg-item {{if eq .Tab "sheet"}}active{{end}}" href="/command/{{.Faction}}/recruits?tab=sheet">Training sheet</a>
+      <a class="seg-item {{if eq .Tab "done"}}active{{end}}" href="/command/{{.Faction}}/recruits?tab=done">Finished</a>
+    </nav>
+
+    {{if eq .Tab "apps"}}
     {{range .Apps}}
     <section class="cmd-card recruit-card">
       <div class="recruit-who">
         <div class="cmd-strong">{{.Name}}</div>
-        <div class="cmd-dim">Applied {{.CreatedAt.Format "2 Jan 2006"}}<br>{{.PlaytimeH}} h on the server<br>{{if .Banned}}<span class="mod-pill mod-pill-banned">Banned</span>{{else if .Points}}{{.Points}} active points{{else}}Good standing{{end}}</div>
+        <div class="cmd-dim">Applied {{.CreatedAt.Format "2 Jan 2006"}}<br>{{.PlaytimeH}} h on the server<br>{{if .Banned}}<span class="mod-pill mod-pill-banned">Banned</span>{{else if .Points}}{{.Points}} active server points (staff record){{else}}<span class="cmd-green">Good standing, no server points</span>{{end}}</div>
       </div>
       <div class="recruit-answers">
         {{range .Answers}}<div class="apply-answer"><span>{{.Q}}</span><span>{{.A}}</span></div>{{end}}
@@ -23,7 +31,7 @@
           <form method="post" action="/command/{{$.Faction}}/recruits/{{.ID}}" class="recruit-form">
             <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
             <input name="note" maxlength="1000" aria-label="Note (required if not accepting)" placeholder="Note (required if not accepting)">
-            <button class="btn btn-primary" type="submit" name="decision" value="accept">Accept</button>
+            <button class="btn btn-primary" type="submit" name="decision" value="accept">Accept, start probation</button>
             <button class="btn" type="submit" name="decision" value="reject">Not this time</button>
           </form>
           {{else}}<span class="cmd-dim">Waiting for command</span>{{end}}
@@ -35,7 +43,123 @@
     {{else}}
     <p class="cmd-empty cmd-card">No applications waiting. Players apply from the Factions page.</p>
     {{end}}
-    <p class="hint">Probation tracking and training sheets are coming next.</p>
+    <p class="hint">Blacklisted players can't apply until their blacklist ends. See Discipline.</p>
+    {{end}}
+
+    {{if eq .Tab "prob"}}
+    <div class="prob-grid">
+      {{range .Probations}}
+      <section class="cmd-card cmd-pad prob-card{{if .Ending}} prob-card-ending{{end}}">
+        <div class="prob-head">
+          <a class="cmd-strong" href="/command/{{$.Faction}}/members/{{.PlayerID}}">{{.Name}}</a>
+          <span class="cmd-tag">{{if .FTO}}FTO {{.FTO}}{{else}}No FTO yet{{end}}</span>
+        </div>
+        <div class="cmd-dim prob-meta">Started {{.Started.Format "2 Jan"}}</div>
+        <div class="prob-line"><span>Probation</span><span>Day {{.Day}} of {{.Days}}</span></div>
+        <span class="cmd-bar"><span class="cmd-bar-fill{{if .Ending}} cmd-bar-full{{end}}" style="width: {{.DayPercent}}%"></span></span>
+        <div class="prob-line"><span>Training</span><span>{{.Passed}} of {{len .Results}} items</span></div>
+        <div class="prob-items" aria-label="Training items">
+          {{range .Results}}<span class="prob-item prob-item-{{.Result}}" title="{{.Item.Name}}: {{if eq .Result "pass"}}passed{{else if eq .Result "fail"}}needs work{{else}}not done{{end}}"></span>{{end}}
+        </div>
+        {{if .Note}}<p class="cmd-dim prob-note">{{.Note}}</p>{{end}}
+        <a class="btn btn-sm" href="/command/{{$.Faction}}/recruits?sheet={{.ID}}">Open training sheet</a>
+      </section>
+      {{else}}
+      <p class="cmd-empty cmd-card">Nobody is on probation. Recruits start one automatically when they're accepted or recruited.</p>
+      {{end}}
+    </div>
+    {{end}}
+
+    {{if eq .Tab "sheet"}}
+    {{with .Sheet}}{{$p := .}}
+    <section class="cmd-card">
+      <div class="cmd-card-head">
+        <h2>Training sheet &middot; <a href="/command/{{$.Faction}}/members/{{.PlayerID}}">{{.Name}}</a></h2>
+        <span class="cmd-dim">{{if eq .Status "active"}}Day {{.Day}} of {{.Days}}{{if .FTO}} &middot; FTO {{.FTO}}{{end}}{{else if eq .Status "confirmed"}}Confirmed{{if .DecidedBy}} by {{.DecidedBy}}{{end}}{{else}}Ended{{if .DecidedBy}} by {{.DecidedBy}}{{end}}{{end}}</span>
+        {{if gt (len $.Probations) 1}}
+        <form method="get" action="/command/{{$.Faction}}/recruits" class="cmd-head-link"><label class="visually-hidden" for="sh-who">Recruit</label>
+          <select id="sh-who" name="sheet" onchange="this.form.submit()">{{range $.Probations}}<option value="{{.ID}}" {{if eq .ID $p.ID}}selected{{end}}>{{.Name}}</option>{{end}}</select>
+          <noscript><button class="btn btn-sm" type="submit">Open</button></noscript></form>
+        {{end}}
+      </div>
+      {{range .Results}}
+      <div class="sheet-row">
+        <div><div class="cmd-strong">{{.Item.Name}}</div>
+          <div class="cmd-dim sheet-meta">{{if eq .Result "pass"}}Signed off by {{.By}} &middot; {{.At.Format "2 Jan 15:04"}}{{else if eq .Result "fail"}}Needs work ({{.By}}, {{.At.Format "2 Jan 15:04"}}){{if not .CanRetake}}. Retake allowed from {{.RetakeAt.Local.Format "15:04 on 2 Jan"}}{{end}}{{else}}Not done{{end}}</div></div>
+        {{if and (not $.ReadOnly) (eq $p.Status "active")}}
+        <form method="post" action="/command/{{$.Faction}}/probation/{{$p.ID}}" class="sheet-opts" role="group" aria-label="{{.Item.Name}}">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="action" value="training"><input type="hidden" name="item" value="{{.Item.Key}}">
+          <button class="sheet-opt sheet-opt-pass{{if eq .Result "pass"}} on{{end}}" type="submit" name="result" value="pass" aria-pressed="{{if eq .Result "pass"}}true{{else}}false{{end}}" {{if and (eq .Result "fail") (not .CanRetake)}}disabled{{end}}>Pass</button>
+          <button class="sheet-opt sheet-opt-fail{{if eq .Result "fail"}} on{{end}}" type="submit" name="result" value="fail" aria-pressed="{{if eq .Result "fail"}}true{{else}}false{{end}}">Needs work</button>
+          <button class="sheet-opt{{if eq .Result "none"}} on{{end}}" type="submit" name="result" value="none" aria-pressed="{{if eq .Result "none"}}true{{else}}false{{end}}">Not done</button>
+        </form>
+        {{else}}<span class="mod-pill {{if eq .Result "pass"}}mod-pill-closed{{else if eq .Result "fail"}}mod-pill-banned{{end}}">{{if eq .Result "pass"}}Passed{{else if eq .Result "fail"}}Needs work{{else}}Not done{{end}}</span>{{end}}
+      </div>
+      {{else}}
+      <p class="cmd-empty">{{$.FactionName}} has no training items set up yet.</p>
+      {{end}}
+      <div class="sheet-foot">
+        <div><span class="cmd-strong">{{.Passed}} / {{len .Results}} passed.</span>
+          <span class="cmd-dim">{{if .AllPassed}}Everything's passed.{{if lt .Day .Days}} Probation runs to day {{.Days}}; you can confirm early if the FTO recommends it.{{end}}{{else}}{{.Remaining}} item{{if ne .Remaining 1}}s{{end}} still to pass before this recruit can be confirmed.{{end}}</span></div>
+      </div>
+    </section>
+
+    {{if and (not $.ReadOnly) (eq .Status "active")}}
+    <div class="cmd-grid">
+      <section class="cmd-card cmd-pad">
+        <h2>Probation details</h2>
+        <form method="post" action="/command/{{$.Faction}}/probation/{{.ID}}" class="cmd-form">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="action" value="details">
+          <div class="field"><label for="pr-fto">Field training officer</label>
+            <select id="pr-fto" name="fto"><option value="0">No FTO yet</option>{{range $.FTOs}}<option value="{{.ID}}" {{if eq .ID $p.FTOID}}selected{{end}}>{{.Name}} &middot; {{.Rank.Label}}</option>{{end}}</select></div>
+          <div class="field"><label for="pr-note">Note</label><input id="pr-note" name="note" maxlength="500" value="{{.Note}}" placeholder="e.g. Ride-along booked for Thursday"></div>
+          <button class="btn" type="submit">Save</button>
+        </form>
+      </section>
+      <section class="cmd-card cmd-pad">
+        <h2>Decision</h2>
+        <form method="post" action="/command/{{$.Faction}}/probation/{{.ID}}" class="cmd-form">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="action" value="confirm">
+          <button class="btn btn-primary" type="submit" {{if not .AllPassed}}disabled{{end}}>Confirm, promote one rank</button>
+          <p class="hint">{{if .AllPassed}}Promotes them one rank and ends probation. Logged in the Command log.{{else}}Available once every training item has passed.{{end}}</p>
+        </form>
+        <button class="btn btn-danger" type="button" data-dialog-open="dlg-end">End probation, not suitable</button>
+      </section>
+    </div>
+    <dialog id="dlg-end" class="modal" aria-labelledby="dlg-end-t">
+      <form method="post" action="/command/{{$.Faction}}/probation/{{.ID}}">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="action" value="end">
+        <div class="modal-head"><h2 id="dlg-end-t">End {{.Name}}'s probation</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+        <div class="modal-body">
+          <p>They're removed from {{$.FactionName}}, and it's recorded under Discipline → Discharges as "Probation ended".</p>
+          <div class="field"><label for="end-reason">Reason</label><input id="end-reason" name="reason" required maxlength="300"></div>
+        </div>
+        <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-danger" type="submit">End probation</button></div>
+      </form>
+    </dialog>
+    {{end}}
+    <p class="hint">A failed item with a retake wait (like the theory exam) can be passed again once the wait is over. Every sign-off is kept in the Command log.</p>
+    {{else}}
+    <p class="cmd-empty cmd-card">Nobody is on probation, so there's no training sheet to show.</p>
+    {{end}}
+    {{end}}
+
+    {{if eq .Tab "done"}}
+    <div class="cmd-table" role="table" aria-label="Finished probations">
+      <div class="cmd-row cmd-row-done cmd-row-head" role="row"><span>Recruit</span><span>Result</span><span>Training</span><span>Decided</span></div>
+      {{range .Finished}}
+      <a class="cmd-row cmd-row-done" role="row" href="/command/{{$.Faction}}/recruits?sheet={{.ID}}">
+        <span class="cmd-strong">{{.Name}}</span>
+        <span>{{if eq .Status "confirmed"}}<span class="mod-pill mod-pill-closed">Confirmed</span>{{else}}<span class="mod-pill">Ended</span>{{end}}{{if .Note}} <span class="cmd-dim">{{.Note}}</span>{{end}}</span>
+        <span class="cmd-dim">{{.Passed}} / {{len .Results}}</span>
+        <span class="cmd-dim">{{if .DecidedAt}}{{.DecidedAt.Format "2 Jan 2006"}}{{end}}{{if .DecidedBy}} by {{.DecidedBy}}{{end}}</span>
+      </a>
+      {{else}}
+      <p class="cmd-empty">No finished probations yet.</p>
+      {{end}}
+    </div>
+    {{end}}
   </div>
 </div>
+<script src="/static/admin.js" defer></script>
 {{end}}

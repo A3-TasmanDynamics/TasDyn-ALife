@@ -22,11 +22,11 @@ import (
 	"website/internal/csrf"
 	"website/internal/db"
 	"website/internal/dbbrowser"
-	"website/internal/servercontrol"
 	"website/internal/discord"
 	"website/internal/handlers"
 	"website/internal/render"
 	"website/internal/rolesync"
+	"website/internal/servercontrol"
 	"website/internal/staff"
 	"website/internal/status"
 	"website/internal/steam"
@@ -250,6 +250,20 @@ func run() error {
 		r.Get("/command/{faction}/members/{id}", d.CommandMember)
 		r.Post("/command/{faction}/members/{id}/rank", d.CommandSetRank)
 		r.Get("/command/{faction}/log", d.CommandLog)
+		r.Post("/command/{faction}/probation/{id}", d.CommandProbation)
+		r.Get("/command/{faction}/discipline", d.CommandDiscipline)
+		r.Post("/command/{faction}/discipline", d.CommandDisciplineIssue)
+		r.Post("/command/{faction}/discipline/{id}/correct", d.CommandDisciplineCorrect)
+		r.Post("/command/{faction}/discharge", d.CommandDischarge)
+		r.Post("/command/{faction}/blacklist", d.CommandBlacklistAdd)
+		r.Post("/command/{faction}/blacklist/{id}/lift", d.CommandBlacklistLift)
+		r.Get("/command/{faction}/divisions", d.CommandDivisions)
+		r.Post("/command/{faction}/divisions/{key}", d.CommandDivisionAction)
+		r.Post("/command/{faction}/quals/{key}/head", d.CommandQualHead)
+		r.Post("/command/{faction}/members/{id}/quals", d.CommandMemberQual)
+		r.Get("/command/{faction}/ranks", d.CommandRanks)
+		r.Post("/command/{faction}/ranks/{level}", d.CommandRankSave)
+		r.Post("/command/{faction}/settings", d.CommandSettingsSave)
 
 		// Notifications (GAMEPANEL_PARITY §7.3).
 		r.Get("/notifications", d.Notifications)

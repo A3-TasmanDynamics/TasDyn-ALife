@@ -8,7 +8,15 @@
       <div>
         <h1>{{$m.Name}}</h1>
         <p class="cmd-sub">{{$m.Rank.Label}} &middot; level {{$m.Level}} &middot; {{days $m.InRank}} in rank &middot; {{$m.Hours}} h in {{.FactionName}} &middot; {{if $m.Online}}online now{{else if $m.LastSeen}}last seen {{$m.LastSeen.Format "2 Jan 2006"}}{{else}}never seen in-game{{end}}{{if $m.Staff}} &middot; also staff ({{$m.Staff}}){{end}}</p>
+        <div class="member-tags">
+          {{if .Division}}<span class="cmd-tag">{{.Division}}</span>{{else}}<span class="cmd-tag">General duties</span>{{end}}
+          {{if .Probation}}<a class="cmd-tag cmd-tag-override" href="/command/{{.Faction}}/recruits?sheet={{.Probation.ID}}">Probation · day {{.Probation.Day}} of {{.Probation.Days}}</a>{{end}}
+          {{if .Standing.Suspended}}<span class="mod-pill mod-pill-banned">Suspended until {{.Standing.Suspended.Format "2 Jan 15:04"}}</span>{{end}}
+          {{if .Standing.Points}}<span class="cmd-tag{{if ge .Standing.Points 20}} cmd-tag-override{{end}}">{{.Standing.Points}} active points{{if .Band}} · {{.Band.Label}} band{{end}}</span>{{end}}
+          {{if .Standing.MVWs}}<span class="cmd-tag">{{.Standing.MVWs}} active warning{{if ne .Standing.MVWs 1}}s{{end}}</span>{{end}}
+        </div>
       </div>
+      {{if .CanAct}}<a class="btn" href="/command/{{.Faction}}/discipline?who={{$m.ID}}">Issue discipline</a>{{end}}
     </div>
     <div class="cmd-grid">
       <section class="cmd-card cmd-pad" aria-labelledby="cmd-change">
@@ -29,6 +37,29 @@
         <p class="cmd-dim">{{.Why}}</p>
         {{end}}
       </section>
+      <section class="cmd-card cmd-pad" id="quals" aria-labelledby="cmd-quals">
+        <h2 id="cmd-quals">Qualifications</h2>
+        {{range .Quals}}
+        <div class="member-qual">
+          <span><span class="qual-key">{{.Key}}</span> {{.Name}}</span>
+          <span class="cmd-dim">{{.At.Format "2 Jan 2006"}}{{if .By}} &middot; {{.By}}{{end}}</span>
+          {{if $.CanAct}}<form method="post" action="/command/{{$.Faction}}/members/{{$m.ID}}/quals" class="inline-form">
+            <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="qual" value="{{.Key}}"><input type="hidden" name="grant" value="0">
+            <button class="link-button" type="submit">Remove</button></form>{{end}}
+        </div>
+        {{else}}
+        <p class="cmd-dim">None recorded.</p>
+        {{end}}
+        {{if and .CanAct .AllQuals}}
+        <form method="post" action="/command/{{.Faction}}/members/{{$m.ID}}/quals" class="member-qual-add">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="grant" value="1">
+          <label class="visually-hidden" for="mq-qual">Qualification passed</label>
+          <select id="mq-qual" name="qual">{{range .AllQuals}}<option value="{{.Key}}">{{.Key}} &middot; {{.Name}}</option>{{end}}</select>
+          <input name="note" maxlength="300" aria-label="Note (optional)" placeholder="Note (optional)">
+          <button class="btn btn-sm" type="submit">Record pass</button>
+        </form>
+        {{end}}
+      </section>
       <section class="cmd-card" aria-labelledby="cmd-history">
         <div class="cmd-card-head"><h2 id="cmd-history">Service record</h2></div>
         {{range .History}}
@@ -38,6 +69,17 @@
         </div>
         {{else}}
         <p class="cmd-empty">No changes recorded on the website yet.</p>
+        {{end}}
+      </section>
+      <section class="cmd-card" aria-labelledby="cmd-disc">
+        <div class="cmd-card-head"><h2 id="cmd-disc">Discipline</h2><a class="cmd-head-link" href="/command/{{.Faction}}/discipline">Punishment log</a></div>
+        {{range .Discipline}}
+        <div class="cmd-history-row{{if not .Active}} disc-row-old{{end}}">
+          <div><span class="cmd-strong">{{.Given}}</span> &middot; {{.Offence}}{{if .Corrected}} <span class="cmd-tag">Corrected</span>{{else if not .Active}} <span class="cmd-tag">Expired</span>{{end}}</div>
+          <div class="cmd-dim">{{.When.Format "2 Jan 2006"}} &middot; by {{.By}} &middot; {{.Notes}}{{if .Action}} &middot; {{.Action}}{{end}}</div>
+        </div>
+        {{else}}
+        <p class="cmd-empty">No discipline on record.</p>
         {{end}}
       </section>
     </div>

@@ -308,26 +308,6 @@ func (d *Deps) ApplicationAction(w http.ResponseWriter, r *http.Request) {
 
 // ---- Faction command: recruits ----
 
-type commandRecruitsData struct {
-	commandBase
-	Apps []applications.FactionApp
-}
-
-func (d *Deps) CommandRecruits(w http.ResponseWriter, r *http.Request) {
-	cb, ok := d.commandAccess(w, r, "recruits")
-	if !ok {
-		return
-	}
-	data := commandRecruitsData{commandBase: cb}
-	var err error
-	if data.Apps, err = applications.FactionQueue(r.Context(), d.Pool, cb.Faction); err != nil {
-		slog.Error("command: recruits failed", "error", err)
-		http.Error(w, "Failed to load applications.", http.StatusInternalServerError)
-		return
-	}
-	d.Render.Render(w, "command_recruits.html", data)
-}
-
 func (d *Deps) CommandDecideApp(w http.ResponseWriter, r *http.Request) {
 	faction := chi.URLParam(r, "faction")
 	id, ok := appID(r)

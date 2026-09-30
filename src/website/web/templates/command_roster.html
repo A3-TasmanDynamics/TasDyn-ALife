@@ -19,7 +19,7 @@
       <div class="cmd-group" role="row"><span class="cmd-group-name">{{.Rank.Label}}</span><span class="cmd-dim">Level {{.Rank.Level}}</span><span class="cmd-dim">{{.Filled}}{{if .Rank.Slots}} of {{.Rank.Slots}} slots{{end}}</span></div>
         {{range .Members}}
         <a class="cmd-row" role="row" href="/command/{{$.Faction}}/members/{{.ID}}">
-          <span class="cmd-member"><span class="cmd-strong">{{.Name}}</span>{{if .Online}}<span class="cmd-online">Online</span>{{end}}{{if .Staff}}<span class="cmd-tag">Staff · {{.Staff}}</span>{{end}}</span>
+          <span class="cmd-member"><span class="cmd-strong">{{.Name}}</span>{{if .Online}}<span class="cmd-online">Online</span>{{end}}{{if .Staff}}<span class="cmd-tag">Staff · {{.Staff}}</span>{{end}}{{with index $.Division .ID}}<span class="cmd-tag">{{.}}</span>{{end}}{{if index $.Probation .ID}}<span class="cmd-tag cmd-tag-override">Probation</span>{{end}}{{with index $.Standing .ID}}{{if .Suspended}}<span class="mod-pill mod-pill-banned">Suspended</span>{{end}}{{if .Points}}<span class="cmd-tag">{{.Points}} pts</span>{{end}}{{end}}</span>
           <span class="cmd-dim">{{days .InRank}}</span>
           <span class="cmd-dim">{{.Hours}} h</span>
           <span class="cmd-dim">{{if .Online}}Online now{{else if .LastSeen}}{{.LastSeen.Format "2 Jan 2006"}}{{else}}Never{{end}}</span>

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -85,6 +86,8 @@ var funcs = template.FuncMap{
 	},
 	"dec":  func(i int) int { return i - 1 },
 	"list": func(s ...string) []string { return s },
+	// has reports whether list contains s.
+	"has": func(list []string, s string) bool { return slices.Contains(list, s) },
 	// qset returns "?query" with the given key/value pairs set on a copy of
 	// v (an empty value removes the key) -- for filter and paging links
 	// that keep the other filters.

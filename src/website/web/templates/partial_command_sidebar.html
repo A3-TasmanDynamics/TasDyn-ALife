@@ -7,14 +7,14 @@
   <a class="cmd-nav-item {{if eq .Tab "overview"}}active{{end}}" href="/command/{{.Faction}}" {{if eq .Tab "overview"}}aria-current="page"{{end}}>Overview</a>
   <a class="cmd-nav-item {{if eq .Tab "roster"}}active{{end}}" href="/command/{{.Faction}}/roster" {{if eq .Tab "roster"}}aria-current="page"{{end}}>Roster <span class="cmd-nav-count">{{.MemberCount}}</span></a>
   <a class="cmd-nav-item {{if eq .Tab "recruits"}}active{{end}}" href="/command/{{.Faction}}/recruits" {{if eq .Tab "recruits"}}aria-current="page"{{end}}>Recruits &amp; training{{if .OpenApps}} <span class="cmd-nav-count cmd-nav-count-hot">{{.OpenApps}}</span>{{end}}</a>
-  <span class="cmd-nav-item disabled">Discipline <span class="admin-nav-tag">Soon</span></span>
-  <span class="cmd-nav-item disabled">Divisions &amp; quals <span class="admin-nav-tag">Soon</span></span>
-  <span class="cmd-nav-item disabled">Ranks &amp; gear <span class="admin-nav-tag">Soon</span></span>
+  <a class="cmd-nav-item {{if eq .Tab "discipline"}}active{{end}}" href="/command/{{.Faction}}/discipline" {{if eq .Tab "discipline"}}aria-current="page"{{end}}>Discipline</a>
+  <a class="cmd-nav-item {{if eq .Tab "divisions"}}active{{end}}" href="/command/{{.Faction}}/divisions" {{if eq .Tab "divisions"}}aria-current="page"{{end}}>Divisions &amp; quals</a>
+  <a class="cmd-nav-item {{if eq .Tab "ranks"}}active{{end}}" href="/command/{{.Faction}}/ranks" {{if eq .Tab "ranks"}}aria-current="page"{{end}}>Ranks &amp; gear</a>
   <a class="cmd-nav-item {{if eq .Tab "log"}}active{{end}}" href="/command/{{.Faction}}/log" {{if eq .Tab "log"}}aria-current="page"{{end}}>Command log</a>
   <div class="cmd-authority">
     <div class="cmd-authority-label">Your authority</div>
     {{if .ReadOnly}}You can see this faction's roster and command log because you have <code class="perm-key">factions.audit</code>. Changes are made by its command, or by Management from Player Lookup.
-    {{else}}You can recruit, promote, demote and remove members up to <strong>{{.AuthorityTo}}</strong>. Never yourself, and never anyone above that.{{end}}
+    {{else}}You can recruit, promote, demote and remove members up to <strong>{{.AuthorityTo}}</strong>, and discipline, train and post anyone ranked below you. Never yourself.{{end}}
   </div>
 </nav>
 {{end}}
