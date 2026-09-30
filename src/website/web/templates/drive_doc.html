@@ -1,31 +1,39 @@
 {{define "content"}}
 {{if .InPanel}}<div class="cmd-shell">{{template "command_sidebar" .}}<div class="cmd-main">{{else}}<div class="doc-member">{{end}}
+<div class="doc-wrap">
   <a class="cmd-back" href="{{.Base2}}{{if .Item.FolderID}}?folder={{.Item.FolderID}}{{end}}">&larr; {{if .InPanel}}Drive{{else}}{{.FactionName}} documents{{end}}</a>
-  <div class="doc-head">
-    <div>
-      <div class="doc-kicker"><span class="drive-icon drive-icon-sm drive-icon-{{.Item.Category}}" aria-hidden="true">DOC</span>{{.Item.CategoryLabel}}{{if .Item.Division}} &middot; {{.Item.Division}}{{end}}{{if eq .Item.Visibility "command"}} &middot; Command only{{end}}</div>
+
+  <header class="doc-hero doc-cat-{{.Item.Category}}">
+    <span class="doc-hero-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></span>
+    <div class="doc-hero-id">
+      <div class="doc-pills">
+        <span class="doc-pill doc-pill-cat">{{.Item.CategoryLabel}}</span>
+        {{if .Item.Division}}<span class="doc-pill">{{.Item.Division}}</span>{{end}}
+        {{if eq .Item.Visibility "command"}}<span class="doc-pill doc-pill-lock">Command only</span>{{else}}<span class="doc-pill">Members</span>{{end}}
+      </div>
       <h1>{{if .Version}}{{.Version.Title}}{{else}}{{.Item.Title}}{{end}}</h1>
-      <p class="cmd-sub">Updated {{.Item.Updated.Format "2 Jan 2006 15:04"}} by {{.Item.UpdatedBy}} &middot; created by {{.Item.CreatedBy}}</p>
+      <p class="doc-meta">Updated {{.Item.Updated.Format "2 Jan 2006, 15:04"}} by <strong>{{.Item.UpdatedBy}}</strong><span aria-hidden="true"> · </span>Created by {{.Item.CreatedBy}}</p>
     </div>
     <div class="doc-actions">
       {{if .CanEdit}}<a class="btn btn-primary" href="{{.Base2}}/doc/{{.Item.ID}}/edit">Edit</a>{{end}}
-      <a class="btn" href="{{.Base2}}/{{if .InPanel}}doc/{{end}}{{.Item.ID}}/word">Download Word</a>
-      <button class="btn" type="button" onclick="window.print()">Print / PDF</button>
+      <a class="btn" href="{{.Base2}}/{{if .InPanel}}doc/{{end}}{{.Item.ID}}/word" title="Download as a Word document">Word</a>
+      <button class="btn" type="button" onclick="window.print()" title="Print, or save as PDF">Print</button>
       {{if .InPanel}}<a class="btn" href="{{.Base2}}/doc/{{.Item.ID}}/history">History</a>{{end}}
     </div>
-  </div>
+  </header>
 
-  {{if .Version}}<div class="banner banner-notice doc-version">You're viewing an earlier version, saved {{.Version.At.Format "2 Jan 2006 15:04"}} by {{.Version.By}}. <a href="{{.Base2}}/doc/{{.Item.ID}}">Back to the current version</a></div>{{end}}
+  {{if .Version}}<div class="banner banner-notice doc-version">You're viewing an earlier version, saved {{.Version.At.Format "2 Jan 2006, 15:04"}} by {{.Version.By}}. <a href="{{.Base2}}/doc/{{.Item.ID}}">Back to the current version</a></div>{{end}}
 
   {{if .Versions}}
   <section class="cmd-card" aria-labelledby="hist-h">
     <div class="cmd-card-head"><h2 id="hist-h">History</h2><span class="cmd-dim">Each save keeps the text it replaced</span></div>
-    {{range .Versions}}<a class="cmd-history-row doc-hist-row" href="{{$.Base2}}/doc/{{$.Item.ID}}/history/{{.ID}}"><span class="cmd-strong">{{.Title}}</span><span class="cmd-dim">Replaced {{.At.Format "2 Jan 2006 15:04"}} by {{.By}}</span></a>{{end}}
+    {{range .Versions}}<a class="cmd-history-row doc-hist-row" href="{{$.Base2}}/doc/{{$.Item.ID}}/history/{{.ID}}"><span class="cmd-strong">{{.Title}}</span><span class="cmd-dim">Replaced {{.At.Format "2 Jan 2006, 15:04"}} by {{.By}}</span></a>{{end}}
   </section>
   {{else if .ShowHistory}}
   <p class="cmd-empty cmd-card">No earlier versions yet. Each save keeps the text it replaced here.</p>
   {{end}}
 
   <article class="doc-page">{{.Body}}</article>
+</div>
 {{if .InPanel}}</div></div>{{else}}</div>{{end}}
 {{end}}

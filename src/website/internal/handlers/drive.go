@@ -354,8 +354,20 @@ func (d *Deps) serveWord(w http.ResponseWriter, r *http.Request, faction string,
 	w.Header().Set("Content-Disposition", `attachment; filename="`+name+`"; filename*=UTF-8''`+url.PathEscape(name))
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	fmt.Fprintf(w, `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>%s</title>
-<style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.4}h1{font-size:20pt}h2{font-size:15pt}h3{font-size:12pt}table{border-collapse:collapse}td,th{border:1px solid #999;padding:4pt 6pt}th{background:#eee}blockquote{border-left:3pt solid #ccc;margin-left:0;padding-left:8pt;color:#555}</style></head><body>%s</body></html>`,
-		template.HTMLEscapeString(it.Title), factions.SanitizeDoc(body))
+<style>
+body{font-family:"Segoe UI",Calibri,Arial,sans-serif;font-size:11pt;line-height:1.5;color:#1e293b}
+h1{font-size:22pt;color:#0b1220;margin:0 0 10pt}
+h2{font-size:15pt;color:#0b1220;margin:18pt 0 6pt;padding-bottom:3pt;border-bottom:1.5pt solid #f59e0b}
+h3{font-size:12pt;color:#b45309;margin:12pt 0 4pt}
+p{margin:0 0 7pt}
+table{border-collapse:collapse;width:100%%;margin:8pt 0}
+td,th{border:1px solid #cbd5e1;padding:5pt 7pt;vertical-align:top;text-align:left}
+th{background:#1e293b;color:#ffffff;font-weight:bold}
+blockquote{border-left:3pt solid #f59e0b;background:#fff7e6;margin:8pt 0;padding:6pt 10pt;color:#44403c}
+a{color:#b45309}
+.doc-kicker{font-size:9pt;color:#64748b;text-transform:uppercase;letter-spacing:1pt;margin:0 0 4pt}
+</style></head><body><p class="doc-kicker">%s · %s</p>%s</body></html>`,
+		template.HTMLEscapeString(it.Title), template.HTMLEscapeString(factions.Name(faction)), template.HTMLEscapeString(it.CategoryLabel()), factions.SanitizeDoc(body))
 }
 
 func safeFileName(s string) string {

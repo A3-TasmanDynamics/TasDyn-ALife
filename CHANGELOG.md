@@ -1117,3 +1117,4 @@
   of the FTO qualification) and command ranks and above, no longer Administration; FTOs who aren't command
   get the panel read-only plus the training sheets. Accepting applications and confirming or ending a
   probation stay with command.
+- Drive documents now follow the site theme and are wider (up to 1200px): a header card with type, division and visibility badges and the actions; the page as a dark card with amber heading accents, styled tables, quotes and lists; the editor toolbar and page as one sheet. Printing stays black on white, and Word downloads get matching heading and table styling with a faction/type line.

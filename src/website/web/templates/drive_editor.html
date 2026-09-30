@@ -2,10 +2,11 @@
 <div class="cmd-shell">
   {{template "command_sidebar" .}}
   <div class="cmd-main">
-    <a class="cmd-back" href="/command/{{.Faction}}/drive{{if .ID}}/doc/{{.ID}}{{else if .Item.FolderID}}?folder={{.Item.FolderID}}{{end}}">&larr; {{if .ID}}Back to the document{{else}}Drive{{end}}</a>
-    <form method="post" action="/command/{{.Faction}}/drive/{{if .ID}}doc/{{.ID}}{{else}}docs{{end}}" class="ed-form" data-editor-form>
+    <a class="cmd-back doc-wrap" href="/command/{{.Faction}}/drive{{if .ID}}/doc/{{.ID}}{{else if .Item.FolderID}}?folder={{.Item.FolderID}}{{end}}">&larr; {{if .ID}}Back to the document{{else}}Drive{{end}}</a>
+    <form method="post" action="/command/{{.Faction}}/drive/{{if .ID}}doc/{{.ID}}{{else}}docs{{end}}" class="ed-form doc-wrap" data-editor-form>
       <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
       <input type="hidden" name="body" data-editor-body>
+      <div class="ed-head">
       <div class="ed-top">
         <label class="visually-hidden" for="ed-title">Title</label>
         <input id="ed-title" class="ed-title" name="title" value="{{.Item.Title}}" maxlength="120" required placeholder="Document title">
@@ -21,6 +22,8 @@
         <div class="field"><label for="ed-folder">Folder</label><select id="ed-folder" name="folder"><option value="0">Drive (top level)</option>{{range .Folders}}<option value="{{.ID}}" {{if eq .ID $.Item.FolderID}}selected{{end}}>{{.Name}}</option>{{end}}</select></div>
       </div>
 
+      </div>
+      <div class="ed-sheet">
       <div class="ed-toolbar" role="toolbar" aria-label="Formatting" data-editor-toolbar>
         <select data-cmd="formatBlock" aria-label="Paragraph style">
           <option value="p">Normal text</option><option value="h1">Title</option><option value="h2">Heading</option><option value="h3">Subheading</option><option value="blockquote">Quote</option>
@@ -49,6 +52,7 @@
         <button type="button" data-cmd="redo" title="Redo (Ctrl+Y)" aria-label="Redo">&#8631;</button>
       </div>
       <div class="doc-page ed-page" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true" aria-label="Document text" data-editor>{{.Body}}</div>
+      </div>
       <noscript><p class="banner banner-error">The editor needs JavaScript.</p></noscript>
     </form>
   </div>
