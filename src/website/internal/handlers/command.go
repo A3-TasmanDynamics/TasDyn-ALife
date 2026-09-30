@@ -344,9 +344,11 @@ func (d *Deps) CommandMember(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	ranksAll, _ := factions.Ranks(ctx, d.Pool, cb.Faction)
-	if !cb.ReadOnly && id != sess.PlayerID {
-		data.CanAct = cb.Command.CanRecord(data.Member.Level, factions.RankFor(ranksAll, data.Member.Level).IsCabinet)
-		data.CanDisc = cb.Command.CanDiscipline(data.Member.Level)
+	if !cb.ReadOnly {
+		self := id == sess.PlayerID
+		// Cabinet can keep their own records; nobody disciplines themselves.
+		data.CanAct = (!self || cb.Command.Cabinet) && cb.Command.CanRecord(data.Member.Level, factions.RankFor(ranksAll, data.Member.Level).IsCabinet)
+		data.CanDisc = !self && cb.Command.CanDiscipline(data.Member.Level)
 	}
 	data.Regions, data.Statuses = factions.Regions, factions.Statuses
 	data.Initials = initials(data.Member.Name)

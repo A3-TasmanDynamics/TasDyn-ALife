@@ -242,7 +242,7 @@ func SetDivision(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction s
 	if err != nil {
 		return err
 	}
-	if err := a.target(ctx, tx, actor, faction, targetID); err != nil {
+	if err := a.target(ctx, tx, actor, faction, targetID, a.ownRecords()); err != nil {
 		return err
 	}
 	if a.TargetLvl == 0 {

@@ -465,8 +465,8 @@ func (d *Deps) CommandDivisions(w http.ResponseWriter, r *http.Request) {
 		// can give (only cabinet and Management appoint the Administration
 		// Commander).
 		canEdit := func(m factions.Member) bool {
-			if m.ID == sess.PlayerID {
-				return false
+			if m.ID == sess.PlayerID && !cb.Command.Cabinet && !cb.Management {
+				return false // only cabinet and Management keep their own records
 			}
 			if cur.IsAdmin {
 				return cb.Management || cb.Command.CanAppointAdmin()

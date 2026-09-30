@@ -273,6 +273,19 @@ func TestCommandExtras(t *testing.T) {
 	// Administration sits alongside a specialist division.
 	must("grant AQ to clerk", SetQual(ctx, pool, cmd("chief"), f, ids["clerk"], "AQ", true, ""))
 	must("clerk joins a specialist division", SetDivision(ctx, pool, cmd("chief"), f, ids["clerk"], "TAIR", "", false, ""))
+	// Cabinet keeps its own records; nobody else does, and nobody disciplines themselves.
+	_, err = UpdateMember(ctx, pool, cmd("chief"), f, ids["chief"], MemberDetails{Badge: "C01", Status: "active"})
+	must("cabinet edits own personnel file", err)
+	must("cabinet marks own roll call", SetRollCall(ctx, pool, cmd("chief"), f, ids["chief"], time.Now(), "present"))
+	_, err = UpdateMember(ctx, pool, cmd("sup"), f, ids["sup"], MemberDetails{Badge: "S02", Status: "active"})
+	denied("command edits own personnel file", err)
+	_, err = UpdateMember(ctx, pool, cmd("clerk"), f, ids["clerk"], MemberDetails{Status: "active"})
+	denied("Administration edits own personnel file", err)
+	_, err = IssueDiscipline(ctx, pool, cmd("chief"), f, Issue{TargetID: ids["chief"], OffenceID: smallOff, Points: 5, Notes: "x"})
+	denied("cabinet disciplines themselves", err)
+	_, err = SetLevel(ctx, pool, cmd("chief"), f, ids["chief"], 4, "x")
+	denied("cabinet changes own rank", err)
+
 	// Cabinet is part of Administration automatically, and can't be removed from it.
 	if c, _, _ := CommandIn(ctx, pool, ids["chief"], f); !c.Admin || c.AdminRole != CabinetRole {
 		t.Errorf("cabinet should be in Administration automatically, got %+v", c)
