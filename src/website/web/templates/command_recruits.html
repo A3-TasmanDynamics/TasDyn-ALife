@@ -5,7 +5,7 @@
     <div class="cmd-head">
       <div>
         <h1>Recruits &amp; training</h1>
-        <p class="cmd-sub">Applications come in from the player site. Accepted recruits start a {{.Days}}-day probation; assign an FTO, sign off their training sheet, then confirm them or end it.</p>
+        <p class="cmd-sub">Part of General Duties. Applications come in from the player site; accepted recruits start a {{.Days}}-day probation. Field training officers and command run the training sheets; command accepts applications and confirms or ends probations.</p>
       </div>
     </div>
     <nav class="seg" aria-label="Recruits views">
@@ -86,7 +86,7 @@
       <div class="sheet-row">
         <div><div class="cmd-strong">{{.Item.Name}}</div>
           <div class="cmd-dim sheet-meta">{{if eq .Result "pass"}}Signed off by {{.By}} &middot; {{.At.Format "2 Jan 15:04"}}{{else if eq .Result "fail"}}Needs work ({{.By}}, {{.At.Format "2 Jan 15:04"}}){{if not .CanRetake}}. Retake allowed from {{.RetakeAt.Local.Format "15:04 on 2 Jan"}}{{end}}{{else}}Not done{{end}}</div></div>
-        {{if and (not $.ReadOnly) (eq $p.Status "active")}}
+        {{if and $.CanTrain (eq $p.Status "active")}}
         <form method="post" action="/command/{{$.Faction}}/probation/{{$p.ID}}" class="sheet-opts" role="group" aria-label="{{.Item.Name}}">
           <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="action" value="training"><input type="hidden" name="item" value="{{.Item.Key}}">
           <button class="sheet-opt sheet-opt-pass{{if eq .Result "pass"}} on{{end}}" type="submit" name="result" value="pass" aria-pressed="{{if eq .Result "pass"}}true{{else}}false{{end}}" {{if and (eq .Result "fail") (not .CanRetake)}}disabled{{end}}>Pass</button>
@@ -104,7 +104,7 @@
       </div>
     </section>
 
-    {{if and (not $.ReadOnly) (eq .Status "active")}}
+    {{if and $.CanTrain (eq .Status "active")}}
     <div class="cmd-grid">
       <section class="cmd-card cmd-pad">
         <h2>Probation details</h2>

@@ -75,6 +75,7 @@ type commandRecruitsData struct {
 	Sheet      *factions.Probation
 	FTOs       []factions.Member
 	Days       int
+	CanTrain   bool // FTOs and command ranks and above run training
 }
 
 func (d *Deps) CommandRecruits(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +85,7 @@ func (d *Deps) CommandRecruits(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := r.Context()
 	q := r.URL.Query()
-	data := commandRecruitsData{commandBase: cb, View: q.Get("tab")}
+	data := commandRecruitsData{commandBase: cb, View: q.Get("tab"), CanTrain: cb.Command.CanTrain() || cb.Management}
 	var err error
 	if data.Apps, err = applications.FactionQueue(ctx, d.Pool, cb.Faction); err != nil {
 		slog.Error("command: recruits failed", "error", err)
@@ -118,7 +119,7 @@ func (d *Deps) CommandRecruits(w http.ResponseWriter, r *http.Request) {
 			slog.Error("command: finished probations failed", "error", err)
 		}
 	}
-	if data.Sheet != nil && !cb.ReadOnly {
+	if data.Sheet != nil && data.CanTrain {
 		// FTO candidates: members ranked above the recruit, FTO holders first.
 		members, _ := factions.Roster(ctx, d.Pool, cb.Faction)
 		held, _ := factions.MemberQuals(ctx, d.Pool, cb.Faction)

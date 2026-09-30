@@ -39,13 +39,13 @@ func TestCommandExtras(t *testing.T) {
 		('ems', 4, 'Supervisor', 2, 0, '{}', true, false), ('ems', 5, 'Chief', 4, 0, '{}', true, true)`); err != nil {
 		t.Fatal(err)
 	}
-	pool.Exec(ctx, `INSERT INTO faction_quals (faction, key, name) VALUES ('ems', 'TQ', 'Test qual'), ('ems', 'AQ', 'Air qual')`)
+	pool.Exec(ctx, `INSERT INTO faction_quals (faction, key, name) VALUES ('ems', 'TQ', 'Test qual'), ('ems', 'AQ', 'Air qual'), ('ems', 'FTO', 'Field Training Officer')`)
 	pool.Exec(ctx, `INSERT INTO faction_divisions (faction, key, name, roles, required_qual) VALUES ('ems', 'TAIR', 'Test Air', '{Lead,Pilot}', 'AQ')`)
 	ids := map[string]int64{}
-	for name, lvl := range map[string]int{"chief": 5, "sup": 4, "para": 2, "para2": 2, "civ": 0, "civ2": 0, "clerk": 1, "clerk2": 1} {
+	for name, lvl := range map[string]int{"chief": 5, "sup": 4, "para": 2, "para2": 2, "civ": 0, "civ2": 0, "clerk": 1, "clerk2": 1, "trainee": 0, "trainer": 2} {
 		uid := map[string]string{"chief": "76561190000000181", "sup": "76561190000000182", "para": "76561190000000183",
 			"para2": "76561190000000184", "civ": "76561190000000185", "civ2": "76561190000000186",
-			"clerk": "76561190000000187", "clerk2": "76561190000000188"}[name]
+			"clerk": "76561190000000187", "clerk2": "76561190000000188", "trainee": "76561190000000189", "trainer": "76561190000000190"}[name]
 		var id int64
 		if err := pool.QueryRow(ctx, `INSERT INTO players (uid, name, medic_level) VALUES ($1, $2, $3) RETURNING id`, uid, "t_"+name, lvl).Scan(&id); err != nil {
 			t.Fatal(err)
@@ -66,7 +66,7 @@ func TestCommandExtras(t *testing.T) {
 		pool.Exec(ctx, `DELETE FROM rank_changes WHERE player_id = ANY($1)`, all)
 		pool.Exec(ctx, `DELETE FROM players WHERE id = ANY($1)`, all)
 		pool.Exec(ctx, `DELETE FROM faction_divisions WHERE faction = 'ems' AND key = 'TAIR'`)
-		pool.Exec(ctx, `DELETE FROM faction_quals WHERE faction = 'ems' AND key IN ('TQ', 'AQ')`)
+		pool.Exec(ctx, `DELETE FROM faction_quals WHERE faction = 'ems' AND key IN ('TQ', 'AQ', 'FTO')`)
 		pool.Exec(ctx, `DELETE FROM faction_rank_names WHERE faction = 'ems'`)
 	})
 	cmd := func(who string) Actor { return Actor{PlayerID: ids[who], Source: "website", Via: ViaCommand} }
@@ -393,6 +393,27 @@ func TestCommandExtras(t *testing.T) {
 	must("apply then withdraw", ApplyToDivision(ctx, pool, ids["sup"], f, "TAIR", "x", "y", ""))
 	must("withdraw", WithdrawDivisionApp(ctx, pool, ids["sup"], appID("sup", "TAIR")))
 	pool.Exec(ctx, `DELETE FROM notifications WHERE player_id = ANY($1)`, []int64{ids["civ"], ids["clerk2"], ids["sup"]})
+
+	// Recruits' training: FTOs and command ranks and above, not
+	// Administration; confirming a probation stays with command.
+	_, err = SetLevel(ctx, pool, cmd("chief"), f, ids["trainee"], 1, "hired")
+	must("recruit trainee", err)
+	var tprob int64
+	pool.QueryRow(ctx, `SELECT id FROM faction_probations WHERE player_id = $1 AND status = 'active'`, ids["trainee"]).Scan(&tprob)
+	denied("Administration signs off training", SetTraining(ctx, pool, cmd("clerk"), f, tprob, "theory", "pass"))
+	denied("a member who isn't an FTO signs off training", SetTraining(ctx, pool, cmd("trainer"), f, tprob, "theory", "pass"))
+	if _, ok, _ := CommandIn(ctx, pool, ids["trainer"], f); ok {
+		t.Error("a member without FTO or command has no panel access")
+	}
+	must("record FTO", SetQual(ctx, pool, cmd("chief"), f, ids["trainer"], FTOQual, true, ""))
+	if c, ok, _ := CommandIn(ctx, pool, ids["trainer"], f); !ok || !c.FTO || !c.CanTrain() || !c.LeadOnly() {
+		t.Errorf("an FTO should get limited panel access and run training, got %v %+v", ok, c)
+	}
+	must("FTO signs off training", SetTraining(ctx, pool, cmd("trainer"), f, tprob, "theory", "pass"))
+	must("FTO sets the FTO and note", UpdateProbation(ctx, pool, cmd("trainer"), f, tprob, ids["trainer"], "Ride-along Thursday"))
+	_, err = ConfirmProbation(ctx, pool, cmd("trainer"), f, tprob)
+	denied("FTO confirms a probation (rank change)", err)
+	must("command still signs off training", SetTraining(ctx, pool, cmd("chief"), f, tprob, "equipment", "pass"))
 
 	var kinds int
 	pool.QueryRow(ctx, `SELECT count(DISTINCT kind) FROM faction_log WHERE faction = 'ems' AND actor_id = ANY($1)`,

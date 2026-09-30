@@ -1111,3 +1111,9 @@
   items. Document HTML is sanitised on save and on display (bluemonday); files are checked by type and
   served with nosniff (and a sandbox for anything that isn't a PDF). Removing archives rather than deletes.
   Multipart form posts now pass the CSRF check (capped at 20 MB). Run `database/fixes/2026-09-30_faction_drive.sql`.
+- **Division sections in the sidebar; recruits under General Duties.** Each division is a collapsible
+  section (Overview, Applications for reviewers, Members, Documents); General Duties holds Members and
+  Recruits & training. Recruits' training (sign-offs, FTO, notes) is run by field training officers (holders
+  of the FTO qualification) and command ranks and above, no longer Administration; FTOs who aren't command
+  get the panel read-only plus the training sheets. Accepting applications and confirming or ending a
+  probation stay with command.
