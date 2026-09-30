@@ -1,14 +1,19 @@
 // Package rules stores the public server rules (/rules, layout plan
 // "Public — Server rules") and their edits (/admin/rules).
 //
-// The rules are one plain-text document, so editing needs no special UI:
+// The rules are stored as one plain-text document. /admin/rules edits it
+// section by section; the text form is also editable directly:
 //
 //	# General conduct
+//	> An optional intro shown under the section title.
 //	1.1 Stay in character while in-game.
 //	1.2 Treat other players and staff with respect.
 //	    A line that doesn't start with a number continues the rule above.
-//	# Combat
-//	2.1 No random deathmatch (RDM).
+//	# Safe zones
+//	2.1 These areas are safe zones:
+//	- Kavala Markets
+//	  - A second-level dot point (indented).
+//	- Kavala Hospital
 //
 // Every save is a new row in rule_versions, so the history is never lost.
 // Rules whose text changed since the previous version are highlighted on
@@ -38,14 +43,36 @@ const MaxBody = 100_000
 type Rule struct {
 	Number  string
 	Text    string
+	Points  []Point
 	Changed bool
+}
+
+// Point is a dot point under a rule, with optional second-level points.
+type Point struct {
+	Text string
+	Sub  []string
 }
 
 type Section struct {
 	N      int
 	Title  string
 	Anchor string
+	Intro  string
 	Rules  []Rule
+}
+
+// content is a rule's text and dot points, for spotting changes whatever
+// its number.
+func (r Rule) content() string {
+	var b strings.Builder
+	b.WriteString(r.Text)
+	for _, p := range r.Points {
+		b.WriteString("\n- " + p.Text)
+		for _, sp := range p.Sub {
+			b.WriteString("\n  - " + sp)
+		}
+	}
+	return b.String()
 }
 
 // Doc is the live rulebook.
@@ -65,16 +92,44 @@ var ErrInvalid = errors.New("invalid rules")
 
 var ruleLine = regexp.MustCompile(`^(\d+(?:\.\d+)*)[.)]?\s+(.+)$`)
 
+// pointLine is a dot point: "- text", "* text" or "• text".
+var pointLine = regexp.MustCompile(`^[-*\x{2022}]\s+(.+)$`)
+
 // Parse turns the document into sections. It rejects a rule before the
 // first heading, duplicate rule numbers and an empty document.
 func Parse(body string) ([]Section, error) {
 	var out []Section
 	seen := map[string]bool{}
+	inPoint := false // continuation lines extend the last dot point
 	for i, raw := range strings.Split(strings.ReplaceAll(body, "\r\n", "\n"), "\n") {
 		line := strings.TrimSpace(raw)
 		switch {
 		case line == "":
 			continue
+		case strings.HasPrefix(line, ">"):
+			if len(out) == 0 {
+				return nil, fmt.Errorf("%w: line %d: start with a section heading, e.g. \"# General conduct\"", ErrInvalid, i+1)
+			}
+			s := &out[len(out)-1]
+			if len(s.Rules) > 0 {
+				return nil, fmt.Errorf("%w: line %d: a section's intro (>) goes before its first rule", ErrInvalid, i+1)
+			}
+			s.Intro = strings.TrimSpace(s.Intro + " " + strings.TrimSpace(strings.TrimPrefix(line, ">")))
+		case pointLine.MatchString(line) && !ruleLine.MatchString(line):
+			if len(out) == 0 || len(out[len(out)-1].Rules) == 0 {
+				return nil, fmt.Errorf("%w: line %d: a dot point needs a rule above it", ErrInvalid, i+1)
+			}
+			rs := out[len(out)-1].Rules
+			r := &rs[len(rs)-1]
+			text := pointLine.FindStringSubmatch(line)[1]
+			indented := len(raw)-len(strings.TrimLeft(raw, " \t")) >= 2
+			if indented && len(r.Points) > 0 {
+				p := &r.Points[len(r.Points)-1]
+				p.Sub = append(p.Sub, text)
+			} else {
+				r.Points = append(r.Points, Point{Text: text})
+			}
+			inPoint = true
 		case strings.HasPrefix(line, "#"):
 			title := strings.TrimSpace(strings.TrimLeft(line, "#"))
 			if title == "" {
@@ -93,12 +148,22 @@ func Parse(body string) ([]Section, error) {
 				}
 				seen[m[1]] = true
 				s.Rules = append(s.Rules, Rule{Number: m[1], Text: m[2]})
+				inPoint = false
 				continue
 			}
 			if len(s.Rules) == 0 {
 				return nil, fmt.Errorf("%w: line %d: expected a numbered rule, e.g. \"1.1 Stay in character\"", ErrInvalid, i+1)
 			}
 			r := &s.Rules[len(s.Rules)-1]
+			if inPoint && len(r.Points) > 0 {
+				p := &r.Points[len(r.Points)-1]
+				if n := len(p.Sub); n > 0 {
+					p.Sub[n-1] += " " + line
+				} else {
+					p.Text += " " + line
+				}
+				continue
+			}
 			r.Text += " " + line
 		}
 	}
@@ -108,25 +173,54 @@ func Parse(body string) ([]Section, error) {
 	return out, nil
 }
 
-// Changed lists rule numbers that are new or whose text differs between
-// two versions (removed rules aren't listed: there's nothing to highlight).
+// Changed lists the numbers of rules that are new or whose text or dot
+// points differ from every rule in the previous version, so renumbering
+// alone (a rule inserted above) isn't flagged. Removed rules aren't
+// listed: there's nothing to highlight.
 func Changed(prev, next []Section) []string {
-	old := map[string]string{}
+	old := map[string]bool{}
 	for _, s := range prev {
 		for _, r := range s.Rules {
-			old[r.Number] = r.Text
+			old[r.content()] = true
 		}
 	}
 	var out []string
 	for _, s := range next {
 		for _, r := range s.Rules {
-			if t, ok := old[r.Number]; !ok || t != r.Text {
+			if !old[r.content()] {
 				out = append(out, r.Number)
 			}
 		}
 	}
 	return out
 }
+
+// Format writes sections back as the rules document, numbering rules
+// section.rule in order (the editor's output).
+func Format(secs []Section) string {
+	var b strings.Builder
+	for i, s := range secs {
+		if i > 0 {
+			b.WriteString("\n")
+		}
+		b.WriteString("# " + oneLine(s.Title) + "\n")
+		if intro := oneLine(s.Intro); intro != "" {
+			b.WriteString("> " + intro + "\n")
+		}
+		for j, r := range s.Rules {
+			fmt.Fprintf(&b, "%d.%d %s\n", i+1, j+1, oneLine(r.Text))
+			for _, p := range r.Points {
+				b.WriteString("- " + oneLine(p.Text) + "\n")
+				for _, sp := range p.Sub {
+					b.WriteString("  - " + oneLine(sp) + "\n")
+				}
+			}
+		}
+	}
+	return b.String()
+}
+
+func oneLine(s string) string { return strings.Join(strings.Fields(s), " ") }
 
 // Current returns the live rulebook, or ok=false if none is published.
 func Current(ctx context.Context, pool *pgxpool.Pool) (Doc, bool, error) {
@@ -177,7 +271,7 @@ func Filter(secs []Section, q string) []Section {
 		titleHit := strings.Contains(strings.ToLower(s.Title), q)
 		var keep []Rule
 		for _, r := range s.Rules {
-			if titleHit || strings.Contains(strings.ToLower(r.Text), q) || strings.HasPrefix(r.Number, q) {
+			if titleHit || strings.Contains(strings.ToLower(r.content()), q) || strings.HasPrefix(r.Number, q) {
 				keep = append(keep, r)
 			}
 		}
