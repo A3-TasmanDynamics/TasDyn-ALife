@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -154,10 +153,6 @@ func (d *Deps) CommandOverview(w http.ResponseWriter, r *http.Request) {
 	d.Render.Render(w, "command_overview.html", data)
 }
 
-type rosterMonth struct {
-	Value, Label string
-}
-
 type commandRosterData struct {
 	commandBase
 	Q          string
@@ -166,45 +161,23 @@ type commandRosterData struct {
 	CanRecruit bool
 	Levels     []factions.Rank // ranks the viewer can recruit into
 	Ranks      map[int]factions.Rank
-	Quals      []factions.Qual
-	Regions    []string
-	Statuses   []struct{ Key, Label string }
-	Month      string // YYYY-MM
-	MonthLabel string
-	Months     []rosterMonth
-	RollCall   int // members marked present this month
-	Excused    int
 }
 
-// CanEdit reports whether the viewer can edit a member's roster row.
-func (d commandRosterData) CanEdit(level int) bool {
-	return !d.ReadOnly && level < d.Command.Level
-}
-
+// CommandRoster is the roster: rank, badge, name, division and status.
+// Everything else is on each member's profile.
 func (d *Deps) CommandRoster(w http.ResponseWriter, r *http.Request) {
 	cb, ok := d.commandAccess(w, r, "roster")
 	if !ok {
 		return
 	}
 	ctx := r.Context()
-	q := r.URL.Query()
-	data := commandRosterData{commandBase: cb, Q: strings.TrimSpace(q.Get("q")), Regions: factions.Regions, Statuses: factions.Statuses}
-	month := factions.MonthStart(time.Now())
-	if t, err := time.Parse("2006-01", q.Get("month")); err == nil && !t.After(month) {
-		month = t
-	}
-	data.Month, data.MonthLabel = month.Format("2006-01"), month.Format("January 2006")
-	for i := 0; i < 12; i++ {
-		m := factions.MonthStart(time.Now()).AddDate(0, -i, 0)
-		data.Months = append(data.Months, rosterMonth{m.Format("2006-01"), m.Format("January 2006")})
-	}
+	data := commandRosterData{commandBase: cb, Q: strings.TrimSpace(r.URL.Query().Get("q"))}
 	ranks, _ := factions.Ranks(ctx, d.Pool, cb.Faction)
 	data.Ranks = map[int]factions.Rank{}
 	for _, rk := range ranks {
 		data.Ranks[rk.Level] = rk
 	}
-	data.Quals, _ = factions.Quals(ctx, d.Pool, cb.Faction)
-	rows, err := factions.PersonnelRoster(ctx, d.Pool, cb.Faction, month)
+	rows, err := factions.PersonnelRoster(ctx, d.Pool, cb.Faction, time.Now())
 	if err != nil {
 		slog.Error("command: roster failed", "error", err)
 		http.Error(w, "Failed to load the roster.", http.StatusInternalServerError)
@@ -213,13 +186,7 @@ func (d *Deps) CommandRoster(w http.ResponseWriter, r *http.Request) {
 	data.Total = len(rows)
 	needle := strings.ToLower(data.Q)
 	for _, p := range rows {
-		switch p.RollCall {
-		case "present":
-			data.RollCall++
-		case "excused":
-			data.Excused++
-		}
-		if needle != "" && !strings.Contains(strings.ToLower(p.Name+" "+p.Badge+" "+p.Department), needle) {
+		if needle != "" && !strings.Contains(strings.ToLower(p.Name+" "+p.Badge+" "+p.Department+" "+p.Rank.Label()), needle) {
 			continue
 		}
 		data.Rows = append(data.Rows, p)
@@ -231,48 +198,39 @@ func (d *Deps) CommandRoster(w http.ResponseWriter, r *http.Request) {
 	d.Render.Render(w, "command_roster.html", data)
 }
 
-// CommandRosterSave saves one roster row. The page saves rows as they're
-// edited (JSON); without JavaScript it's a normal form post.
-func (d *Deps) CommandRosterSave(w http.ResponseWriter, r *http.Request) {
+// CommandPersonnelSave saves a member's personnel file or a roll call mark,
+// from their profile.
+func (d *Deps) CommandPersonnelSave(w http.ResponseWriter, r *http.Request) {
 	faction := chi.URLParam(r, "faction")
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil || !factions.Valid(faction) {
 		http.NotFound(w, r)
 		return
 	}
-	month, err := time.Parse("2006-01", r.FormValue("month"))
-	if err != nil {
-		month = time.Now()
-	}
-	rc := ""
-	switch {
-	case r.FormValue("rc") == "1":
-		rc = "present"
-	case r.FormValue("ea") == "1":
-		rc = "excused"
-	}
-	changed, err := factions.UpdateMember(r.Context(), d.Pool, commandActor(r), faction, id, factions.MemberDetails{
-		Badge: r.FormValue("badge"), Region: r.FormValue("region"), Status: r.FormValue("status"),
-		Notes: r.FormValue("notes"), Enrolled: r.FormValue("enrolled"), Month: month, RollCall: rc,
-	})
-	if r.Header.Get("Accept") == "application/json" {
-		w.Header().Set("Content-Type", "application/json")
-		if err != nil {
-			msg := "Something went wrong. Nothing was saved."
-			if errors.Is(err, factions.ErrNotAllowed) {
-				msg = strings.TrimPrefix(err.Error(), factions.ErrNotAllowed.Error()+": ")
-				w.WriteHeader(http.StatusConflict)
-			} else {
-				slog.Error("roster save failed", "error", err)
-				w.WriteHeader(http.StatusInternalServerError)
-			}
-			_ = json.NewEncoder(w).Encode(map[string]string{"error": msg})
+	back := fmt.Sprintf("/command/%s/members/%d", faction, id)
+	switch r.FormValue("action") {
+	case "rollcall":
+		month, perr := time.Parse("2006-01", r.FormValue("month"))
+		if perr != nil {
+			finishCommandAction(w, r, back+"#rollcall", fmt.Errorf("%w: pick a month", factions.ErrNotAllowed), "")
 			return
 		}
-		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "changed": changed})
-		return
+		mark := r.FormValue("mark")
+		err = factions.SetRollCall(r.Context(), d.Pool, commandActor(r), faction, id, month, mark)
+		word := map[string]string{"present": "Marked present", "excused": "Marked excused", "": "Roll call mark cleared"}[mark]
+		finishCommandAction(w, r, back+"#rollcall", err, word+" for "+month.Format("January 2006")+".")
+	default:
+		var changed []string
+		changed, err = factions.UpdateMember(r.Context(), d.Pool, commandActor(r), faction, id, factions.MemberDetails{
+			Badge: r.FormValue("badge"), Region: r.FormValue("region"), Status: r.FormValue("status"),
+			Notes: r.FormValue("notes"), Enrolled: r.FormValue("enrolled"),
+		})
+		msg := "Nothing changed."
+		if len(changed) > 0 {
+			msg = "Saved: " + strings.Join(changed, "; ") + "."
+		}
+		finishCommandAction(w, r, back+"#file", err, msg)
 	}
-	finishCommandAction(w, r, "/command/"+faction+"/roster?month="+month.Format("2006-01"), err, "Saved.")
 }
 
 // assignable lists the ranks (lowest first) someone with this authority can
@@ -301,7 +259,14 @@ type commandMemberData struct {
 	AllQuals   []factions.Qual
 	Division   string // "S.R.G. · Operator"
 	Probation  *factions.Probation
-	CanAct     bool // discipline, quals: ranked below the viewer
+	CanAct     bool // discipline, quals, personnel file: ranked below the viewer
+
+	// Personnel file.
+	File     factions.Personnel
+	RankInfo factions.Rank
+	RollCall []factions.RollCallMonth
+	Regions  []string
+	Statuses []struct{ Key, Label string }
 }
 
 func (d *Deps) CommandMember(w http.ResponseWriter, r *http.Request) {
@@ -367,6 +332,22 @@ func (d *Deps) CommandMember(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	data.CanAct = !cb.ReadOnly && id != sess.PlayerID && data.Member.Level < cb.Command.Level
+	data.Regions, data.Statuses = factions.Regions, factions.Statuses
+	if rows, err := factions.PersonnelRoster(ctx, d.Pool, cb.Faction, time.Now()); err == nil {
+		for _, p := range rows {
+			if p.ID == id {
+				data.File = p
+			}
+		}
+	} else {
+		slog.Error("command: personnel file failed", "error", err)
+	}
+	if ranks, err := factions.Ranks(ctx, d.Pool, cb.Faction); err == nil {
+		data.RankInfo = factions.RankFor(ranks, data.Member.Level)
+	}
+	if data.RollCall, err = factions.RollCallHistory(ctx, d.Pool, cb.Faction, id, 6); err != nil {
+		slog.Error("command: roll call history failed", "error", err)
+	}
 	switch {
 	case cb.ReadOnly:
 		data.Why = "You're viewing as staff (read-only). Management can override ranks from Player Lookup."

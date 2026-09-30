@@ -188,19 +188,17 @@ func PersonnelRoster(ctx context.Context, pool *pgxpool.Pool, faction string, mo
 	return out, nil
 }
 
-// MemberDetails is what command edits on a roster row.
+// MemberDetails is the personnel file command edits on a member's profile.
 type MemberDetails struct {
 	Badge, Region, Status, Notes string
 	Enrolled                     string // YYYY-MM-DD or ""
-	Month                        time.Time
-	RollCall                     string // present / excused / ""
 }
 
-// UpdateMember saves a roster row. Command, for members ranked below them.
-// It returns what changed (empty when nothing did).
+// UpdateMember saves a member's personnel file. Command, for members ranked
+// below them. It returns what changed (empty when nothing did).
 func UpdateMember(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction string, targetID int64, md MemberDetails) ([]string, error) {
 	var err error
-	if md.Badge, err = cleanText(md.Badge, 12, "the badge", false); err != nil {
+	if md.Badge, err = cleanText(md.Badge, 12, "the badge number", false); err != nil {
 		return nil, err
 	}
 	if md.Notes, err = cleanText(md.Notes, 300, "the notes", false); err != nil {
@@ -223,13 +221,6 @@ func UpdateMember(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction 
 			return nil, notAllowed("the enrollment date isn't a valid past date")
 		}
 		enrolled = &t
-	}
-	if md.RollCall != "" && md.RollCall != "present" && md.RollCall != "excused" {
-		return nil, notAllowed("unknown roll call mark")
-	}
-	month := MonthStart(md.Month)
-	if month.After(time.Now()) {
-		return nil, notAllowed("roll call can't be marked for a future month")
 	}
 
 	tx, err := pool.Begin(ctx)
@@ -256,10 +247,6 @@ func UpdateMember(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction 
 	if oldEnrolled != nil {
 		old.Enrolled = oldEnrolled.Format("2006-01-02")
 	}
-	if err := tx.QueryRow(ctx, `SELECT COALESCE((SELECT mark FROM faction_roll_call WHERE faction = $1 AND player_id = $2 AND month = $3), '')`,
-		faction, targetID, month).Scan(&old.RollCall); err != nil {
-		return nil, err
-	}
 
 	var ch []string
 	diff := func(what, a, b string) {
@@ -280,41 +267,111 @@ func UpdateMember(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction 
 	if old.Notes != md.Notes {
 		ch = append(ch, "notes updated")
 	}
-	rcWord := map[string]string{"present": "present", "excused": "excused", "": "not marked"}
-	rcChanged := old.RollCall != md.RollCall
-	if len(ch) == 0 && !rcChanged {
+	if len(ch) == 0 {
 		return nil, nil
 	}
-	name := playerName(ctx, tx, targetID)
-	if len(ch) > 0 {
-		if _, err := tx.Exec(ctx, `
-			INSERT INTO faction_members (faction, player_id, badge, region, status, notes, enrolled_on, updated_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, now())
-			ON CONFLICT (faction, player_id) DO UPDATE SET badge = $3, region = $4, status = $5, notes = $6, enrolled_on = $7, updated_at = now()`,
-			faction, targetID, md.Badge, md.Region, md.Status, md.Notes, enrolled); err != nil {
-			return nil, err
-		}
-		if err := logEvent(ctx, tx, faction, actor, targetID, a.TargetLvl, "roster", name+": "+strings.Join(ch, "; "), ""); err != nil {
-			return nil, err
-		}
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO faction_members (faction, player_id, badge, region, status, notes, enrolled_on, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, now())
+		ON CONFLICT (faction, player_id) DO UPDATE SET badge = $3, region = $4, status = $5, notes = $6, enrolled_on = $7, updated_at = now()`,
+		faction, targetID, md.Badge, md.Region, md.Status, md.Notes, enrolled); err != nil {
+		return nil, err
 	}
-	if rcChanged {
-		if md.RollCall == "" {
-			_, err = tx.Exec(ctx, `DELETE FROM faction_roll_call WHERE faction = $1 AND player_id = $2 AND month = $3`, faction, targetID, month)
-		} else {
-			_, err = tx.Exec(ctx, `
-				INSERT INTO faction_roll_call (faction, player_id, month, mark, by_id) VALUES ($1, $2, $3, $4, $5)
-				ON CONFLICT (faction, player_id, month) DO UPDATE SET mark = $4, by_id = $5, marked_at = now()`,
-				faction, targetID, month, md.RollCall, actor.PlayerID)
-		}
-		if err != nil {
-			return nil, err
-		}
-		detail := fmt.Sprintf("%s: %s roll call %s", name, month.Format("January 2006"), rcWord[md.RollCall])
-		if err := logEvent(ctx, tx, faction, actor, targetID, a.TargetLvl, "roll_call", detail, ""); err != nil {
-			return nil, err
-		}
-		ch = append(ch, "roll call "+rcWord[md.RollCall])
+	if err := logEvent(ctx, tx, faction, actor, targetID, a.TargetLvl, "roster", playerName(ctx, tx, targetID)+": "+strings.Join(ch, "; "), ""); err != nil {
+		return nil, err
 	}
 	return ch, tx.Commit(ctx)
+}
+
+// RollCallMonth is one month of a member's roll call.
+type RollCallMonth struct {
+	Month time.Time
+	Mark  string // present / excused / ""
+	By    string
+}
+
+// Value is the month as YYYY-MM, for forms.
+func (m RollCallMonth) Value() string { return m.Month.Format("2006-01") }
+
+// RollCallHistory returns the last n months (newest first) for a member.
+func RollCallHistory(ctx context.Context, q dbtx, faction string, playerID int64, n int) ([]RollCallMonth, error) {
+	marks := map[string]RollCallMonth{}
+	rows, err := q.Query(ctx, `
+		SELECT r.month, r.mark, COALESCE(NULLIF(b.name, ''), NULLIF(b.steam_name, ''), '')
+		FROM faction_roll_call r LEFT JOIN players b ON b.id = r.by_id
+		WHERE r.faction = $1 AND r.player_id = $2 AND r.month >= $3`,
+		faction, playerID, MonthStart(time.Now()).AddDate(0, -(n-1), 0))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var m RollCallMonth
+		if err := rows.Scan(&m.Month, &m.Mark, &m.By); err != nil {
+			return nil, err
+		}
+		marks[m.Month.Format("2006-01")] = m
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	out := make([]RollCallMonth, 0, n)
+	for i := 0; i < n; i++ {
+		mo := MonthStart(time.Now()).AddDate(0, -i, 0)
+		m, ok := marks[mo.Format("2006-01")]
+		if !ok {
+			m = RollCallMonth{Month: mo}
+		}
+		out = append(out, m)
+	}
+	return out, nil
+}
+
+// SetRollCall marks a member present, excused or unmarked ("") for a
+// month. Command, for members ranked below them.
+func SetRollCall(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction string, targetID int64, month time.Time, mark string) error {
+	if mark != "" && mark != "present" && mark != "excused" {
+		return notAllowed("unknown roll call mark")
+	}
+	month = MonthStart(month)
+	if month.After(time.Now()) {
+		return notAllowed("roll call can't be marked for a future month")
+	}
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	a, err := commandOver(ctx, tx, actor, faction, targetID)
+	if err != nil {
+		return err
+	}
+	if a.TargetLvl == 0 {
+		return notAllowed("they aren't in %s", Name(faction))
+	}
+	var old string
+	if err := tx.QueryRow(ctx, `SELECT COALESCE((SELECT mark FROM faction_roll_call WHERE faction = $1 AND player_id = $2 AND month = $3), '')`,
+		faction, targetID, month).Scan(&old); err != nil {
+		return err
+	}
+	if old == mark {
+		return notAllowed("it's already marked that way")
+	}
+	if mark == "" {
+		_, err = tx.Exec(ctx, `DELETE FROM faction_roll_call WHERE faction = $1 AND player_id = $2 AND month = $3`, faction, targetID, month)
+	} else {
+		_, err = tx.Exec(ctx, `
+			INSERT INTO faction_roll_call (faction, player_id, month, mark, by_id) VALUES ($1, $2, $3, $4, $5)
+			ON CONFLICT (faction, player_id, month) DO UPDATE SET mark = $4, by_id = $5, marked_at = now()`,
+			faction, targetID, month, mark, actor.PlayerID)
+	}
+	if err != nil {
+		return err
+	}
+	word := map[string]string{"present": "present", "excused": "excused", "": "not marked"}[mark]
+	detail := fmt.Sprintf("%s: %s roll call %s", playerName(ctx, tx, targetID), month.Format("January 2006"), word)
+	if err := logEvent(ctx, tx, faction, actor, targetID, a.TargetLvl, "roll_call", detail, ""); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
