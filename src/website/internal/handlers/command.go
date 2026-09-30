@@ -165,6 +165,10 @@ type commandRosterData struct {
 	Total      int
 	CanRecruit bool
 	Levels     []factions.Rank // ranks the viewer can recruit into
+
+	Standing  map[int64]factions.Standing
+	Probation map[int64]bool
+	Division  map[int64]string // division name
 }
 
 func (d *Deps) CommandRoster(w http.ResponseWriter, r *http.Request) {
@@ -182,6 +186,23 @@ func (d *Deps) CommandRoster(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data.Total = len(members)
+	data.Standing, _ = factions.Standings(ctx, d.Pool, cb.Faction)
+	data.Probation, data.Division = map[int64]bool{}, map[int64]string{}
+	if ps, err := factions.Probations(ctx, d.Pool, cb.Faction, true); err == nil {
+		for _, p := range ps {
+			data.Probation[p.PlayerID] = true
+		}
+	}
+	if posts, err := factions.MemberDivisions(ctx, d.Pool, cb.Faction); err == nil {
+		divs, _ := factions.Divisions(ctx, d.Pool, cb.Faction)
+		for id, p := range posts {
+			for _, dv := range divs {
+				if dv.Key == p.Key {
+					data.Division[id] = dv.Name
+				}
+			}
+		}
+	}
 	q := strings.ToLower(data.Q)
 	for _, m := range members {
 		if q != "" && !strings.Contains(strings.ToLower(m.Name), q) {
@@ -224,6 +245,16 @@ type commandMemberData struct {
 	CanChange bool
 	Levels    []factions.Rank
 	Why       string // why the viewer can't change this member
+
+	// Command records (Discipline, Divisions & quals, Recruits & training).
+	Standing   factions.Standing
+	Band       *factions.Threshold
+	Discipline []factions.Entry
+	Quals      []factions.HeldQual
+	AllQuals   []factions.Qual
+	Division   string // "S.R.G. · Operator"
+	Probation  *factions.Probation
+	CanAct     bool // discipline, quals: ranked below the viewer
 }
 
 func (d *Deps) CommandMember(w http.ResponseWriter, r *http.Request) {
@@ -254,10 +285,41 @@ func (d *Deps) CommandMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data.Title = data.Member.Name + " · " + cb.FactionName + " command"
-	if data.History, err = factions.Log(ctx, d.Pool, cb.Faction, "", "", id, 50); err != nil {
+	history, err := factions.Log(ctx, d.Pool, cb.Faction, "", "", id, 80)
+	if err != nil {
 		slog.Error("command: member history failed", "error", err)
 	}
+	for _, e := range history {
+		if e.Kind != "discipline" { // shown in its own card
+			data.History = append(data.History, e)
+		}
+	}
 	sess, _ := auth.FromContext(ctx)
+	if data.Standing, err = factions.StandingOf(ctx, d.Pool, cb.Faction, id); err != nil {
+		slog.Error("command: standing failed", "error", err)
+	}
+	data.Band = factions.Band(data.Standing.Points)
+	data.Discipline, _ = factions.DisciplineLog(ctx, d.Pool, cb.Faction, id, 50)
+	data.Quals, _ = factions.QualsOf(ctx, d.Pool, cb.Faction, id)
+	data.AllQuals, _ = factions.Quals(ctx, d.Pool, cb.Faction)
+	if posts, err := factions.MemberDivisions(ctx, d.Pool, cb.Faction); err == nil {
+		if p, ok := posts[id]; ok {
+			divs, _ := factions.Divisions(ctx, d.Pool, cb.Faction)
+			for _, dv := range divs {
+				if dv.Key == p.Key {
+					data.Division = dv.Name + " · " + p.Role
+				}
+			}
+		}
+	}
+	if ps, err := factions.Probations(ctx, d.Pool, cb.Faction, true); err == nil {
+		for i := range ps {
+			if ps[i].PlayerID == id {
+				data.Probation = &ps[i]
+			}
+		}
+	}
+	data.CanAct = !cb.ReadOnly && id != sess.PlayerID && data.Member.Level < cb.Command.Level
 	switch {
 	case cb.ReadOnly:
 		data.Why = "You're viewing as staff (read-only). Management can override ranks from Player Lookup."
@@ -367,6 +429,16 @@ type commandLogData struct {
 	Kind    string
 	Q       string
 	Entries []factions.LogEntry
+	Kinds   []logKind
+}
+
+type logKind struct{ Key, Label string }
+
+// logKinds are the Command log's filters.
+var logKinds = []logKind{
+	{"recruit", "Recruited"}, {"promote", "Promotions"}, {"demote", "Demotions"}, {"remove", "Removals"},
+	{"probation", "Probation"}, {"training", "Training"}, {"discipline", "Discipline"},
+	{"blacklist", "Blacklist"}, {"division", "Divisions"}, {"qual", "Quals"}, {"rank_rules", "Rank rules"},
 }
 
 func (d *Deps) CommandLog(w http.ResponseWriter, r *http.Request) {
@@ -375,7 +447,12 @@ func (d *Deps) CommandLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data := commandLogData{commandBase: cb, Kind: r.URL.Query().Get("kind"), Q: strings.TrimSpace(r.URL.Query().Get("q"))}
-	if kindWords[data.Kind] == "" {
+	data.Kinds = logKinds
+	known := false
+	for _, k := range logKinds {
+		known = known || k.Key == data.Kind
+	}
+	if !known {
 		data.Kind = ""
 	}
 	var err error

@@ -1,0 +1,182 @@
+{{define "content"}}
+<div class="cmd-shell">
+  {{template "command_sidebar" .}}
+  <div class="cmd-main">
+    <div class="cmd-head">
+      <div>
+        <h1>Discipline</h1>
+        <p class="cmd-sub">Faction discipline only: it affects rank and whitelist, not server bans. Server rule breaks still go to staff as a case.</p>
+      </div>
+    </div>
+
+    {{if not .ReadOnly}}
+    <div class="disc-grid">
+      <section class="cmd-card cmd-pad" aria-labelledby="disc-issue">
+        <h2 id="disc-issue">Issue discipline</h2>
+        {{if .Officers}}
+        <form method="post" action="/command/{{.Faction}}/discipline" class="cmd-form disc-form" data-disc-form>
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+          <div class="field"><label for="dc-who">Officer</label>
+            <select id="dc-who" name="who" required data-disc-who>
+              {{range .Officers}}<option value="{{.ID}}" data-points="{{.Standing.Points}}" data-mvws="{{.Standing.MVWs}}" {{if eq .ID $.Who}}selected{{end}}>{{.Name}} &middot; {{.Rank.Label}}{{if .Standing.Points}} &middot; {{.Standing.Points}} pts{{end}}{{if .Standing.Suspended}} &middot; suspended{{end}}</option>{{end}}
+            </select></div>
+          <div class="field"><label for="dc-off">Offence</label>
+            <select id="dc-off" name="offence" required data-disc-off>
+              {{range .Offences}}{{if .Offences}}<optgroup label="{{.Label}}">{{range .Offences}}<option value="{{.ID}}" data-min="{{.MinPoints}}" data-max="{{.Max}}" data-mvw="{{if .MVW}}1{{end}}" data-range="{{.RangeText}}">{{.Name}}</option>{{end}}</optgroup>{{end}}{{end}}
+            </select></div>
+          <div class="disc-punish">
+            <label class="disc-check"><input type="checkbox" name="mvw" value="1" data-disc-mvw> Marked verbal warning</label>
+            <div class="field disc-points" data-disc-points-wrap><label for="dc-pts">Points</label><input id="dc-pts" type="number" name="points" min="1" max="50" value="5" data-disc-pts></div>
+          </div>
+          <p class="hint" data-disc-range>Pick an offence to see its guide.</p>
+          <div class="field"><label for="dc-notes">What happened</label><textarea id="dc-notes" name="notes" rows="3" maxlength="1000" required placeholder="Date, time, what they did, and who saw it."></textarea></div>
+          <div class="disc-preview" data-disc-preview hidden>
+            <div class="cmd-strong" data-disc-preview-title></div>
+            <div class="cmd-dim" data-disc-preview-body></div>
+          </div>
+          <label class="disc-check" data-disc-apply-wrap><input type="checkbox" name="apply" value="1" checked data-disc-apply> <span data-disc-apply-label>Apply the suggested action if this crosses a step on the ladder</span></label>
+          <button class="btn btn-primary" type="submit">Issue</button>
+          <p class="hint">Goes in the punishment log and their service record. Entries can't be edited; issue a correction instead.</p>
+        </form>
+        {{else}}
+        <p class="cmd-dim">Nobody is ranked below you, so there's no one you can discipline.</p>
+        {{end}}
+      </section>
+
+      <section class="cmd-card cmd-pad" aria-labelledby="disc-ladder">
+        <h2 id="disc-ladder">Points ladder</h2>
+        <p class="cmd-dim disc-ladder-note">Points stop counting after {{.Settings.PointsExpiryDays}} days, warnings after {{.Settings.MVWDays}}. Suggested actions aren't automatic; command applies them.</p>
+        <div class="disc-step"><span class="disc-at">MVW</span><div><div class="cmd-strong">Marked verbal warning</div><div class="cmd-dim">Stays on record for {{.Settings.MVWDays}} days. Three active warnings become 10 points.</div></div></div>
+        {{range .Ladder}}
+        <div class="disc-step" data-disc-step="{{.At}}"><span class="disc-at{{if ge .At 40}} disc-at-red{{else if ge .At 20}} disc-at-amber{{end}}">{{.At}}</span><div><div class="cmd-strong">{{.Label}}</div><div class="cmd-dim">{{.Body}}{{if .Blacklist}} Default blacklist: {{$.Settings.BlacklistDays}} days.{{end}}</div></div></div>
+        {{end}}
+      </section>
+    </div>
+    {{end}}
+
+    <div class="cmd-filter">
+      <nav class="seg" aria-label="Discipline records">
+        <a class="seg-item {{if eq .Tab "log"}}active{{end}}" href="/command/{{.Faction}}/discipline">Punishment log</a>
+        <a class="seg-item {{if eq .Tab "dis"}}active{{end}}" href="/command/{{.Faction}}/discipline?tab=dis">Discharges</a>
+        <a class="seg-item {{if eq .Tab "bl"}}active{{end}}" href="/command/{{.Faction}}/discipline?tab=bl">Blacklist</a>
+      </nav>
+      {{if not .ReadOnly}}
+      {{if eq .Tab "dis"}}<button class="btn btn-sm disc-tab-btn" type="button" data-dialog-open="dlg-discharge">Record a discharge</button>{{end}}
+      {{if eq .Tab "bl"}}<button class="btn btn-sm disc-tab-btn" type="button" data-dialog-open="dlg-blacklist">Blacklist a player</button>{{end}}
+      {{end}}
+    </div>
+
+    {{if eq .Tab "log"}}
+    <div class="cmd-table" role="table" aria-label="Punishment log">
+      <div class="cmd-row disc-row cmd-row-head" role="row"><span>Date</span><span>Officer</span><span>Offence</span><span>Given</span><span>Action</span><span>By</span></div>
+      {{range .Entries}}
+      <div class="cmd-row disc-row{{if not .Active}} disc-row-old{{end}}" role="row">
+        <span class="cmd-dim">{{.When.Format "2 Jan"}}</span>
+        <span><a class="cmd-strong" href="/command/{{$.Faction}}/members/{{.PlayerID}}">{{.Player}}</a><span class="cmd-dim disc-sub">{{.Rank}}</span></span>
+        <span>{{.Offence}}<span class="cmd-dim disc-sub" title="{{.Notes}}">{{.Notes}}</span></span>
+        <span class="{{if ge .Points 15}}disc-hot{{end}}">{{.Given}}{{if .Corrected}} <span class="cmd-tag">Corrected</span>{{else if not .Active}} <span class="cmd-tag">Expired</span>{{end}}</span>
+        <span class="cmd-dim">{{if .Action}}{{.Action}}{{else}}&mdash;{{end}}</span>
+        <span class="cmd-dim">{{.By}}{{if and (not $.ReadOnly) .Correctable}}
+          <button class="link-button disc-correct" type="button" data-dialog-open="dlg-correct-{{.ID}}">Correct</button>
+          <dialog id="dlg-correct-{{.ID}}" class="modal" aria-labelledby="dlg-correct-{{.ID}}-t">
+            <form method="post" action="/command/{{$.Faction}}/discipline/{{.ID}}/correct">
+              <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+              <div class="modal-head"><h2 id="dlg-correct-{{.ID}}-t">Correct {{.Given}} for {{.Player}}</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+              <div class="modal-body">
+                <p>Adds a correction that cancels this entry's points{{if eq .Kind "mvw"}} (the warning stops counting){{end}}, and ends any suspension it caused. Rank changes aren't undone; use the roster for that. The original stays in the log.</p>
+                <div class="field"><label for="cr-{{.ID}}">Reason</label><input id="cr-{{.ID}}" name="reason" required maxlength="500"></div>
+              </div>
+              <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Issue correction</button></div>
+            </form>
+          </dialog>{{end}}</span>
+      </div>
+      {{else}}
+      <p class="cmd-empty">No discipline issued yet.</p>
+      {{end}}
+    </div>
+    <p class="hint">Entries can't be edited. To reverse one, issue a correction.</p>
+    {{end}}
+
+    {{if eq .Tab "dis"}}
+    <div class="cmd-table" role="table" aria-label="Discharges">
+      <div class="cmd-row dis-row cmd-row-head" role="row"><span>Date</span><span>Member</span><span>Rank</span><span>Type</span><span>Notes</span><span>By</span></div>
+      {{range .Discharges}}
+      <div class="cmd-row dis-row" role="row">
+        <span class="cmd-dim">{{.When.Format "2 Jan 2006"}}</span>
+        <span class="cmd-strong">{{.Player}}</span>
+        <span class="cmd-dim">{{.Rank}}</span>
+        <span>{{.Type}}</span>
+        <span class="cmd-dim">{{.Notes}}</span>
+        <span class="cmd-dim">{{.By}}</span>
+      </div>
+      {{else}}
+      <p class="cmd-empty">No discharges recorded yet.</p>
+      {{end}}
+    </div>
+    <p class="hint">Types: resigned, inactivity, honourable discharge, contract termination, and probation ended.</p>
+    {{end}}
+
+    {{if eq .Tab "bl"}}
+    <div class="cmd-table" role="table" aria-label="Blacklist">
+      <div class="cmd-row bl-row cmd-row-head" role="row"><span>Player</span><span>Last rank</span><span>Reason</span><span>From</span><span>Until</span><span>By</span></div>
+      {{range .Blacklist}}
+      <div class="cmd-row bl-row{{if not .Active}} disc-row-old{{end}}" role="row">
+        <span class="cmd-strong">{{.Player}}</span>
+        <span class="cmd-dim">{{.LastRank}}</span>
+        <span>{{.Reason}}{{if .LiftedAt}}<span class="cmd-dim disc-sub">Lifted {{.LiftedAt.Format "2 Jan 2006"}} by {{.LiftedBy}}: {{.LiftReason}}</span>{{end}}</span>
+        <span class="cmd-dim">{{.From.Format "2 Jan 2006"}}</span>
+        <span class="{{if not .Until}}disc-hot{{end}}">{{if .Until}}{{.Until.Format "2 Jan 2006"}}{{else}}Permanent{{end}}</span>
+        <span class="cmd-dim">{{.By}}{{if and $.CanLift .Active}}
+          <button class="link-button disc-correct" type="button" data-dialog-open="dlg-lift-{{.ID}}">Lift early</button>
+          <dialog id="dlg-lift-{{.ID}}" class="modal" aria-labelledby="dlg-lift-{{.ID}}-t">
+            <form method="post" action="/command/{{$.Faction}}/blacklist/{{.ID}}/lift">
+              <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+              <div class="modal-head"><h2 id="dlg-lift-{{.ID}}-t">Lift the blacklist on {{.Player}}</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+              <div class="modal-body"><div class="field"><label for="lf-{{.ID}}">Reason</label><input id="lf-{{.ID}}" name="reason" required maxlength="500"></div><p class="hint">They can apply again straight away. You need authority up to their last rank.</p></div>
+              <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Lift blacklist</button></div>
+            </form>
+          </dialog>{{end}}</span>
+      </div>
+      {{else}}
+      <p class="cmd-empty">Nobody is blacklisted.</p>
+      {{end}}
+    </div>
+    <p class="hint">Blacklisted players can't apply to {{.FactionName}} or be recruited until the end date. Lifting one early needs command whose authority reaches their last rank.</p>
+    {{end}}
+
+    {{if not .ReadOnly}}
+    <dialog id="dlg-discharge" class="modal" aria-labelledby="dlg-discharge-t">
+      <form method="post" action="/command/{{.Faction}}/discharge">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <div class="modal-head"><h2 id="dlg-discharge-t">Record a discharge</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+        <div class="modal-body">
+          <div class="field"><label for="ds-who">Member</label><select id="ds-who" name="who" required>{{range .Officers}}<option value="{{.ID}}">{{.Name}} &middot; {{.Rank.Label}}</option>{{end}}</select></div>
+          <div class="field"><label for="ds-type">Type</label><select id="ds-type" name="type">{{range .Types}}<option value="{{.Key}}">{{.Label}}</option>{{end}}</select></div>
+          <div class="field"><label for="ds-notes">Notes</label><input id="ds-notes" name="notes" required maxlength="500" placeholder="e.g. Inactive 30+ days, no LOA filed"></div>
+          <p class="hint">Removes them from {{.FactionName}}. You need authority over their rank.</p>
+        </div>
+        <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-danger" type="submit">Discharge</button></div>
+      </form>
+    </dialog>
+    <dialog id="dlg-blacklist" class="modal" aria-labelledby="dlg-blacklist-t">
+      <form method="post" action="/command/{{.Faction}}/blacklist">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <div class="modal-head"><h2 id="dlg-blacklist-t">Blacklist a player</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+        <div class="modal-body">
+          <div class="field"><label for="bl-who">Steam64 ID or exact in-game name</label><input id="bl-who" name="who" required maxlength="64"></div>
+          <div class="mod-form-row">
+            <div class="field"><label for="bl-days">Days</label><input id="bl-days" type="number" name="days" min="1" max="3650" value="{{.Settings.BlacklistDays}}"></div>
+            <label class="disc-check"><input type="checkbox" name="permanent" value="1"> Permanent</label>
+          </div>
+          <div class="field"><label for="bl-reason">Reason</label><input id="bl-reason" name="reason" required maxlength="500"></div>
+          <p class="hint">For players who aren't in {{.FactionName}}; discharge a member first. They can't apply or be recruited until it ends.</p>
+        </div>
+        <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-danger" type="submit">Blacklist</button></div>
+      </form>
+    </dialog>
+    {{end}}
+  </div>
+</div>
+<script src="/static/admin.js" defer></script>
+<script src="/static/command.js" defer></script>
+{{end}}

@@ -62,7 +62,15 @@ type Rank struct {
 	Short       string
 	Slots       int // 0 = no limit
 	PromoteUpTo int // > 0 = command rank
+
+	// Rank rules (Ranks & gear).
+	MinDays     int      // days in this rank before promotion
+	Quals       []string // qualifications needed to hold it
+	Description string
 }
+
+// Command reports whether the rank has command authority.
+func (r Rank) Command() bool { return r.PromoteUpTo > 0 && r.PromoteUpTo < r.Level }
 
 // Label is "Name" or "Level n" when the rank has no name configured.
 func (r Rank) Label() string {
@@ -77,7 +85,7 @@ func Ranks(ctx context.Context, q interface {
 	Query(context.Context, string, ...any) (pgx.Rows, error)
 }, faction string) ([]Rank, error) {
 	rows, err := q.Query(ctx, `
-		SELECT level, name, COALESCE(short_name, ''), COALESCE(slots, 0), promote_up_to
+		SELECT level, name, COALESCE(short_name, ''), COALESCE(slots, 0), promote_up_to, min_days, required_quals, description
 		FROM faction_rank_names WHERE faction = $1 ORDER BY level`, faction)
 	if err != nil {
 		return nil, err
@@ -86,7 +94,7 @@ func Ranks(ctx context.Context, q interface {
 	var out []Rank
 	for rows.Next() {
 		var r Rank
-		if err := rows.Scan(&r.Level, &r.Name, &r.Short, &r.Slots, &r.PromoteUpTo); err != nil {
+		if err := rows.Scan(&r.Level, &r.Name, &r.Short, &r.Slots, &r.PromoteUpTo, &r.MinDays, &r.Quals, &r.Description); err != nil {
 			return nil, err
 		}
 		out = append(out, r)
@@ -166,6 +174,12 @@ type Change struct {
 // for ViaStaffOverride the caller must already have checked the override
 // permission.
 func SetLevel(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction string, targetID int64, level int, reason string) (Change, error) {
+	return setLevel(ctx, pool, actor, faction, targetID, level, reason, false)
+}
+
+// setLevel is SetLevel; probation skips the time-in-rank rule when
+// confirming a recruit (probation has its own length).
+func setLevel(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction string, targetID int64, level int, reason string, probation bool) (Change, error) {
 	var ch Change
 	col := column[faction]
 	if col == "" {
@@ -243,6 +257,19 @@ func SetLevel(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction stri
 		if level > authority {
 			return ch, notAllowed("you can set ranks up to %s", RankFor(ranks, authority).Label())
 		}
+		// Rank rules bind command; Management can go past them.
+		if level > cur && cur > 0 {
+			if err := promotionRules(ctx, tx, faction, ranks, targetID, cur, level, probation); err != nil {
+				return ch, err
+			}
+		}
+		if cur == 0 {
+			if bl, err := ActiveBlacklist(ctx, tx, faction, targetID); err != nil {
+				return ch, err
+			} else if bl != nil {
+				return ch, notAllowed("they're blacklisted from %s %s", Name(faction), bl.UntilText())
+			}
+		}
 		// Slot limits bind command; Management can go over them.
 		if r := RankFor(ranks, level); level > 0 && r.Slots > 0 {
 			var filled int
@@ -286,6 +313,9 @@ func SetLevel(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction stri
 		INSERT INTO faction_log (faction, actor_id, target_id, kind, from_level, to_level, reason, via, own_faction)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
 		faction, actor.PlayerID, targetID, ch.Kind, cur, level, reason, actor.Via, ch.OwnFaction); err != nil {
+		return ch, err
+	}
+	if err := afterLevelChange(ctx, tx, faction, targetID, ch.Kind); err != nil {
 		return ch, err
 	}
 	return ch, tx.Commit(ctx)
@@ -356,10 +386,16 @@ type LogEntry struct {
 	Reason     string
 	Via        string
 	OwnFaction bool
+	Detail     string // for non-rank entries
 }
 
 // Change describes the entry, e.g. "Constable → Senior Constable".
 func (e LogEntry) Change() string {
+	switch e.Kind {
+	case "recruit", "promote", "demote", "remove":
+	default:
+		return e.Detail
+	}
 	switch e.Kind {
 	case "recruit":
 		return "Joined as " + e.To
@@ -380,7 +416,7 @@ func Log(ctx context.Context, pool *pgxpool.Pool, faction, kind, q string, targe
 		SELECT l.id, l.created_at, l.kind,
 		       COALESCE(NULLIF(a.name, ''), NULLIF(a.steam_name, ''), 'Player #' || a.id, 'Unknown'),
 		       COALESCE(NULLIF(t.name, ''), NULLIF(t.steam_name, ''), 'Player #' || t.id, 'Deleted player'),
-		       COALESCE(l.target_id, 0), l.from_level, l.to_level, l.reason, l.via, l.own_faction
+		       COALESCE(l.target_id, 0), l.from_level, l.to_level, l.reason, l.via, l.own_faction, l.detail
 		FROM faction_log l
 		LEFT JOIN players a ON a.id = l.actor_id
 		LEFT JOIN players t ON t.id = l.target_id
@@ -395,7 +431,7 @@ func Log(ctx context.Context, pool *pgxpool.Pool, faction, kind, q string, targe
 	for rows.Next() {
 		var e LogEntry
 		var from, to int
-		if err := rows.Scan(&e.ID, &e.When, &e.Kind, &e.By, &e.Target, &e.TargetID, &from, &to, &e.Reason, &e.Via, &e.OwnFaction); err != nil {
+		if err := rows.Scan(&e.ID, &e.When, &e.Kind, &e.By, &e.Target, &e.TargetID, &from, &to, &e.Reason, &e.Via, &e.OwnFaction, &e.Detail); err != nil {
 			return nil, err
 		}
 		e.From, e.To = RankFor(ranks, from).Label(), RankFor(ranks, to).Label()

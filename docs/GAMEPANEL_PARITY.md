@@ -329,6 +329,44 @@ always below their own. Optional slot limits per rank bind command but not Manag
    handing it to someone else.
 7. Discord roles stack: staff, faction and faction-rank roles each come from their own mapping.
 
+**Command tools beyond the roster** (layout plan "Police command", built 30 Sep 2026). All are done
+under command authority and re-checked on every action; staff with `factions.audit` see them
+read-only. Everything is recorded in the Command log.
+
+- **Recruits & training.** Being recruited (by command, or by an accepted application) starts a
+  probation (`faction_settings.probation_days`, 14 by default). Command assigns an FTO, who must be
+  ranked above the recruit. They sign off each item on the faction's training sheet
+  (`faction_training_items`) as *pass*, *needs work* or *not done*; an item with a retake wait (the
+  theory exam, 24 h) can't be passed again until the wait is over. *Confirm* needs every item passed and
+  promotes one rank; *End probation* removes them and records a "Probation ended" discharge.
+- **Discipline.** Only for members ranked below you. The offence guide (`faction_offences`) sets each
+  offence's point range and whether a marked verbal warning (MVW) is allowed. Three active warnings
+  convert to 10 points. The ladder (10 → 1-day suspension, 15 → 3-day, 20 → 7-day with demotion
+  recommended, 30 → 7-day with forced demotion, 40 → termination, 50 → termination and blacklist)
+  only *suggests*; command ticks a box to apply it, and a rank change beyond their authority is
+  recorded as "needs higher command" rather than applied. Points expire after
+  `points_expiry_days` (90 by default), warnings after `mvw_days` (7). Entries are append-only; a
+  correction is a new entry that cancels the points and ends any suspension the entry caused.
+  Discharges (resigned, inactivity, honourable, contract termination) remove the member. The
+  blacklist stops a player applying or being recruited by command until it ends (Management
+  overrides are not blocked); lifting it early needs authority up to their last rank.
+  **Suspensions are recorded and shown, but not yet enforced in game**: the game writes faction
+  levels back to the database, so hiding a suspended officer's level from the game could remove
+  their rank for good. Enforcing it needs a mission change.
+- **Divisions & quals.** One specialist division per member (`faction_member_divisions`), with
+  ordered roles and entry requirements (a qualification and/or minimum rank). Qualifications
+  (`faction_quals`) are recorded from the member's service record; each can have a head trainer.
+- **Ranks & gear.** The faction's top rank edits the rules of every rank below their own: name,
+  short name, slots, minimum days in rank, required qualifications, who it can promote, and the
+  public description. Staff with `factions.configure` can edit any rank. Command promotions must meet
+  the rules (time in the current rank; the new rank's qualifications; a probation confirmation skips
+  the time rule). The top rank also sets the faction's settings above. Gear lists wait for loadouts
+  to move out of the mission config.
+
+Offences, training items, divisions and qualifications are seeded from the layout plan (Police) and
+edited in the database until they have an editor. EMS has offences and a starter training sheet,
+but no divisions or qualifications yet.
+
 ### 6.2 Faction applications (#29)
 
 Gamepanel's "waiting list" simply listed every player not in a faction. We replace it with

@@ -1,0 +1,103 @@
+{{define "content"}}
+<div class="cmd-shell">
+  {{template "command_sidebar" .}}
+  <div class="cmd-main">
+    <div class="cmd-head">
+      <div>
+        <h1>Divisions &amp; qualifications</h1>
+        <p class="cmd-sub">Every member holds a {{.FactionName}} rank plus, optionally, a role in one specialist division. {{.General}} member{{if ne .General 1}}s are{{else}} is{{end}} in general duties (no specialist division).</p>
+      </div>
+    </div>
+
+    {{if .Divisions}}
+    <div class="div-cards">
+      {{range .Divisions}}
+      <a class="div-card{{if and $.Cur (eq .Key $.Cur.Key)}} active{{end}}" href="/command/{{$.Faction}}/divisions?div={{.Key}}" style="--div: {{.Color}}" {{if and $.Cur (eq .Key $.Cur.Key)}}aria-current="page"{{end}}>
+        <span class="div-name"><span class="div-dot" aria-hidden="true"></span>{{.Name}}</span>
+        <span class="cmd-dim">{{.Count}} member{{if ne .Count 1}}s{{end}} &middot; {{if .Lead}}led by {{.Lead}}{{else}}no {{index .Roles 0}}{{end}}</span>
+      </a>
+      {{end}}
+    </div>
+
+    {{with .Cur}}
+    <section class="cmd-card">
+      <div class="cmd-card-head"><h2>{{.Name}} members</h2>
+        <span class="cmd-dim">Roles, most senior first: {{range $i, $r := .Roles}}{{if $i}} &middot; {{end}}{{$r}}{{end}}</span></div>
+      {{range $.Members}}
+      <div class="div-row">
+        <span><a class="cmd-strong" href="/command/{{$.Faction}}/members/{{.ID}}">{{.Name}}</a><span class="cmd-dim div-sub">{{.Rank.Label}}</span></span>
+        {{if and (not $.ReadOnly) (lt .Level $.Command.Level)}}
+        <form method="post" action="/command/{{$.Faction}}/divisions/{{$.Cur.Key}}" class="div-actions">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="who" value="{{.ID}}">
+          <label class="visually-hidden" for="role-{{.ID}}">Role for {{.Name}}</label>
+          <select id="role-{{.ID}}" name="role">{{$role := .Role}}{{range $.Cur.Roles}}<option {{if eq . $role}}selected{{end}}>{{.}}</option>{{end}}</select>
+          <button class="btn btn-sm" type="submit" name="action" value="role">Set role</button>
+          <button class="btn btn-sm" type="submit" name="action" value="remove">Remove</button>
+        </form>
+        {{else}}<span class="cmd-tag">{{.Role}}</span>{{end}}
+      </div>
+      {{else}}
+      <p class="cmd-empty">Nobody is in {{.Name}} yet.</p>
+      {{end}}
+      {{if not $.ReadOnly}}
+      <form method="post" action="/command/{{$.Faction}}/divisions/{{.Key}}" class="div-add">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="action" value="add"><input type="hidden" name="role" value="{{.EntryRole}}">
+        {{if $.Addable}}
+        <label class="visually-hidden" for="div-add">Member to add</label>
+        <select id="div-add" name="who">{{range $.Addable}}<option value="{{.ID}}">{{.Name}} &middot; {{.Rank.Label}}</option>{{end}}</select>
+        <button class="btn btn-sm btn-primary" type="submit">Add to {{.Name}} as {{.EntryRole}}</button>
+        {{else}}<span class="cmd-dim">Nobody else you can add meets the requirements.</span>{{end}}
+        <span class="hint">{{if .RequiredQual}}Needs the {{.RequiredQual}} qualification.{{end}}{{if .MinLevel}} Needs {{.MinLevel}}+ rank level.{{end}}{{if not (or .RequiredQual .MinLevel)}}No entry requirements.{{end}}</span>
+      </form>
+      {{end}}
+    </section>
+
+    <section class="cmd-card cmd-pad">
+      <h2>{{.Name}} gear</h2>
+      <p class="cmd-dim">Division gear is set in the mission's loadout config for now, so it isn't listed here yet. It'll show here once loadouts move to the database.</p>
+    </section>
+    {{end}}
+    {{else}}
+    <p class="cmd-empty cmd-card">{{.FactionName}} has no specialist divisions set up yet. Everyone is in general duties.</p>
+    {{end}}
+
+    <section class="cmd-card" id="quals" aria-labelledby="quals-h">
+      <div class="cmd-card-head"><h2 id="quals-h">Qualifications</h2><span class="cmd-dim">Record passes from a member's service record. The head trainer runs that qualification.</span></div>
+      {{range .Quals}}
+      <div class="qual-row">
+        <span class="qual-key">{{.Key}}</span>
+        <span><span class="cmd-strong">{{.Name}}</span><span class="cmd-dim div-sub">{{.Body}}</span></span>
+        <span class="cmd-dim">{{len .Holders}} holder{{if ne (len .Holders) 1}}s{{end}}</span>
+        {{if and (not $.ReadOnly) .Holders}}
+        <form method="post" action="/command/{{$.Faction}}/quals/{{.Key}}/head" class="div-actions">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+          <label class="visually-hidden" for="head-{{.Key}}">Head trainer for {{.Name}}</label>
+          <select id="head-{{.Key}}" name="head"><option value="0">No head trainer</option>{{$h := .HeadID}}{{range .Holders}}<option value="{{.ID}}" {{if eq .ID $h}}selected{{end}}>{{.Name}}</option>{{end}}</select>
+          <button class="btn btn-sm" type="submit">Set head</button>
+        </form>
+        {{else}}<span class="cmd-dim">{{if .Head}}Head: {{.Head}}{{else}}No head trainer{{end}}</span>{{end}}
+      </div>
+      {{else}}
+      <p class="cmd-empty">{{.FactionName}} has no qualifications set up yet.</p>
+      {{end}}
+    </section>
+
+    {{if and .Quals .Matrix}}
+    <section class="cmd-card">
+      <div class="cmd-card-head"><h2>Who holds what</h2><span class="cmd-dim">H = head trainer</span></div>
+      <div class="qual-matrix-wrap">
+        <table class="qual-matrix">
+          <thead><tr><th scope="col">Member</th>{{range .Quals}}<th scope="col" title="{{.Name}}">{{.Key}}</th>{{end}}</tr></thead>
+          <tbody>
+            {{range .Matrix}}
+            <tr><th scope="row"><a href="/command/{{$.Faction}}/members/{{.Member.ID}}">{{.Member.Name}}</a> <span class="cmd-dim">{{.Member.Rank.Short}}</span></th>
+              {{range .Cells}}<td><span class="qual-cell{{if .Head}} qual-cell-head{{else if .Held}} qual-cell-held{{end}}" aria-label="{{.Key}}: {{if .Head}}head trainer{{else if .Held}}held{{else}}not held{{end}}">{{if .Head}}H{{else if .Held}}&#10003;{{end}}</span></td>{{end}}</tr>
+            {{end}}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {{end}}
+  </div>
+</div>
+{{end}}

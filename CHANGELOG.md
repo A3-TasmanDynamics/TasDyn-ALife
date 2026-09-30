@@ -1047,3 +1047,17 @@
   `settings.json`, at most one restart per 5 minutes); set `SERVER_MANAGER_URL`/`SERVER_MANAGER_TOKEN` in the website.
   **Admin → Item Prices**: a read-only reference for compensation; house prices from the database, and an honest note
   that shop and vehicle prices appear once the mission has an economy config.
+- **Faction command: Recruits & training, Discipline, Divisions & quals, Ranks & gear (layout plan
+  "Police command", GAMEPANEL_PARITY §6.1).** Recruits start a probation with an FTO and a training
+  sheet (pass / needs work / not done, retake waits); command confirms them (promoted one rank) or ends
+  it (removed, recorded as a discharge). Discipline: an offence guide with point ranges and marked
+  verbal warnings (three become 10 points), the points ladder with a live preview, suggested actions
+  applied only when ticked (suspensions, forced demotion, termination, blacklist), append-only entries
+  with corrections, Discharges and Blacklist tabs. The blacklist blocks faction applications and
+  command recruiting. Divisions with ordered roles and entry requirements, qualifications with head
+  trainers and a who-holds-what matrix. Rank rules (slots, minimum days in rank, required quals, who it
+  promotes, description) editable by the top rank or staff with `factions.configure`, and enforced on
+  command promotions. The roster and service record show probation, points, suspensions, division and
+  quals; the Command log records every action with filters. Suspensions aren't enforced in game yet
+  (the game writes levels back; needs a mission change). New tables and seeds:
+  `database/fixes/2026-09-30_faction_command_extras.sql`.

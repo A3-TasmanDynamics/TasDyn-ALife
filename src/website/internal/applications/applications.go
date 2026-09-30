@@ -643,6 +643,11 @@ func SubmitFaction(ctx context.Context, pool *pgxpool.Pool, playerID int64, fact
 	if banned {
 		return notAllowed("you can't apply while banned")
 	}
+	if bl, err := factions.ActiveBlacklist(ctx, pool, faction, playerID); err != nil {
+		return err
+	} else if bl != nil {
+		return notAllowed("you're blacklisted from %s %s", factions.Name(faction), bl.UntilText())
+	}
 	var lastRejected *time.Time
 	_ = pool.QueryRow(ctx, `
 		SELECT max(decided_at) FROM faction_applications WHERE player_id = $1 AND faction = $2 AND status = 'rejected'`,

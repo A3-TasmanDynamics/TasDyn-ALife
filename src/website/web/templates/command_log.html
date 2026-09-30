@@ -5,15 +5,15 @@
     <div class="cmd-head">
       <div>
         <h1>Command log</h1>
-        <p class="cmd-sub">Every roster change, by {{.FactionName}} command or by Management as a staff override. Visible to {{.FactionName}} command and to staff with factions.audit. Entries can't be edited or deleted.</p>
+        <p class="cmd-sub">Every roster change and command action, by {{.FactionName}} command or by Management as a staff override. Visible to {{.FactionName}} command and to staff with factions.audit. Entries can't be edited or deleted.</p>
       </div>
     </div>
     <form class="cmd-filter" method="get" action="/command/{{.Faction}}/log" role="search">
       <nav class="filter-pills" aria-label="Type">
         {{$q := .Q}}{{$f := .Faction}}
         <a class="filter-pill {{if not .Kind}}active{{end}}" href="/command/{{$f}}/log{{if $q}}?q={{$q}}{{end}}">All</a>
-        {{range $k := (list "recruit" "promote" "demote" "remove")}}
-        <a class="filter-pill {{if eq $k $.Kind}}active{{end}}" href="/command/{{$f}}/log?kind={{$k}}{{if $q}}&amp;q={{$q}}{{end}}">{{if eq $k "recruit"}}Recruited{{else if eq $k "promote"}}Promotions{{else if eq $k "demote"}}Demotions{{else}}Removals{{end}}</a>
+        {{range .Kinds}}
+        <a class="filter-pill {{if eq .Key $.Kind}}active{{end}}" href="/command/{{$f}}/log?kind={{.Key}}{{if $q}}&amp;q={{$q}}{{end}}">{{.Label}}</a>
         {{end}}
       </nav>
       {{if .Kind}}<input type="hidden" name="kind" value="{{.Kind}}">{{end}}
