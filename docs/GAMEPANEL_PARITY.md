@@ -383,8 +383,10 @@ read-only. Everything is recorded in the Command log.
   to move out of the mission config.
 
 Offences, training items, divisions and qualifications are seeded from the layout plan (Police) and
-edited in the database until they have an editor. EMS has offences and a starter training sheet,
-but no divisions or qualifications yet.
+edited in the database until they have an editor. EMS has offences and a starter training sheet;
+its ambulance-style ranks (Trainee Paramedic to Commissioner), qualifications and the Air Ambulance
+and Education & Training divisions come from `database/fixes/2026-09-30_ems_setup.sql`, which
+isn't part of schema.sql so fresh test databases keep EMS unconfigured.
 
 ### 6.2 Faction applications (#29)
 
