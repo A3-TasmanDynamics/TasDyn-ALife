@@ -1472,3 +1472,90 @@ a.points-case { color: var(--text); text-decoration: none; grid-template-columns
 .pdash-appeal textarea { width: 100%; box-sizing: border-box; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); padding: 10px 12px; font: inherit; font-size: 13.5px; }
 @media (max-width: 1200px) { .mod-case, .ac-page { flex-direction: column; } .mod-side, .ac-detail { width: 100%; position: static; } }
 @media (max-width: 900px) { .mod-case-row, .mod-ban-row, .points-row, a.points-case { grid-template-columns: 1fr; gap: 3px; } .mod-row-head { display: none; } .mod-player-inputs, .case-activity { grid-template-columns: 1fr; } }
+.denied-icon-awaiting { background: rgba(245, 158, 11, 0.14); color: var(--amber-bright); }
+.cmd-nav-count-hot { background: rgba(245, 158, 11, 0.15); color: var(--amber-bright); }
+
+/* ---- Recruitment (layout plan "Join the staff team", "Faction applications", "Applications") ---- */
+.apply-page { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 32px; max-width: 1200px; margin: 0 auto; align-items: start; }
+.apply-main { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.apply-title { margin: 0; font-size: 28px; font-weight: 800; }
+.apply-sub { margin: 0; font-size: 14px; color: var(--text-dim); line-height: 1.55; }
+.apply-form { padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; }
+.apply-form h2 { margin: 0; font-size: 17px; }
+.apply-form fieldset { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.apply-form .field input, .apply-form .field textarea { width: 100%; box-sizing: border-box; }
+.apply-form .field label .hint { font-weight: 400; margin-left: 6px; }
+.apply-row { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 12px; }
+.apply-agree { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; line-height: 1.5; }
+.apply-agree input { margin-top: 3px; accent-color: var(--amber); }
+.apply-submit { display: flex; align-items: center; justify-content: flex-end; gap: 14px; }
+.apply-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0; }
+.apply-step { display: flex; gap: 14px; padding-bottom: 16px; position: relative; }
+.apply-step > span:last-child { display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; color: var(--text-dim); }
+.apply-step strong { color: var(--text-dim); font-size: 14.5px; }
+.apply-step.done strong { color: var(--text); }
+.apply-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--border); background: var(--bg); flex-shrink: 0; margin-top: 3px; }
+.apply-step.done .apply-dot { background: var(--amber); border-color: var(--amber); }
+.apply-answers { padding: 16px 20px; }
+.apply-answers h2 { margin: 0 0 10px; font-size: 15px; }
+.apply-answer { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--border-soft); font-size: 13.5px; }
+.apply-answer:last-child { border-bottom: none; }
+.apply-answer > span:first-child { color: var(--text-dim); }
+.apply-answer > span:last-child { white-space: pre-wrap; overflow-wrap: anywhere; }
+.apply-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.apply-actions .btn { text-decoration: none; }
+.apply-side { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 20px; }
+.apply-side-card { padding: 16px 18px; }
+.apply-side-card h2 { margin: 0 0 12px; font-size: 14px; }
+.apply-check { display: flex; gap: 10px; padding: 8px 0; font-size: 13px; }
+.apply-check > span:last-child { display: flex; flex-direction: column; gap: 2px; color: var(--text-dim); }
+.apply-check strong { color: var(--text); font-weight: 600; }
+.apply-tick { width: 18px; text-align: center; font-weight: 800; color: var(--amber-bright); }
+.apply-check.ok .apply-tick { color: #4ade80; }
+.apply-next { margin: 0 0 10px; padding-left: 18px; font-size: 13px; line-height: 1.6; color: #c7d0e0; }
+.fac-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.fac-choice { display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; border-radius: 12px; background: var(--bg-elevated); border: 2px solid var(--border); color: var(--text); text-decoration: none; }
+.fac-choice:hover { border-color: #33415c; }
+.fac-choice.active { border-color: var(--amber); }
+.fac-choice-head { display: flex; align-items: center; gap: 10px; font-size: 16px; }
+.fac-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+.fac-choice-police .fac-icon { background: rgba(59, 130, 246, 0.16); color: #93c5fd; }
+.fac-choice-ems .fac-icon { background: rgba(239, 68, 68, 0.14); color: #fca5a5; }
+.fac-tag { margin-left: auto; font-size: 10.5px; font-weight: 800; padding: 1px 7px; border-radius: 4px; background: rgba(245, 158, 11, 0.16); color: var(--amber-bright); }
+.fac-stats { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--text-dim); }
+.fac-sent-head { display: flex; align-items: center; gap: 10px; }
+.fac-rank { display: flex; align-items: baseline; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border-soft); font-size: 13px; }
+.fac-rank:last-child { border-bottom: none; }
+.fac-rank .fac-tag { margin-left: auto; }
+.app-detail { width: 520px; }
+.app-detail-head { display: flex; align-items: flex-start; gap: 12px; }
+.app-detail-head .mod-pill { margin-left: auto; }
+.app-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.app-badge { font-size: 12px; padding: 3px 9px; border-radius: 10px; background: var(--bg-input); border: 1px solid var(--border); }
+.app-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.app-stats div { display: flex; flex-direction: column; gap: 2px; font-size: 13px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+.app-h3 { margin: 6px 0 0; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); }
+.app-interview, .app-decide { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--border); padding-top: 12px; }
+.app-interview .field input, .app-decide .field input, .app-decide .field select { width: 100%; box-sizing: border-box; }
+.app-interview-head { display: flex; align-items: baseline; gap: 10px; font-size: 12.5px; }
+.app-outcome { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; }
+.app-outcome .btn { margin-left: auto; }
+.app-decide-foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.app-decide-foot .hint { flex: 1; min-width: 200px; }
+.app-decided { margin: 0; padding: 12px 14px; border-radius: 8px; background: var(--bg-input); font-size: 13.5px; }
+.recruit-card { display: grid; grid-template-columns: 200px minmax(0, 1fr) 260px; gap: 18px; padding: 16px 20px; align-items: start; }
+.recruit-who { display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.5; }
+.recruit-answers .apply-answer { grid-template-columns: 150px minmax(0, 1fr); }
+.recruit-form { display: flex; flex-direction: column; gap: 8px; }
+.recruit-form input { background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); padding: 8px 10px; font: inherit; font-size: 13px; }
+.pdash-app-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.pdash-app-head h2 { margin: 0 !important; }
+.pdash-app-head .mod-pill { margin-left: auto; }
+.pdash-steps { list-style: none; margin: 0 0 10px; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.pdash-steps li { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--text-dim); }
+.pdash-steps li span { height: 4px; border-radius: 2px; background: var(--border); }
+.pdash-steps li.done span { background: var(--amber); }
+.pdash-steps li.done strong { color: var(--text); }
+.pdash-steps small { font-size: 12px; }
+@media (max-width: 1000px) { .apply-page { grid-template-columns: 1fr; } .apply-side { position: static; } .recruit-card { grid-template-columns: 1fr; } .app-detail { width: 100%; } }
+@media (max-width: 600px) { .apply-row, .apply-answer, .fac-choices, .app-stats { grid-template-columns: 1fr; } }

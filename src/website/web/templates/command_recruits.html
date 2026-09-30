@@ -1,0 +1,41 @@
+{{define "content"}}
+<div class="cmd-shell">
+  {{template "command_sidebar" .}}
+  <div class="cmd-main">
+    <div class="cmd-head">
+      <div>
+        <h1>Recruits &amp; training</h1>
+        <p class="cmd-sub">Applications come in from the player site. Accepting recruits the player at the entry rank; it's logged in the Command log and they get a Discord message.</p>
+      </div>
+    </div>
+    {{range .Apps}}
+    <section class="cmd-card recruit-card">
+      <div class="recruit-who">
+        <div class="cmd-strong">{{.Name}}</div>
+        <div class="cmd-dim">Applied {{.CreatedAt.Format "2 Jan 2006"}}<br>{{.PlaytimeH}} h on the server<br>{{if .Banned}}<span class="mod-pill mod-pill-banned">Banned</span>{{else if .Points}}{{.Points}} active points{{else}}Good standing{{end}}</div>
+      </div>
+      <div class="recruit-answers">
+        {{range .Answers}}<div class="apply-answer"><span>{{.Q}}</span><span>{{.A}}</span></div>{{end}}
+      </div>
+      <div class="recruit-actions">
+        {{if eq .Status "pending"}}
+          {{if not $.ReadOnly}}
+          <form method="post" action="/command/{{$.Faction}}/recruits/{{.ID}}" class="recruit-form">
+            <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+            <input name="note" maxlength="1000" aria-label="Note (required if not accepting)" placeholder="Note (required if not accepting)">
+            <button class="btn btn-primary" type="submit" name="decision" value="accept">Accept</button>
+            <button class="btn" type="submit" name="decision" value="reject">Not this time</button>
+          </form>
+          {{else}}<span class="cmd-dim">Waiting for command</span>{{end}}
+        {{else}}
+          <span class="cmd-dim">{{if eq .Status "accepted"}}Accepted{{else if eq .Status "rejected"}}Not accepted{{else}}Withdrawn{{end}}{{if .DecidedBy}} by {{.DecidedBy}}{{end}}{{if .DecidedAt}} &middot; {{.DecidedAt.Format "2 Jan"}}{{end}}{{if .Note}} &middot; {{.Note}}{{end}}</span>
+        {{end}}
+      </div>
+    </section>
+    {{else}}
+    <p class="cmd-empty cmd-card">No applications waiting. Players apply from the Factions page.</p>
+    {{end}}
+    <p class="hint">Probation tracking and training sheets are coming next.</p>
+  </div>
+</div>
+{{end}}

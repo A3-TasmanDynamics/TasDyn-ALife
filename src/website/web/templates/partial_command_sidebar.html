@@ -6,7 +6,7 @@
   </div>
   <a class="cmd-nav-item {{if eq .Tab "overview"}}active{{end}}" href="/command/{{.Faction}}" {{if eq .Tab "overview"}}aria-current="page"{{end}}>Overview</a>
   <a class="cmd-nav-item {{if eq .Tab "roster"}}active{{end}}" href="/command/{{.Faction}}/roster" {{if eq .Tab "roster"}}aria-current="page"{{end}}>Roster <span class="cmd-nav-count">{{.MemberCount}}</span></a>
-  <span class="cmd-nav-item disabled">Recruits &amp; training <span class="admin-nav-tag">Soon</span></span>
+  <a class="cmd-nav-item {{if eq .Tab "recruits"}}active{{end}}" href="/command/{{.Faction}}/recruits" {{if eq .Tab "recruits"}}aria-current="page"{{end}}>Recruits &amp; training{{if .OpenApps}} <span class="cmd-nav-count cmd-nav-count-hot">{{.OpenApps}}</span>{{end}}</a>
   <span class="cmd-nav-item disabled">Discipline <span class="admin-nav-tag">Soon</span></span>
   <span class="cmd-nav-item disabled">Divisions &amp; quals <span class="admin-nav-tag">Soon</span></span>
   <span class="cmd-nav-item disabled">Ranks &amp; gear <span class="admin-nav-tag">Soon</span></span>

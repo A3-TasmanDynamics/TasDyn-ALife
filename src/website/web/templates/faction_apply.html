@@ -1,0 +1,50 @@
+{{define "content"}}
+<div class="apply-page apply-page-wide">
+  <div class="apply-main">
+    <h1 class="apply-title">Join a faction</h1>
+    <p class="apply-sub">Police and EMS are whitelisted. Apply here and that faction's command team reviews it. You'll hear back on Discord. Civilian is open to everyone, no application needed.</p>
+    <div class="fac-choices" role="radiogroup" aria-label="Faction">
+      {{range .Options}}
+      <a class="fac-choice fac-choice-{{.Key}} {{if eq .Key $.Selected.Key}}active{{end}}" role="radio" aria-checked="{{if eq .Key $.Selected.Key}}true{{else}}false{{end}}" href="/factions?faction={{.Key}}">
+        <span class="fac-choice-head"><span class="fac-icon" aria-hidden="true">{{if eq .Key "police"}}<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V5z"/></svg>{{else}}<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>{{end}}</span><strong>{{.Name}}</strong>{{if .Level}}<span class="fac-tag">You're in</span>{{else if .Open}}<span class="fac-tag">Applied</span>{{end}}</span>
+        <span class="fac-stats"><span>{{.Members}} members</span><span>Entry: {{.Entry}}</span><span>{{.Queue}} waiting</span></span>
+      </a>
+      {{end}}
+    </div>
+
+    {{with .Selected}}
+    {{if .Level}}
+      <section class="card apply-form"><h2>You're already in {{.Name}}</h2><p class="apply-sub">Rank changes come from {{.Name}} command.</p></section>
+    {{else if .Open}}
+      <section class="card apply-form">
+        <div class="fac-sent-head"><h2>Your {{.Name}} application</h2><span class="mod-pill mod-pill-open">Waiting for command</span></div>
+        <p class="apply-sub">Sent {{.Open.CreatedAt.Format "2 Jan 2006"}}. {{.Name}} command will review it; you'll get a Discord message with the decision.</p>
+        {{range .Open.Answers}}<div class="apply-answer"><span>{{.Q}}</span><span>{{.A}}</span></div>{{end}}
+        <form method="post" action="/factions" class="apply-actions"><input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="faction" value="{{.Key}}"><input type="hidden" name="withdraw" value="1"><button class="btn" type="submit">Withdraw</button></form>
+      </section>
+    {{else}}
+      <form class="card apply-form" method="post" action="/factions">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="faction" value="{{.Key}}">
+        <h2>Apply to {{.Name}}</h2>
+        {{range $.Questions}}
+        <div class="field"><label for="fq-{{.Key}}">{{.Label}}</label>{{if .Long}}<textarea id="fq-{{.Key}}" name="{{.Key}}" rows="3" maxlength="{{.Max}}" placeholder="{{.Hint}}" {{if not .Optional}}required{{end}}>{{index $.Form .Key}}</textarea>{{else}}<input id="fq-{{.Key}}" name="{{.Key}}" value="{{index $.Form .Key}}" maxlength="{{.Max}}" placeholder="{{.Hint}}" {{if not .Optional}}required{{end}}>{{end}}</div>
+        {{end}}
+        <div class="apply-submit"><span class="hint">Command sees your playtime and account standing with it.</span><button class="btn btn-primary" type="submit">Send to {{.Name}} command</button></div>
+      </form>
+    {{end}}
+    {{end}}
+  </div>
+  <aside class="apply-side">
+    {{with .Selected}}
+    <section class="card apply-side-card">
+      <h2>{{.Name}} ranks</h2>
+      {{range .Ranks}}<div class="fac-rank"><span class="mod-dim">Level {{.Level}}</span><span>{{.Name}}</span>{{if .PromoteUpTo}}<span class="fac-tag">Command</span>{{end}}</div>{{else}}<p class="hint">Ranks haven't been set up yet.</p>{{end}}
+    </section>
+    {{end}}
+    <section class="card apply-side-card">
+      <h2>My faction applications</h2>
+      {{range .Mine}}<div class="fac-rank"><span>{{if eq .Faction "police"}}Police{{else}}EMS{{end}} &middot; {{.CreatedAt.Format "2 Jan 2006"}}</span><span class="mod-dim">{{if eq .Status "pending"}}Waiting{{else if eq .Status "accepted"}}Accepted{{else if eq .Status "rejected"}}Not accepted{{else}}Withdrawn{{end}}</span></div>{{else}}<p class="hint">None yet.</p>{{end}}
+    </section>
+  </aside>
+</div>
+{{end}}

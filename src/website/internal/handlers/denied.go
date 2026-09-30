@@ -18,7 +18,7 @@ type deniedData struct {
 // even under /admin, because the admin sidebar is exactly what's refused.
 func (d *Deps) Denied(w http.ResponseWriter, r *http.Request, info auth.DeniedInfo) {
 	title := map[string]string{
-		"suspended": "Access suspended", "loa": "You're on leave", "no_permission": "No access", "not_command": "Command only",
+		"suspended": "Access suspended", "loa": "You're on leave", "no_permission": "No access", "not_command": "Command only", "awaiting": "Application in review",
 	}[info.Kind]
 	if title == "" {
 		title = "Staff only"
