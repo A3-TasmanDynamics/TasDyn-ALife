@@ -17,9 +17,9 @@
   <a href="/admin/devlog/new" class="admin-nav-item {{if eq .AdminTab "devlog"}}active{{end}}" {{if eq .AdminTab "devlog"}}aria-current="page"{{end}}>New Devlog Post</a>
 
   <div class="admin-nav-group">Moderation</div>
-  <span class="admin-nav-item disabled">Cases <span class="admin-nav-tag">Soon</span></span>
-  <span class="admin-nav-item disabled">Bans <span class="admin-nav-tag">Soon</span></span>
-  <span class="admin-nav-item disabled">Anti-Cheat Flags <span class="admin-nav-tag">Soon</span></span>
+  <a href="/admin/cases" class="admin-nav-item {{if eq .AdminTab "cases"}}active{{end}}" {{if eq .AdminTab "cases"}}aria-current="page"{{end}}>Cases{{if .OpenCases}}<span class="admin-nav-count admin-nav-count-hot">{{.OpenCases}}</span>{{end}}</a>
+  <a href="/admin/bans" class="admin-nav-item {{if eq .AdminTab "bans"}}active{{end}}" {{if eq .AdminTab "bans"}}aria-current="page"{{end}}>Bans{{if .ActiveBans}}<span class="admin-nav-count">{{.ActiveBans}}</span>{{end}}</a>
+  <a href="/admin/anticheat" class="admin-nav-item {{if eq .AdminTab "anticheat"}}active{{end}}" {{if eq .AdminTab "anticheat"}}aria-current="page"{{end}}>Anti-Cheat Flags{{if .OpenFlags}}<span class="admin-nav-count admin-nav-count-hot">{{.OpenFlags}}</span>{{end}}</a>
 
   <div class="admin-nav-group">Players</div>
   <a href="/admin/players" class="admin-nav-item {{if eq .AdminTab "players"}}active{{end}}" {{if eq .AdminTab "players"}}aria-current="page"{{end}}>Player Lookup</a>

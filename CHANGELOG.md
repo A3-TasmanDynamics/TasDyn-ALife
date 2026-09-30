@@ -989,3 +989,23 @@
   the Command log as *staff override*, flagged **own faction** when the staff member is in that faction. Nobody can
   change their own rank on either path. Denied page for non-command. The conflict-of-interest rules are recorded in
   GAMEPANEL_PARITY §5.2/§6.1.
+- **Moderation: Cases, Bans, Anti-Cheat Flags (GAMEPANEL_PARITY §3, layout plan "Admin — Moderation").**
+  *Cases* (`/admin/cases`): list with search by any participant's name, past name, Steam64, staff member or `#id`,
+  type / lead / date filters and Open / Closed / Mine tabs; *Open a case* (from Player Lookup, an anti-cheat flag or the
+  list). The case view has an **append-only timeline**, where a correction is a new entry that points at the original.
+  It also shows players with their active points, lead and assisting staff, and actions to issue **punishment
+  points** (guidance, not enforced; they expire or are revoked through the case, never deleted), ban from the case,
+  and close or reopen with an outcome. A warning appears when the lead is in the same faction as a subject.
+  *Bans* (`/admin/bans`): stats, Active / Expired & lifted / **Appeals** tabs, *Issue ban* (always from a case;
+  permanent needs `bans.permanent`; optional **Discord scope**, which the bot bans and unbans), and *Lift*. Banned
+  players **appeal from their dashboard**, and accepting an appeal lifts the ban. *Anti-Cheat Flags*
+  (`/admin/anticheat`): list by confidence, evidence view, *Dismiss*, *Watch* or *Open a case*. **The game now enforces
+  bans:** the extension's `load` returns `BANNED` (reason and end time) for an active ban before creating any record,
+  and `fn_playerJoin.sqf` shows the reason instead of the spawn menu (DATA_CONTRACT.md). Before this nothing read
+  `banlist`. Also: sidebar links with open-case, active-ban and open-flag counts; the admin dashboard's open-cases
+  tile, *Cases opened per day* chart and *My activity*; Player Lookup's active points, points list with revoke,
+  cases, and a working *Open a case*; Staff Profile *Case activity*; the player dashboard's standing tile shows
+  active points. New tables `staff_cases`, `staff_case_participants`, `staff_case_entries`, `punishment_points`,
+  `ban_appeals`; `banlist` gains `case_id`, `player_id`, `scope`, `note` and lift columns; `anti_cheat_flags` gains
+  `watch`/`case` outcomes and a note (`database/fixes/2026-09-30_moderation.sql`). The expired Discord sign-in message
+  now says what to do.

@@ -1,0 +1,49 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content mod-page">
+    <div class="mod-head">
+      <div>
+        <h1 class="page-title admin-title">Cases</h1>
+        <p class="admin-sub">Every moderation decision lives in a case. Entries are append-only: corrections are new entries, never edits.</p>
+      </div>
+      {{if .CanOpen}}<a class="btn btn-primary mod-head-btn" href="/admin/cases/new">Open a case</a>{{end}}
+    </div>
+
+    <form class="mod-filters" method="get" action="/admin/cases" role="search">
+      {{if .Status}}<input type="hidden" name="status" value="{{.Status}}">{{end}}
+      {{if .Mine}}<input type="hidden" name="mine" value="1">{{end}}
+      <label class="mod-search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input name="q" value="{{.Q}}" aria-label="Search cases" placeholder="Search by participant name, Steam64, alias, staff member or #id"></label>
+      <select name="type" aria-label="Case type" onchange="this.form.submit()"><option value="">All types</option>{{range .Types}}<option value="{{.Key}}" {{if eq .Key $.Type}}selected{{end}}>{{.Label}}</option>{{end}}</select>
+      <select name="lead" aria-label="Lead staff" onchange="this.form.submit()"><option value="">Any lead</option>{{range .Leads}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) $.Lead}}selected{{end}}>{{.Name}}</option>{{end}}</select>
+      <select name="range" aria-label="Date range" onchange="this.form.submit()"><option value="30d" {{if eq .Range "30d"}}selected{{end}}>Last 30 days</option><option value="7d" {{if eq .Range "7d"}}selected{{end}}>Last 7 days</option><option value="all" {{if eq .Range "all"}}selected{{end}}>All time</option></select>
+      <noscript><button class="btn" type="submit">Filter</button></noscript>
+    </form>
+
+    <nav class="seg" aria-label="Case status">
+      <a class="seg-item {{if and (not .Status) (not .Mine)}}active{{end}}" href="/admin/cases{{qset .Query "status" "" "mine" ""}}">All &middot; {{index .Counts ""}}</a>
+      <a class="seg-item {{if eq .Status "open"}}active{{end}}" href="/admin/cases{{qset .Query "status" "open" "mine" ""}}">Open &middot; {{index .Counts "open"}}</a>
+      <a class="seg-item {{if eq .Status "closed"}}active{{end}}" href="/admin/cases{{qset .Query "status" "closed" "mine" ""}}">Closed &middot; {{index .Counts "closed"}}</a>
+      <a class="seg-item {{if .Mine}}active{{end}}" href="/admin/cases{{qset .Query "status" "" "mine" "1"}}">Mine</a>
+    </nav>
+
+    <div class="mod-table" role="table" aria-label="Cases">
+      <div class="mod-row mod-case-row mod-row-head" role="row"><span>Case</span><span>Type</span><span>Summary</span><span>Players</span><span>Staff</span><span>Outcome</span><span>Opened</span></div>
+      {{range .Rows}}
+      <a class="mod-row mod-case-row" role="row" href="/admin/cases/{{.ID}}">
+        <span class="mod-case-id"><strong>#{{.ID}}</strong><span class="mod-pill mod-pill-{{.Status}}">{{if eq .Status "open"}}Open{{else}}Closed{{end}}</span></span>
+        <span class="mod-dim">{{.TypeLabel}}</span>
+        <span>{{.Summary}}</span>
+        <span class="mod-dim">{{.Players}}</span>
+        <span><strong>{{.Lead}}</strong>{{if .Assist}}<span class="mod-dim"> + {{.Assist}}</span>{{end}}</span>
+        <span class="mod-dim">{{if .Outcome}}{{.Outcome}}{{else}}&mdash;{{end}}</span>
+        <span class="mod-dim">{{.Opened.Format "2 Jan 15:04"}}</span>
+      </a>
+      {{else}}
+      <p class="mod-empty">No cases match. Search covers every participant's name, Steam64 and known aliases.</p>
+      {{end}}
+    </div>
+  </div>
+</div>
+{{end}}

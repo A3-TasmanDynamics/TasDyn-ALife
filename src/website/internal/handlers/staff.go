@@ -14,6 +14,7 @@ import (
 
 	"website/internal/audit"
 	"website/internal/auth"
+	"website/internal/cases"
 	"website/internal/staff"
 )
 
@@ -236,6 +237,9 @@ type staffProfileData struct {
 	CanSuspend bool
 	CanNotes   bool
 	Today      string
+
+	Activity   cases.Activity // case activity (GAMEPANEL_PARITY §3.4)
+	CanCases   bool
 }
 
 func profileID(r *http.Request) (int64, bool) {
@@ -289,6 +293,9 @@ func (d *Deps) StaffProfile(w http.ResponseWriter, r *http.Request) {
 				data.Timeline = append(data.Timeline, e)
 			}
 		}
+	}
+	if data.CanCases = d.can(r, "cases.view"); data.CanCases {
+		data.Activity, _ = cases.StaffActivity(r.Context(), d.Pool, data.Member.ID)
 	}
 	d.Render.Render(w, "staff_profile.html", data)
 }

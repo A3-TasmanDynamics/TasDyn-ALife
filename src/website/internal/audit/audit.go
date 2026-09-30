@@ -139,7 +139,26 @@ func Describe(action string, before, after []byte) string {
 	if action == "rules.update" {
 		return "updated the server rules"
 	}
+	if phrase, ok := moderationPhrases[action]; ok {
+		return phrase
+	}
 	return action
+}
+
+// moderationPhrases describe the case/ban/anti-cheat actions (internal/cases).
+var moderationPhrases = map[string]string{
+	"case.open":          "opened a case",
+	"case.close":         "closed a case",
+	"case.reopen":        "reopened a case",
+	"player.warn":        "issued punishment points",
+	"player.warn_revoke": "revoked punishment points",
+	"ban.issue":          "banned",
+	"ban.lift":           "lifted a ban",
+	"ban.appeal_accept":  "accepted a ban appeal",
+	"ban.appeal_reject":  "rejected a ban appeal",
+	"anticheat.dismiss":  "dismissed an anti-cheat flag",
+	"anticheat.watch":    "put a player on watch from an anti-cheat flag",
+	"anticheat.reopen":   "reopened an anti-cheat flag",
 }
 
 // discordModeration are the staff_log actions the bot writes for

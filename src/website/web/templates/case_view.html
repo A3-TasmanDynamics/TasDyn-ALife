@@ -1,0 +1,164 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  {{$c := .Case}}
+  <div class="admin-content mod-page mod-case">
+    <div class="mod-case-main">
+      <a class="mod-back" href="/admin/cases">&larr; All cases</a>
+      <div class="mod-case-title">
+        <h1 class="page-title admin-title">Case #{{$c.ID}} &middot; {{$c.Summary}}</h1>
+        <span class="mod-pill mod-pill-{{$c.Status}}">{{if eq $c.Status "open"}}Open{{else}}Closed{{end}}</span>
+      </div>
+      <p class="admin-sub">{{$c.TypeLabel}} &middot; opened {{$c.CreatedAt.Format "2 Jan 2006, 15:04"}}{{if $c.FlagID}} from <a href="/admin/anticheat?flag={{$c.FlagID}}">anti-cheat flag #{{$c.FlagID}}</a>{{end}} &middot; {{len .Entries}} entries{{if $c.Outcome}} &middot; outcome: {{$c.Outcome}}{{end}}</p>
+
+      {{if .OwnFaction}}<div class="banner banner-warn mod-inline-banner">You're in the same faction as {{range $i, $n := .OwnFaction}}{{if $i}}, {{end}}{{$n}}{{end}}. Consider handing this case to another staff member (GAMEPANEL_PARITY §6.1).</div>{{end}}
+
+      <div class="mod-entries" id="entries">
+        {{range .Entries}}
+        <article class="mod-entry mod-entry-{{.Kind}}" id="entry-{{.N}}">
+          <div class="mod-entry-head">
+            <span class="mod-entry-n">#{{.N}}</span>
+            <strong>{{.By}}</strong>
+            <span class="mod-dim">{{.When.Format "2 Jan 2006 15:04"}}</span>
+            {{if ne .Kind "note"}}<span class="mod-kind">{{.Kind}}</span>{{end}}
+            {{range .CorrectedBy}}<a class="mod-corrected" href="#entry-{{.}}">Corrected by #{{.}}</a>{{end}}
+            {{if $.CanWrite}}<a class="mod-correct-link" href="/admin/cases/{{$c.ID}}?correct={{.N}}#composer">Correct</a>{{end}}
+          </div>
+          {{if .Corrects}}<div class="mod-correction-of">Correction to <a href="#entry-{{.Corrects}}">entry #{{.Corrects}}</a></div>{{end}}
+          <div class="mod-entry-body">{{.Body}}</div>
+        </article>
+        {{end}}
+        <span id="entries-end"></span>
+      </div>
+
+      {{if .CanWrite}}
+      <form class="card mod-composer" id="composer" method="post" action="/admin/cases/{{$c.ID}}/entries">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        {{if .Correcting}}<input type="hidden" name="corrects" value="{{.Correcting}}">{{end}}
+        <div class="mod-composer-head">
+          <label for="entry-body">{{if .Correcting}}Correction to entry #{{.Correcting}}{{else}}Add an entry{{end}}</label>
+          {{if .Correcting}}<a href="/admin/cases/{{$c.ID}}#composer">Cancel correction</a>{{end}}
+          <span class="hint">Entries can't be edited or deleted once added.</span>
+        </div>
+        <textarea id="entry-body" name="body" rows="3" maxlength="4000" required placeholder="What happened, what you checked, what you decided…"></textarea>
+        <div class="mod-composer-foot"><button class="btn btn-primary" type="submit">Add entry</button></div>
+      </form>
+      {{end}}
+    </div>
+
+    <aside class="mod-side" aria-label="Case details">
+      <section class="card mod-side-card">
+        <h2>Players</h2>
+        {{range $c.Players}}
+        <div class="mod-person">
+          <div><a href="/admin/players?id={{.PlayerID}}">{{.Name}}</a><span class="mod-role">{{.Role}}</span>{{if .Banned}}<span class="mod-pill mod-pill-banned">Banned</span>{{end}}</div>
+          <div class="mod-dim">{{.ActivePoints}} active point{{if ne .ActivePoints 1}}s{{end}}</div>
+        </div>
+        {{end}}
+        <p class="hint">Points are guidance for staff, not enforced automatically.</p>
+        {{if .CanWrite}}
+        <form class="mod-add" method="post" action="/admin/cases/{{$c.ID}}/participants">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+          <input name="who" aria-label="Player to add" placeholder="Steam64, #id or name" required>
+          <select name="role" aria-label="Role"><option value="subject">Subject</option><option value="related">Related</option><option value="reporter">Reporter</option><option value="witness">Witness</option></select>
+          <button class="btn" type="submit">Add</button>
+        </form>
+        {{end}}
+      </section>
+      <section class="card mod-side-card">
+        <h2>Staff</h2>
+        <div class="mod-person"><div><a href="/admin/staff/{{$c.LeadID}}">{{$c.Lead}}</a><span class="mod-role">Lead</span></div></div>
+        {{range $c.Assisting}}<div class="mod-person"><div><a href="/admin/staff/{{.PlayerID}}">{{.Name}}</a><span class="mod-role">Assisting</span></div></div>{{end}}
+        {{if .CanWrite}}
+        <form class="mod-add" method="post" action="/admin/cases/{{$c.ID}}/participants">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="role" value="assisting_staff">
+          <select name="who" aria-label="Assisting staff">{{range .Staff}}<option value="#{{.ID}}">{{.Name}}</option>{{end}}</select>
+          <button class="btn" type="submit">Add assisting</button>
+        </form>
+        {{end}}
+      </section>
+      <section class="card mod-side-card">
+        <h2>Actions</h2>
+        <div class="mod-actions">
+          {{if and .CanWrite (eq $c.Status "open") $c.Players}}<button class="btn" type="button" data-dialog-open="dlg-points">Issue punishment points</button>{{end}}
+          {{if and .CanBan (eq $c.Status "open") $c.Players}}<button class="btn btn-danger-outline" type="button" data-dialog-open="dlg-ban">Ban from this case</button>{{end}}
+          {{if .CanClose}}<button class="btn" type="button" data-dialog-open="dlg-status">{{if eq $c.Status "open"}}Close case{{else}}Reopen case{{end}}</button>{{end}}
+        </div>
+      </section>
+      {{if .Bans}}
+      <section class="card mod-side-card">
+        <h2>Bans from this case</h2>
+        {{range .Bans}}
+        <div class="mod-person">
+          <div><strong>{{.Player}}</strong> <span class="mod-dim">{{if .Active}}{{if .ExpiresAt}}until {{.ExpiresAt.Format "2 Jan 2006"}}{{else}}permanent{{end}}{{else if .LiftedAt}}lifted {{.LiftedAt.Format "2 Jan"}}{{else}}ended{{end}}</span></div>
+          {{if and .Active $.CanLift}}
+          <form class="mod-add" method="post" action="/admin/bans/{{.ID}}/lift">
+            <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="back" value="/admin/cases/{{$c.ID}}">
+            <input name="reason" aria-label="Reason for lifting" placeholder="Reason for lifting" required>
+            <button class="btn" type="submit">Lift</button>
+          </form>
+          {{end}}
+        </div>
+        {{end}}
+      </section>
+      {{end}}
+      <section class="card mod-side-card">
+        <h2>Linked</h2>
+        <div class="mod-links">
+          {{if $c.FlagID}}<a href="/admin/anticheat?flag={{$c.FlagID}}">Anti-cheat flag #{{$c.FlagID}}</a>{{end}}
+          {{range $c.Players}}<a href="/admin/cases?q={{.Name}}&amp;range=all">Other cases with {{.Name}}</a>{{end}}
+          <a href="/admin/staff-log?q=%23{{$c.ID}}&amp;range=all">Staff Log entries</a>
+        </div>
+      </section>
+    </aside>
+
+    {{if and .CanWrite $c.Players}}
+    <dialog id="dlg-points" class="modal" aria-labelledby="dlg-points-title">
+      <form method="post" action="/admin/cases/{{$c.ID}}/points">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <div class="modal-head"><h2 id="dlg-points-title">Issue punishment points</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+        <div class="modal-body">
+          <div class="field"><label for="pt-player">Player</label><select id="pt-player" name="player">{{range $c.Players}}<option value="{{.PlayerID}}">{{.Name}} ({{.ActivePoints}} active)</option>{{end}}</select></div>
+          <div class="mod-form-row">
+            <div class="field"><label for="pt-points">Points</label><input id="pt-points" name="points" type="number" min="1" max="100" value="1" required></div>
+            <div class="field mod-grow"><label for="pt-rules">Rules broken</label><input id="pt-rules" name="rules" maxlength="100" placeholder="e.g. 2.1, 4.3" required></div>
+          </div>
+          <div class="field"><label for="pt-exp">Stops counting on</label><input id="pt-exp" name="expires" type="date" value="{{.DefaultEnds}}"></div>
+          <div class="field"><label for="pt-comment">Comment</label><textarea id="pt-comment" name="comment" rows="2" maxlength="1000"></textarea></div>
+          <p class="hint">Revoking later is recorded in the case, never a delete.</p>
+        </div>
+        <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Issue points</button></div>
+      </form>
+    </dialog>
+    {{end}}
+
+    {{if and .CanBan $c.Players}}
+    <dialog id="dlg-ban" class="modal" aria-labelledby="dlg-ban-title">
+      <form method="post" action="/admin/bans/issue">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="case" value="{{$c.ID}}"><input type="hidden" name="back" value="/admin/cases/{{$c.ID}}">
+        <div class="modal-head"><h2 id="dlg-ban-title">Ban from case #{{$c.ID}}</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+        <div class="modal-body">
+          {{template "ban_fields" dict "Players" $c.Players "Reasons" .BanReasons "Durations" .Durations "CanPerm" .CanPerm}}
+        </div>
+        <div class="modal-foot"><span class="hint">Adds an entry to the case. Applies the next time they connect.</span><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-danger" type="submit">Issue ban</button></div>
+      </form>
+    </dialog>
+    {{end}}
+
+    {{if .CanClose}}
+    <dialog id="dlg-status" class="modal" aria-labelledby="dlg-status-title">
+      <form method="post" action="/admin/cases/{{$c.ID}}/status">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="status" value="{{if eq $c.Status "open"}}closed{{else}}open{{end}}">
+        <div class="modal-head"><h2 id="dlg-status-title">{{if eq $c.Status "open"}}Close{{else}}Reopen{{end}} case #{{$c.ID}}</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+        <div class="modal-body">
+          {{if eq $c.Status "open"}}<div class="field"><label for="st-outcome">Outcome (shown in the case list)</label><input id="st-outcome" name="outcome" maxlength="80" value="{{$c.Outcome}}" placeholder="e.g. No action, 2 points, 7-day ban"></div>{{end}}
+          <div class="field"><label for="st-reason">Reason</label><input id="st-reason" name="reason" maxlength="1000" required></div>
+        </div>
+        <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">{{if eq $c.Status "open"}}Close case{{else}}Reopen case{{end}}</button></div>
+      </form>
+    </dialog>
+    {{end}}
+  </div>
+</div>
+<script src="/static/admin.js" defer></script>
+{{end}}

@@ -37,6 +37,22 @@ type Renderer struct {
 var funcs = template.FuncMap{
 	"inc":       func(i int) int { return i + 1 },
 	"hasPrefix": strings.HasPrefix,
+	// dict builds a map for passing several values to a partial template:
+	// {{template "x" dict "A" .A "B" .B}}.
+	"dict": func(kv ...any) (map[string]any, error) {
+		if len(kv)%2 != 0 {
+			return nil, fmt.Errorf("dict: odd number of arguments")
+		}
+		m := make(map[string]any, len(kv)/2)
+		for i := 0; i < len(kv); i += 2 {
+			k, ok := kv[i].(string)
+			if !ok {
+				return nil, fmt.Errorf("dict: key %v isn't a string", kv[i])
+			}
+			m[k] = kv[i+1]
+		}
+		return m, nil
+	},
 	// days renders a duration as whole days ("0 days" under a day, "—" when unknown).
 	"days": func(d time.Duration) string {
 		if d <= 0 {

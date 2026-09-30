@@ -9,9 +9,9 @@
 
     <section class="admin-stats" aria-label="Operations">
       <div class="admin-stat"><div class="label">Online now</div><div class="value value-green">{{.OnlineCount}}</div></div>
-      <div class="admin-stat" title="Cases arrive in Wave 2"><div class="label">Open cases</div><div class="value muted">—</div></div>
+      <a class="admin-stat stat-link" href="/admin/cases?status=open"><div class="label">Open cases</div><div class="value {{if .OpenCaseCount}}value-amber{{end}}">{{.OpenCaseCount}}</div></a>
       <a class="admin-stat stat-link" href="/support/tickets"><div class="label">Open tickets</div><div class="value">{{.OpenTickets}}</div></a>
-      <div class="admin-stat"><div class="label">Anti-cheat flags (24 h)</div><div class="value {{if .FlagsLast24h}}value-amber{{end}}">{{.FlagsLast24h}}</div></div>
+      <a class="admin-stat stat-link" href="/admin/anticheat?open=1"><div class="label">Anti-cheat flags (24 h)</div><div class="value {{if .FlagsLast24h}}value-amber{{end}}">{{.FlagsLast24h}}</div></a>
     </section>
 
     <section aria-label="Economy and population">
@@ -26,10 +26,31 @@
 
     <div class="dash-grid">
       <div class="dash-col">
+        {{if .CanCases}}
+        <section class="card dash-card" aria-labelledby="dash-chart">
+          <div class="dash-card-head"><h2 id="dash-chart">Cases opened per day</h2><span class="muted small">Last 14 days &middot; {{.CaseTotal}} case{{if ne .CaseTotal 1}}s{{end}}</span></div>
+          <div class="case-chart" role="img" aria-label="Cases opened per day over the last 14 days: {{range $i, $b := .CaseBars}}{{if $i}}, {{end}}{{$b.Count}}{{end}}">
+            {{range .CaseBars}}<div class="case-bar-col" title="{{.Day}}: {{.Count}} case{{if ne .Count 1}}s{{end}}"><div class="case-bar{{if not .Count}} case-bar-zero{{end}}" style="height: {{if .Count}}{{.Height}}%{{else}}2px{{end}}"></div></div>{{end}}
+          </div>
+          <div class="case-chart-ticks">{{range .CaseBars}}<span>{{if .Tick}}{{.Day}}{{end}}</span>{{end}}</div>
+        </section>
+        <section class="card dash-card" aria-labelledby="dash-mine">
+          <div class="dash-card-head"><h2 id="dash-mine">My activity</h2><span class="muted small">This week: led {{.MyActivity.LedWeek}} &middot; assisted {{.MyActivity.AssistWeek}}</span><a class="dash-link" href="/admin/cases?mine=1&amp;range=all">All my cases &rarr;</a></div>
+          {{range .MyCases}}
+          <a class="dash-row dash-row-link" href="/admin/cases/{{.ID}}">
+            <span class="strong">#{{.ID}}</span>
+            <span class="ellipsis">{{.Summary}}</span>
+            <span class="muted small">{{if eq .Status "open"}}Open{{else}}Closed{{end}}</span>
+            <span class="muted small dash-when">{{.Opened.Format "2 Jan"}}</span>
+          </a>
+          {{else}}
+          <p class="empty-state">You haven't led or assisted any cases yet.</p>
+          {{end}}
+        </section>
+        {{end}}
         <section class="card dash-card" aria-labelledby="dash-activity">
           <div class="dash-card-head">
             <h2 id="dash-activity">Recent staff activity</h2>
-            <span class="muted small">Case charts and "My activity" arrive with Cases (Wave 2).</span>
             <a class="dash-link" href="/admin/staff-log">Full staff log &rarr;</a>
           </div>
           {{range .StaffLog}}

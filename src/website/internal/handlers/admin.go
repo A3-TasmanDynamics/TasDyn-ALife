@@ -7,6 +7,7 @@ import (
 
 	"website/internal/audit"
 	"website/internal/auth"
+	"website/internal/cases"
 	"website/internal/players"
 )
 
@@ -25,6 +26,10 @@ type staffLogRow struct {
 type AdminShell struct {
 	AdminTab  string
 	StaffRank string
+	// Sidebar badges (layout plan): open cases, active bans, open flags.
+	OpenCases  int
+	ActiveBans int
+	OpenFlags  int
 }
 
 // adminShell looks up the signed-in staff member's rank display name for
@@ -37,10 +42,13 @@ func (d *Deps) adminShell(r *http.Request, tab string) AdminShell {
 		return s
 	}
 	_ = d.Pool.QueryRow(r.Context(), `
-		SELECT COALESCE(sr.display_name, '')
+		SELECT COALESCE(sr.display_name, ''),
+		       (SELECT count(*) FROM staff_cases WHERE status = 'open'),
+		       (SELECT count(*) FROM banlist WHERE expires_at IS NULL OR expires_at > now()),
+		       (SELECT count(*) FROM anti_cheat_flags WHERE resolution IS NULL)
 		FROM players p LEFT JOIN staff_ranks sr ON sr.id = p.staff_rank_id
 		WHERE p.id = $1
-	`, sess.PlayerID).Scan(&s.StaffRank)
+	`, sess.PlayerID).Scan(&s.StaffRank, &s.OpenCases, &s.ActiveBans, &s.OpenFlags)
 	return s
 }
 
@@ -59,6 +67,22 @@ type adminHomeData struct {
 	EMSCount    int
 	Money       int64 // whole dollars
 	RichList    []richRow
+
+	// Cases (GAMEPANEL_PARITY §3.4): open count, opened per day over the
+	// last 14 days, and the viewer's own recent cases.
+	OpenCaseCount int
+	CaseBars      []caseBar
+	CaseTotal     int
+	MyCases       []cases.ListRow
+	MyActivity    cases.Activity
+	CanCases      bool
+}
+
+type caseBar struct {
+	Day    string
+	Tick   bool
+	Count  int
+	Height int // percent of the chart
 }
 
 type richRow struct {
@@ -142,6 +166,23 @@ func (d *Deps) AdminHome(w http.ResponseWriter, r *http.Request) {
 			row.CreatedAt = createdAt.Format("2006-01-02 15:04")
 			data.StaffLog = append(data.StaffLog, row)
 		}
+	}
+
+	data.OpenCaseCount = data.OpenCases
+	if data.CanCases = d.can(r, "cases.view"); data.CanCases {
+		if counts, days, err := cases.PerDay(ctx, d.Pool, 14, time.Local); err == nil {
+			top := 1
+			for _, c := range counts {
+				top = max(top, c)
+				data.CaseTotal += c
+			}
+			for i, c := range counts {
+				data.CaseBars = append(data.CaseBars, caseBar{Day: days[i].Format("2"), Tick: i%2 == 0 || i == len(counts)-1, Count: c, Height: c * 100 / top})
+			}
+		}
+		sess, _ := auth.FromContext(ctx)
+		data.MyCases, _ = cases.List(ctx, d.Pool, cases.Filter{Mine: sess.PlayerID, Limit: 5})
+		data.MyActivity, _ = cases.StaffActivity(ctx, d.Pool, sess.PlayerID)
 	}
 
 	d.Render.Render(w, "admin_home.html", data)

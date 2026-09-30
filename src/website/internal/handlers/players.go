@@ -14,6 +14,7 @@ import (
 
 	"website/internal/audit"
 	"website/internal/auth"
+	"website/internal/cases"
 	"website/internal/factions"
 	"website/internal/players"
 )
@@ -38,6 +39,13 @@ type playerLookupData struct {
 	CanPolice     bool
 	CanEMS        bool
 	LargeLimit    string
+
+	Points       []cases.Points
+	ActivePoints int
+	Cases        []cases.ListRow
+	CanCases     bool
+	CanOpenCase  bool
+	CanRevoke    bool
 }
 
 func (d playerLookupData) Money(c int64) string { return players.Dollars(c) }
@@ -78,6 +86,13 @@ func (d *Deps) PlayerLookup(w http.ResponseWriter, r *http.Request) {
 		data.CanLarge = d.can(r, "players.compensate_large")
 		data.CanPolice = d.can(r, "players.edit_police")
 		data.CanEMS = d.can(r, "players.edit_medic")
+		data.CanCases = d.can(r, "cases.view")
+		data.CanOpenCase = d.can(r, "cases.lead")
+		data.CanRevoke = d.can(r, "cases.close")
+		data.Points, data.ActivePoints = d.playerPoints(r.Context(), data.P.ID)
+		if data.CanCases {
+			data.Cases, _ = cases.PlayerCases(r.Context(), d.Pool, data.P.ID)
+		}
 		switch q.Get("tab") {
 		case "vehicles":
 			if data.CanVehicles {

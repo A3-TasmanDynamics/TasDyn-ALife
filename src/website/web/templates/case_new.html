@@ -1,0 +1,34 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content mod-page">
+    <a class="mod-back" href="/admin/cases">&larr; All cases</a>
+    <h1 class="page-title admin-title">Open a case</h1>
+    <p class="admin-sub">You'll lead it. Add the players involved now; staff, witnesses and more players can be added from the case.</p>
+
+    <form class="card mod-form" method="post" action="/admin/cases/new">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      {{if .FlagID}}<input type="hidden" name="flag" value="{{.FlagID}}"><div class="banner banner-notice mod-inline-banner">Opening from anti-cheat flag #{{.FlagID}}. The flag will be marked as handled in this case.</div>{{end}}
+      <div class="mod-form-row">
+        <div class="field"><label for="cn-type">Type</label>
+          <select id="cn-type" name="type" required><option value="">Choose…</option>{{range .Types}}<option value="{{.Key}}" {{if eq .Key $.Type}}selected{{end}}>{{.Label}}</option>{{end}}</select></div>
+        <div class="field mod-grow"><label for="cn-summary">Summary</label>
+          <input id="cn-summary" name="summary" value="{{.Summary}}" maxlength="200" required placeholder="e.g. VDM near Kavala hospital"></div>
+      </div>
+      <fieldset class="mod-fieldset">
+        <legend>Players involved</legend>
+        <p class="hint">Steam64, #player id, or exact in-game or past name. Leave spare boxes empty.</p>
+        <div class="mod-player-inputs">
+          {{range $i, $p := .Players}}<input name="player" value="{{$p}}" aria-label="Player {{inc $i}}" {{if eq $i 0}}required{{end}} placeholder="{{if eq $i 0}}Main subject{{else}}Another player (optional){{end}}">{{end}}
+        </div>
+      </fieldset>
+      <div class="field"><label for="cn-note">First entry</label>
+        <textarea id="cn-note" name="note" rows="4" maxlength="4000" placeholder="What happened, what you've checked so far…">{{.Note}}</textarea></div>
+      <div class="sync-form-foot">
+        <span class="hint">Logged to the Staff Log. Entries can't be edited or deleted once added.</span>
+        <button class="btn btn-primary" type="submit">Open case</button>
+      </div>
+    </form>
+  </div>
+</div>
+{{end}}

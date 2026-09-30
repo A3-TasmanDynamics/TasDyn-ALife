@@ -1,0 +1,100 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content mod-page">
+    <div class="mod-head">
+      <div>
+        <h1 class="page-title admin-title">Bans</h1>
+        <p class="admin-sub">Every ban is issued from a case and written to the banlist the game checks on connect.</p>
+      </div>
+      {{if .CanBan}}<button class="btn btn-primary mod-head-btn" type="button" data-dialog-open="dlg-issue">Issue ban</button>{{end}}
+    </div>
+
+    <div class="admin-stats">
+      <div class="admin-stat"><div class="label">Active bans</div><div class="value">{{.Stats.Active}}</div></div>
+      <div class="admin-stat"><div class="label">Permanent</div><div class="value value-red">{{.Stats.Permanent}}</div></div>
+      <div class="admin-stat"><div class="label">Expiring in 7 days</div><div class="value">{{.Stats.ExpiringWeek}}</div></div>
+      <a class="admin-stat stat-link" href="/admin/bans?tab=appeals"><div class="label">Open appeals</div><div class="value {{if .Stats.OpenAppeals}}value-amber{{end}}">{{.Stats.OpenAppeals}}</div></a>
+    </div>
+
+    <nav class="seg" aria-label="Ban lists">
+      <a class="seg-item {{if eq .Tab "active"}}active{{end}}" href="/admin/bans">Active &middot; {{.Stats.Active}}</a>
+      <a class="seg-item {{if eq .Tab "expired"}}active{{end}}" href="/admin/bans?tab=expired">Expired &amp; lifted</a>
+      <a class="seg-item {{if eq .Tab "appeals"}}active{{end}}" href="/admin/bans?tab=appeals">Appeals &middot; {{.Stats.OpenAppeals}}</a>
+    </nav>
+
+    {{if eq .Tab "appeals"}}
+      {{range .Appeals}}
+      <article class="card mod-appeal">
+        <div class="mod-appeal-head">
+          <a class="strong" href="/admin/players?id={{.PlayerID}}">{{.Player}}</a>
+          <span class="mod-dim">appealed {{.CreatedAt.Format "2 Jan 2006 15:04"}}</span>
+          <span class="mod-dim">&middot; banned {{.Ban.CreatedAt.Format "2 Jan"}} by {{.Ban.By}} for &ldquo;{{.Ban.Reason}}&rdquo; &middot; {{if .Ban.ExpiresAt}}until {{.Ban.ExpiresAt.Format "2 Jan 2006"}}{{else}}permanent{{end}}</span>
+          {{if .Ban.CaseID}}<a href="/admin/cases/{{.Ban.CaseID}}">Case #{{.Ban.CaseID}}</a>{{end}}
+        </div>
+        <blockquote class="mod-appeal-body">{{.Body}}</blockquote>
+        {{if $.CanAppeal}}
+        <form class="mod-appeal-form" method="post" action="/admin/appeals/{{.ID}}">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+          <input name="reason" aria-label="Reason for your decision" placeholder="Reason for your decision (shown to the player)" required maxlength="1000">
+          <button class="btn" type="submit" name="decision" value="reject">Reject</button>
+          <button class="btn btn-primary" type="submit" name="decision" value="accept">Accept and lift ban</button>
+        </form>
+        {{end}}
+      </article>
+      {{else}}
+      <p class="mod-empty card">No appeals waiting. Banned players can appeal once per ban from their dashboard.</p>
+      {{end}}
+    {{else}}
+    <div class="mod-table" role="table" aria-label="Bans">
+      <div class="mod-row mod-ban-row mod-row-head" role="row"><span>Player</span><span>Reason</span><span>Case</span><span>By</span><span>Issued</span><span>{{if eq .Tab "active"}}Expires{{else}}Ended{{end}}</span><span></span></div>
+      {{range .Bans}}
+      <div class="mod-row mod-ban-row" role="row">
+        <span>{{if .PlayerID}}<a class="strong" href="/admin/players?id={{.PlayerID}}">{{.Player}}</a>{{else}}<strong>{{.Player}}</strong>{{end}}<span class="mod-small mono">{{.UID}}</span></span>
+        <span>{{.Reason}}<span class="mod-small">Scope: {{.ScopeLabel}}{{if .Note}} &middot; note: {{.Note}}{{end}}{{if .LiftReason}} &middot; lifted: {{.LiftReason}}{{end}}</span></span>
+        <span>{{if .CaseID}}<a href="/admin/cases/{{.CaseID}}">#{{.CaseID}}</a>{{else}}<span class="mod-dim">&mdash;</span>{{end}}</span>
+        <span class="mod-dim">{{.By}}</span>
+        <span class="mod-dim">{{.CreatedAt.Format "2 Jan 2006"}}</span>
+        <span>{{if .Active}}{{if .ExpiresAt}}{{.ExpiresAt.Format "2 Jan 2006"}}{{else}}<span class="mod-pill mod-pill-banned">Permanent</span>{{end}}{{else if .LiftedAt}}Lifted {{.LiftedAt.Format "2 Jan"}}{{if .LiftedBy}} by {{.LiftedBy}}{{end}}{{else if .ExpiresAt}}{{.ExpiresAt.Format "2 Jan 2006"}}{{end}}</span>
+        <span>{{if .OpenAppeal}}<a class="mod-pill mod-pill-open" href="/admin/bans?tab=appeals">Appeal</a>{{end}}
+          {{if and .Active $.CanLift}}<button class="btn btn-sm" type="button" data-dialog-open="dlg-lift-{{.ID}}">Lift</button>
+          <dialog id="dlg-lift-{{.ID}}" class="modal" aria-labelledby="dlg-lift-{{.ID}}-t">
+            <form method="post" action="/admin/bans/{{.ID}}/lift">
+              <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+              <div class="modal-head"><h2 id="dlg-lift-{{.ID}}-t">Lift ban on {{.Player}}</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+              <div class="modal-body"><div class="field"><label for="lift-{{.ID}}">Reason</label><input id="lift-{{.ID}}" name="reason" required maxlength="1000"></div><p class="hint">They can connect again straight away. Recorded in the case and the Staff Log.</p></div>
+              <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Lift ban</button></div>
+            </form>
+          </dialog>{{end}}
+        </span>
+      </div>
+      {{else}}
+      <p class="mod-empty">{{if eq .Tab "active"}}No active bans.{{else}}No expired or lifted bans yet.{{end}}</p>
+      {{end}}
+    </div>
+    {{end}}
+
+    {{if .CanBan}}
+    <dialog id="dlg-issue" class="modal" aria-labelledby="dlg-issue-title">
+      <form method="post" action="/admin/bans/issue">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <div class="modal-head"><h2 id="dlg-issue-title">Issue ban</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+        <div class="modal-body">
+          {{if .CaseOptions}}
+          <div class="field"><label for="ib-cp">Case and player (bans always come from a case)</label>
+            <select id="ib-cp" name="case_player" required>
+              {{range .CaseOptions}}{{$cid := .ID}}<optgroup label="#{{.ID}} · {{.Summary}}">{{range index $.CasePlayers .ID}}<option value="{{$cid}}:{{.PlayerID}}" {{if eq $cid $.PreCase}}selected{{end}}>{{.Name}}{{if .Banned}} (already banned){{end}}</option>{{end}}</optgroup>{{end}}
+            </select></div>
+          {{template "ban_fields" dict "Players" nil "Reasons" .BanReasons "Durations" .Durations "CanPerm" .CanPerm}}
+          {{else}}
+          <p>There are no open cases. <a href="/admin/cases/new">Open a case</a> first: every ban comes from one.</p>
+          {{end}}
+        </div>
+        <div class="modal-foot"><span class="hint">Adds an entry to the case. Applies the next time they connect.</span><button class="btn" type="button" data-dialog-close>Cancel</button>{{if .CaseOptions}}<button class="btn btn-danger" type="submit">Issue ban</button>{{end}}</div>
+      </form>
+    </dialog>
+    {{end}}
+  </div>
+</div>
+<script src="/static/admin.js" defer></script>
+{{end}}
