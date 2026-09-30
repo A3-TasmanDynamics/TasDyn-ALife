@@ -359,6 +359,11 @@ read-only. Everything is recorded in the Command log.
 - **Divisions & quals.** One specialist division per member (`faction_member_divisions`), with
   ordered roles and entry requirements (a qualification and/or minimum rank). Qualifications
   (`faction_quals`) are recorded from the member's service record; each can have a head trainer.
+- **Personnel roster.** The Roster page is laid out like the faction's personnel roster sheet:
+  badge, department (division), region, status (Active / Semi-active / LOA / Reserve, with Probation
+  and Suspended shown automatically), enrollment date, last promotion, time in grade, a column per
+  qualification, active warnings and points, notes, and the monthly roll call (RC present, EA
+  excused). Command edits rows for members ranked below them; each change is logged.
 - **Ranks & gear.** The faction's top rank edits the rules of every rank below their own: name,
   short name, slots, minimum days in rank, required qualifications, who it can promote, and the
   public description. Staff with `factions.configure` can edit any rank. Command promotions must meet

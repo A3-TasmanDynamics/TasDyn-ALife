@@ -484,7 +484,8 @@ CREATE TABLE faction_log (
     -- Rank changes, plus every other command action (detail describes those).
     kind         TEXT NOT NULL CHECK (kind IN (
                      'recruit', 'promote', 'demote', 'remove',
-                     'probation', 'training', 'discipline', 'discharge', 'blacklist', 'division', 'qual', 'rank_rules', 'settings')),
+                     'probation', 'training', 'discipline', 'discharge', 'blacklist', 'division', 'qual', 'rank_rules', 'settings',
+                     'roster', 'roll_call')),
     detail       TEXT NOT NULL DEFAULT '',
     from_level   INTEGER NOT NULL,
     to_level     INTEGER NOT NULL,
@@ -660,6 +661,31 @@ CREATE TABLE IF NOT EXISTS faction_blacklist (
     lift_reason  TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_faction_blacklist ON faction_blacklist(faction, player_id);
+
+-- Personnel roster (Roster page): per-member details command keeps, and
+-- the monthly roll call. Rows are created the first time someone is
+-- recruited or edited.
+CREATE TABLE IF NOT EXISTS faction_members (
+    faction      TEXT NOT NULL CHECK (faction IN ('police', 'ems')),
+    player_id    BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    badge        TEXT NOT NULL DEFAULT '' CHECK (length(badge) <= 12),
+    region       TEXT NOT NULL DEFAULT '' CHECK (region IN ('', 'AU', 'NZ', 'Asia', 'EU', 'NA', 'SA', 'Other')),
+    status       TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'semi_active', 'loa', 'reserve')),
+    enrolled_on  DATE,
+    notes        TEXT NOT NULL DEFAULT '' CHECK (length(notes) <= 300),
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (faction, player_id)
+);
+-- Monthly roll call: present (RC) or excused absence (EA), per month.
+CREATE TABLE IF NOT EXISTS faction_roll_call (
+    faction    TEXT NOT NULL CHECK (faction IN ('police', 'ems')),
+    player_id  BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    month      DATE NOT NULL CHECK (extract(day FROM month) = 1),
+    mark       TEXT NOT NULL CHECK (mark IN ('present', 'excused')),
+    by_id      BIGINT REFERENCES players(id) ON DELETE SET NULL,
+    marked_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (faction, player_id, month)
+);
 
 -- Starting configuration, from the layout plan. Command can change rank
 -- rules on the site; the rest is edited here until it has an editor.

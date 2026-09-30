@@ -246,6 +246,7 @@ func run() error {
 		r.Get("/command", d.CommandHome)
 		r.Get("/command/{faction}", d.CommandOverview)
 		r.Get("/command/{faction}/roster", d.CommandRoster)
+		r.Post("/command/{faction}/roster/{id}", d.CommandRosterSave)
 		r.Post("/command/{faction}/recruit", d.CommandRecruit)
 		r.Get("/command/{faction}/members/{id}", d.CommandMember)
 		r.Post("/command/{faction}/members/{id}/rank", d.CommandSetRank)

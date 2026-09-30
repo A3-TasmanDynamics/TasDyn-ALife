@@ -1068,3 +1068,11 @@
   blacklist permanently. The staff rank-names editor (Roles & Permissions) now updates ranks in place
   instead of deleting and re-adding them, so it no longer wipes the Ranks & gear rules. Run
   `database/fixes/2026-09-30_rank_command_cabinet.sql`, then tick your command and cabinet ranks.
+- **Personnel roster.** The command panel's Roster is now a sheet like the faction's personnel roster:
+  personnel (insignia ★ cabinet / ☆ command, rank, badge, name, department), statistical (region,
+  status, enrollment date, last promotion, time in grade), certification (a column per qualification)
+  and miscellaneous information (active warnings and points, notes, and the monthly roll call: RC
+  present / EA excused, with a month picker). Command edits rows for members ranked below them and
+  changes save as they go (with a Save button without JavaScript); every change is in the Command log.
+  Probation and Suspended show automatically. Recruiting records the enrollment date. Run
+  `database/fixes/2026-09-30_faction_roster.sql` (it back-fills enrollment dates from rank history).

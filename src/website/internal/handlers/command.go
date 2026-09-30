@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -8,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -152,23 +154,31 @@ func (d *Deps) CommandOverview(w http.ResponseWriter, r *http.Request) {
 	d.Render.Render(w, "command_overview.html", data)
 }
 
-type rosterGroup struct {
-	Rank    factions.Rank
-	Members []factions.Member
-	Filled  int
+type rosterMonth struct {
+	Value, Label string
 }
 
 type commandRosterData struct {
 	commandBase
 	Q          string
-	Groups     []rosterGroup
+	Rows       []factions.Personnel
 	Total      int
 	CanRecruit bool
 	Levels     []factions.Rank // ranks the viewer can recruit into
+	Ranks      map[int]factions.Rank
+	Quals      []factions.Qual
+	Regions    []string
+	Statuses   []struct{ Key, Label string }
+	Month      string // YYYY-MM
+	MonthLabel string
+	Months     []rosterMonth
+	RollCall   int // members marked present this month
+	Excused    int
+}
 
-	Standing  map[int64]factions.Standing
-	Probation map[int64]bool
-	Division  map[int64]string // division name
+// CanEdit reports whether the viewer can edit a member's roster row.
+func (d commandRosterData) CanEdit(level int) bool {
+	return !d.ReadOnly && level < d.Command.Level
 }
 
 func (d *Deps) CommandRoster(w http.ResponseWriter, r *http.Request) {
@@ -176,56 +186,93 @@ func (d *Deps) CommandRoster(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	data := commandRosterData{commandBase: cb, Q: strings.TrimSpace(r.URL.Query().Get("q"))}
 	ctx := r.Context()
+	q := r.URL.Query()
+	data := commandRosterData{commandBase: cb, Q: strings.TrimSpace(q.Get("q")), Regions: factions.Regions, Statuses: factions.Statuses}
+	month := factions.MonthStart(time.Now())
+	if t, err := time.Parse("2006-01", q.Get("month")); err == nil && !t.After(month) {
+		month = t
+	}
+	data.Month, data.MonthLabel = month.Format("2006-01"), month.Format("January 2006")
+	for i := 0; i < 12; i++ {
+		m := factions.MonthStart(time.Now()).AddDate(0, -i, 0)
+		data.Months = append(data.Months, rosterMonth{m.Format("2006-01"), m.Format("January 2006")})
+	}
 	ranks, _ := factions.Ranks(ctx, d.Pool, cb.Faction)
-	members, err := factions.Roster(ctx, d.Pool, cb.Faction)
+	data.Ranks = map[int]factions.Rank{}
+	for _, rk := range ranks {
+		data.Ranks[rk.Level] = rk
+	}
+	data.Quals, _ = factions.Quals(ctx, d.Pool, cb.Faction)
+	rows, err := factions.PersonnelRoster(ctx, d.Pool, cb.Faction, month)
 	if err != nil {
 		slog.Error("command: roster failed", "error", err)
 		http.Error(w, "Failed to load the roster.", http.StatusInternalServerError)
 		return
 	}
-	data.Total = len(members)
-	data.Standing, _ = factions.Standings(ctx, d.Pool, cb.Faction)
-	data.Probation, data.Division = map[int64]bool{}, map[int64]string{}
-	if ps, err := factions.Probations(ctx, d.Pool, cb.Faction, true); err == nil {
-		for _, p := range ps {
-			data.Probation[p.PlayerID] = true
+	data.Total = len(rows)
+	needle := strings.ToLower(data.Q)
+	for _, p := range rows {
+		switch p.RollCall {
+		case "present":
+			data.RollCall++
+		case "excused":
+			data.Excused++
 		}
-	}
-	if posts, err := factions.MemberDivisions(ctx, d.Pool, cb.Faction); err == nil {
-		divs, _ := factions.Divisions(ctx, d.Pool, cb.Faction)
-		for id, p := range posts {
-			for _, dv := range divs {
-				if dv.Key == p.Key {
-					data.Division[id] = dv.Name
-				}
-			}
-		}
-	}
-	q := strings.ToLower(data.Q)
-	for _, m := range members {
-		if q != "" && !strings.Contains(strings.ToLower(m.Name), q) {
+		if needle != "" && !strings.Contains(strings.ToLower(p.Name+" "+p.Badge+" "+p.Department), needle) {
 			continue
 		}
-		if n := len(data.Groups); n == 0 || data.Groups[n-1].Rank.Level != m.Level {
-			data.Groups = append(data.Groups, rosterGroup{Rank: m.Rank})
-		}
-		g := &data.Groups[len(data.Groups)-1]
-		g.Members = append(g.Members, m)
-	}
-	for i := range data.Groups {
-		for _, m := range members {
-			if m.Level == data.Groups[i].Rank.Level {
-				data.Groups[i].Filled++
-			}
-		}
+		data.Rows = append(data.Rows, p)
 	}
 	if !cb.ReadOnly && cb.Command.Authority > 0 {
 		data.CanRecruit = true
 		data.Levels = assignable(ranks, cb.Command.Authority)
 	}
 	d.Render.Render(w, "command_roster.html", data)
+}
+
+// CommandRosterSave saves one roster row. The page saves rows as they're
+// edited (JSON); without JavaScript it's a normal form post.
+func (d *Deps) CommandRosterSave(w http.ResponseWriter, r *http.Request) {
+	faction := chi.URLParam(r, "faction")
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil || !factions.Valid(faction) {
+		http.NotFound(w, r)
+		return
+	}
+	month, err := time.Parse("2006-01", r.FormValue("month"))
+	if err != nil {
+		month = time.Now()
+	}
+	rc := ""
+	switch {
+	case r.FormValue("rc") == "1":
+		rc = "present"
+	case r.FormValue("ea") == "1":
+		rc = "excused"
+	}
+	changed, err := factions.UpdateMember(r.Context(), d.Pool, commandActor(r), faction, id, factions.MemberDetails{
+		Badge: r.FormValue("badge"), Region: r.FormValue("region"), Status: r.FormValue("status"),
+		Notes: r.FormValue("notes"), Enrolled: r.FormValue("enrolled"), Month: month, RollCall: rc,
+	})
+	if r.Header.Get("Accept") == "application/json" {
+		w.Header().Set("Content-Type", "application/json")
+		if err != nil {
+			msg := "Something went wrong. Nothing was saved."
+			if errors.Is(err, factions.ErrNotAllowed) {
+				msg = strings.TrimPrefix(err.Error(), factions.ErrNotAllowed.Error()+": ")
+				w.WriteHeader(http.StatusConflict)
+			} else {
+				slog.Error("roster save failed", "error", err)
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": msg})
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "changed": changed})
+		return
+	}
+	finishCommandAction(w, r, "/command/"+faction+"/roster?month="+month.Format("2006-01"), err, "Saved.")
 }
 
 // assignable lists the ranks (lowest first) someone with this authority can
@@ -441,6 +488,7 @@ var logKinds = []logKind{
 	{"recruit", "Recruited"}, {"promote", "Promotions"}, {"demote", "Demotions"}, {"remove", "Removals"},
 	{"probation", "Probation"}, {"training", "Training"}, {"discipline", "Discipline"},
 	{"blacklist", "Blacklist"}, {"division", "Divisions"}, {"qual", "Quals"}, {"rank_rules", "Rank rules"},
+	{"roster", "Roster"}, {"roll_call", "Roll call"},
 }
 
 func (d *Deps) CommandLog(w http.ResponseWriter, r *http.Request) {
