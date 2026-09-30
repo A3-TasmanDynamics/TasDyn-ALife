@@ -164,6 +164,11 @@ var moderationPhrases = map[string]string{
 	"application.reject":         "rejected a staff application",
 	"faction.application_reject": "turned down a faction application",
 	"notice.post":                "sent an essential notice",
+	"database.query":             "ran a database query",
+	"server.restart":             "scheduled a server restart",
+	"server.restart_cancel":      "cancelled a server restart",
+	"server.stop":                "stopped the game server",
+	"server.start":               "started the game server",
 }
 
 // discordModeration are the staff_log actions the bot writes for

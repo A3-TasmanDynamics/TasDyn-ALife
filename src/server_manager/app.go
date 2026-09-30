@@ -18,13 +18,27 @@ func NewApp() *App {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	go a.startControlAPI(ctx)
 }
 
 func (a *App) GetSettings() (Settings, error) {
 	return loadSettings()
 }
 
+// SaveSettings saves the Settings form. The form doesn't show the control
+// API fields, so they're kept from what's already saved rather than wiped.
 func (a *App) SaveSettings(s Settings) error {
+	if cur, err := loadSettings(); err == nil {
+		if s.ControlAPIToken == "" {
+			s.ControlAPIToken = cur.ControlAPIToken
+		}
+		if s.ControlAPIAddr == "" {
+			s.ControlAPIAddr = cur.ControlAPIAddr
+		}
+		if !s.ControlAPIDisabled {
+			s.ControlAPIDisabled = cur.ControlAPIDisabled
+		}
+	}
 	return saveSettingsToDisk(s)
 }
 

@@ -15,6 +15,18 @@ type Config struct {
 	// "postgres://alife_admin:alife_admin@127.0.0.1:5432/alife_db".
 	DatabaseURL string
 
+	// DatabaseReadonlyURL, if set, is a connection as a SELECT-only role
+	// (database/fixes/2026-09-30_readonly_role.sql) used by the Admin
+	// Panel's database browser. Unset: the browser uses DatabaseURL inside
+	// READ ONLY transactions, with extra console restrictions.
+	DatabaseReadonlyURL string
+
+	// ServerManagerURL and ServerManagerToken reach server_manager's control
+	// API (Server Control: status, start/stop/restart, live logs). Unset:
+	// Server Control shows how to connect it.
+	ServerManagerURL   string
+	ServerManagerToken string
+
 	ListenAddr string
 
 	// SiteBaseURL is this site's own externally-reachable origin, e.g.
@@ -79,6 +91,9 @@ func Load() (Config, error) {
 		DiscordGuildID:          os.Getenv("DISCORD_GUILD_ID"),
 		DiscordTicketCategoryID: os.Getenv("DISCORD_TICKET_CATEGORY_ID"),
 		GameQueryAddr:           os.Getenv("GAME_QUERY_ADDR"),
+		DatabaseReadonlyURL:     os.Getenv("DATABASE_READONLY_URL"),
+		ServerManagerURL:        os.Getenv("SERVER_MANAGER_URL"),
+		ServerManagerToken:      os.Getenv("SERVER_MANAGER_TOKEN"),
 		SteamWebAPIKey:          os.Getenv("STEAM_WEB_API_KEY"),
 	}
 
