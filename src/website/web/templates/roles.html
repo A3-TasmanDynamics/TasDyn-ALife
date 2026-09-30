@@ -99,22 +99,22 @@
     </dialog>
     {{else}}
     <div class="faction-names">
-      <p class="admin-sub">Rank names are shown everywhere a police or EMS level number used to appear. <strong>Command</strong> is set here too: a rank with "can set ranks up to" gets the faction command panel and can recruit, promote, demote and remove members up to that rank, never at or above their own. Slots cap how many members a rank holds (command can't go over; Management can). Requires <code class="perm-key">factions.configure</code>.</p>
+      <p class="admin-sub">Rank names are shown everywhere a police or EMS level number used to appear. Which ranks are <strong>Command</strong> (get the faction command panel) and <strong>Cabinet</strong> is ticked on each faction's Ranks &amp; gear page; "promotes up to" here sets how far a command rank can recruit, promote, demote and remove, never at or above their own. Slots cap how many members a rank holds (command can't go over; Management can). Requires <code class="perm-key">factions.configure</code>.</p>
       {{range $f := (list "police" "ems")}}
       <form class="card faction-card faction-ranks" method="post" action="/admin/roles/faction-names">
         <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="faction" value="{{$f}}">
         <div class="faction-card-head"><span class="faction-dot faction-dot-{{$f}}" aria-hidden="true"></span><h2>{{if eq $f "police"}}Police{{else}}EMS{{end}}</h2></div>
         {{$ranks := $.Police}}{{if eq $f "ems"}}{{$ranks = $.EMS}}{{end}}
         <div class="faction-rank-table" role="table" aria-label="{{$f}} ranks">
-          <div class="faction-rank-row faction-rank-headrow" role="row"><span role="columnheader">Level</span><span role="columnheader">Name</span><span role="columnheader">Short</span><span role="columnheader">Slots</span><span role="columnheader">Command: can set ranks up to</span></div>
+          <div class="faction-rank-row faction-rank-headrow" role="row"><span role="columnheader">Level</span><span role="columnheader">Name</span><span role="columnheader">Short</span><span role="columnheader">Slots</span><span role="columnheader">Promotes up to</span></div>
           {{range $i, $r := $ranks}}
           <div class="faction-rank-row" role="row">
             <span class="faction-rank-level">{{$r.Level}}</span>
             <input name="name" value="{{$r.Name}}" maxlength="50" aria-label="{{$f}} level {{$r.Level}} name" {{if not $.CanFaction}}disabled{{end}}>
             <input name="short" value="{{$r.Short}}" maxlength="12" aria-label="{{$f}} level {{$r.Level}} short name" placeholder="e.g. Sgt" {{if not $.CanFaction}}disabled{{end}}>
             <input name="slots" type="number" min="1" max="500" value="{{if $r.Slots}}{{$r.Slots}}{{end}}" aria-label="{{$f}} level {{$r.Level}} slots" placeholder="No limit" {{if not $.CanFaction}}disabled{{end}}>
-            <select name="authority" aria-label="{{$f}} level {{$r.Level}} command authority" {{if not $.CanFaction}}disabled{{end}}>
-              <option value="0">Not command</option>
+            <select name="authority" aria-label="{{$f}} level {{$r.Level}} promotes up to" {{if not $.CanFaction}}disabled{{end}}>
+              <option value="0">Can't change ranks</option>
               {{range $ranks}}{{if lt .Level $r.Level}}<option value="{{.Level}}" {{if eq .Level $r.PromoteUpTo}}selected{{end}}>{{.Name}} ({{.Level}})</option>{{end}}{{end}}
             </select>
           </div>

@@ -26,8 +26,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"website/internal/audit"
-	"website/internal/factions"
 	"website/internal/auth"
+	"website/internal/factions"
 )
 
 var ErrNotAllowed = errors.New("not allowed")
@@ -463,10 +463,19 @@ func SaveFactionRanks(ctx context.Context, pool *pgxpool.Pool, actorID int64, fa
 	if err != nil {
 		return err
 	}
-	if fmt.Sprint(before) == fmt.Sprint(ranks) {
+	// Only the fields edited here are compared and written; the Ranks &
+	// gear rules (min days, quals, description, command/cabinet ticks) stay.
+	edited := func(rs []factions.Rank) string {
+		var b strings.Builder
+		for _, r := range rs {
+			fmt.Fprintf(&b, "%d|%s|%s|%d|%d;", r.Level, r.Name, r.Short, r.Slots, r.PromoteUpTo)
+		}
+		return b.String()
+	}
+	if edited(before) == edited(ranks) {
 		return notAllowed("nothing changed")
 	}
-	if _, err := tx.Exec(ctx, `DELETE FROM faction_rank_names WHERE faction = $1`, faction); err != nil {
+	if _, err := tx.Exec(ctx, `DELETE FROM faction_rank_names WHERE faction = $1 AND level > $2`, faction, len(ranks)); err != nil {
 		return err
 	}
 	for _, r := range ranks {
@@ -480,7 +489,9 @@ func SaveFactionRanks(ctx context.Context, pool *pgxpool.Pool, actorID int64, fa
 		}
 		if _, err := tx.Exec(ctx, `
 			INSERT INTO faction_rank_names (faction, level, name, short_name, slots, promote_up_to)
-			VALUES ($1, $2, $3, $4, $5, $6)`, faction, r.Level, r.Name, short, slots, r.PromoteUpTo); err != nil {
+			VALUES ($1, $2, $3, $4, $5, $6)
+			ON CONFLICT (faction, level) DO UPDATE SET name = $3, short_name = $4, slots = $5, promote_up_to = $6`,
+			faction, r.Level, r.Name, short, slots, r.PromoteUpTo); err != nil {
 			return err
 		}
 	}
@@ -489,7 +500,7 @@ func SaveFactionRanks(ctx context.Context, pool *pgxpool.Pool, actorID int64, fa
 		for i, r := range rs {
 			out[i] = r.Name
 			if r.PromoteUpTo > 0 {
-				out[i] += fmt.Sprintf(" (command: up to level %d)", r.PromoteUpTo)
+				out[i] += fmt.Sprintf(" (promotes up to level %d)", r.PromoteUpTo)
 			}
 			if r.Slots > 0 {
 				out[i] += fmt.Sprintf(" [%d slots]", r.Slots)

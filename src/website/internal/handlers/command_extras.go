@@ -244,7 +244,7 @@ func (d *Deps) CommandDiscipline(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		data.Offences = []offenceGroup{low, high}
-		data.CanLift = true
+		data.CanLift = cb.Command.Cabinet
 	}
 	switch data.Tab {
 	case "log":
@@ -559,7 +559,7 @@ func (d *Deps) CommandRanks(w http.ResponseWriter, r *http.Request) {
 	for i := len(ranks) - 1; i >= 0; i-- {
 		rk := ranks[i]
 		row := factionRankRow{Rank: rk, Filled: filled[rk.Level], UpTo: "—"}
-		if rk.PromoteUpTo > 0 {
+		if rk.CanPromote() {
 			row.UpTo = factions.RankFor(ranks, rk.PromoteUpTo).Label()
 		}
 		data.Ranks = append(data.Ranks, row)
@@ -611,7 +611,8 @@ func (d *Deps) CommandRankSave(w http.ResponseWriter, r *http.Request) {
 	}
 	atoi := func(k string) int { n, _ := strconv.Atoi(strings.TrimSpace(r.FormValue(k))); return n }
 	rr := factions.RankRules{Name: r.FormValue("name"), Short: r.FormValue("short"), Slots: atoi("slots"), MinDays: atoi("min_days"),
-		PromoteUpTo: atoi("up_to"), Quals: r.Form["quals"], Description: r.FormValue("description")}
+		PromoteUpTo: atoi("up_to"), Quals: r.Form["quals"], Description: r.FormValue("description"),
+		Command: r.FormValue("is_command") == "1", Cabinet: r.FormValue("is_cabinet") == "1"}
 	actor := commandActor(r)
 	ranks, _ := factions.Ranks(r.Context(), d.Pool, faction)
 	c, isCmd, _ := factions.CommandIn(r.Context(), d.Pool, actor.PlayerID, faction)

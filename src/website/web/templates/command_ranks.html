@@ -5,7 +5,7 @@
     <div class="cmd-head">
       <div>
         <h1>Ranks &amp; gear</h1>
-        <p class="cmd-sub">Rank rules drive the roster: slots, time in rank, required qualifications and who can promote whom. Names show everywhere the site names a rank.</p>
+        <p class="cmd-sub">Rank rules drive the roster: slots, time in rank, required qualifications and who can promote whom. Tick a rank as <strong>Command</strong> (CMD) to give it this panel, and as <strong>Cabinet</strong> (CAB) for senior leadership.</p>
       </div>
     </div>
 
@@ -15,7 +15,7 @@
       {{range .Ranks}}
       <a class="cmd-row rank-row{{if and $.Sel (eq .Level $.Sel.Level)}} active{{end}}" role="row" href="/command/{{$.Faction}}/ranks?level={{.Level}}" {{if and $.Sel (eq .Level $.Sel.Level)}}aria-current="true"{{end}}>
         <span class="cmd-dim">{{.Level}}</span>
-        <span><span class="cmd-strong">{{.Label}}</span>{{if .Short}} <span class="cmd-dim">{{.Short}}</span>{{end}}{{if .Command}} <span class="cmd-tag cmd-tag-override">CMD</span>{{end}}</span>
+        <span><span class="cmd-strong">{{.Label}}</span>{{if .Short}} <span class="cmd-dim">{{.Short}}</span>{{end}}{{if .IsCommand}} <span class="cmd-tag cmd-tag-override">CMD</span>{{end}}{{if .IsCabinet}} <span class="cmd-tag cmd-tag-cab">CAB</span>{{end}}</span>
         <span class="{{if and .Slots (ge .Filled .Slots)}}disc-hot-amber{{else}}cmd-dim{{end}}">{{.Filled}}{{if .Slots}} / {{.Slots}}{{end}}</span>
         <span class="cmd-dim">{{if .MinDays}}{{.MinDays}} d{{else}}&mdash;{{end}}</span>
         <span class="cmd-dim">{{if .Quals}}{{range $i, $q := .Quals}}{{if $i}} &middot; {{end}}{{$q}}{{end}}{{else}}&mdash;{{end}}</span>
@@ -42,8 +42,12 @@
             <div class="field"><label for="rk-slots">Slots (0 = no limit)</label><input id="rk-slots" type="number" name="slots" min="0" max="500" value="{{.Slots}}"></div>
             <div class="field"><label for="rk-days">Min days in rank</label><input id="rk-days" type="number" name="min_days" min="0" max="365" value="{{.MinDays}}"></div>
             <div class="field mod-grow"><label for="rk-upto">Promotes up to</label>
-              <select id="rk-upto" name="up_to"><option value="0">Can't promote</option>{{$u := .PromoteUpTo}}{{range $.UpTo}}<option value="{{.Level}}" {{if eq .Level $u}}selected{{end}}>{{.Label}}</option>{{end}}</select></div>
+              <select id="rk-upto" name="up_to"><option value="0">Can't change ranks</option>{{$u := .PromoteUpTo}}{{range $.UpTo}}<option value="{{.Level}}" {{if eq .Level $u}}selected{{end}}>{{.Label}}</option>{{end}}</select></div>
           </div>
+          <fieldset class="rank-flags"><legend>Rank type</legend>
+            <label class="disc-check"><input type="checkbox" name="is_command" value="1" {{if .IsCommand}}checked{{end}} data-rank-cmd> <span><strong>Command rank</strong> (CMD). Gets the command panel: recruits, discipline, training, divisions, and rank changes up to "Promotes up to".</span></label>
+            <label class="disc-check"><input type="checkbox" name="is_cabinet" value="1" {{if .IsCabinet}}checked{{end}} data-rank-cab> <span><strong>Cabinet</strong> (CAB). Senior leadership: can also lift blacklists early and blacklist permanently. Must be a command rank.</span></label>
+          </fieldset>
           {{if $.Quals}}
           <fieldset class="rank-quals"><legend>Qualifications needed to hold this rank</legend>
             {{$held := .Quals}}{{range $.Quals}}<label class="rank-qual"><input type="checkbox" name="quals" value="{{.Key}}" {{if has $held .Key}}checked{{end}}> <span>{{.Key}}</span></label>{{end}}
@@ -51,7 +55,7 @@
           {{end}}
           <div class="field"><label for="rk-desc">Description (shown on the public faction page)</label><textarea id="rk-desc" name="description" rows="3" maxlength="500">{{.Description}}</textarea></div>
           <button class="btn btn-primary" type="submit">Save rank</button>
-          <p class="hint">Logged in the Command log with the before and after values. A rank that can promote is a command rank and gets this panel.</p>
+          <p class="hint">Logged in the Command log with the before and after values. "Promotes up to" only applies to a command rank.</p>
         </form>
         {{else}}
         <dl class="rank-facts">
@@ -59,6 +63,7 @@
           <div><dt>Slots</dt><dd>{{if .Slots}}{{.Slots}}{{else}}No limit{{end}}</dd></div>
           <div><dt>Min days in rank</dt><dd>{{.MinDays}}</dd></div>
           <div><dt>Promotes up to</dt><dd>{{.UpTo}}</dd></div>
+          <div><dt>Rank type</dt><dd>{{if .IsCabinet}}Cabinet (command){{else if .IsCommand}}Command{{else}}Regular{{end}}</dd></div>
           <div><dt>Needs</dt><dd>{{if .Quals}}{{range $i, $q := .Quals}}{{if $i}}, {{end}}{{$q}}{{end}}{{else}}Nothing{{end}}</dd></div>
         </dl>
         {{if .Description}}<p class="cmd-dim">{{.Description}}</p>{{end}}
@@ -91,4 +96,5 @@
     {{end}}
   </div>
 </div>
+<script src="/static/command.js" defer></script>
 {{end}}

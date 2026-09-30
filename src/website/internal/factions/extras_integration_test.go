@@ -31,11 +31,11 @@ func TestCommandExtras(t *testing.T) {
 		t.Skip("EMS ranks already configured on this database")
 	}
 	const f = "ems"
-	// 1 Trainee, 2 Paramedic, 3 Senior (needs TQ), 4 Supervisor (up to 2), 5 Chief (up to 4, top).
+	// 1 Trainee, 2 Paramedic, 3 Senior (needs TQ), 4 Supervisor (command, up to 2), 5 Chief (cabinet, up to 4, top).
 	if _, err := pool.Exec(ctx, `
-		INSERT INTO faction_rank_names (faction, level, name, promote_up_to, min_days, required_quals) VALUES
-		('ems', 1, 'Trainee', 0, 0, '{}'), ('ems', 2, 'Paramedic', 0, 0, '{}'), ('ems', 3, 'Senior Paramedic', 0, 0, '{TQ}'),
-		('ems', 4, 'Supervisor', 2, 0, '{}'), ('ems', 5, 'Chief', 4, 0, '{}')`); err != nil {
+		INSERT INTO faction_rank_names (faction, level, name, promote_up_to, min_days, required_quals, is_command, is_cabinet) VALUES
+		('ems', 1, 'Trainee', 0, 0, '{}', false, false), ('ems', 2, 'Paramedic', 0, 0, '{}', false, false), ('ems', 3, 'Senior Paramedic', 0, 0, '{TQ}', false, false),
+		('ems', 4, 'Supervisor', 2, 0, '{}', true, false), ('ems', 5, 'Chief', 4, 0, '{}', true, true)`); err != nil {
 		t.Fatal(err)
 	}
 	pool.Exec(ctx, `INSERT INTO faction_quals (faction, key, name) VALUES ('ems', 'TQ', 'Test qual'), ('ems', 'AQ', 'Air qual')`)
@@ -193,9 +193,11 @@ func TestCommandExtras(t *testing.T) {
 
 	// Blacklist lift and manual blacklist.
 	bls, _ := Blacklist(ctx, pool, f, 10)
-	must("lift", LiftBlacklist(ctx, pool, cmd("sup"), f, bls[0].ID, "appeal upheld"))
+	denied("non-cabinet lifts a blacklist", LiftBlacklist(ctx, pool, cmd("sup"), f, bls[0].ID, "appeal upheld"))
+	must("cabinet lifts a blacklist", LiftBlacklist(ctx, pool, cmd("chief"), f, bls[0].ID, "appeal upheld"))
 	denied("blacklist a member", AddBlacklist(ctx, pool, cmd("sup"), f, ids["chief"], 30, "x"))
-	must("blacklist a non-member", AddBlacklist(ctx, pool, cmd("sup"), f, ids["civ2"], 0, "leaked channels"))
+	denied("non-cabinet blacklists permanently", AddBlacklist(ctx, pool, cmd("sup"), f, ids["civ2"], 0, "leaked channels"))
+	must("cabinet blacklists permanently", AddBlacklist(ctx, pool, cmd("chief"), f, ids["civ2"], 0, "leaked channels"))
 	denied("blacklist twice", AddBlacklist(ctx, pool, cmd("sup"), f, ids["civ2"], 30, "x"))
 
 	// Discharge.
@@ -209,6 +211,19 @@ func TestCommandExtras(t *testing.T) {
 	denied("non-top rank edits rules", UpdateRank(ctx, pool, cmd("sup"), f, 2, rr))
 	denied("top rank edits own rank", UpdateRank(ctx, pool, cmd("chief"), f, 5, RankRules{Name: "Boss", PromoteUpTo: 4}))
 	denied("unknown qual", UpdateRank(ctx, pool, cmd("chief"), f, 2, RankRules{Name: "x", Quals: []string{"ZZ"}}))
+	denied("cabinet without command", UpdateRank(ctx, pool, cmd("chief"), f, 2, RankRules{Name: "x", Cabinet: true}))
+
+	// Command comes from the tick: unticking Supervisor takes the panel away.
+	must("untick command", UpdateRank(ctx, pool, cmd("chief"), f, 4, RankRules{Name: "Supervisor", PromoteUpTo: 2}))
+	if _, isCmd, _ := CommandIn(ctx, pool, ids["sup"], f); isCmd {
+		t.Error("an unticked rank shouldn't have command")
+	}
+	must("tick command, no promotion", UpdateRank(ctx, pool, cmd("chief"), f, 4, RankRules{Name: "Supervisor", Command: true}))
+	if c, isCmd, _ := CommandIn(ctx, pool, ids["sup"], f); !isCmd || c.Authority != 0 {
+		t.Errorf("a command rank with no promotion range: want command, authority 0; got %v %+v", isCmd, c)
+	}
+	_, err = SetLevel(ctx, pool, cmd("sup"), f, ids["civ"], 1, "x")
+	denied("command rank that can't change ranks", err)
 	must("top rank edits rules", UpdateRank(ctx, pool, cmd("chief"), f, 2, rr))
 	ranks, _ := Ranks(ctx, pool, f)
 	if r := RankFor(ranks, 2); r.Name != "Paramedic II" || r.MinDays != 7 || len(r.Quals) != 1 {

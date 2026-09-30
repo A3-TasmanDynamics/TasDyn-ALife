@@ -447,8 +447,9 @@ CREATE TABLE faction_rank_names (
     -- Faction command (docs/GAMEPANEL_PARITY.md §6.1, layout plan "Police
     -- command"): short name for tight spaces, how many officers the rank
     -- is meant to hold (NULL = no limit), and the highest level someone
-    -- at this rank may set others to. promote_up_to > 0 is what makes a
-    -- rank "command"; it must stay below the rank's own level.
+    -- at this rank may set others to (0 = can't change ranks). Whether a
+    -- rank is command is its own tick, is_command, below. promote_up_to
+    -- must stay below the rank's own level.
     short_name     TEXT,
     slots          INTEGER CHECK (slots > 0),
     promote_up_to  INTEGER NOT NULL DEFAULT 0 CHECK (promote_up_to >= 0 AND promote_up_to < level),
@@ -458,6 +459,13 @@ CREATE TABLE faction_rank_names (
     min_days        INTEGER NOT NULL DEFAULT 0 CHECK (min_days >= 0),
     required_quals  TEXT[] NOT NULL DEFAULT '{}',
     description     TEXT NOT NULL DEFAULT '',
+    -- Ticked on Ranks & gear. is_command gives the rank the command panel
+    -- (shown as CMD); is_cabinet (CAB) is the faction's senior leadership,
+    -- who can lift blacklists early and blacklist permanently. Cabinet
+    -- ranks must also be command ranks.
+    is_command      BOOLEAN NOT NULL DEFAULT false,
+    is_cabinet      BOOLEAN NOT NULL DEFAULT false,
+    CONSTRAINT faction_rank_names_cabinet_check CHECK (NOT is_cabinet OR is_command),
     PRIMARY KEY (faction, level)
 );
 

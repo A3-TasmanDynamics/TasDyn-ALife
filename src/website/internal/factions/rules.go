@@ -47,8 +47,9 @@ func playerName(ctx context.Context, q dbtx, id int64) string {
 // authority is the actor's standing for a command action.
 type authority struct {
 	Level     int // actor's rank
-	UpTo      int // highest level they may set others to
+	UpTo      int // highest level they may set others to (0 = none)
 	Top       bool
+	Cabinet   bool
 	Ranks     []Rank
 	TargetLvl int
 }
@@ -74,7 +75,10 @@ func commandOver(ctx context.Context, q dbtx, actor Actor, faction string, targe
 	if a.Level == 0 || !r.Command() {
 		return a, notAllowed("only %s command can do that", Name(faction))
 	}
-	a.UpTo = r.PromoteUpTo
+	if r.CanPromote() {
+		a.UpTo = r.PromoteUpTo
+	}
+	a.Cabinet = r.IsCabinet
 	a.Top = len(a.Ranks) > 0 && a.Level >= a.Ranks[len(a.Ranks)-1].Level
 	if targetID > 0 {
 		if targetID == actor.PlayerID {
@@ -252,6 +256,8 @@ type RankRules struct {
 	PromoteUpTo int
 	Quals       []string
 	Description string
+	Command     bool // command rank (CMD)
+	Cabinet     bool // cabinet rank (CAB); must also be command
 }
 
 // CanEditRank says whether the actor may edit rank level's rules: the
@@ -281,6 +287,8 @@ func UpdateRank(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction st
 		return notAllowed("minimum days must be 0 to 365")
 	case rr.PromoteUpTo < 0 || rr.PromoteUpTo >= level:
 		return notAllowed("a rank can only promote up to ranks below itself")
+	case rr.Cabinet && !rr.Command:
+		return notAllowed("a cabinet rank must also be a command rank")
 	}
 	tx, err := pool.Begin(ctx)
 	if err != nil {
@@ -338,9 +346,9 @@ func UpdateRank(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction st
 	rr.Quals = clean
 	if _, err := tx.Exec(ctx, `
 		UPDATE faction_rank_names SET name = $3, short_name = NULLIF($4, ''), slots = NULLIF($5, 0), min_days = $6,
-		       promote_up_to = $7, required_quals = $8, description = $9
+		       promote_up_to = $7, required_quals = $8, description = $9, is_command = $10, is_cabinet = $11
 		WHERE faction = $1 AND level = $2`,
-		faction, level, rr.Name, rr.Short, rr.Slots, rr.MinDays, rr.PromoteUpTo, rr.Quals, rr.Description); err != nil {
+		faction, level, rr.Name, rr.Short, rr.Slots, rr.MinDays, rr.PromoteUpTo, rr.Quals, rr.Description, rr.Command, rr.Cabinet); err != nil {
 		return err
 	}
 	var ch []string
@@ -361,6 +369,13 @@ func UpdateRank(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction st
 	}
 	if strings.Join(old.Quals, ",") != strings.Join(rr.Quals, ",") {
 		ch = append(ch, fmt.Sprintf("quals %s → %s", listText(old.Quals), listText(rr.Quals)))
+	}
+	tick := func(b bool) string { return map[bool]string{true: "yes", false: "no"}[b] }
+	if old.IsCommand != rr.Command {
+		ch = append(ch, "command rank "+tick(old.IsCommand)+" → "+tick(rr.Command))
+	}
+	if old.IsCabinet != rr.Cabinet {
+		ch = append(ch, "cabinet "+tick(old.IsCabinet)+" → "+tick(rr.Cabinet))
 	}
 	if old.Description != rr.Description {
 		ch = append(ch, "description updated")

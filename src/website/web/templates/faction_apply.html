@@ -38,7 +38,7 @@
     {{with .Selected}}
     <section class="card apply-side-card">
       <h2>{{.Name}} ranks</h2>
-      {{range .Ranks}}<div class="fac-rank"><span class="mod-dim">Level {{.Level}}</span><span>{{.Name}}</span>{{if .PromoteUpTo}}<span class="fac-tag">Command</span>{{end}}</div>{{else}}<p class="hint">Ranks haven't been set up yet.</p>{{end}}
+      {{range .Ranks}}<div class="fac-rank"><span class="mod-dim">Level {{.Level}}</span><span>{{.Name}}</span>{{if .IsCabinet}}<span class="fac-tag">Cabinet</span>{{else if .IsCommand}}<span class="fac-tag">Command</span>{{end}}</div>{{else}}<p class="hint">Ranks haven't been set up yet.</p>{{end}}
     </section>
     {{end}}
     <section class="card apply-side-card">

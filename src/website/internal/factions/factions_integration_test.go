@@ -32,9 +32,9 @@ func TestCommandAuthorityRules(t *testing.T) {
 
 	// Ranks 1-5; 4 (Inspector) can set up to 2, 5 (Supt) up to 3. Level 2 has one slot.
 	if _, err := pool.Exec(ctx, `
-		INSERT INTO faction_rank_names (faction, level, name, slots, promote_up_to) VALUES
-		('police', 1, 'Probationer', NULL, 0), ('police', 2, 'Constable', 1, 0), ('police', 3, 'Sergeant', NULL, 0),
-		('police', 4, 'Inspector', NULL, 2), ('police', 5, 'Superintendent', NULL, 3)`); err != nil {
+		INSERT INTO faction_rank_names (faction, level, name, slots, promote_up_to, is_command) VALUES
+		('police', 1, 'Probationer', NULL, 0, false), ('police', 2, 'Constable', 1, 0, false), ('police', 3, 'Sergeant', NULL, 2, false),
+		('police', 4, 'Inspector', NULL, 2, true), ('police', 5, 'Superintendent', NULL, 3, true)`); err != nil {
 		t.Fatal(err)
 	}
 	ids := map[string]int64{}
@@ -82,7 +82,7 @@ func TestCommandAuthorityRules(t *testing.T) {
 		t.Fatalf("inspector should command up to 2, got %+v %v", c, isCmd)
 	}
 	if _, isCmd, _ := CommandIn(ctx, pool, ids["sgt"], "police"); isCmd {
-		t.Error("a sergeant has no authority set, so isn't command")
+		t.Error("a sergeant isn't ticked as command, so isn't command even with promote_up_to set")
 	}
 
 	ch, err := SetLevel(ctx, pool, cmd("insp"), "police", ids["prob"], 2, "passed probation")

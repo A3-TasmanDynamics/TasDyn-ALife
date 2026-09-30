@@ -679,6 +679,9 @@ func AddBlacklist(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction 
 	if a.TargetLvl > 0 {
 		return notAllowed("they're still in %s; discharge them first", Name(faction))
 	}
+	if days == 0 && !a.Cabinet {
+		return notAllowed("only cabinet can blacklist permanently")
+	}
 	if bl, err := ActiveBlacklist(ctx, tx, faction, targetID); err != nil {
 		return err
 	} else if bl != nil {
@@ -706,8 +709,7 @@ func AddBlacklist(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction 
 	return tx.Commit(ctx)
 }
 
-// LiftBlacklist ends a blacklisting early. Command whose authority reaches
-// the player's last rank.
+// LiftBlacklist ends a blacklisting early. Cabinet only (layout plan).
 func LiftBlacklist(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction string, id int64, reason string) error {
 	var err error
 	if reason, err = cleanText(reason, 500, "a reason", true); err != nil {
@@ -738,8 +740,8 @@ func LiftBlacklist(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction
 	if pid == actor.PlayerID {
 		return notAllowed("you can't lift your own blacklisting")
 	}
-	if last > a.UpTo {
-		return notAllowed("they were %s; lifting it needs command who can promote to that rank", RankFor(a.Ranks, last).Label())
+	if !a.Cabinet {
+		return notAllowed("only cabinet can lift a blacklist early")
 	}
 	if _, err := tx.Exec(ctx, `UPDATE faction_blacklist SET lifted_at = now(), lifted_by = $2, lift_reason = $3 WHERE id = $1`, id, actor.PlayerID, reason); err != nil {
 		return err
