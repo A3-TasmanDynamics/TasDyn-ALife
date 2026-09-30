@@ -13,7 +13,7 @@
           {{if $f.Badge}}<span class="pf-badge" title="Badge number / callsign">{{$f.Badge}}</span>{{end}}
           <span class="roster-status roster-status-{{$f.Shown}}">{{$f.Shown}}</span>
           {{if .RankInfo.IsCabinet}}<span class="cmd-tag cmd-tag-cab">CAB</span>{{else if .RankInfo.IsCommand}}<span class="cmd-tag cmd-tag-override">CMD</span>{{end}}
-          {{if $f.AdminRole}}<span class="cmd-tag cmd-tag-cab" title="Administration division">Admin · {{$f.AdminRole}}</span>{{end}}
+          {{if $f.AdminRole}}<span class="cmd-tag cmd-tag-cab" title="Administration division{{if eq $f.AdminRole "Cabinet"}}, automatically as cabinet{{end}}">Admin · {{$f.AdminRole}}</span>{{end}}
         </div>
         <div class="pf-sub">{{$m.Rank.Label}} <span class="pf-dot">&middot;</span> {{$f.Department}}</div>
         <div class="pf-meta">
@@ -41,7 +41,7 @@
             <div><dt>Rank</dt><dd>{{$m.Rank.Label}}</dd></div>
             <div><dt>Badge / callsign</dt><dd>{{if $f.Badge}}<span class="pf-mono">{{$f.Badge}}</span>{{else}}<span class="pf-none">Not set</span>{{end}}</dd></div>
             <div><dt>Division</dt><dd>{{$f.Department}}</dd></div>
-            {{if $f.AdminRole}}<div><dt>Administration</dt><dd>{{$f.AdminRole}}</dd></div>{{end}}
+            {{if $f.AdminRole}}<div><dt>Administration</dt><dd>{{if eq $f.AdminRole "Cabinet"}}Automatic (cabinet){{else}}{{$f.AdminRole}}{{end}}</dd></div>{{end}}
             <div><dt>Status</dt><dd>{{$f.Shown}}</dd></div>
             <div><dt>Region</dt><dd>{{if $f.Region}}{{$f.Region}}{{else}}<span class="pf-none">Not set</span>{{end}}</dd></div>
             <div><dt>Enrollment date</dt><dd>{{if $f.Enrolled}}{{$f.Enrolled.Format "2 January 2006"}}{{else}}<span class="pf-none">Not set</span>{{end}}</dd></div>

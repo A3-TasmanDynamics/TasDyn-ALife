@@ -22,7 +22,7 @@
         <span class="roster-rank">{{.Rank.Label}}{{if $rk.IsCabinet}} <span class="cmd-tag cmd-tag-cab">CAB</span>{{else if $rk.IsCommand}} <span class="cmd-tag cmd-tag-override">CMD</span>{{end}}</span>
         <span class="roster-badge">{{if .Badge}}{{.Badge}}{{else}}<span class="roster-dim">—</span>{{end}}</span>
         <span class="roster-name"><span class="cmd-strong">{{.Name}}</span>{{if .Online}} <span class="cmd-online">Online</span>{{end}}</span>
-        <span class="roster-dept">{{.Department}}</span>
+        <span class="roster-dept">{{.Department}}{{if .AdminRole}} <span class="cmd-tag cmd-tag-cab" title="Administration · {{.AdminRole}}">Admin</span>{{end}}</span>
         <span><span class="roster-status roster-status-{{.Shown}}">{{.Shown}}</span></span>
       </a>
       {{$prev = .Level}}

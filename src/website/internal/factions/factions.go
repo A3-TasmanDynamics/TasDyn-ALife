@@ -205,6 +205,9 @@ func CommandIn(ctx context.Context, pool *pgxpool.Pool, playerID int64, faction 
 	}
 	c.Admin = err == nil && c.Level > 0
 	c.AdminCommander = c.Admin && c.AdminRole == top
+	if c.Cabinet && !c.Admin { // cabinet is part of Administration automatically
+		c.Admin, c.AdminRole = true, CabinetRole
+	}
 	return c, c.Level > 0 && (c.Rank.IsCommand || c.Admin), nil
 }
 

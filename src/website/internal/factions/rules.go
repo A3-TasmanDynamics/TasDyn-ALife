@@ -117,9 +117,10 @@ func standing(ctx context.Context, q dbtx, actor Actor, faction string) (authori
 	return a, nil
 }
 
-// target loads targetID's rank for a check against the actor.
-func (a *authority) target(ctx context.Context, q dbtx, actor Actor, faction string, targetID int64) error {
-	if targetID == actor.PlayerID {
+// target loads targetID's rank for a check against the actor. Acting on
+// yourself is refused unless allowSelf.
+func (a *authority) target(ctx context.Context, q dbtx, actor Actor, faction string, targetID int64, allowSelf bool) error {
+	if targetID == actor.PlayerID && !allowSelf {
 		return notAllowed("you can't do that to yourself")
 	}
 	var err error
@@ -129,6 +130,10 @@ func (a *authority) target(ctx context.Context, q dbtx, actor Actor, faction str
 	a.TargetCabinet = a.TargetLvl > 0 && RankFor(a.Ranks, a.TargetLvl).IsCabinet
 	return nil
 }
+
+// ownRecords reports whether they may keep their own records (cabinet
+// overwrites everything; Management overrides). Never rank or discipline.
+func (a authority) ownRecords() bool { return a.Cabinet || a.Management }
 
 // canRecord reports whether the actor may change the target's records
 // (personnel file, roll call, certifications, training, divisions).
@@ -161,7 +166,7 @@ func commandOver(ctx context.Context, q dbtx, actor Actor, faction string, targe
 		return a, notAllowed("only %s command can do that; Administration keeps the records", Name(faction))
 	}
 	if targetID > 0 {
-		if err := a.target(ctx, q, actor, faction, targetID); err != nil {
+		if err := a.target(ctx, q, actor, faction, targetID, false); err != nil {
 			return a, err
 		}
 		if !a.Cabinet && a.TargetLvl >= a.Level {
@@ -173,12 +178,13 @@ func commandOver(ctx context.Context, q dbtx, actor Actor, faction string, targe
 
 // recordsOver is for keeping records on a member: command (members below
 // them), Administration (anyone but cabinet), cabinet and Management.
+// Cabinet and Management can keep their own records too.
 func recordsOver(ctx context.Context, q dbtx, actor Actor, faction string, targetID int64) (authority, error) {
 	a, err := standing(ctx, q, actor, faction)
 	if err != nil {
 		return a, err
 	}
-	if err := a.target(ctx, q, actor, faction, targetID); err != nil {
+	if err := a.target(ctx, q, actor, faction, targetID, a.ownRecords()); err != nil {
 		return a, err
 	}
 	return a, a.canRecord()
