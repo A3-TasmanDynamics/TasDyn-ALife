@@ -2098,3 +2098,11 @@ a.prof-row-tk:hover, a.prof-row-ticket:hover { background: #172036; }
   .prof-row-head { display: none; }
   .prof-link { flex-wrap: wrap; }
 }
+
+/* Command sidebar: switch between the Police and EMS panels. */
+.cmd-switch { display: flex; gap: 4px; padding: 4px; margin: 4px 0 6px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; }
+.cmd-switch-item { flex: 1; text-align: center; padding: 7px 10px; border-radius: 7px; font-size: 13px; font-weight: 700; color: var(--text-dim); text-decoration: none; }
+.cmd-switch-item:hover { color: var(--text); background: rgba(255, 255, 255, 0.04); }
+.cmd-switch-item.active { color: var(--text); background: var(--bg-elevated); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25); }
+.cmd-switch-police.active { color: #93c5fd; }
+.cmd-switch-ems.active { color: #fca5a5; }

@@ -5,6 +5,12 @@
     <span class="cmd-nav-title"><span>{{.FactionName}} command</span><span class="cmd-nav-you">{{if .Command.LeadOnly}}You: {{.Command.Rank.Label}}{{else if and .ReadOnly .Management}}Management{{else if .ReadOnly}}Staff view (read-only){{else}}You: {{.Command.Rank.Label}}{{end}}</span></span>
   </div>
 
+  {{if gt (len .Panels) 1}}
+  <div class="cmd-switch" role="group" aria-label="Command panel">
+    {{range .Panels}}<a class="cmd-switch-item cmd-switch-{{.Faction}}{{if eq .Faction $.Faction}} active{{end}}" href="/command/{{.Faction}}" {{if eq .Faction $.Faction}}aria-current="page"{{end}}>{{.Name}}</a>{{end}}
+  </div>
+  {{end}}
+
   <div class="cmd-nav-group">General</div>
   <a class="cmd-nav-item {{if eq .Tab "overview"}}active{{end}}" href="/command/{{.Faction}}" {{if eq .Tab "overview"}}aria-current="page"{{end}}>Overview</a>
   <a class="cmd-nav-item {{if eq .Tab "roster"}}active{{end}}" href="/command/{{.Faction}}/roster" {{if eq .Tab "roster"}}aria-current="page"{{end}}>Roster <span class="cmd-nav-count">{{.MemberCount}}</span></a>

@@ -37,6 +37,14 @@ type commandShell struct {
 	Management bool
 	// NavDivisions is the sidebar's Divisions group (General Duties first).
 	NavDivisions []divisionNav
+	// Panels are the factions whose panel the viewer can open, for the
+	// sidebar's switcher (shown when there's more than one).
+	Panels []panelLink
+}
+
+// panelLink is one faction in the sidebar's panel switcher.
+type panelLink struct {
+	Faction, Name string
 }
 
 // divisionNav is one entry in the sidebar's Divisions group.
@@ -83,6 +91,16 @@ func (d *Deps) commandAccess(w http.ResponseWriter, r *http.Request, tab string)
 		return cb, false
 	}
 	cb.Management = d.can(r, "factions.configure")
+	audit := d.can(r, "factions.audit")
+	for _, f := range factions.Factions {
+		open := f == faction || audit
+		if !open {
+			_, open, _ = factions.CommandIn(r.Context(), d.Pool, sess.PlayerID, f)
+		}
+		if open {
+			cb.Panels = append(cb.Panels, panelLink{Faction: f, Name: factions.Name(f)})
+		}
+	}
 	if ranks, err := factions.Ranks(r.Context(), d.Pool, faction); err == nil && cb.Command.Authority > 0 {
 		cb.AuthorityTo = factions.RankFor(ranks, cb.Command.Authority).Label()
 	}

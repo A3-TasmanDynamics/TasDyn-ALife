@@ -63,6 +63,10 @@ func (s *Session) Subtitle() string {
 		return s.StaffRank + " · suspended"
 	case s.StaffRank != "":
 		return s.StaffRank
+	case s.PoliceRank != "" && s.EMSRank != "" && s.PoliceRank == s.EMSRank:
+		return "Police & EMS · " + s.PoliceRank
+	case s.PoliceRank != "" && s.EMSRank != "":
+		return "Police & EMS"
 	case s.PoliceRank != "":
 		return "Police · " + s.PoliceRank
 	case s.EMSRank != "":
