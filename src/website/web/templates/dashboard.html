@@ -6,6 +6,7 @@
       <p class="pdash-meta">Playing since {{.Since.Format "2 Jan 2006"}} &middot; Steam64 <span class="mono">{{.UID}}</span> &middot; {{if .DiscordUsername}}Discord @{{.DiscordUsername}} linked{{else}}Discord not linked{{end}}</p>
     </div>
     <div class="pdash-actions">
+      <a class="btn btn-lg" href="/profile">Profile</a>
       <a class="btn btn-lg" href="/tickets">Open a ticket</a>
       {{if .JoinURL}}<a class="btn btn-primary btn-lg pdash-join" href="{{.JoinURL}}"><span class="pdash-join-dot" aria-hidden="true"></span>Join server &middot; {{.OnlineCount}} online</a>{{end}}
     </div>

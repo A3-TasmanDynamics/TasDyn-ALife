@@ -1,0 +1,167 @@
+{{define "content"}}
+<div class="pdash prof">
+  <header class="prof-hero">
+    {{if .Profile.SteamAvatar}}<img class="prof-avatar" src="{{.Profile.SteamAvatar}}" alt="" width="72" height="72">{{else}}<span class="prof-avatar prof-avatar-text" aria-hidden="true">{{.Profile.Initials}}</span>{{end}}
+    <div class="prof-id">
+      <h1>{{.Profile.Name}}</h1>
+      <p class="pdash-meta">{{if and .Profile.DisplayName .Profile.GameName}}In game as {{.Profile.GameName}} &middot; {{end}}Steam64 <span class="mono">{{.Profile.UID}}</span> &middot; Member since {{.Profile.Created.Format "Jan 2006"}}</p>
+    </div>
+    <div class="pdash-actions"><a class="btn" href="/dashboard">Dashboard</a></div>
+  </header>
+
+  <nav class="prof-tabs" aria-label="Profile">
+    <a href="/profile" class="prof-tab{{if eq .Tab "account"}} active{{end}}" {{if eq .Tab "account"}}aria-current="page"{{end}}>Account</a>
+    <a href="/profile?tab=moderation" class="prof-tab{{if eq .Tab "moderation"}} active{{end}}" {{if eq .Tab "moderation"}}aria-current="page"{{end}}>Moderation history</a>
+  </nav>
+
+  {{if eq .Tab "account"}}
+  <div class="prof-grid">
+    <div class="pdash-col">
+      <section class="pdash-card pdash-pad" aria-labelledby="pf-name">
+        <h2 id="pf-name">Username</h2>
+        <p class="pdash-dim">The name shown on the website, like your header, tickets and applications. {{if .Profile.GameName}}Your in-game name ({{.Profile.GameName}}) comes from Arma and doesn't change here.{{end}}</p>
+        <form method="post" action="/profile/name" class="prof-name-form">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+          <label class="visually-hidden" for="pf-display">Username</label>
+          <input id="pf-display" name="display_name" value="{{.Profile.DisplayName}}" placeholder="{{if .Profile.GameName}}{{.Profile.GameName}}{{else}}{{.Profile.SteamName}}{{end}}" minlength="3" maxlength="24" autocomplete="nickname" {{if not .Profile.NextNameChange.IsZero}}disabled{{end}}>
+          <button class="btn btn-primary" type="submit" {{if not .Profile.NextNameChange.IsZero}}disabled{{end}}>Save</button>
+          {{if and .Profile.DisplayName .Profile.NextNameChange.IsZero}}<button class="btn" type="submit" name="reset" value="1" formnovalidate>Use in-game name</button>{{end}}
+        </form>
+        <p class="hint">{{if not .Profile.NextNameChange.IsZero}}You can change it again on {{.Profile.NextNameChange.Format "2 Jan 2006 at 15:04"}}.{{else}}3 to 24 characters. You can change it once a week.{{end}}</p>
+      </section>
+
+      <section class="pdash-card" aria-labelledby="pf-links">
+        <div class="pdash-card-head"><h2 id="pf-links">Linked accounts</h2></div>
+
+        <div class="prof-link">
+          <span class="prof-link-icon prof-steam" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-9.96 9.1l5.36 2.22a2.8 2.8 0 0 1 1.62-.46l2.39-3.47v-.05a3.78 3.78 0 1 1 3.78 3.78h-.09l-3.41 2.43a2.84 2.84 0 0 1-5.62.56L2.3 14.5A10 10 0 1 0 12 2zm-4.6 15.18-1.23-.51a2.13 2.13 0 1 0 1.17-2.9l1.27.53a1.57 1.57 0 1 1-1.2 2.9zm9.78-7.65a2.52 2.52 0 1 0-2.52 2.52 2.52 2.52 0 0 0 2.52-2.52zm-4.4 0a1.89 1.89 0 1 1 1.89 1.89 1.89 1.89 0 0 1-1.9-1.89z"/></svg></span>
+          <div class="prof-link-body">
+            <div class="prof-link-name">Steam <span class="prof-ok">Linked</span></div>
+            <div class="pdash-small">{{if .Profile.SteamName}}{{.Profile.SteamName}} &middot; {{end}}{{with .Profile.SteamRefreshed}}Synced {{.Format "2 Jan 2006, 15:04"}}{{else}}Not synced yet{{end}}</div>
+          </div>
+          <form method="post" action="/profile/steam/sync" class="prof-link-actions"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="btn" type="submit" {{if not .SteamOn}}disabled title="Steam sync isn't configured on this server"{{end}}>Re-sync</button></form>
+        </div>
+
+        <div class="prof-link">
+          <span class="prof-link-icon prof-discord" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.6 5.3A17 17 0 0 0 15.4 4l-.2.4a15.6 15.6 0 0 1 3.7 1.2 14 14 0 0 0-12 0A15.6 15.6 0 0 1 10.6 4.4L10.4 4a17 17 0 0 0-4.2 1.3C3.6 9.2 2.9 13 3.2 16.8a17 17 0 0 0 5.2 2.6l1.1-1.8a11 11 0 0 1-1.7-.8l.4-.3a12.2 12.2 0 0 0 10.4 0l.4.3a11 11 0 0 1-1.7.8l1.1 1.8a17 17 0 0 0 5.2-2.6c.4-4.4-.7-8.2-3.2-11.5zM9.3 14.5c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2zm5.4 0c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2z"/></svg></span>
+          <div class="prof-link-body">
+            <div class="prof-link-name">Discord {{if .Profile.DiscordID}}<span class="prof-ok">Linked</span>{{else}}<span class="prof-off">Not linked</span>{{end}}</div>
+            <div class="pdash-small">{{if .Profile.DiscordUsername}}@{{.Profile.DiscordUsername}} &middot; roles follow your ranks{{else}}Link it to get your roles in the Discord server{{end}}</div>
+          </div>
+          <div class="prof-link-actions">
+            {{if .Profile.DiscordID}}
+            <form method="post" action="/profile/discord/sync"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="btn" type="submit" {{if not .RoleSyncOn}}disabled title="Role sync isn't running right now"{{end}}>Re-sync roles</button></form>
+            {{if .DiscordOn}}<a class="btn" href="/auth/discord/reconnect" title="Sign in with Discord again, to refresh your username or switch accounts">Reconnect</a>{{end}}
+            {{else if .DiscordOn}}<a class="btn btn-primary" href="/auth/discord/reconnect">Connect Discord</a>{{end}}
+          </div>
+        </div>
+
+        <div class="prof-link prof-link-ts">
+          <span class="prof-link-icon prof-ts" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14v-2a9 9 0 0 1 18 0v2"/><path d="M21 15a2 2 0 0 1-2 2h-1v-5h1a2 2 0 0 1 2 2zM3 15a2 2 0 0 0 2 2h1v-5H5a2 2 0 0 0-2 2z"/><path d="M18 17v1a3 3 0 0 1-3 3h-2"/></svg></span>
+          <div class="prof-link-body">
+            <div class="prof-link-name">TeamSpeak {{if .Profile.TeamSpeakUID}}<span class="prof-ok">Linked</span>{{else}}<span class="prof-off">Not linked</span>{{end}}</div>
+            <div class="pdash-small">{{if .Profile.TeamSpeakUID}}<span class="mono">{{.Profile.TeamSpeakUID}}</span>{{with .Profile.TeamSpeakLinked}} &middot; linked {{.Format "2 Jan 2006"}}{{end}}{{else}}In TeamSpeak open Tools &rarr; Identities, and copy your Unique ID{{end}}</div>
+            <form method="post" action="/profile/teamspeak" class="prof-ts-form">
+              <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+              <label class="visually-hidden" for="pf-ts">TeamSpeak unique ID</label>
+              <input id="pf-ts" class="mono" name="teamspeak_uid" value="{{.Profile.TeamSpeakUID}}" placeholder="e.g. aBcD1234eFgH5678iJkL9012mNo=" maxlength="28" autocomplete="off" spellcheck="false" required>
+              <button class="btn {{if not .Profile.TeamSpeakUID}}btn-primary{{end}}" type="submit">{{if .Profile.TeamSpeakUID}}Update &amp; re-sync{{else}}Link{{end}}</button>
+              {{if .Profile.TeamSpeakUID}}<button class="btn prof-unlink" type="submit" name="unlink" value="1" formnovalidate>Unlink</button>{{end}}
+            </form>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="pdash-col">
+      <section class="pdash-card" aria-labelledby="pf-standing">
+        <div class="pdash-card-head"><h2 id="pf-standing">Account standing</h2><a class="pdash-head-link" href="/profile?tab=moderation">Full history &rarr;</a></div>
+        <div class="prof-standing">
+          {{$active := 0}}{{range .History.Bans}}{{if eq .State "Active"}}{{$active = 1}}{{end}}{{end}}
+          <div><span class="prof-stat {{if $active}}pdash-bad{{else}}pdash-good{{end}}">{{if $active}}Banned{{else}}Good{{end}}</span><span class="pdash-small">Current standing</span></div>
+          <div><span class="prof-stat">{{.History.ActivePoints}}</span><span class="pdash-small">Active points</span></div>
+          <div><span class="prof-stat">{{len .History.Bans}}</span><span class="pdash-small">Bans on record</span></div>
+          <div><span class="prof-stat">{{len .History.Kicks}}</span><span class="pdash-small">Kicks</span></div>
+        </div>
+      </section>
+      <section class="pdash-card" aria-labelledby="pf-tickets">
+        <div class="pdash-card-head"><h2 id="pf-tickets">Your tickets</h2>{{if .History.OpenTickets}}<span class="pdash-count">{{.History.OpenTickets}} open</span>{{end}}<a class="pdash-head-link" href="/tickets">Open a ticket &rarr;</a></div>
+        {{range $i, $t := .History.Tickets}}{{if lt $i 5}}
+        <a class="pdash-row prof-row-ticket" href="/tickets/{{.ID}}"><span><span class="pdash-strong">#{{.ID}} {{.Subject}}</span><span class="pdash-small">{{.Category}} &middot; updated {{.Updated.Format "2 Jan 2006"}}</span></span><span class="prof-pill prof-t-{{.Status}}">{{.Status}}</span></a>
+        {{end}}{{else}}<p class="pdash-empty">You haven't opened any tickets.</p>{{end}}
+        {{if gt (len .History.Tickets) 5}}<a class="prof-more" href="/profile?tab=moderation#tickets">All {{len .History.Tickets}} tickets</a>{{end}}
+      </section>
+    </div>
+  </div>
+
+  {{else}}
+  <p class="pdash-dim prof-lede">Everything staff have recorded against your account. If something here looks wrong, <a href="/tickets">open a ticket</a>{{range .History.Bans}}{{if eq .State "Active"}}, or appeal your ban from your <a href="/dashboard">dashboard</a>{{break}}{{end}}{{end}}.</p>
+  <div class="pdash-tiles">
+    <div class="pdash-tile"><div class="pdash-tile-label">Bans</div><div class="pdash-tile-value">{{len .History.Bans}}</div><div class="pdash-tile-sub">{{$n := 0}}{{range .History.Bans}}{{if eq .State "Active"}}{{$n = 1}}{{end}}{{end}}{{if $n}}<span class="pdash-bad">Currently banned</span>{{else}}None active{{end}}</div></div>
+    <div class="pdash-tile"><div class="pdash-tile-label">Kicks</div><div class="pdash-tile-value">{{len .History.Kicks}}</div><div class="pdash-tile-sub">All time</div></div>
+    <div class="pdash-tile"><div class="pdash-tile-label">Punishment points</div><div class="pdash-tile-value">{{.History.ActivePoints}}</div><div class="pdash-tile-sub">Active, from {{len .History.Points}} on record</div></div>
+    <div class="pdash-tile"><div class="pdash-tile-label">Tickets</div><div class="pdash-tile-value">{{len .History.Tickets}}</div><div class="pdash-tile-sub">{{.History.OpenTickets}} open</div></div>
+  </div>
+
+  <section class="pdash-card" aria-labelledby="mh-bans">
+    <div class="pdash-card-head"><h2 id="mh-bans">Bans</h2><span class="pdash-count">{{len .History.Bans}}</span></div>
+    {{if .History.Bans}}
+    <div class="pdash-row prof-row-ban prof-row-head"><span>Reason</span><span>Length</span><span>Issued</span><span>Status</span></div>
+    {{range .History.Bans}}
+    <div class="pdash-row prof-row-ban">
+      <span><span class="pdash-strong">{{.Reason}}</span><span class="pdash-small">By {{.By}}{{if .CaseID}} &middot; case #{{.CaseID}}{{end}}{{if eq .Scope "game_discord"}} &middot; game and Discord{{end}}{{if .Appeal}} &middot; appeal {{.Appeal}}{{end}}</span></span>
+      <span>{{.Length}}<span class="pdash-small">{{with .Expires}}Until {{.Format "2 Jan 2006"}}{{else}}No end date{{end}}</span></span>
+      <span>{{.Created.Format "2 Jan 2006"}}</span>
+      <span><span class="prof-pill prof-s-{{.State}}">{{.State}}</span>{{if .Lifted}}<span class="pdash-small">{{.Lifted.Format "2 Jan 2006"}}{{if .LiftReason}}: {{.LiftReason}}{{end}}</span>{{end}}</span>
+    </div>
+    {{end}}
+    {{else}}<p class="pdash-empty">No bans. Keep it up.</p>{{end}}
+  </section>
+
+  <section class="pdash-card" aria-labelledby="mh-kicks">
+    <div class="pdash-card-head"><h2 id="mh-kicks">Kicks</h2><span class="pdash-count">{{len .History.Kicks}}</span></div>
+    {{if .History.Kicks}}
+    <div class="pdash-row prof-row-kick prof-row-head"><span>Reason</span><span>Type</span><span>By</span><span>When</span></div>
+    {{range .History.Kicks}}
+    <div class="pdash-row prof-row-kick"><span class="pdash-strong">{{if .Reason}}{{.Reason}}{{else}}No reason given{{end}}</span><span><span class="prof-pill">{{.TypeLabel}}</span></span><span>{{.By}}</span><span>{{.Created.Format "2 Jan 2006, 15:04"}}</span></div>
+    {{end}}
+    {{else}}<p class="pdash-empty">No kicks.</p>{{end}}
+  </section>
+
+  <section class="pdash-card" aria-labelledby="mh-points">
+    <div class="pdash-card-head"><h2 id="mh-points">Punishment points</h2><span class="pdash-count">{{.History.ActivePoints}} active</span></div>
+    {{if .History.Points}}
+    <div class="pdash-row prof-row-points prof-row-head"><span>Points</span><span>Rules broken</span><span>Issued</span><span>Status</span></div>
+    {{range .History.Points}}
+    <div class="pdash-row prof-row-points">
+      <span class="prof-points">{{.Points}}</span>
+      <span><span class="pdash-strong">{{.Rules}}</span><span class="pdash-small">{{if .Comment}}{{.Comment}} &middot; {{end}}By {{.By}} &middot; case #{{.CaseID}}</span></span>
+      <span>{{.Created.Format "2 Jan 2006"}}</span>
+      <span><span class="prof-pill prof-s-{{.State}}">{{.State}}</span>{{if and .Expires (eq .State "Active")}}<span class="pdash-small">Until {{.Expires.Format "2 Jan 2006"}}</span>{{end}}</span>
+    </div>
+    {{end}}
+    {{else}}<p class="pdash-empty">No punishment points.</p>{{end}}
+  </section>
+
+  <section class="pdash-card" aria-labelledby="mh-cases">
+    <div class="pdash-card-head"><h2 id="mh-cases">Staff cases</h2><span class="pdash-count">{{len .History.Cases}}</span></div>
+    {{if .History.Cases}}
+    <div class="pdash-row prof-row-case prof-row-head"><span>Case</span><span>Your part</span><span>Opened</span><span>Outcome</span></div>
+    {{range .History.Cases}}
+    <div class="pdash-row prof-row-case"><span class="pdash-strong">#{{.ID}} {{$.CaseType .Type}}</span><span>{{.RoleLabel}}</span><span>{{.Created.Format "2 Jan 2006"}}</span><span>{{if eq .Status "open"}}<span class="prof-pill prof-t-open">Open</span>{{else}}{{if .Outcome}}{{.Outcome}}{{else}}Closed{{end}}{{end}}</span></div>
+    {{end}}
+    {{else}}<p class="pdash-empty">You haven't been part of any staff cases.</p>{{end}}
+  </section>
+
+  <section class="pdash-card" id="tickets" aria-labelledby="mh-tickets">
+    <div class="pdash-card-head"><h2 id="mh-tickets">Support tickets</h2><span class="pdash-count">{{len .History.Tickets}}</span><a class="pdash-head-link" href="/tickets">Open a ticket &rarr;</a></div>
+    {{if .History.Tickets}}
+    <div class="pdash-row prof-row-tk prof-row-head"><span>Subject</span><span>Category</span><span>Replies</span><span>Updated</span><span>Status</span></div>
+    {{range .History.Tickets}}
+    <a class="pdash-row prof-row-tk" href="/tickets/{{.ID}}"><span class="pdash-strong">#{{.ID}} {{.Subject}}</span><span>{{.Category}}</span><span>{{.Replies}}</span><span>{{.Updated.Format "2 Jan 2006"}}</span><span><span class="prof-pill prof-t-{{.Status}}">{{.Status}}</span></span></a>
+    {{end}}
+    {{else}}<p class="pdash-empty">You haven't opened any tickets.</p>{{end}}
+  </section>
+  {{end}}
+</div>
+{{end}}

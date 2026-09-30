@@ -36,6 +36,9 @@ const (
 
 	IntentLogin   = "login"
 	IntentConnect = "connect"
+	// IntentReconnect is the profile page's "re-sync Discord": link (or
+	// replace) the account, then sync roles, and come back to /profile.
+	IntentReconnect = "reconnect"
 )
 
 // DiscordOAuth holds this app's Discord application credentials -- see
