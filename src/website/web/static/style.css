@@ -1981,3 +1981,14 @@ a.points-case { color: var(--text); text-decoration: none; grid-template-columns
 .ed-toolbar { gap: 2px; }
 .ed-toolbar button { padding: 0 7px; }
 .ed-sep { margin: 0 2px; }
+/* Sidebar: each division is a collapsible section. */
+.cmd-nav-section > summary { list-style: none; cursor: pointer; }
+.cmd-nav-section > summary::-webkit-details-marker { display: none; }
+.cmd-nav-section-here { color: var(--text); }
+.cmd-nav-caret { margin-left: auto; width: 7px; height: 7px; border-right: 2px solid var(--text-faint); border-bottom: 2px solid var(--text-faint); transform: rotate(-45deg); transition: transform 0.15s; flex-shrink: 0; }
+.cmd-nav-count + .cmd-nav-caret { margin-left: 8px; }
+.cmd-nav-section[open] > summary .cmd-nav-caret { transform: rotate(45deg); }
+.cmd-nav-sub { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 6px 16px; padding-left: 10px; border-left: 2px solid var(--div); }
+.cmd-nav-subitem { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; font-size: 13px; color: var(--text-dim); text-decoration: none; }
+.cmd-nav-subitem:hover { background: var(--bg-elevated); color: var(--text); }
+.cmd-nav-subitem.active { background: var(--amber-soft); color: var(--amber-bright); font-weight: 600; }

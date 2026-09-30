@@ -55,7 +55,7 @@
     </section>
     {{end}}
 
-    <section class="cmd-card" aria-labelledby="members-h">
+    <section class="cmd-card" id="members" aria-labelledby="members-h">
       <div class="cmd-card-head"><h2 id="members-h">Members</h2>
         {{if not .IsGD}}<span class="cmd-dim">Roles, most senior first: {{range $i, $r := $d.Roles}}{{if $i}} &middot; {{end}}{{$r}}{{end}}</span>{{end}}</div>
       {{range .Members}}
@@ -91,7 +91,7 @@
     </section>
 
     {{if not .IsGD}}
-    <section class="cmd-card" aria-labelledby="docs-h">
+    <section class="cmd-card" id="docs" aria-labelledby="docs-h">
       <div class="cmd-card-head"><h2 id="docs-h">{{$d.Name}} documents</h2><span class="cmd-dim">SOPs, training and files for this division</span>
         {{if .CanWriteDocs}}<a class="cmd-head-link" href="/command/{{.Faction}}/drive/new?template=sop&amp;division={{$d.Key}}">New SOP</a>{{end}}</div>
       {{range .Docs}}

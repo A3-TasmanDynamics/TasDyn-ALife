@@ -42,7 +42,8 @@ type commandShell struct {
 // divisionNav is one entry in the sidebar's Divisions group.
 type divisionNav struct {
 	Key, Name, Color string
-	Pending          int // applications the viewer can review
+	Pending          int  // applications the viewer can review
+	CanReview        bool // show the Applications link
 }
 
 type commandBase struct {
@@ -94,7 +95,7 @@ func (d *Deps) commandAccess(w http.ResponseWriter, r *http.Request, tab string)
 		for _, dv := range divs {
 			n := divisionNav{Key: dv.Key, Name: dv.Name, Color: dv.Color}
 			if cb.Management || cb.Command.CanReview(dv) {
-				n.Pending = pending[dv.Key]
+				n.Pending, n.CanReview = pending[dv.Key], true
 			}
 			cb.NavDivisions = append(cb.NavDivisions, n)
 		}

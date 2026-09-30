@@ -204,12 +204,53 @@ func lockProbation(ctx context.Context, tx pgx.Tx, actor Actor, faction string, 
 	if p.Status != "active" {
 		return p, authority{}, notAllowed("that probation has already finished")
 	}
-	a, err := recordsOver(ctx, tx, actor, faction, p.PlayerID)
+	a, err := trainingOver(ctx, tx, actor, faction, p.PlayerID)
 	if err != nil {
 		return p, a, err
 	}
 	p.ID, p.Name, p.Level = id, playerName(ctx, tx, p.PlayerID), a.TargetLvl
 	return p, a, nil
+}
+
+// FTOQual is the qualification that lets a member run recruits' training.
+const FTOQual = "FTO"
+
+// trainingOver is for running recruits' training (sign-offs, FTO, notes):
+// field training officers (holders of FTOQual) and command ranks and above,
+// plus Management. Confirming or ending a probation changes rank, so that
+// stays with command (setLevel).
+func trainingOver(ctx context.Context, q dbtx, actor Actor, faction string, targetID int64) (authority, error) {
+	var a authority
+	var err error
+	if a.Ranks, err = Ranks(ctx, q, faction); err != nil {
+		return a, err
+	}
+	if a.Level, err = levelOf(ctx, q, faction, actor.PlayerID); err != nil {
+		return a, err
+	}
+	switch actor.Via {
+	case ViaStaffOverride:
+		a.Management = true
+	case ViaCommand:
+		r := RankFor(a.Ranks, a.Level)
+		a.IsCommand, a.Cabinet = r.IsCommand, r.IsCabinet && r.IsCommand
+		held, err := memberQuals(ctx, q, faction, actor.PlayerID)
+		if err != nil {
+			return a, err
+		}
+		if a.Level == 0 || !(a.IsCommand || held[FTOQual]) {
+			return a, notAllowed("only field training officers and command manage recruits' training")
+		}
+	default:
+		return a, notAllowed("unknown authority")
+	}
+	if err := a.target(ctx, q, actor, faction, targetID, false); err != nil {
+		return a, err
+	}
+	if a.TargetLvl == 0 {
+		return a, notAllowed("they aren't in %s", Name(faction))
+	}
+	return a, nil
 }
 
 // SetTraining records a sign-off on one training item.

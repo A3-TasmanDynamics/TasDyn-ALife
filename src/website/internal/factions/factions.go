@@ -137,10 +137,18 @@ type Command struct {
 	// Leads are the specialist divisions they command (Commander or Second
 	// in Command): they review that division's applications.
 	Leads []string
+	// FTO: they hold the field training officer qualification, so they
+	// run recruits' training.
+	FTO bool
 }
 
-// LeadOnly reports whether their only access is leading a division.
-func (c Command) LeadOnly() bool { return !c.Rank.IsCommand && !c.Admin && len(c.Leads) > 0 }
+// LeadOnly reports whether their access is limited: leading a division
+// and/or being an FTO, without a command rank or Administration.
+func (c Command) LeadOnly() bool { return !c.Rank.IsCommand && !c.Admin && (len(c.Leads) > 0 || c.FTO) }
+
+// CanTrain reports whether they run recruits' training (FTOs and command
+// ranks and above).
+func (c Command) CanTrain() bool { return c.Level > 0 && (c.Rank.IsCommand || c.FTO) }
 
 // Maintains reports whether they maintain the panel (rank rules, settings).
 func (c Command) Maintains() bool { return c.Rank.IsCommand || c.Admin }
@@ -243,8 +251,12 @@ func CommandIn(ctx context.Context, pool dbtx, playerID int64, faction string) (
 			}
 		}
 		rows.Close()
+		if err := pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM faction_member_quals WHERE faction = $1 AND player_id = $2 AND qual_key = $3)`,
+			faction, playerID, FTOQual).Scan(&c.FTO); err != nil {
+			return c, false, err
+		}
 	}
-	return c, c.Level > 0 && (c.Rank.IsCommand || c.Admin || len(c.Leads) > 0), nil
+	return c, c.Level > 0 && (c.Rank.IsCommand || c.Admin || len(c.Leads) > 0 || c.FTO), nil
 }
 
 // Actor is who is making a change, and under which authority.

@@ -265,7 +265,9 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 			        OR EXISTS (SELECT 1 FROM faction_member_divisions md JOIN faction_divisions d ON d.faction = md.faction AND d.key = md.division_key
 			               WHERE md.player_id = p.id
 			                 AND ((d.faction = 'police' AND p.cop_level > 0) OR (d.faction = 'ems' AND p.medic_level > 0))
-			                 AND (d.is_admin OR md.role = d.roles[1] OR (cardinality(d.roles) >= 3 AND md.role = d.roles[2])))),
+			                 AND (d.is_admin OR md.role = d.roles[1] OR (cardinality(d.roles) >= 3 AND md.role = d.roles[2])))
+			        OR EXISTS (SELECT 1 FROM faction_member_quals q WHERE q.player_id = p.id AND q.qual_key = 'FTO'
+			                 AND ((q.faction = 'police' AND p.cop_level > 0) OR (q.faction = 'ems' AND p.medic_level > 0)))),
 			       (SELECT count(*) FROM notifications n WHERE n.player_id = p.id AND n.read_at IS NULL),
 			       COALESCE(e.id, 0), COALESCE(e.title, ''), COALESCE(e.body, ''), COALESCE(e.link, ''),
 			       COALESCE((SELECT count(*) FILTER (WHERE x.acknowledged_at IS NOT NULL) FROM notifications x WHERE x.notice_id = e.notice_id), 0),

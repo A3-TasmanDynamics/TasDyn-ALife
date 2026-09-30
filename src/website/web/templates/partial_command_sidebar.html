@@ -13,18 +13,29 @@
   <a class="cmd-nav-item {{if eq .Tab "drive"}}active{{end}}" href="/command/{{.Faction}}/drive" {{if eq .Tab "drive"}}aria-current="page"{{end}}>Drive</a>
 
   <div class="cmd-nav-group">Divisions</div>
-  {{range .NavDivisions}}{{$tab := printf "div-%s" .Key}}
-  <a class="cmd-nav-item {{if eq $.Tab $tab}}active{{end}}" href="/command/{{$.Faction}}/division/{{.Key}}" {{if eq $.Tab $tab}}aria-current="page"{{end}}><span class="cmd-nav-dot" style="--div: {{.Color}}" aria-hidden="true"></span>{{.Name}}{{if .Pending}} <span class="cmd-nav-count cmd-nav-count-hot" title="{{.Pending}} application{{if ne .Pending 1}}s{{end}} to review">{{.Pending}}</span>{{end}}</a>
+  {{range .NavDivisions}}{{$tab := printf "div-%s" .Key}}{{$gd := eq .Key "GD"}}{{$here := or (eq $.Tab $tab) (and $gd (eq $.Tab "recruits"))}}
+  <details class="cmd-nav-section" style="--div: {{.Color}}" {{if $here}}open{{end}}>
+    <summary class="cmd-nav-item{{if $here}} cmd-nav-section-here{{end}}"><span class="cmd-nav-dot" aria-hidden="true"></span>{{.Name}}{{$n := .Pending}}{{if $gd}}{{$n = $.OpenApps}}{{end}}{{if $n}} <span class="cmd-nav-count cmd-nav-count-hot">{{$n}}</span>{{end}}<span class="cmd-nav-caret" aria-hidden="true"></span></summary>
+    <div class="cmd-nav-sub">
+      <a class="cmd-nav-subitem {{if eq $.Tab $tab}}active{{end}}" href="/command/{{$.Faction}}/division/{{.Key}}" {{if eq $.Tab $tab}}aria-current="page"{{end}}>{{if $gd}}Members{{else}}Overview{{end}}</a>
+      {{if $gd}}
+      <a class="cmd-nav-subitem {{if eq $.Tab "recruits"}}active{{end}}" href="/command/{{$.Faction}}/recruits" {{if eq $.Tab "recruits"}}aria-current="page"{{end}}>Recruits &amp; training{{if $.OpenApps}} <span class="cmd-nav-count cmd-nav-count-hot">{{$.OpenApps}}</span>{{end}}</a>
+      {{else}}
+      {{if .CanReview}}<a class="cmd-nav-subitem" href="/command/{{$.Faction}}/division/{{.Key}}#applications">Applications{{if .Pending}} <span class="cmd-nav-count cmd-nav-count-hot">{{.Pending}}</span>{{end}}</a>{{end}}
+      <a class="cmd-nav-subitem" href="/command/{{$.Faction}}/division/{{.Key}}#members">Members</a>
+      <a class="cmd-nav-subitem" href="/command/{{$.Faction}}/division/{{.Key}}#docs">Documents</a>
+      {{end}}
+    </div>
+  </details>
   {{end}}
 
   <div class="cmd-nav-group">Command</div>
-  <a class="cmd-nav-item {{if eq .Tab "recruits"}}active{{end}}" href="/command/{{.Faction}}/recruits" {{if eq .Tab "recruits"}}aria-current="page"{{end}}>Recruits &amp; training{{if .OpenApps}} <span class="cmd-nav-count cmd-nav-count-hot">{{.OpenApps}}</span>{{end}}</a>
   <a class="cmd-nav-item {{if eq .Tab "discipline"}}active{{end}}" href="/command/{{.Faction}}/discipline" {{if eq .Tab "discipline"}}aria-current="page"{{end}}>Discipline</a>
   <a class="cmd-nav-item {{if eq .Tab "log"}}active{{end}}" href="/command/{{.Faction}}/log" {{if eq .Tab "log"}}aria-current="page"{{end}}>Command log</a>
 
   <div class="cmd-authority">
     <div class="cmd-authority-label">Your authority</div>
-    {{if .Command.LeadOnly}}You lead {{range $i, $k := .Command.Leads}}{{if $i}}, {{end}}{{range $.NavDivisions}}{{if eq .Key $k}}<strong>{{.Name}}</strong>{{end}}{{end}}{{end}}: you review its applications. The rest of this panel is read-only for you.
+    {{if .Command.LeadOnly}}{{if .Command.Leads}}You lead {{range $i, $k := .Command.Leads}}{{if $i}}, {{end}}{{range $.NavDivisions}}{{if eq .Key $k}}<strong>{{.Name}}</strong>{{end}}{{end}}{{end}}: you review its applications.{{end}}{{if .Command.FTO}} As a <strong>field training officer</strong> you run recruits' training sheets (General Duties → Recruits &amp; training).{{end}} The rest of this panel is read-only for you.
     {{else if .ReadOnly}}You can see this faction's roster and command log because you have <code class="perm-key">factions.audit</code>. Changes are made by its command, or by Management from Player Lookup.
     {{if .Management}} As <strong>Management</strong>, you can also appoint to Administration, review division applications and edit rank rules.{{end}}
     {{else if not .Command.IsCommand}}You're in <strong>Administration</strong>{{if .Command.AdminRole}} ({{.Command.AdminRole}}){{end}}: you administrate and maintain this panel: personnel files, roll call, certifications, training, divisions and their applications, rank rules and settings.{{if .Command.AdminCommander}} As its Commander you can also appoint to Administration.{{end}} Rank changes and discipline are for command ranks.
