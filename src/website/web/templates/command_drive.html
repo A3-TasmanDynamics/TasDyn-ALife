@@ -100,7 +100,7 @@
         <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="parent" value="{{.FolderID}}">
         <div class="modal-head"><h2 id="dlg-folder-t">New folder</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
         <div class="modal-body">
-          <div class="field"><label for="fd-name">Name</label><input id="fd-name" name="name" maxlength="80" required placeholder="e.g. S.R.G. SOPs"></div>
+          <div class="field"><label for="fd-name">Name</label><input id="fd-name" name="name" maxlength="80" required placeholder="{{.FolderExample}}"></div>
           {{template "drive_fields" .}}
         </div>
         <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Create folder</button></div>

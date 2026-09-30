@@ -19,7 +19,7 @@
         {{if .Officers}}
         <form method="post" action="/command/{{.Faction}}/discipline" class="cmd-form disc-form" data-disc-form>
           <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-          <div class="field"><label for="dc-who">Officer</label>
+          <div class="field"><label for="dc-who">{{.Noun}}</label>
             <select id="dc-who" name="who" required data-disc-who>
               {{range .Officers}}<option value="{{.ID}}" data-points="{{.Standing.Points}}" data-mvws="{{.Standing.MVWs}}" {{if eq .ID $.Who}}selected{{end}}>{{.Name}} &middot; {{.Rank.Label}}{{if .Standing.Points}} &middot; {{.Standing.Points}} pts{{end}}{{if .Standing.Suspended}} &middot; suspended{{end}}</option>{{end}}
             </select></div>
@@ -71,7 +71,7 @@
 
     {{if eq .View "log"}}
     <div class="cmd-table" role="table" aria-label="Punishment log">
-      <div class="cmd-row disc-row cmd-row-head" role="row"><span>Date</span><span>Officer</span><span>Offence</span><span>Given</span><span>Action</span><span>By</span></div>
+      <div class="cmd-row disc-row cmd-row-head" role="row"><span>Date</span><span>{{.Noun}}</span><span>Offence</span><span>Given</span><span>Action</span><span>By</span></div>
       {{range .Entries}}
       <div class="cmd-row disc-row{{if not .Active}} disc-row-old{{end}}" role="row">
         <span class="cmd-dim">{{.When.Format "2 Jan"}}</span>
