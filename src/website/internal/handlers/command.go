@@ -221,7 +221,7 @@ func (d *Deps) CommandRoster(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	if !cb.ReadOnly {
+	if !cb.ReadOnly && cb.Command.Authority > 0 {
 		data.CanRecruit = true
 		data.Levels = assignable(ranks, cb.Command.Authority)
 	}
@@ -325,6 +325,8 @@ func (d *Deps) CommandMember(w http.ResponseWriter, r *http.Request) {
 		data.Why = "You're viewing as staff (read-only). Management can override ranks from Player Lookup."
 	case id == sess.PlayerID:
 		data.Why = "You can't change your own rank."
+	case cb.Command.Authority == 0:
+		data.Why = "Your rank can't change ranks. It needs a \"promotes up to\" rank on Ranks & gear."
 	case data.Member.Level > cb.Command.Authority:
 		data.Why = fmt.Sprintf("%s is above what you can change (up to %s).", data.Member.Rank.Label(), cb.AuthorityTo)
 	default:

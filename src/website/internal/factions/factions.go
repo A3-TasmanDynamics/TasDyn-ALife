@@ -1,10 +1,12 @@
 // Package factions is the one place police/EMS levels change on the
 // website, whoever makes the change (docs/GAMEPANEL_PARITY.md §5.2, §6.1):
 //
-//   - Faction command, on the command panel. Authority comes from the
-//     officer's faction rank (faction_rank_names.promote_up_to), never from
-//     a staff role. They can only act on members whose current AND new level
-//     are within that authority, which is always below their own rank.
+//   - Faction command, on the command panel. Access comes from the
+//     officer's faction rank being ticked as a command rank
+//     (faction_rank_names.is_command), never from a staff role. How far
+//     they can promote is the rank's promote_up_to: they can only act on
+//     members whose current AND new level are within it, which is always
+//     below their own rank.
 //   - Management, as a staff override from Player Lookup (permissions
 //     players.edit_police / players.edit_medic, Head Admin only and never
 //     granted per-player). Meant for fixing mistakes and settling disputes.
@@ -60,8 +62,10 @@ type Rank struct {
 	Level       int
 	Name        string
 	Short       string
-	Slots       int // 0 = no limit
-	PromoteUpTo int // > 0 = command rank
+	Slots       int  // 0 = no limit
+	PromoteUpTo int  // highest level it may set others to (0 = none)
+	IsCommand   bool // ticked: gets the command panel (CMD)
+	IsCabinet   bool // ticked: senior leadership (CAB)
 
 	// Rank rules (Ranks & gear).
 	MinDays     int      // days in this rank before promotion
@@ -69,8 +73,11 @@ type Rank struct {
 	Description string
 }
 
-// Command reports whether the rank has command authority.
-func (r Rank) Command() bool { return r.PromoteUpTo > 0 && r.PromoteUpTo < r.Level }
+// Command reports whether the rank is ticked as a command rank.
+func (r Rank) Command() bool { return r.IsCommand }
+
+// CanPromote reports whether the rank can change others' ranks.
+func (r Rank) CanPromote() bool { return r.IsCommand && r.PromoteUpTo > 0 && r.PromoteUpTo < r.Level }
 
 // Label is "Name" or "Level n" when the rank has no name configured.
 func (r Rank) Label() string {
@@ -85,7 +92,7 @@ func Ranks(ctx context.Context, q interface {
 	Query(context.Context, string, ...any) (pgx.Rows, error)
 }, faction string) ([]Rank, error) {
 	rows, err := q.Query(ctx, `
-		SELECT level, name, COALESCE(short_name, ''), COALESCE(slots, 0), promote_up_to, min_days, required_quals, description
+		SELECT level, name, COALESCE(short_name, ''), COALESCE(slots, 0), promote_up_to, min_days, required_quals, description, is_command, is_cabinet
 		FROM faction_rank_names WHERE faction = $1 ORDER BY level`, faction)
 	if err != nil {
 		return nil, err
@@ -94,7 +101,7 @@ func Ranks(ctx context.Context, q interface {
 	var out []Rank
 	for rows.Next() {
 		var r Rank
-		if err := rows.Scan(&r.Level, &r.Name, &r.Short, &r.Slots, &r.PromoteUpTo, &r.MinDays, &r.Quals, &r.Description); err != nil {
+		if err := rows.Scan(&r.Level, &r.Name, &r.Short, &r.Slots, &r.PromoteUpTo, &r.MinDays, &r.Quals, &r.Description, &r.IsCommand, &r.IsCabinet); err != nil {
 			return nil, err
 		}
 		out = append(out, r)
@@ -117,7 +124,8 @@ type Command struct {
 	Faction   string
 	Level     int
 	Rank      Rank
-	Authority int // highest level they may set others to
+	Authority int  // highest level they may set others to (0 = can't change ranks)
+	Cabinet   bool // their rank is ticked as cabinet
 }
 
 // CommandOf returns the factions the player has command authority in.
@@ -142,17 +150,22 @@ func CommandIn(ctx context.Context, pool *pgxpool.Pool, playerID int64, faction 
 	}
 	c := Command{Faction: faction}
 	err := pool.QueryRow(ctx, `
-		SELECT p.`+column[faction]+`, COALESCE(r.name, ''), COALESCE(r.short_name, ''), COALESCE(r.slots, 0), COALESCE(r.promote_up_to, 0)
+		SELECT p.`+column[faction]+`, COALESCE(r.name, ''), COALESCE(r.short_name, ''), COALESCE(r.slots, 0), COALESCE(r.promote_up_to, 0),
+		       COALESCE(r.is_command, false), COALESCE(r.is_cabinet, false)
 		FROM players p LEFT JOIN faction_rank_names r ON r.faction = $2 AND r.level = p.`+column[faction]+`
-		WHERE p.id = $1`, playerID, faction).Scan(&c.Level, &c.Rank.Name, &c.Rank.Short, &c.Rank.Slots, &c.Rank.PromoteUpTo)
+		WHERE p.id = $1`, playerID, faction).Scan(&c.Level, &c.Rank.Name, &c.Rank.Short, &c.Rank.Slots, &c.Rank.PromoteUpTo, &c.Rank.IsCommand, &c.Rank.IsCabinet)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return c, false, nil
 	}
 	if err != nil {
 		return c, false, err
 	}
-	c.Rank.Level, c.Authority = c.Level, c.Rank.PromoteUpTo
-	return c, c.Level > 0 && c.Authority > 0 && c.Authority < c.Level, nil
+	c.Rank.Level = c.Level
+	if c.Rank.CanPromote() {
+		c.Authority = c.Rank.PromoteUpTo
+	}
+	c.Cabinet = c.Rank.IsCabinet
+	return c, c.Level > 0 && c.Rank.IsCommand, nil
 }
 
 // Actor is who is making a change, and under which authority.
@@ -247,10 +260,14 @@ func setLevel(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction stri
 
 	switch actor.Via {
 	case ViaCommand:
-		authority := RankFor(ranks, actorLevel).PromoteUpTo
-		if actorLevel == 0 || authority == 0 || authority >= actorLevel {
+		ar := RankFor(ranks, actorLevel)
+		if actorLevel == 0 || !ar.Command() {
 			return ch, notAllowed("only %s command can change ranks", Name(faction))
 		}
+		if !ar.CanPromote() {
+			return ch, notAllowed("%s can't change ranks", ar.Label())
+		}
+		authority := ar.PromoteUpTo
 		if cur > authority {
 			return ch, notAllowed("%s is above what you can change (up to %s)", RankFor(ranks, cur).Label(), RankFor(ranks, authority).Label())
 		}

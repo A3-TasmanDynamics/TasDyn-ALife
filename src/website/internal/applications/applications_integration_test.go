@@ -28,7 +28,7 @@ func TestRecruitmentFlow(t *testing.T) {
 	if n > 0 {
 		t.Skip("police ranks already configured on this database")
 	}
-	pool.Exec(ctx, `INSERT INTO faction_rank_names (faction, level, name, promote_up_to) VALUES ('police', 1, 'Cadet', 0), ('police', 2, 'Constable', 0), ('police', 3, 'Inspector', 2)`)
+	pool.Exec(ctx, `INSERT INTO faction_rank_names (faction, level, name, promote_up_to, is_command) VALUES ('police', 1, 'Cadet', 0, false), ('police', 2, 'Constable', 0, false), ('police', 3, 'Inspector', 2, true)`)
 
 	ids := map[string]int64{}
 	for name, row := range map[string][2]string{

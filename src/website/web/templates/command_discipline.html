@@ -132,7 +132,7 @@
             <form method="post" action="/command/{{$.Faction}}/blacklist/{{.ID}}/lift">
               <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
               <div class="modal-head"><h2 id="dlg-lift-{{.ID}}-t">Lift the blacklist on {{.Player}}</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
-              <div class="modal-body"><div class="field"><label for="lf-{{.ID}}">Reason</label><input id="lf-{{.ID}}" name="reason" required maxlength="500"></div><p class="hint">They can apply again straight away. You need authority up to their last rank.</p></div>
+              <div class="modal-body"><div class="field"><label for="lf-{{.ID}}">Reason</label><input id="lf-{{.ID}}" name="reason" required maxlength="500"></div><p class="hint">They can apply again straight away.</p></div>
               <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Lift blacklist</button></div>
             </form>
           </dialog>{{end}}</span>
@@ -141,7 +141,7 @@
       <p class="cmd-empty">Nobody is blacklisted.</p>
       {{end}}
     </div>
-    <p class="hint">Blacklisted players can't apply to {{.FactionName}} or be recruited until the end date. Lifting one early needs command whose authority reaches their last rank.</p>
+    <p class="hint">Blacklisted players can't apply to {{.FactionName}} or be recruited until the end date. Only cabinet can lift one early or blacklist permanently.</p>
     {{end}}
 
     {{if not .ReadOnly}}
@@ -166,7 +166,7 @@
           <div class="field"><label for="bl-who">Steam64 ID or exact in-game name</label><input id="bl-who" name="who" required maxlength="64"></div>
           <div class="mod-form-row">
             <div class="field"><label for="bl-days">Days</label><input id="bl-days" type="number" name="days" min="1" max="3650" value="{{.Settings.BlacklistDays}}"></div>
-            <label class="disc-check"><input type="checkbox" name="permanent" value="1"> Permanent</label>
+            {{if .Command.Cabinet}}<label class="disc-check"><input type="checkbox" name="permanent" value="1"> Permanent</label>{{end}}
           </div>
           <div class="field"><label for="bl-reason">Reason</label><input id="bl-reason" name="reason" required maxlength="500"></div>
           <p class="hint">For players who aren't in {{.FactionName}}; discharge a member first. They can't apply or be recruited until it ends.</p>

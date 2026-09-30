@@ -260,7 +260,7 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 			       COALESCE(sr.display_name, ''), p.staff_status,
 			       CASE WHEN COALESCE(p.cop_level, 0) > 0 THEN COALESCE((SELECT name FROM faction_rank_names WHERE faction = 'police' AND level = p.cop_level), 'Level ' || p.cop_level) ELSE '' END,
 			       CASE WHEN COALESCE(p.medic_level, 0) > 0 THEN COALESCE((SELECT name FROM faction_rank_names WHERE faction = 'ems' AND level = p.medic_level), 'Level ' || p.medic_level) ELSE '' END,
-			       EXISTS (SELECT 1 FROM faction_rank_names r WHERE r.promote_up_to > 0
+			       EXISTS (SELECT 1 FROM faction_rank_names r WHERE r.is_command
 			               AND ((r.faction = 'police' AND r.level = p.cop_level) OR (r.faction = 'ems' AND r.level = p.medic_level))),
 			       (SELECT count(*) FROM notifications n WHERE n.player_id = p.id AND n.read_at IS NULL),
 			       COALESCE(e.id, 0), COALESCE(e.title, ''), COALESCE(e.body, ''), COALESCE(e.link, ''),

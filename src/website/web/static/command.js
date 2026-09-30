@@ -1,3 +1,12 @@
+// Faction command → Ranks & gear: a cabinet rank is always a command rank.
+(() => {
+  const cmd = document.querySelector("[data-rank-cmd]");
+  const cab = document.querySelector("[data-rank-cab]");
+  if (!cmd || !cab) return;
+  cab.addEventListener("change", () => { if (cab.checked) cmd.checked = true; });
+  cmd.addEventListener("change", () => { if (!cmd.checked) cab.checked = false; });
+})();
+
 // Faction command → Discipline: keeps the points field inside the chosen
 // offence's range and previews what the entry does to the officer's points
 // (layout plan "Issue discipline"). The server re-checks everything; the

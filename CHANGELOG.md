@@ -1061,3 +1061,10 @@
   quals; the Command log records every action with filters. Suspensions aren't enforced in game yet
   (the game writes levels back; needs a mission change). New tables and seeds:
   `database/fixes/2026-09-30_faction_command_extras.sql`.
+- **Command and Cabinet ranks are ticked per rank** on Ranks & gear, instead of every rank that can
+  promote counting as command. Only ticked ranks show CMD / CAB and get the command panel; "promotes up
+  to" now only sets how far a command rank can change ranks (a command rank without it can still
+  discipline, train and post). Cabinet (must also be command) can lift faction blacklists early and
+  blacklist permanently. The staff rank-names editor (Roles & Permissions) now updates ranks in place
+  instead of deleting and re-adding them, so it no longer wipes the Ranks & gear rules. Run
+  `database/fixes/2026-09-30_rank_command_cabinet.sql`, then tick your command and cabinet ranks.

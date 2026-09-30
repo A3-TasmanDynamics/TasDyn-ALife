@@ -14,7 +14,7 @@
   <div class="cmd-authority">
     <div class="cmd-authority-label">Your authority</div>
     {{if .ReadOnly}}You can see this faction's roster and command log because you have <code class="perm-key">factions.audit</code>. Changes are made by its command, or by Management from Player Lookup.
-    {{else}}You can recruit, promote, demote and remove members up to <strong>{{.AuthorityTo}}</strong>, and discipline, train and post anyone ranked below you. Never yourself.{{end}}
+    {{else}}{{if .AuthorityTo}}You can recruit, promote, demote and remove members up to <strong>{{.AuthorityTo}}</strong>, and{{else}}Your rank can't change ranks, but you can{{end}} discipline, train and post anyone ranked below you.{{if .Command.Cabinet}} As <strong>cabinet</strong>, you can also lift blacklists early and blacklist permanently.{{end}} Never yourself.{{end}}
   </div>
 </nav>
 {{end}}

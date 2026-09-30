@@ -311,8 +311,11 @@ introduces for faction records. The two features should share that check, not bu
   which that faction's command and staff with `factions.audit` can view. This is Gamepanel's
   `PD_EMS_COMMAND` audit, as its own table.
 
-**Command authority** is set per rank on Roles & Permissions → Faction rank names: "can set ranks up
-to" (`faction_rank_names.promote_up_to`). Any rank with it set is command. Command can recruit,
+**Command authority** is ticked per rank on the faction's Ranks & gear page: **Command** (CMD,
+`is_command`) gives the rank the command panel, and **Cabinet** (CAB, `is_cabinet`, always also
+command) is senior leadership, who alone can lift a blacklist early or blacklist permanently. How far
+a command rank can change ranks is its "promotes up to" (`promote_up_to`); without one it can still
+discipline, train and post members below it. Command can recruit,
 promote, demote and remove members whose current *and* new rank are within that authority, which is
 always below their own. Optional slot limits per rank bind command but not Management.
 
@@ -349,7 +352,7 @@ read-only. Everything is recorded in the Command log.
   correction is a new entry that cancels the points and ends any suspension the entry caused.
   Discharges (resigned, inactivity, honourable, contract termination) remove the member. The
   blacklist stops a player applying or being recruited by command until it ends (Management
-  overrides are not blocked); lifting it early needs authority up to their last rank.
+  overrides are not blocked); only cabinet can lift one early or blacklist permanently.
   **Suspensions are recorded and shown, but not yet enforced in game**: the game writes faction
   levels back to the database, so hiding a suspended officer's level from the game could remove
   their rank for good. Enforcing it needs a mission change.
@@ -360,7 +363,7 @@ read-only. Everything is recorded in the Command log.
   short name, slots, minimum days in rank, required qualifications, who it can promote, and the
   public description. Staff with `factions.configure` can edit any rank. Command promotions must meet
   the rules (time in the current rank; the new rank's qualifications; a probation confirmation skips
-  the time rule). The top rank also sets the faction's settings above. Gear lists wait for loadouts
+  the time rule). The top rank also sets the faction's settings above, and ticks which ranks are Command and Cabinet. Gear lists wait for loadouts
   to move out of the mission config.
 
 Offences, training items, divisions and qualifications are seeded from the layout plan (Police) and
