@@ -126,7 +126,37 @@ type Command struct {
 	Rank      Rank
 	Authority int  // highest level they may set others to (0 = can't change ranks)
 	Cabinet   bool // their rank is ticked as cabinet
+
+	// Administration division membership: administrate and maintain the
+	// panel whatever their rank.
+	Admin          bool
+	AdminRole      string
+	AdminCommander bool
 }
+
+// IsCommand reports whether their rank is a command rank (rank changes and
+// discipline), as opposed to Administration-only access.
+func (c Command) IsCommand() bool { return c.Rank.IsCommand }
+
+// CanRecord reports whether they may keep records (personnel file, roll
+// call, certifications, training, divisions) on a member at targetLevel.
+func (c Command) CanRecord(targetLevel int, targetCabinet bool) bool {
+	switch {
+	case c.Cabinet:
+		return true
+	case c.Admin && !targetCabinet:
+		return true
+	}
+	return c.Rank.IsCommand && targetLevel < c.Level
+}
+
+// CanDiscipline reports whether they may discipline a member at targetLevel.
+func (c Command) CanDiscipline(targetLevel int) bool {
+	return c.Rank.IsCommand && (c.Cabinet || targetLevel < c.Level)
+}
+
+// CanAppointAdmin reports whether they may appoint to Administration.
+func (c Command) CanAppointAdmin() bool { return c.Cabinet || c.AdminCommander }
 
 // CommandOf returns the factions the player has command authority in.
 func CommandOf(ctx context.Context, pool *pgxpool.Pool, playerID int64) ([]Command, error) {
@@ -164,8 +194,18 @@ func CommandIn(ctx context.Context, pool *pgxpool.Pool, playerID int64, faction 
 	if c.Rank.CanPromote() {
 		c.Authority = c.Rank.PromoteUpTo
 	}
-	c.Cabinet = c.Rank.IsCabinet
-	return c, c.Level > 0 && c.Rank.IsCommand, nil
+	c.Cabinet = c.Rank.IsCabinet && c.Rank.IsCommand
+	var top string
+	err = pool.QueryRow(ctx, `
+		SELECT md.role, d.roles[1] FROM faction_member_divisions md
+		JOIN faction_divisions d ON d.faction = md.faction AND d.key = md.division_key
+		WHERE md.faction = $1 AND md.player_id = $2 AND d.is_admin`, faction, playerID).Scan(&c.AdminRole, &top)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return c, false, err
+	}
+	c.Admin = err == nil && c.Level > 0
+	c.AdminCommander = c.Admin && c.AdminRole == top
+	return c, c.Level > 0 && (c.Rank.IsCommand || c.Admin), nil
 }
 
 // Actor is who is making a change, and under which authority.

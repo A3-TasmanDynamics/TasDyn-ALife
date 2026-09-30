@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"website/internal/applications"
+	"website/internal/auth"
 	"website/internal/factions"
 )
 
@@ -220,10 +221,11 @@ func (d *Deps) CommandDiscipline(w http.ResponseWriter, r *http.Request) {
 		slog.Error("command: settings failed", "error", err)
 	}
 	if !cb.ReadOnly {
+		sess, _ := auth.FromContext(ctx)
 		members, _ := factions.Roster(ctx, d.Pool, cb.Faction)
 		standing, _ := factions.Standings(ctx, d.Pool, cb.Faction)
 		for _, m := range members {
-			if m.Level < cb.Command.Level {
+			if m.ID != sess.PlayerID && cb.Command.CanDiscipline(m.Level) {
 				o := officerOption{Member: m, Standing: standing[m.ID]}
 				if st, err := factions.StandingOf(ctx, d.Pool, cb.Faction, m.ID); err == nil {
 					o.Standing = st
@@ -362,7 +364,8 @@ type divisionCard struct {
 
 type divisionMember struct {
 	factions.Member
-	Role string
+	Role    string
+	CanEdit bool
 }
 
 type qualRow struct {
@@ -390,6 +393,10 @@ type commandDivisionsData struct {
 	General   int // members in no specialist division
 	Quals     []qualRow
 	Matrix    []matrixRow
+
+	CanAppoint bool     // may add members to the current division
+	Roles      []string // roles the viewer may give in it
+	EntryRole  string
 }
 
 func (d *Deps) CommandDivisions(w http.ResponseWriter, r *http.Request) {
@@ -405,14 +412,24 @@ func (d *Deps) CommandDivisions(w http.ResponseWriter, r *http.Request) {
 	}
 	members, _ := factions.Roster(ctx, d.Pool, cb.Faction)
 	posts, _ := factions.MemberDivisions(ctx, d.Pool, cb.Faction)
+	adminPosts, _ := factions.AdminPostings(ctx, d.Pool, cb.Faction)
 	held, _ := factions.MemberQuals(ctx, d.Pool, cb.Faction)
 	quals, _ := factions.Quals(ctx, d.Pool, cb.Faction)
+	ranks, _ := factions.Ranks(ctx, d.Pool, cb.Faction)
+	postingIn := func(dv factions.Division, id int64) (factions.Posting, bool) {
+		if dv.IsAdmin {
+			p, ok := adminPosts[id]
+			return p, ok
+		}
+		p, ok := posts[id]
+		return p, ok && p.Key == dv.Key
+	}
 	for _, dv := range divs {
 		c := divisionCard{Division: dv}
 		for _, m := range members {
-			if p, ok := posts[m.ID]; ok && p.Key == dv.Key {
+			if p, ok := postingIn(dv, m.ID); ok {
 				c.Count++
-				if p.Role == dv.Roles[0] && c.Lead == "" {
+				if p.Role == dv.CommanderRole() && c.Lead == "" {
 					c.Lead = m.Name
 				}
 			}
@@ -426,22 +443,59 @@ func (d *Deps) CommandDivisions(w http.ResponseWriter, r *http.Request) {
 	}
 	want := r.URL.Query().Get("div")
 	for i := range data.Divisions {
-		if data.Divisions[i].Key == want || (want == "" && i == 0) {
+		if data.Divisions[i].Key == want {
 			data.Cur = &data.Divisions[i]
 		}
 	}
-	if data.Cur != nil {
+	if data.Cur == nil {
+		for i := range data.Divisions { // first specialist division by default
+			if !data.Divisions[i].IsAdmin {
+				data.Cur = &data.Divisions[i]
+				break
+			}
+		}
+	}
+	if data.Cur == nil && len(data.Divisions) > 0 {
+		data.Cur = &data.Divisions[0]
+	}
+	sess, _ := auth.FromContext(ctx)
+	if cur := data.Cur; cur != nil {
+		// Who can change postings in this division, and which roles they
+		// can give (only cabinet and Management appoint the Administration
+		// Commander).
+		canEdit := func(m factions.Member) bool {
+			if m.ID == sess.PlayerID {
+				return false
+			}
+			if cur.IsAdmin {
+				return cb.Management || cb.Command.CanAppointAdmin()
+			}
+			return !cb.ReadOnly && cb.Command.CanRecord(m.Level, factions.RankFor(ranks, m.Level).IsCabinet)
+		}
+		data.Roles = cur.Roles
+		if cur.IsAdmin && !cb.Management && !cb.Command.Cabinet {
+			data.Roles = cur.Roles[1:]
+		}
+		data.EntryRole = cur.EntryRole()
 		order := map[string]int{}
-		for i, role := range data.Cur.Roles {
+		for i, role := range cur.Roles {
 			order[role] = i
 		}
 		for _, m := range members {
-			if p, ok := posts[m.ID]; ok && p.Key == data.Cur.Key {
-				data.Members = append(data.Members, divisionMember{Member: m, Role: p.Role})
-			} else if !cb.ReadOnly && m.Level < cb.Command.Level && m.Level >= data.Cur.MinLevel &&
-				(data.Cur.RequiredQual == "" || held[m.ID][data.Cur.RequiredQual]) {
+			if p, ok := postingIn(cur.Division, m.ID); ok {
+				dm := divisionMember{Member: m, Role: p.Role, CanEdit: canEdit(m)}
+				if cur.IsAdmin && p.Role == cur.CommanderRole() && !cb.Management && !cb.Command.Cabinet {
+					dm.CanEdit = false
+				}
+				data.Members = append(data.Members, dm)
+			} else if canEdit(m) && m.Level >= cur.MinLevel && (cur.RequiredQual == "" || held[m.ID][cur.RequiredQual]) {
 				data.Addable = append(data.Addable, m)
 			}
+		}
+		if cur.IsAdmin {
+			data.CanAppoint = cb.Management || cb.Command.CanAppointAdmin()
+		} else {
+			data.CanAppoint = !cb.ReadOnly
 		}
 		// Most senior role first, then rank.
 		for i := 1; i < len(data.Members); i++ {
@@ -480,14 +534,15 @@ func (d *Deps) CommandDivisionAction(w http.ResponseWriter, r *http.Request) {
 	key := chi.URLParam(r, "key")
 	back := "/command/" + faction + "/divisions?div=" + key
 	who := formInt(r, "who")
+	actor := d.panelActor(r, faction)
 	var err error
 	msg := "Saved. Logged in the Command log."
 	switch r.FormValue("action") {
 	case "add", "role":
-		err = factions.SetDivision(r.Context(), d.Pool, commandActor(r), faction, who, key, r.FormValue("role"), r.FormValue("reason"))
+		err = factions.SetDivision(r.Context(), d.Pool, actor, faction, who, key, r.FormValue("role"), false, r.FormValue("reason"))
 	case "remove":
-		err = factions.SetDivision(r.Context(), d.Pool, commandActor(r), faction, who, "", "", r.FormValue("reason"))
-		msg = "Removed from the division. They're back in general duties."
+		err = factions.SetDivision(r.Context(), d.Pool, actor, faction, who, key, "", true, r.FormValue("reason"))
+		msg = "Removed from the division."
 	default:
 		http.Error(w, "Unknown action.", http.StatusBadRequest)
 		return
@@ -529,14 +584,15 @@ type factionRankRow struct {
 
 type commandRanksData struct {
 	commandBase
-	Ranks     []factionRankRow // highest first
-	Sel       *factionRankRow
-	Quals     []factions.Qual
-	UpTo      []factions.Rank // options for "promotes up to"
-	CanEdit   bool
-	Why       string
-	Settings  factions.Settings
-	CanConfig bool // top rank: settings
+	Ranks       []factionRankRow // highest first
+	Sel         *factionRankRow
+	Quals       []factions.Qual
+	UpTo        []factions.Rank // options for "promotes up to"
+	CanEdit     bool
+	CanEditType bool // Command / Cabinet ticks and "promotes up to"
+	Why         string
+	Settings    factions.Settings
+	CanConfig   bool // top rank: settings
 }
 
 func (d *Deps) CommandRanks(w http.ResponseWriter, r *http.Request) {
@@ -582,19 +638,17 @@ func (d *Deps) CommandRanks(w http.ResponseWriter, r *http.Request) {
 			data.UpTo = append(data.UpTo, factions.RankFor(ranks, l))
 		}
 		switch {
-		case !cb.ReadOnly && cb.Command.CanEditRank(ranks, data.Sel.Level):
-			data.CanEdit = true
-		case d.can(r, "factions.configure"):
-			data.CanEdit = true
+		case cb.Management:
+			data.CanEdit, data.CanEditType = true, true
+		case !cb.ReadOnly && cb.Command.CanEditRank(data.Sel.Level):
+			data.CanEdit, data.CanEditType = true, cb.Command.CanEditRankType()
 		case cb.ReadOnly:
 			data.Why = "You're viewing as staff (read-only)."
-		case data.Sel.Level >= cb.Command.Level:
-			data.Why = "Your own rank and those above it are read-only. Staff with factions.configure can edit them."
 		default:
-			data.Why = "Only the top rank can edit rank rules."
+			data.Why = "You can't edit your own rank's rules; cabinet can."
 		}
 	}
-	data.CanConfig = !cb.ReadOnly && len(ranks) > 0 && cb.Command.Level >= ranks[len(ranks)-1].Level
+	data.CanConfig = !cb.ReadOnly
 	d.Render.Render(w, "command_ranks.html", data)
 }
 
@@ -613,10 +667,9 @@ func (d *Deps) CommandRankSave(w http.ResponseWriter, r *http.Request) {
 	rr := factions.RankRules{Name: r.FormValue("name"), Short: r.FormValue("short"), Slots: atoi("slots"), MinDays: atoi("min_days"),
 		PromoteUpTo: atoi("up_to"), Quals: r.Form["quals"], Description: r.FormValue("description"),
 		Command: r.FormValue("is_command") == "1", Cabinet: r.FormValue("is_cabinet") == "1"}
+	// Management edits as a staff override unless they're faction cabinet.
 	actor := commandActor(r)
-	ranks, _ := factions.Ranks(r.Context(), d.Pool, faction)
-	c, isCmd, _ := factions.CommandIn(r.Context(), d.Pool, actor.PlayerID, faction)
-	if !(isCmd && c.CanEditRank(ranks, level)) && d.can(r, "factions.configure") {
+	if c, _, _ := factions.CommandIn(r.Context(), d.Pool, actor.PlayerID, faction); !c.Cabinet && d.can(r, "factions.configure") {
 		actor.Via = factions.ViaStaffOverride
 	}
 	err := factions.UpdateRank(r.Context(), d.Pool, actor, faction, level, rr)

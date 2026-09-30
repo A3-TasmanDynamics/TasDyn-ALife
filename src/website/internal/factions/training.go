@@ -204,7 +204,7 @@ func lockProbation(ctx context.Context, tx pgx.Tx, actor Actor, faction string, 
 	if p.Status != "active" {
 		return p, authority{}, notAllowed("that probation has already finished")
 	}
-	a, err := commandOver(ctx, tx, actor, faction, p.PlayerID)
+	a, err := recordsOver(ctx, tx, actor, faction, p.PlayerID)
 	if err != nil {
 		return p, a, err
 	}

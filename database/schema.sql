@@ -548,15 +548,22 @@ CREATE TABLE IF NOT EXISTS faction_divisions (
     required_qual  TEXT,
     min_level      INTEGER NOT NULL DEFAULT 0,
     sort           INTEGER NOT NULL DEFAULT 0,
+    -- The Administration division: its members administrate and maintain
+    -- the command panel whatever their rank. Only cabinet, Management and
+    -- the division's Commander (roles[1]) appoint to it. One per faction.
+    is_admin       BOOLEAN NOT NULL DEFAULT false,
     PRIMARY KEY (faction, key)
 );
+CREATE UNIQUE INDEX IF NOT EXISTS idx_faction_divisions_admin ON faction_divisions(faction) WHERE is_admin;
 CREATE TABLE IF NOT EXISTS faction_member_divisions (
     faction       TEXT NOT NULL,
     player_id     BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
     division_key  TEXT NOT NULL,
     role          TEXT NOT NULL,
     since         TIMESTAMPTZ NOT NULL DEFAULT now(),
-    PRIMARY KEY (faction, player_id),
+    -- One specialist division per member (enforced in internal/factions),
+    -- plus optionally the Administration division.
+    PRIMARY KEY (faction, player_id, division_key),
     FOREIGN KEY (faction, division_key) REFERENCES faction_divisions(faction, key) ON DELETE CASCADE
 );
 
@@ -703,6 +710,11 @@ INSERT INTO faction_divisions (faction, key, name, color, roles, required_qual, 
     ('police', 'POLAIR', 'PolAir',     '#c4b5fd', ARRAY['Commander', 'Second in Command', 'Trainer Pilot', 'Senior Pilot', 'Pilot', 'Junior Pilot', 'Trial Pilot'], 'PIL', 0, 1),
     ('police', 'SRG',    'S.R.G.',     '#fca5a5', ARRAY['Commander', 'Second in Command', 'Team Leader', 'Trainer', 'Operator', 'Trial'], 'TAC', 0, 2),
     ('police', 'DET',    'Detectives', '#86efac', ARRAY['Commander', 'Second in Command', 'Training Officer', 'Senior Officer', 'Officer', 'Trial Officer'], NULL, 0, 3)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO faction_divisions (faction, key, name, color, roles, required_qual, min_level, sort, is_admin) VALUES
+    ('police', 'ADMIN', 'Administration', '#fcd34d', ARRAY['Commander', 'Deputy Commander', 'Administrator'], NULL, 0, 0, true),
+    ('ems',    'ADMIN', 'Administration', '#fcd34d', ARRAY['Commander', 'Deputy Commander', 'Administrator'], NULL, 0, 0, true)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO faction_training_items (faction, key, name, retake_hours, sort) VALUES

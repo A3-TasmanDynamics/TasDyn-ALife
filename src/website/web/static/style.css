@@ -1870,3 +1870,5 @@ a.points-case { color: var(--text); text-decoration: none; grid-template-columns
 
 @media (max-width: 1100px) { .pf-layout { grid-template-columns: 1fr; } }
 @media (max-width: 640px) { .pf-list { grid-template-columns: 1fr; } .pf-certs { grid-template-columns: 1fr; } .pf-months { grid-template-columns: repeat(3, minmax(0, 1fr)); } .pf-dialog-grid { grid-template-columns: 1fr; } .pf-actions { width: 100%; } }
+.div-card-admin { background: linear-gradient(135deg, rgba(252, 211, 77, 0.08), #0f1628 60%); }
+.div-admin-note { margin: 0; padding: 12px 20px; font-size: 13px; color: #c7d0e0; background: rgba(252, 211, 77, 0.06); border-bottom: 1px solid var(--border-soft); }

@@ -359,6 +359,16 @@ read-only. Everything is recorded in the Command log.
 - **Divisions & quals.** One specialist division per member (`faction_member_divisions`), with
   ordered roles and entry requirements (a qualification and/or minimum rank). Qualifications
   (`faction_quals`) are recorded from the member's service record; each can have a head trainer.
+- **Who runs the panel.** *Command* ranks change ranks and discipline members below them. *Cabinet*
+  (always also command) can overwrite everything: act on anyone but themselves and change any rank's
+  rules, including the Command / Cabinet ticks and "promotes up to". The *Administration division*
+  (one per faction; Commander, Deputy Commander, Administrator) gives its members the panel whatever
+  their rank, to keep records (files, roll call, certifications, training, postings) on anyone but
+  cabinet members and to maintain rank rules and settings; no rank changes or discipline. Command and
+  cabinet maintain the panel too, but nobody edits their own rank unless cabinet, and nobody takes
+  Command / Cabinet away from their own rank. Only cabinet, Management (`factions.configure`) and the
+  Administration Commander appoint to Administration; only cabinet and Management appoint its
+  Commander. Administration can be held alongside a specialist division.
 - **Roster and personnel files.** The Roster lists rank, badge / callsign, name, division and
   status (Active / Semi-active / LOA / Reserve, with Probation and Suspended shown automatically).
   Each member's profile is their personnel file: region, enrollment date, last promotion, time in

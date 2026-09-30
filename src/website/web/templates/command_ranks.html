@@ -5,7 +5,7 @@
     <div class="cmd-head">
       <div>
         <h1>Ranks &amp; gear</h1>
-        <p class="cmd-sub">Rank rules drive the roster: slots, time in rank, required qualifications and who can promote whom. Tick a rank as <strong>Command</strong> (CMD) to give it this panel, and as <strong>Cabinet</strong> (CAB) for senior leadership.</p>
+        <p class="cmd-sub">Rank rules drive the roster: slots, time in rank, required qualifications and who can promote whom. Tick a rank as <strong>Command</strong> (CMD) to give it this panel, and as <strong>Cabinet</strong> (CAB) for senior leadership. Command, cabinet and the Administration division maintain these rules; only cabinet and Management change the rank type and "promotes up to".</p>
       </div>
     </div>
 
@@ -42,11 +42,13 @@
             <div class="field"><label for="rk-slots">Slots (0 = no limit)</label><input id="rk-slots" type="number" name="slots" min="0" max="500" value="{{.Slots}}"></div>
             <div class="field"><label for="rk-days">Min days in rank</label><input id="rk-days" type="number" name="min_days" min="0" max="365" value="{{.MinDays}}"></div>
             <div class="field mod-grow"><label for="rk-upto">Promotes up to</label>
-              <select id="rk-upto" name="up_to"><option value="0">Can't change ranks</option>{{$u := .PromoteUpTo}}{{range $.UpTo}}<option value="{{.Level}}" {{if eq .Level $u}}selected{{end}}>{{.Label}}</option>{{end}}</select></div>
+              {{if not $.CanEditType}}<input type="hidden" name="up_to" value="{{.PromoteUpTo}}">{{end}}
+              <select id="rk-upto" {{if $.CanEditType}}name="up_to"{{else}}disabled title="Only cabinet or Management can change this"{{end}}><option value="0">Can't change ranks</option>{{$u := .PromoteUpTo}}{{range $.UpTo}}<option value="{{.Level}}" {{if eq .Level $u}}selected{{end}}>{{.Label}}</option>{{end}}</select></div>
           </div>
-          <fieldset class="rank-flags"><legend>Rank type</legend>
+          {{if not $.CanEditType}}{{if .IsCommand}}<input type="hidden" name="is_command" value="1">{{end}}{{if .IsCabinet}}<input type="hidden" name="is_cabinet" value="1">{{end}}{{end}}
+          <fieldset class="rank-flags" {{if not $.CanEditType}}disabled{{end}}><legend>Rank type{{if not $.CanEditType}} <span class="cmd-dim">(only cabinet or Management can change these)</span>{{end}}</legend>
             <label class="disc-check"><input type="checkbox" name="is_command" value="1" {{if .IsCommand}}checked{{end}} data-rank-cmd> <span><strong>Command rank</strong> (CMD). Gets the command panel: recruits, discipline, training, divisions, and rank changes up to "Promotes up to".</span></label>
-            <label class="disc-check"><input type="checkbox" name="is_cabinet" value="1" {{if .IsCabinet}}checked{{end}} data-rank-cab> <span><strong>Cabinet</strong> (CAB). Senior leadership: can also lift blacklists early and blacklist permanently. Must be a command rank.</span></label>
+            <label class="disc-check"><input type="checkbox" name="is_cabinet" value="1" {{if .IsCabinet}}checked{{end}} data-rank-cab> <span><strong>Cabinet</strong> (CAB). Senior leadership: can overwrite everything, appoint to Administration, lift blacklists early and blacklist permanently. Must be a command rank.</span></label>
           </fieldset>
           {{if $.Quals}}
           <fieldset class="rank-quals"><legend>Qualifications needed to hold this rank</legend>
@@ -90,7 +92,7 @@
         </div>
         <div class="field"><label for="st-reason">Reason (optional)</label><input id="st-reason" name="reason" maxlength="300"></div>
         <button class="btn" type="submit">Save settings</button>
-        <p class="hint">Only the top rank can change these. New entries use them; existing ones keep their dates.</p>
+        <p class="hint">Command, cabinet and Administration can change these. New entries use them; existing ones keep their dates.</p>
       </form>
     </section>
     {{end}}

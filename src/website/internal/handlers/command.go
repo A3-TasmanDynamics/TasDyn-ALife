@@ -32,6 +32,9 @@ type commandShell struct {
 	AuthorityTo string // label of the highest rank they can set
 	MemberCount int
 	OpenApps    int // pending faction applications
+	// Management: staff with factions.configure. They can appoint to the
+	// Administration division and edit rank rules as a staff override.
+	Management bool
 }
 
 type commandBase struct {
@@ -67,6 +70,7 @@ func (d *Deps) commandAccess(w http.ResponseWriter, r *http.Request, tab string)
 		d.Denied(w, r, auth.DeniedInfo{Kind: "not_command", Area: faction})
 		return cb, false
 	}
+	cb.Management = d.can(r, "factions.configure")
 	if ranks, err := factions.Ranks(r.Context(), d.Pool, faction); err == nil && cb.Command.Authority > 0 {
 		cb.AuthorityTo = factions.RankFor(ranks, cb.Command.Authority).Label()
 	}
@@ -259,7 +263,8 @@ type commandMemberData struct {
 	AllQuals   []factions.Qual
 	Division   string // "S.R.G. · Operator"
 	Probation  *factions.Probation
-	CanAct     bool // discipline, quals, personnel file: ranked below the viewer
+	CanAct     bool // personnel file, roll call, certifications (records)
+	CanDisc    bool // discipline
 
 	// Personnel file.
 	File     factions.Personnel
@@ -338,7 +343,11 @@ func (d *Deps) CommandMember(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	data.CanAct = !cb.ReadOnly && id != sess.PlayerID && data.Member.Level < cb.Command.Level
+	ranksAll, _ := factions.Ranks(ctx, d.Pool, cb.Faction)
+	if !cb.ReadOnly && id != sess.PlayerID {
+		data.CanAct = cb.Command.CanRecord(data.Member.Level, factions.RankFor(ranksAll, data.Member.Level).IsCabinet)
+		data.CanDisc = cb.Command.CanDiscipline(data.Member.Level)
+	}
 	data.Regions, data.Statuses = factions.Regions, factions.Statuses
 	data.Initials = initials(data.Member.Name)
 	if rows, err := factions.PersonnelRoster(ctx, d.Pool, cb.Faction, time.Now()); err == nil {
@@ -390,6 +399,17 @@ func finishCommandAction(w http.ResponseWriter, r *http.Request, back string, er
 		slog.Error("command action failed", "path", r.URL.Path, "error", err)
 		http.Redirect(w, r, back+sep(back)+"error="+errMsg("Something went wrong. Nothing was changed."), http.StatusSeeOther)
 	}
+}
+
+// panelActor is the authority to act under for panel maintenance and
+// Administration appointments: faction access (command, cabinet or
+// Administration) if they have it, otherwise Management's staff override.
+func (d *Deps) panelActor(r *http.Request, faction string) factions.Actor {
+	a := commandActor(r)
+	if _, ok, err := factions.CommandIn(r.Context(), d.Pool, a.PlayerID, faction); (err != nil || !ok) && d.can(r, "factions.configure") {
+		a.Via = factions.ViaStaffOverride
+	}
+	return a
 }
 
 func commandActor(r *http.Request) factions.Actor {

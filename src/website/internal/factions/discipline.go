@@ -475,7 +475,7 @@ func CorrectDiscipline(ctx context.Context, pool *pgxpool.Pool, actor Actor, fac
 	if err != nil {
 		return err
 	}
-	if max(cur, lvl) >= a.Level {
+	if !a.Cabinet && max(cur, lvl) >= a.Level {
 		return notAllowed("you can only correct discipline for members ranked below you")
 	}
 	if _, err := tx.Exec(ctx, `

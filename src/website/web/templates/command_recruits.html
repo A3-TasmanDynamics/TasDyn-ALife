@@ -27,7 +27,7 @@
       </div>
       <div class="recruit-actions">
         {{if eq .Status "pending"}}
-          {{if not $.ReadOnly}}
+          {{if and (not $.ReadOnly) $.Command.IsCommand}}
           <form method="post" action="/command/{{$.Faction}}/recruits/{{.ID}}" class="recruit-form">
             <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
             <input name="note" maxlength="1000" aria-label="Note (required if not accepting)" placeholder="Note (required if not accepting)">
@@ -118,12 +118,14 @@
       </section>
       <section class="cmd-card cmd-pad">
         <h2>Decision</h2>
+        {{if $.Command.IsCommand}}
         <form method="post" action="/command/{{$.Faction}}/probation/{{.ID}}" class="cmd-form">
           <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="action" value="confirm">
           <button class="btn btn-primary" type="submit" {{if not .AllPassed}}disabled{{end}}>Confirm, promote one rank</button>
           <p class="hint">{{if .AllPassed}}Promotes them one rank and ends probation. Logged in the Command log.{{else}}Available once every training item has passed.{{end}}</p>
         </form>
         <button class="btn btn-danger" type="button" data-dialog-open="dlg-end">End probation, not suitable</button>
+        {{else}}<p class="cmd-dim">Confirming or ending a probation is for command ranks.</p>{{end}}
       </section>
     </div>
     <dialog id="dlg-end" class="modal" aria-labelledby="dlg-end-t">
