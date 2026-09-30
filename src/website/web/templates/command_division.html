@@ -1,0 +1,101 @@
+{{define "content"}}
+<div class="cmd-shell">
+  {{template "command_sidebar" .}}
+  <div class="cmd-main">
+    {{$d := .Div}}
+    <section class="div-hero" style="--div: {{$d.Color}}">
+      <span class="div-hero-dot" aria-hidden="true"></span>
+      <div class="div-hero-id">
+        <h1>{{$d.Name}}{{if $d.IsAdmin}} <span class="cmd-tag cmd-tag-cab">Panel</span>{{end}}</h1>
+        <p class="cmd-sub">{{$d.Count}} member{{if ne $d.Count 1}}s{{end}}{{if not .IsGD}} &middot; {{if $d.Lead}}led by {{$d.Lead}}{{else}}no {{$d.CommanderRole}}{{end}}{{end}}
+          {{if not .IsGD}}&middot; {{if $d.RequiredQual}}needs the {{$d.RequiredQual}} qualification{{else if $d.MinLevel}}needs rank level {{$d.MinLevel}}+{{else}}no entry requirements{{end}}{{end}}</p>
+      </div>
+      {{if and .CanReview .Pending}}<a class="btn btn-primary" href="#applications">{{len .Pending}} application{{if ne (len .Pending) 1}}s{{end}} to review</a>{{end}}
+    </section>
+
+    {{if .IsGD}}
+    <p class="div-admin-note div-note-card">General Duties is everyone not posted to a specialist division. Members join a specialist division by applying from the Factions page, or being added by command or Administration.</p>
+    {{else if $d.IsAdmin}}
+    <p class="div-admin-note div-note-card">Administration members administrate and maintain the command panel whatever their rank: personnel files, roll call, certifications, training, division postings and applications, rank rules and settings. They can't change ranks or issue discipline. Cabinet members are part of it automatically. Only cabinet, Management and the {{$d.CommanderRole}} appoint to it or review its applications; only cabinet and Management appoint the {{$d.CommanderRole}}.</p>
+    {{end}}
+
+    {{if and (not .IsGD) .CanReview}}
+    <section class="cmd-card" id="applications" aria-labelledby="apps-h">
+      <div class="cmd-card-head"><h2 id="apps-h">Applications</h2><span class="cmd-dim">{{len .Pending}} waiting</span></div>
+      {{range .Pending}}
+      <article class="div-app">
+        <div class="div-app-who">
+          <a class="cmd-strong" href="/command/{{$.Faction}}/members/{{.PlayerID}}">{{.Name}}</a>
+          <div class="cmd-dim">{{.Rank}} &middot; {{.HoursInFac}} h in {{$.FactionName}} &middot; applied {{.Created.Format "2 Jan"}}</div>
+          <div class="div-app-tags">
+            {{if .Points}}<span class="cmd-tag cmd-tag-override">{{.Points}} active points</span>{{else}}<span class="cmd-tag">No active points</span>{{end}}
+            {{if $d.RequiredQual}}{{$has := false}}{{range .Quals}}{{if eq . $d.RequiredQual}}{{$has = true}}{{end}}{{end}}<span class="cmd-tag{{if $has}} div-tag-ok{{end}}">{{if $has}}Holds{{else}}Needs{{end}} {{$d.RequiredQual}}</span>{{end}}
+          </div>
+        </div>
+        <div class="div-app-answers">
+          <div class="apply-answer"><span>Why they want to join</span><span>{{.Why}}</span></div>
+          <div class="apply-answer"><span>Availability</span><span>{{.Availability}}</span></div>
+          {{if .Experience}}<div class="apply-answer"><span>Relevant experience</span><span>{{.Experience}}</span></div>{{end}}
+        </div>
+        <form method="post" action="/command/{{$.Faction}}/division/{{$d.Key}}/applications/{{.ID}}" class="div-app-actions">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+          <input name="note" maxlength="500" aria-label="Note (required if not accepting)" placeholder="Note (required if not accepting)">
+          <button class="btn btn-primary" type="submit" name="decision" value="accept">Accept as {{$d.EntryRole}}</button>
+          <button class="btn" type="submit" name="decision" value="reject">Not this time</button>
+        </form>
+      </article>
+      {{else}}
+      <p class="cmd-empty">No applications waiting. Members apply from the Factions page.</p>
+      {{end}}
+      {{if .Decided}}
+      <details class="div-decided"><summary>Recently decided ({{len .Decided}})</summary>
+        {{range .Decided}}<div class="div-decided-row"><span class="cmd-strong">{{.Name}}</span><span class="roster-status {{if eq .Status "accepted"}}roster-status-Active{{else}}roster-status-Reserve{{end}}">{{if eq .Status "accepted"}}Accepted{{else if eq .Status "rejected"}}Not accepted{{else}}Withdrawn{{end}}</span><span class="cmd-dim">{{if .Decided}}{{.Decided.Format "2 Jan"}}{{end}}{{if .DecidedBy}} &middot; {{.DecidedBy}}{{end}}{{if .Note}} &middot; {{.Note}}{{end}}</span></div>{{end}}
+      </details>
+      {{end}}
+    </section>
+    {{end}}
+
+    <section class="cmd-card" aria-labelledby="members-h">
+      <div class="cmd-card-head"><h2 id="members-h">Members</h2>
+        {{if not .IsGD}}<span class="cmd-dim">Roles, most senior first: {{range $i, $r := $d.Roles}}{{if $i}} &middot; {{end}}{{$r}}{{end}}</span>{{end}}</div>
+      {{range .Members}}
+      <div class="div-row">
+        <span><a class="cmd-strong" href="/command/{{$.Faction}}/members/{{.ID}}">{{.Name}}</a><span class="cmd-dim div-sub">{{.Rank.Label}}</span></span>
+        {{if $.IsGD}}
+        {{else if .CanEdit}}
+        <form method="post" action="/command/{{$.Faction}}/divisions/{{$d.Key}}" class="div-actions">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="who" value="{{.ID}}">
+          <label class="visually-hidden" for="role-{{.ID}}">Role for {{.Name}}</label>
+          <select id="role-{{.ID}}" name="role">{{$role := .Role}}{{range $.Roles}}<option {{if eq . $role}}selected{{end}}>{{.}}</option>{{end}}</select>
+          <button class="btn btn-sm" type="submit" name="action" value="role">Set role</button>
+          <button class="btn btn-sm" type="submit" name="action" value="remove">Remove</button>
+        </form>
+        {{else if .Auto}}<span class="cmd-tag cmd-tag-cab" title="Cabinet members are part of Administration automatically">Automatic · cabinet</span>{{else}}<span class="cmd-tag">{{.Role}}</span>{{end}}
+      </div>
+      {{else}}
+      <p class="cmd-empty">Nobody is in {{$d.Name}} yet.</p>
+      {{end}}
+      {{if and (not .IsGD) .CanAppoint}}
+      <form method="post" action="/command/{{.Faction}}/divisions/{{$d.Key}}" class="div-add">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="action" value="add">
+        {{if .Addable}}
+        <label class="visually-hidden" for="div-add">Member to add</label>
+        <select id="div-add" name="who">{{range .Addable}}<option value="{{.ID}}">{{.Name}} &middot; {{.Rank.Label}}</option>{{end}}</select>
+        <label class="visually-hidden" for="div-add-role">Role</label>
+        <select id="div-add-role" name="role">{{range .Roles}}<option {{if eq . $.EntryRole}}selected{{end}}>{{.}}</option>{{end}}</select>
+        <button class="btn btn-sm btn-primary" type="submit">{{if $d.IsAdmin}}Appoint to{{else}}Add to{{end}} {{$d.Name}}</button>
+        {{else}}<span class="cmd-dim">Nobody else you can add meets the requirements.</span>{{end}}
+        {{if and $d.IsAdmin .ReadOnly}}<span class="hint">Appointing as Management (staff override).</span>{{end}}
+      </form>
+      {{end}}
+    </section>
+
+    {{if and (not .IsGD) (not $d.IsAdmin)}}
+    <section class="cmd-card cmd-pad">
+      <h2>{{$d.Name}} gear</h2>
+      <p class="cmd-dim">Division gear is set in the mission's loadout config for now, so it isn't listed here yet. It'll show here once loadouts move to the database.</p>
+    </section>
+    {{end}}
+  </div>
+</div>
+{{end}}

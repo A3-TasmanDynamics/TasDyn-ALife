@@ -35,6 +35,14 @@ type commandShell struct {
 	// Management: staff with factions.configure. They can appoint to the
 	// Administration division and edit rank rules as a staff override.
 	Management bool
+	// NavDivisions is the sidebar's Divisions group (General Duties first).
+	NavDivisions []divisionNav
+}
+
+// divisionNav is one entry in the sidebar's Divisions group.
+type divisionNav struct {
+	Key, Name, Color string
+	Pending          int // applications the viewer can review
 }
 
 type commandBase struct {
@@ -64,6 +72,9 @@ func (d *Deps) commandAccess(w http.ResponseWriter, r *http.Request, tab string)
 	switch {
 	case ok:
 		cb.Command = c
+		// Leading a division (without command or Administration) gives the
+		// panel read-only, plus reviewing that division's applications.
+		cb.ReadOnly = c.LeadOnly()
 	case d.can(r, "factions.audit"):
 		cb.ReadOnly = true
 	default:
@@ -77,6 +88,17 @@ func (d *Deps) commandAccess(w http.ResponseWriter, r *http.Request, tab string)
 	col := map[string]string{"police": "cop_level", "ems": "medic_level"}[faction]
 	_ = d.Pool.QueryRow(r.Context(), `SELECT count(*) FROM players WHERE `+col+` > 0`).Scan(&cb.MemberCount)
 	_ = d.Pool.QueryRow(r.Context(), `SELECT count(*) FROM faction_applications WHERE faction = $1 AND status = 'pending'`, faction).Scan(&cb.OpenApps)
+	cb.NavDivisions = []divisionNav{{Key: factions.GeneralDuties, Name: "General Duties", Color: "#93c5fd"}}
+	if divs, err := factions.Divisions(r.Context(), d.Pool, faction); err == nil {
+		pending, _ := factions.PendingDivisionApps(r.Context(), d.Pool, faction)
+		for _, dv := range divs {
+			n := divisionNav{Key: dv.Key, Name: dv.Name, Color: dv.Color}
+			if cb.Management || cb.Command.CanReview(dv) {
+				n.Pending = pending[dv.Key]
+			}
+			cb.NavDivisions = append(cb.NavDivisions, n)
+		}
+	}
 	return cb, true
 }
 
@@ -396,7 +418,11 @@ func finishCommandAction(w http.ResponseWriter, r *http.Request, back string, er
 		http.Redirect(w, r, back+sep(back)+"notice="+errMsg(success), http.StatusSeeOther)
 	case errors.Is(err, factions.ErrNotAllowed):
 		msg := strings.TrimPrefix(err.Error(), factions.ErrNotAllowed.Error()+": ")
-		http.Redirect(w, r, back+sep(back)+"error="+errMsg(strings.ToUpper(msg[:1])+msg[1:]+"."), http.StatusSeeOther)
+		msg = strings.ToUpper(msg[:1]) + msg[1:]
+		if !strings.HasSuffix(msg, ".") {
+			msg += "."
+		}
+		http.Redirect(w, r, back+sep(back)+"error="+errMsg(msg), http.StatusSeeOther)
 	default:
 		slog.Error("command action failed", "path", r.URL.Path, "error", err)
 		http.Redirect(w, r, back+sep(back)+"error="+errMsg("Something went wrong. Nothing was changed."), http.StatusSeeOther)

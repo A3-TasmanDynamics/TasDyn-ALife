@@ -388,143 +388,217 @@ type matrixCell struct {
 type commandDivisionsData struct {
 	commandBase
 	Divisions []divisionCard
-	Cur       *divisionCard
-	Members   []divisionMember
-	Addable   []factions.Member
 	General   int // members in no specialist division
 	Quals     []qualRow
 	Matrix    []matrixRow
-
-	CanAppoint bool     // may add members to the current division
-	Roles      []string // roles the viewer may give in it
-	EntryRole  string
 }
 
-func (d *Deps) CommandDivisions(w http.ResponseWriter, r *http.Request) {
-	cb, ok := d.commandAccess(w, r, "divisions")
-	if !ok {
-		return
-	}
+// divisionView loads the division cards and each member's postings.
+type divisionView struct {
+	members    []factions.Member
+	posts      map[int64]factions.Posting // specialist
+	adminPosts map[int64]factions.Posting
+	held       map[int64]map[string]bool
+	ranks      []factions.Rank
+	cards      []divisionCard
+}
+
+func (d *Deps) loadDivisions(r *http.Request, faction string) divisionView {
 	ctx := r.Context()
-	data := commandDivisionsData{commandBase: cb}
-	divs, err := factions.Divisions(ctx, d.Pool, cb.Faction)
+	var v divisionView
+	divs, err := factions.Divisions(ctx, d.Pool, faction)
 	if err != nil {
 		slog.Error("command: divisions failed", "error", err)
 	}
-	members, _ := factions.Roster(ctx, d.Pool, cb.Faction)
-	posts, _ := factions.MemberDivisions(ctx, d.Pool, cb.Faction)
-	adminPosts, _ := factions.AdminPostings(ctx, d.Pool, cb.Faction)
-	held, _ := factions.MemberQuals(ctx, d.Pool, cb.Faction)
-	quals, _ := factions.Quals(ctx, d.Pool, cb.Faction)
-	ranks, _ := factions.Ranks(ctx, d.Pool, cb.Faction)
-	postingIn := func(dv factions.Division, id int64) (factions.Posting, bool) {
-		if dv.IsAdmin {
-			p, ok := adminPosts[id]
-			return p, ok
-		}
-		p, ok := posts[id]
-		return p, ok && p.Key == dv.Key
-	}
+	v.members, _ = factions.Roster(ctx, d.Pool, faction)
+	v.posts, _ = factions.MemberDivisions(ctx, d.Pool, faction)
+	v.adminPosts, _ = factions.AdminPostings(ctx, d.Pool, faction)
+	v.held, _ = factions.MemberQuals(ctx, d.Pool, faction)
+	v.ranks, _ = factions.Ranks(ctx, d.Pool, faction)
 	for _, dv := range divs {
 		c := divisionCard{Division: dv}
-		for _, m := range members {
-			if p, ok := postingIn(dv, m.ID); ok {
+		for _, m := range v.members {
+			if p, ok := v.postingIn(dv, m.ID); ok {
 				c.Count++
 				if p.Role == dv.CommanderRole() && c.Lead == "" {
 					c.Lead = m.Name
 				}
 			}
 		}
-		data.Divisions = append(data.Divisions, c)
+		v.cards = append(v.cards, c)
 	}
-	for _, m := range members {
-		if _, ok := posts[m.ID]; !ok {
+	return v
+}
+
+func (v divisionView) postingIn(dv factions.Division, id int64) (factions.Posting, bool) {
+	if dv.IsAdmin {
+		p, ok := v.adminPosts[id]
+		return p, ok
+	}
+	p, ok := v.posts[id]
+	return p, ok && p.Key == dv.Key
+}
+
+// CommandDivisions is Divisions & quals: the divisions at a glance, and
+// qualifications with who holds what.
+func (d *Deps) CommandDivisions(w http.ResponseWriter, r *http.Request) {
+	cb, ok := d.commandAccess(w, r, "divisions")
+	if !ok {
+		return
+	}
+	ctx := r.Context()
+	v := d.loadDivisions(r, cb.Faction)
+	data := commandDivisionsData{commandBase: cb, Divisions: v.cards}
+	for _, m := range v.members {
+		if _, ok := v.posts[m.ID]; !ok {
 			data.General++
 		}
 	}
-	want := r.URL.Query().Get("div")
-	for i := range data.Divisions {
-		if data.Divisions[i].Key == want {
-			data.Cur = &data.Divisions[i]
-		}
-	}
-	if data.Cur == nil {
-		for i := range data.Divisions { // first specialist division by default
-			if !data.Divisions[i].IsAdmin {
-				data.Cur = &data.Divisions[i]
-				break
-			}
-		}
-	}
-	if data.Cur == nil && len(data.Divisions) > 0 {
-		data.Cur = &data.Divisions[0]
-	}
-	sess, _ := auth.FromContext(ctx)
-	if cur := data.Cur; cur != nil {
-		// Who can change postings in this division, and which roles they
-		// can give (only cabinet and Management appoint the Administration
-		// Commander).
-		canEdit := func(m factions.Member) bool {
-			if m.ID == sess.PlayerID && !cb.Command.Cabinet && !cb.Management {
-				return false // only cabinet and Management keep their own records
-			}
-			if cur.IsAdmin {
-				return cb.Management || cb.Command.CanAppointAdmin()
-			}
-			return !cb.ReadOnly && cb.Command.CanRecord(m.Level, factions.RankFor(ranks, m.Level).IsCabinet)
-		}
-		data.Roles = cur.Roles
-		if cur.IsAdmin && !cb.Management && !cb.Command.Cabinet {
-			data.Roles = cur.Roles[1:]
-		}
-		data.EntryRole = cur.EntryRole()
-		order := map[string]int{}
-		for i, role := range cur.Roles {
-			order[role] = i
-		}
-		for _, m := range members {
-			if p, ok := postingIn(cur.Division, m.ID); ok {
-				dm := divisionMember{Member: m, Role: p.Role, CanEdit: canEdit(m) && !p.Auto, Auto: p.Auto}
-				if cur.IsAdmin && p.Role == cur.CommanderRole() && !cb.Management && !cb.Command.Cabinet {
-					dm.CanEdit = false
-				}
-				data.Members = append(data.Members, dm)
-			} else if canEdit(m) && m.Level >= cur.MinLevel && (cur.RequiredQual == "" || held[m.ID][cur.RequiredQual]) {
-				data.Addable = append(data.Addable, m)
-			}
-		}
-		if cur.IsAdmin {
-			data.CanAppoint = cb.Management || cb.Command.CanAppointAdmin()
-		} else {
-			data.CanAppoint = !cb.ReadOnly
-		}
-		// Most senior role first, then rank.
-		for i := 1; i < len(data.Members); i++ {
-			for j := i; j > 0; j-- {
-				a, b := data.Members[j-1], data.Members[j]
-				if order[a.Role] > order[b.Role] || (order[a.Role] == order[b.Role] && a.Level < b.Level) {
-					data.Members[j-1], data.Members[j] = b, a
-				}
-			}
-		}
-	}
+	quals, _ := factions.Quals(ctx, d.Pool, cb.Faction)
 	for _, q := range quals {
 		row := qualRow{Qual: q}
-		for _, m := range members {
-			if held[m.ID][q.Key] {
+		for _, m := range v.members {
+			if v.held[m.ID][q.Key] {
 				row.Holders = append(row.Holders, m)
 			}
 		}
 		data.Quals = append(data.Quals, row)
 	}
-	for _, m := range members {
+	for _, m := range v.members {
 		row := matrixRow{Member: m}
 		for _, q := range quals {
-			row.Cells = append(row.Cells, matrixCell{Key: q.Key, Held: held[m.ID][q.Key], Head: q.HeadID == m.ID})
+			row.Cells = append(row.Cells, matrixCell{Key: q.Key, Held: v.held[m.ID][q.Key], Head: q.HeadID == m.ID})
 		}
 		data.Matrix = append(data.Matrix, row)
 	}
 	d.Render.Render(w, "command_divisions.html", data)
+}
+
+type commandDivisionData struct {
+	commandBase
+	Div        divisionCard
+	IsGD       bool
+	Members    []divisionMember
+	Addable    []factions.Member
+	CanAppoint bool
+	Roles      []string
+	EntryRole  string
+	CanReview  bool
+	Pending    []factions.DivisionApp
+	Decided    []factions.DivisionApp
+}
+
+// CommandDivision is one division's page: its members and roles, and its
+// applications for those who review them. General Duties lists everyone
+// not in a specialist division.
+func (d *Deps) CommandDivision(w http.ResponseWriter, r *http.Request) {
+	key := chi.URLParam(r, "key")
+	cb, ok := d.commandAccess(w, r, "div-"+key)
+	if !ok {
+		return
+	}
+	ctx := r.Context()
+	sess, _ := auth.FromContext(ctx)
+	v := d.loadDivisions(r, cb.Faction)
+	data := commandDivisionData{commandBase: cb}
+	if key == factions.GeneralDuties {
+		data.IsGD = true
+		data.Div = divisionCard{Division: factions.Division{Key: key, Name: "General Duties", Color: "#93c5fd"}}
+		for _, m := range v.members {
+			if _, ok := v.posts[m.ID]; !ok {
+				data.Members = append(data.Members, divisionMember{Member: m})
+			}
+		}
+		data.Div.Count = len(data.Members)
+		data.Title = "General Duties · " + cb.FactionName + " command"
+		d.Render.Render(w, "command_division.html", data)
+		return
+	}
+	found := false
+	for _, c := range v.cards {
+		if c.Key == key {
+			data.Div, found = c, true
+		}
+	}
+	if !found {
+		http.NotFound(w, r)
+		return
+	}
+	cur := data.Div.Division
+	data.Title = cur.Name + " · " + cb.FactionName + " command"
+
+	// Postings: who can change them, and which roles they can give (only
+	// cabinet and Management appoint the Administration Commander).
+	canEdit := func(m factions.Member) bool {
+		if m.ID == sess.PlayerID && !cb.Command.Cabinet && !cb.Management {
+			return false // only cabinet and Management keep their own records
+		}
+		if cur.IsAdmin {
+			return cb.Management || cb.Command.CanAppointAdmin()
+		}
+		return !cb.ReadOnly && cb.Command.CanRecord(m.Level, factions.RankFor(v.ranks, m.Level).IsCabinet)
+	}
+	data.Roles = cur.Roles
+	if cur.IsAdmin && !cb.Management && !cb.Command.Cabinet {
+		data.Roles = cur.Roles[1:]
+	}
+	data.EntryRole = cur.EntryRole()
+	if cur.IsAdmin {
+		data.CanAppoint = cb.Management || cb.Command.CanAppointAdmin()
+	} else {
+		data.CanAppoint = !cb.ReadOnly
+	}
+	order := map[string]int{}
+	for i, role := range cur.Roles {
+		order[role] = i
+	}
+	for _, m := range v.members {
+		if p, ok := v.postingIn(cur, m.ID); ok {
+			dm := divisionMember{Member: m, Role: p.Role, CanEdit: canEdit(m) && !p.Auto, Auto: p.Auto}
+			if cur.IsAdmin && p.Role == cur.CommanderRole() && !cb.Management && !cb.Command.Cabinet {
+				dm.CanEdit = false
+			}
+			data.Members = append(data.Members, dm)
+		} else if canEdit(m) && m.Level >= cur.MinLevel && (cur.RequiredQual == "" || v.held[m.ID][cur.RequiredQual]) {
+			data.Addable = append(data.Addable, m)
+		}
+	}
+	// Most senior role first, then rank.
+	for i := 1; i < len(data.Members); i++ {
+		for j := i; j > 0; j-- {
+			a, b := data.Members[j-1], data.Members[j]
+			if order[a.Role] > order[b.Role] || (order[a.Role] == order[b.Role] && a.Level < b.Level) {
+				data.Members[j-1], data.Members[j] = b, a
+			}
+		}
+	}
+
+	data.CanReview = cb.Management || cb.Command.CanReview(cur)
+	var err error
+	if data.Pending, err = factions.DivisionQueue(ctx, d.Pool, cb.Faction, key, true); err != nil {
+		slog.Error("command: division applications failed", "error", err)
+	}
+	data.Decided, _ = factions.DivisionQueue(ctx, d.Pool, cb.Faction, key, false)
+	if len(data.Decided) > 10 {
+		data.Decided = data.Decided[:10]
+	}
+	d.Render.Render(w, "command_division.html", data)
+}
+
+// CommandDivisionDecide accepts or turns down a division application.
+func (d *Deps) CommandDivisionDecide(w http.ResponseWriter, r *http.Request) {
+	faction, ok := postFaction(w, r)
+	if !ok {
+		return
+	}
+	key := chi.URLParam(r, "key")
+	accept := r.FormValue("decision") == "accept"
+	err := factions.DecideDivisionApp(r.Context(), d.Pool, d.panelActor(r, faction), faction, urlID(r, "id"), accept, r.FormValue("note"))
+	msg := "Turned down. They've been told, with your note."
+	if accept {
+		msg = "Accepted and added to the division. They've been told."
+	}
+	finishCommandAction(w, r, "/command/"+faction+"/division/"+key+"#applications", err, msg)
 }
 
 func (d *Deps) CommandDivisionAction(w http.ResponseWriter, r *http.Request) {
@@ -533,7 +607,7 @@ func (d *Deps) CommandDivisionAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	key := chi.URLParam(r, "key")
-	back := "/command/" + faction + "/divisions?div=" + key
+	back := "/command/" + faction + "/division/" + key
 	who := formInt(r, "who")
 	actor := d.panelActor(r, faction)
 	var err error
