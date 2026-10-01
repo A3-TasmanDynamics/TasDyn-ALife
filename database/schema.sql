@@ -43,7 +43,7 @@ INSERT INTO staff_ranks (key, display_name, level, default_admin_panel, default_
     ('trial_mod', 'Trial Moderator', 10, false, true),
     ('moderator', 'Moderator', 20, false, true),
     ('admin', 'Admin', 40, true, true),
-    ('head_admin', 'Head Admin / Developer', 100, true, true);
+    ('head_admin', 'Management', 100, true, true);
 
 -- ---------------------------------------------------------------------------
 -- Players.

@@ -1,7 +1,7 @@
 // Package dbbrowser is the read-only database browser (layout plan
 // "Database browser (read-only)", GAMEPANEL_PARITY #39): tables, rows, a
 // row inspector with relationships, foreign keys, and a SELECT-only SQL
-// console. Head Admin only (database.query).
+// console. Management only (database.query).
 //
 // Read-only is enforced by Postgres, not by this UI: every query runs in a
 // READ ONLY transaction with a statement timeout. When DATABASE_READONLY_URL

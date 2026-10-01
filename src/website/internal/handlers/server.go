@@ -185,7 +185,7 @@ func (d *Deps) ServerAction(w http.ResponseWriter, r *http.Request) {
 }
 
 // ServerLogs is the live log feed (JSON, polled by the page). IPs are
-// masked for everyone below Head Admin.
+// masked for everyone below Management (level 100).
 func (d *Deps) ServerLogs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if !d.can(r, "server.logs") {
