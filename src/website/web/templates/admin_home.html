@@ -10,7 +10,7 @@
     <section class="admin-stats" aria-label="Operations">
       <div class="admin-stat"><div class="label">Online now</div><div class="value value-green">{{.OnlineCount}}</div></div>
       <a class="admin-stat stat-link" href="/admin/cases?status=open"><div class="label">Open cases</div><div class="value {{if .OpenCaseCount}}value-amber{{end}}">{{.OpenCaseCount}}</div></a>
-      <a class="admin-stat stat-link" href="/support/tickets"><div class="label">Open tickets</div><div class="value">{{.OpenTickets}}</div></a>
+      <a class="admin-stat stat-link" href="/admin/tickets"><div class="label">Open tickets</div><div class="value">{{.OpenTickets}}</div></a>
       <a class="admin-stat stat-link" href="/admin/anticheat?open=1"><div class="label">Anti-cheat flags (24 h)</div><div class="value {{if .FlagsLast24h}}value-amber{{end}}">{{.FlagsLast24h}}</div></a>
     </section>
 

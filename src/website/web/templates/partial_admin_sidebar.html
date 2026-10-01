@@ -6,6 +6,7 @@
     <a href="/admin" class="admin-sidebar-home"><span class="brand-mark admin-sidebar-mark" aria-hidden="true"></span><span>Admin Panel</span></a>
     <a class="bell" href="/notifications" aria-label="Notifications{{if .Session.Unread}}, {{.Session.Unread}} unread{{end}}"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>{{if .Session.Unread}}<span class="bell-count">{{.Session.Unread}}</span>{{end}}</a>
   </div>
+  {{if .Session.AdminPanelAccess}}
   <form class="admin-sidebar-search" method="get" action="/admin/players" role="search">
     <label>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
@@ -13,6 +14,9 @@
     </label>
   </form>
 
+  {{end}}
+
+  {{if .Session.AdminPanelAccess}}
   <div class="admin-nav-group">Overview</div>
   <a href="/admin" class="admin-nav-item {{if eq .AdminTab "dashboard"}}active{{end}}" {{if eq .AdminTab "dashboard"}}aria-current="page"{{end}}>Dashboard</a>
   <a href="/admin/devlog/new" class="admin-nav-item {{if eq .AdminTab "devlog"}}active{{end}}" {{if eq .AdminTab "devlog"}}aria-current="page"{{end}}>New Devlog Post</a>
@@ -22,6 +26,15 @@
   <a href="/admin/bans" class="admin-nav-item {{if eq .AdminTab "bans"}}active{{end}}" {{if eq .AdminTab "bans"}}aria-current="page"{{end}}>Bans{{if .ActiveBans}}<span class="admin-nav-count">{{.ActiveBans}}</span>{{end}}</a>
   <a href="/admin/anticheat" class="admin-nav-item {{if eq .AdminTab "anticheat"}}active{{end}}" {{if eq .AdminTab "anticheat"}}aria-current="page"{{end}}>Anti-Cheat Flags{{if .OpenFlags}}<span class="admin-nav-count admin-nav-count-hot">{{.OpenFlags}}</span>{{end}}</a>
 
+  {{end}}
+
+  {{if .Session.SupportPanelAccess}}
+  <div class="admin-nav-group">Support</div>
+  <a href="/admin/support" class="admin-nav-item {{if eq .AdminTab "support"}}active{{end}}" {{if eq .AdminTab "support"}}aria-current="page"{{end}}>Support Overview</a>
+  <a href="/admin/tickets" class="admin-nav-item {{if eq .AdminTab "tickets"}}active{{end}}" {{if eq .AdminTab "tickets"}}aria-current="page"{{end}}>Tickets{{if .UnassignedTickets}}<span class="admin-nav-count admin-nav-count-hot" title="Unassigned">{{.UnassignedTickets}}</span>{{else if .OpenTickets}}<span class="admin-nav-count">{{.OpenTickets}}</span>{{end}}</a>
+  {{end}}
+
+  {{if .Session.AdminPanelAccess}}
   <div class="admin-nav-group">Players</div>
   <a href="/admin/players" class="admin-nav-item {{if eq .AdminTab "players"}}active{{end}}" {{if eq .AdminTab "players"}}aria-current="page"{{end}}>Player Lookup</a>
 
@@ -39,7 +52,7 @@
   <a href="/admin/notices" class="admin-nav-item {{if eq .AdminTab "notices"}}active{{end}}" {{if eq .AdminTab "notices"}}aria-current="page"{{end}}>Essential Notices</a>
   <a href="/admin/rules" class="admin-nav-item {{if eq .AdminTab "rules"}}active{{end}}" {{if eq .AdminTab "rules"}}aria-current="page"{{end}}>Server Rules</a>
   <a href="/admin/discord" class="admin-nav-item {{if eq .AdminTab "discord"}}active{{end}}" {{if eq .AdminTab "discord"}}aria-current="page"{{end}}>Discord Bot</a>
-  {{if .Session.SupportPanelAccess}}<a href="/support" class="admin-nav-item admin-nav-switch">Switch to Support Panel</a>{{end}}
+  {{end}}
 
   <div class="admin-sidebar-foot">
     <div class="admin-sidebar-foot-label">Signed in as</div>

@@ -309,7 +309,6 @@ func run() error {
 
 	r.Group(func(r chi.Router) {
 		r.Use(d.Auth.RequireAdminPanel)
-		r.Get("/admin", d.AdminHome)
 		r.Get("/admin/devlog/new", d.DevlogNewForm)
 		r.Post("/admin/devlog/new", d.DevlogCreate)
 
@@ -436,14 +435,26 @@ func run() error {
 
 	r.Group(func(r chi.Router) {
 		r.Use(d.Auth.RequireSupportPanel)
-		r.Get("/support", d.SupportDashboard)
-		r.Get("/support/tickets", d.SupportQueue)
-		r.Post("/support/tickets/{id}/assign", d.AssignTicket)
-		r.Post("/support/tickets/{id}/priority", d.SetTicketPriority)
-		r.Post("/support/tickets/{id}/category", d.SetTicketCategory)
-		r.Post("/support/tickets/{id}/subject", d.SetTicketSubject)
-		r.Post("/support/tickets/{id}/close", d.CloseTicket)
-		r.Post("/support/tickets/{id}/reopen", d.ReopenTicket)
+		// Support lives in the admin panel (its Support section); the old
+		// /support addresses redirect there.
+		r.Get("/admin/support", d.SupportDashboard)
+		r.Get("/admin/tickets", d.SupportQueue)
+		r.Get("/admin/tickets/{id}", d.TicketThread)
+		r.Post("/admin/tickets/{id}/assign", d.AssignTicket)
+		r.Post("/admin/tickets/{id}/priority", d.SetTicketPriority)
+		r.Post("/admin/tickets/{id}/category", d.SetTicketCategory)
+		r.Post("/admin/tickets/{id}/subject", d.SetTicketSubject)
+		r.Post("/admin/tickets/{id}/close", d.CloseTicket)
+		r.Post("/admin/tickets/{id}/reopen", d.ReopenTicket)
+		r.Get("/support", redirectTo("/admin/support"))
+		r.Get("/support/tickets", redirectTo("/admin/tickets"))
+	})
+
+	// The admin panel's home: admins get the dashboard, support-only staff
+	// their Support overview.
+	r.Group(func(r chi.Router) {
+		r.Use(d.Auth.RequireStaffPanel)
+		r.Get("/admin", d.AdminHome)
 	})
 
 	srv := &http.Server{Addr: cfg.ListenAddr, Handler: r}
@@ -460,4 +471,16 @@ func run() error {
 		return err
 	}
 	return nil
+}
+
+// redirectTo permanently redirects an old address to its new one, keeping
+// the query string (filters on the old /support/tickets links).
+func redirectTo(path string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		to := path
+		if r.URL.RawQuery != "" {
+			to += "?" + r.URL.RawQuery
+		}
+		http.Redirect(w, r, to, http.StatusMovedPermanently)
+	}
 }

@@ -46,7 +46,7 @@
           <fieldset class="field panel-defaults" {{if .Locked}}disabled{{end}}>
             <legend>Default panels</legend>
             <label><input type="checkbox" name="admin_panel" {{if .AdminPanel}}checked{{end}}> Admin panel</label>
-            <label><input type="checkbox" name="support_panel" {{if .SupportPanel}}checked{{end}}> Support panel</label>
+            <label><input type="checkbox" name="support_panel" {{if .SupportPanel}}checked{{end}}> Support tickets</label>
           </fieldset>
         </div>
         {{$locked := .Locked}}

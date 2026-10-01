@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -192,6 +193,7 @@ type ticketDetail struct {
 
 type ticketThreadData struct {
 	Base
+	AdminShell
 	Ticket        ticketDetail
 	Messages      []ticketMessage
 	IsStaff       bool
@@ -271,8 +273,21 @@ func (d *Deps) TicketThread(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "403 Forbidden", http.StatusForbidden)
 		return
 	}
+	// Staff work tickets in the admin panel; links to /tickets/{id} (from
+	// Discord, notifications, the queue) land them there.
+	if isStaff && !strings.HasPrefix(r.URL.Path, "/admin/") {
+		to := "/admin/tickets/" + strconv.FormatInt(ticketID, 10)
+		if r.URL.RawQuery != "" {
+			to += "?" + r.URL.RawQuery
+		}
+		http.Redirect(w, r, to, http.StatusSeeOther)
+		return
+	}
 
 	data := ticketThreadData{Base: baseFrom(r, t.Subject), Ticket: t, IsStaff: isStaff}
+	if isStaff {
+		data.AdminShell = d.adminShell(r, "tickets")
+	}
 
 	if isStaff {
 		topCats, subCats, err := fetchCategoryTree(r.Context(), d.Pool)
@@ -359,13 +374,17 @@ func (d *Deps) ReplyToTicket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	internal := isStaff && r.FormValue("internal") == "1"
+	back := "/tickets/" + chi.URLParam(r, "id")
+	if isStaff {
+		back = "/admin/tickets/" + chi.URLParam(r, "id")
+	}
 
 	_, err = d.Pool.Exec(r.Context(), `
 		INSERT INTO support_ticket_messages (ticket_id, author_player_id, body, source, internal) VALUES ($1, $2, $3, 'web', $4)
 	`, ticketID, sess.PlayerID, r.FormValue("body"), internal)
 	if err != nil {
 		slog.Error("ticket reply: insert failed", "error", err)
-		http.Redirect(w, r, "/tickets/"+chi.URLParam(r, "id")+"?error="+errMsg("Something went wrong."), http.StatusSeeOther)
+		http.Redirect(w, r, back+"?error="+errMsg("Something went wrong."), http.StatusSeeOther)
 		return
 	}
 	_, _ = d.Pool.Exec(r.Context(), `UPDATE support_tickets SET updated_at = now() WHERE id = $1`, ticketID)
@@ -385,5 +404,5 @@ func (d *Deps) ReplyToTicket(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	http.Redirect(w, r, "/tickets/"+chi.URLParam(r, "id"), http.StatusSeeOther)
+	http.Redirect(w, r, back, http.StatusSeeOther)
 }
