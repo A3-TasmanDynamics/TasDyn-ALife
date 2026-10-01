@@ -2548,3 +2548,60 @@ textarea.dev-input { resize: vertical; min-height: 40px; }
 .dev-small { font-size: 12.5px; margin: 0; }
 .dev-side-del { width: 100%; }
 @media (max-width: 800px) { .dev-cardm-body { grid-template-columns: 1fr; } }
+
+/* Card dialog, round two: pill summary, read-mode description, one feed. */
+.modal.dev-cardm { width: min(980px, calc(100vw - 32px)); }
+.dev-cardm-head { border-left: 5px solid var(--pri, var(--border)); padding: 16px 20px 14px 18px; }
+.dev-cardm-titles { gap: 8px; }
+.dev-cardm-pills { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.dev-pill { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 12px; background: var(--bg-input); color: #c7d0e0; font-size: 12px; font-weight: 600; text-transform: capitalize; }
+.dev-pill .dev-avatar { margin: 0 0 0 -5px; width: 18px; height: 18px; font-size: 10px; }
+.dev-pill-col .dev-col-dot { width: 8px; height: 8px; }
+.dev-cardm-pills .dev-label { height: 24px; display: inline-flex; align-items: center; padding: 0 9px; border-radius: 12px; font-size: 12px; }
+.dev-cardm-sub { font-size: 12px; color: var(--text-dim); }
+.dev-cardm-body { grid-template-columns: minmax(0, 1fr) 240px; gap: 24px; padding: 18px 20px 22px; }
+.dev-cardm-main { gap: 22px; }
+.dev-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; min-height: 28px; }
+.dev-sec-head h3, .dev-cardm-sec .dev-sec-head h3 { margin: 0; font-size: 12px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-dim); }
+.dev-sec-head form { margin: 0; }
+.dev-checklist .dev-sec-head h3 { text-transform: none; letter-spacing: 0; font-size: 14px; color: var(--text); }
+
+.dev-desc-view { font-size: 14px; line-height: 1.6; color: var(--text); overflow-wrap: anywhere; }
+.dev-desc-view p { margin: 0 0 8px; white-space: pre-line; }
+.dev-desc-view ul { margin: 0 0 8px; padding-left: 20px; }
+.dev-desc-view li { margin: 2px 0; }
+.dev-desc-view > :last-child { margin-bottom: 0; }
+.dev-desc-empty { width: 100%; text-align: left; padding: 12px; border-radius: 8px; border: 0; background: var(--bg-input); color: var(--text-dim); font: inherit; font-size: 13.5px; cursor: pointer; min-height: 56px; }
+.dev-desc-empty:hover { color: var(--text); outline: 1px solid var(--border); }
+.dev-desc-actions, .dev-side-row { display: flex; gap: 8px; margin-top: 8px; }
+.dev-side-row { margin-top: 0; }
+
+.dev-reveal { margin-left: 28px; }
+.dev-add-row { margin-left: 28px; }
+.dev-progress { margin-top: 0; }
+
+.dev-feed .dev-comment-form { flex-direction: column; align-items: stretch; }
+.dev-feed .dev-comment-form .btn { align-self: flex-start; }
+.dev-feed .dev-comment-form textarea:not(:focus):placeholder-shown { min-height: 38px; height: 38px; }
+.dev-feed .dev-comment-form:not(:focus-within) .btn { display: none; }
+.dev-feed .dev-comment { margin-top: 14px; }
+.dev-feed .dev-comment-form + .dev-small { margin-top: 8px; }
+.dev-cardm-head .modal-x:focus:not(:focus-visible) { outline: none; }
+.dev-act { display: flex; gap: 10px; align-items: baseline; border-bottom: 0; padding: 7px 0 0 0; font-size: 12.5px; }
+.dev-act-dot { flex-shrink: 0; width: 28px; display: flex; justify-content: center; }
+.dev-act-dot::before { content: ""; width: 6px; height: 6px; border-radius: 3px; background: var(--border); transform: translateY(-1px); }
+.dev-feed.hide-acts [data-feed-act] { display: none; }
+
+.dev-cardm-side { gap: 0; }
+.dev-cardm-side .dev-side-group:first-child { border-top: 0; padding-top: 0; }
+.dev-side-group { padding: 14px 0; }
+.dev-side-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--text-dim); }
+.dev-side-field select, .dev-side-field input, .dev-side-form select { width: 100%; box-sizing: border-box; height: 32px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 0 8px; font: inherit; font-size: 13px; color-scheme: dark; }
+.dev-side-field select:focus, .dev-side-field input:focus { outline: none; border-color: var(--amber); }
+.dev-side-btn { width: 100%; justify-content: flex-start; display: inline-flex; align-items: center; gap: 8px; }
+.dev-side-btn.btn-primary, .dev-side-btn.dev-del { justify-content: center; }
+.dev-side-form .dev-input { height: 32px; padding: 0 10px; }
+.dev-link a { display: flex; flex-direction: column; gap: 1px; }
+.dev-link-kind { font-size: 11px; color: var(--text-dim); }
+.dev-link-title { font-weight: 600; }
+@media (max-width: 800px) { .dev-reveal, .dev-add-row { margin-left: 0; } }

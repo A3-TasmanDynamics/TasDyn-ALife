@@ -70,35 +70,45 @@
 
     {{with .Edit}}
     {{$id := .ID}}
-    <dialog id="dlg-task" class="modal dev-cardm" aria-labelledby="dlg-task-t" data-open-on-load>
+    <dialog id="dlg-task" class="modal dev-cardm" aria-labelledby="cm-title" data-open-on-load>
       <form id="cardf" method="post" action="/admin/dev/board/{{.ID}}"><input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"></form>
-      <div class="dev-cardm-head">
-        <span class="dev-cardm-icon dev-pri-{{.Priority}}" aria-hidden="true"></span>
+      <div class="dev-cardm-head dev-pri-{{.Priority}}">
         <div class="dev-cardm-titles">
           <label class="visually-hidden" for="cm-title">Title</label>
           <input id="cm-title" class="dev-cardm-title" form="cardf" name="title" value="{{.Title}}" maxlength="140" required>
-          <span class="dev-muted">#{{.ID}} &middot; in <strong>{{$.StatusLabel .Status}}</strong> &middot; added by {{if .CreatedBy}}{{.CreatedBy}}{{else}}someone{{end}} {{.CreatedAt.Format "2 Jan 2006"}}</span>
+          <div class="dev-cardm-pills">
+            <span class="dev-pill dev-pill-col dev-col-{{.Status}}"><span class="dev-col-dot" aria-hidden="true"></span>{{$.StatusLabel .Status}}</span>
+            <span class="dev-pill dev-pri-tag-{{.Priority}}">{{.Priority}} priority</span>
+            {{if .Due}}<span class="dev-pill dev-due {{if eq .DueState "overdue"}}dev-due-overdue{{else if eq .DueState "soon"}}dev-due-soon{{end}}{{if eq .Status "done"}} dev-due-done{{end}}">Due {{.Due.Format "2 Jan 2006"}}</span>{{end}}
+            {{if .Assignee}}<span class="dev-pill"><span class="dev-avatar" aria-hidden="true">{{slice .Assignee 0 1}}</span>{{.Assignee}}</span>{{end}}
+            {{range .Labels}}<span class="dev-label">{{.}}</span>{{end}}
+          </div>
+          <span class="dev-cardm-sub">#{{.ID}} &middot; added by {{if .CreatedBy}}{{.CreatedBy}}{{else}}someone{{end}} on {{.CreatedAt.Format "2 Jan 2006"}}</span>
         </div>
-        <a class="modal-x" href="/admin/dev/board" aria-label="Close">&times;</a>
+        <a class="modal-x" href="/admin/dev/board" aria-label="Close" autofocus>&times;</a>
       </div>
 
       <div class="dev-cardm-body">
         <div class="dev-cardm-main">
-          <section class="dev-cardm-sec">
-            <h3>Labels</h3>
-            <input class="dev-input" form="cardf" name="labels" value="{{range $i, $l := .Labels}}{{if $i}}, {{end}}{{$l}}{{end}}" placeholder="website, bug" list="dev-label-list" aria-label="Labels">
-          </section>
-          <section class="dev-cardm-sec">
-            <h3>Description</h3>
-            <textarea class="dev-input" form="cardf" name="body" rows="5" placeholder="Add more detail: what, why, links…" aria-label="Description">{{.Body}}</textarea>
-            <div class="dev-cardm-save"><button class="btn btn-primary btn-sm" type="submit" form="cardf">Save card</button></div>
+          <section class="dev-cardm-sec" data-desc>
+            <div class="dev-sec-head">
+              <h3>Description</h3>
+              {{if .Body}}<button class="btn btn-sm" type="button" data-desc-edit>Edit</button>{{end}}
+            </div>
+            <div class="dev-desc-view" data-desc-view {{if not .Body}}hidden{{end}}>
+              {{range .DescriptionBlocks}}{{if .Bullets}}<ul>{{range .Bullets}}<li>{{.}}</li>{{end}}</ul>{{else}}<p>{{.Text}}</p>{{end}}{{end}}
+            </div>
+            <button class="dev-desc-empty" type="button" data-desc-edit {{if .Body}}hidden{{end}}>Add a more detailed description…</button>
+            <div class="dev-desc-edit" data-desc-form hidden>
+              <textarea class="dev-input" form="cardf" name="body" rows="7" placeholder="What needs doing and why. Start lines with - for bullet points." aria-label="Description">{{.Body}}</textarea>
+              <div class="dev-desc-actions"><button class="btn btn-primary btn-sm" type="submit" form="cardf">Save</button><button class="btn btn-sm" type="button" data-desc-cancel>Cancel</button></div>
+            </div>
           </section>
 
           {{range .Checklists}}
-          {{$cl := .}}
           <section class="dev-cardm-sec dev-checklist" data-checklist>
-            <div class="dev-checklist-head">
-              <h3><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg> {{.Title}}</h3>
+            <div class="dev-sec-head">
+              <h3>{{.Title}}</h3>
               <form method="post" action="/admin/dev/board/{{$id}}/checklists/{{.ID}}/delete" onsubmit="return confirm('Delete the checklist {{.Title}}?')"><input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><button class="btn btn-sm dev-del" type="submit">Delete</button></form>
             </div>
             <div class="dev-progress"><span class="dev-progress-n" data-pct>{{.Percent}}%</span><div class="dev-progress-bar"><span style="width: {{.Percent}}%" data-bar></span></div></div>
@@ -114,52 +124,61 @@
               </li>
               {{end}}
             </ul>
-            <form method="post" action="/admin/dev/board/{{$id}}/checklists/{{.ID}}/items" class="dev-add-row">
+            <button class="btn btn-sm dev-reveal" type="button" data-reveal>Add an item</button>
+            <form method="post" action="/admin/dev/board/{{$id}}/checklists/{{.ID}}/items" class="dev-add-row" data-reveal-form hidden>
               <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
               <input class="dev-input" name="body" maxlength="300" placeholder="Add an item" aria-label="Add an item to {{.Title}}" required>
-              <button class="btn btn-sm" type="submit">Add</button>
+              <button class="btn btn-sm btn-primary" type="submit">Add</button>
+              <button class="btn btn-sm" type="button" data-reveal-cancel>Cancel</button>
             </form>
           </section>
           {{end}}
 
-          <section class="dev-cardm-sec">
-            <h3>Comments</h3>
+          <section class="dev-cardm-sec dev-feed" data-feed>
+            <div class="dev-sec-head">
+              <h3>Comments and activity</h3>
+              {{if .Activity}}<button class="btn btn-sm" type="button" data-feed-toggle aria-pressed="false">Hide details</button>{{end}}
+            </div>
             <form method="post" action="/admin/dev/board/{{.ID}}/comments" class="dev-comment-form">
               <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
               <textarea class="dev-input" name="body" rows="2" maxlength="4000" placeholder="Write a comment…" aria-label="Write a comment" required></textarea>
               <button class="btn btn-sm btn-primary" type="submit">Comment</button>
             </form>
-            {{range .Comments}}
+            {{range .Feed}}
+            {{if .Comment}}
             <div class="dev-comment">
-              <span class="dev-avatar" aria-hidden="true">{{slice .Author 0 1}}</span>
+              <span class="dev-avatar" aria-hidden="true">{{slice .Actor 0 1}}</span>
               <div>
-                <div class="dev-comment-meta"><strong>{{.Author}}</strong> <span class="dev-muted">{{.At.Format "2 Jan 15:04"}}</span>
+                <div class="dev-comment-meta"><strong>{{.Actor}}</strong> <span class="dev-muted">{{.At.Format "2 Jan 15:04"}}</span>
                   {{if eq .AuthorID $.Me}}<form method="post" action="/admin/dev/board/{{$id}}/comments/{{.ID}}/delete" class="inline-form"><input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><button class="link-button dev-muted" type="submit">Delete</button></form>{{end}}</div>
-                <div class="dev-comment-body">{{.Body}}</div>
+                <div class="dev-comment-body">{{.Text}}</div>
               </div>
             </div>
+            {{else}}
+            <div class="dev-act" data-feed-act><span class="dev-act-dot" aria-hidden="true"></span><span><strong>{{.Actor}}</strong> {{.Text}} <span class="dev-muted">&middot; {{.At.Format "2 Jan 15:04"}}</span></span></div>
             {{end}}
+            {{else}}<p class="dev-muted dev-small">No comments yet.</p>{{end}}
           </section>
-
-          <details class="dev-cardm-sec dev-activity" {{if not .Comments}}open{{end}}>
-            <summary><h3>Activity</h3><span class="dev-muted">{{len .Activity}}</span></summary>
-            {{range .Activity}}<div class="dev-act"><strong>{{.Actor}}</strong> {{.What}} <span class="dev-muted">{{.At.Format "2 Jan 15:04"}}</span></div>{{else}}<p class="dev-muted">No history yet.</p>{{end}}
-          </details>
         </div>
 
         <aside class="dev-cardm-side">
-          <div class="field"><label for="cm-status">Column</label><select id="cm-status" form="cardf" name="status">{{$s := .Status}}{{range $.Statuses}}<option value="{{.Key}}" {{if eq .Key $s}}selected{{end}}>{{.Label}}</option>{{end}}</select></div>
-          <div class="field"><label for="cm-pri">Priority</label><select id="cm-pri" form="cardf" name="priority">{{$p := .Priority}}<option value="urgent" {{if eq $p "urgent"}}selected{{end}}>Urgent</option><option value="high" {{if eq $p "high"}}selected{{end}}>High</option><option value="normal" {{if eq $p "normal"}}selected{{end}}>Normal</option><option value="low" {{if eq $p "low"}}selected{{end}}>Low</option></select></div>
-          <div class="field"><label for="cm-asg">Assignee</label><select id="cm-asg" form="cardf" name="assignee"><option value="0">Nobody</option>{{$a := .AssigneeID}}{{range $.Staff}}<option value="{{.ID}}" {{if eq .ID $a}}selected{{end}}>{{.Name}}</option>{{end}}</select></div>
-          <div class="field"><label for="cm-due">Due date</label><input id="cm-due" type="date" form="cardf" name="due" value="{{with .Due}}{{.Format "2006-01-02"}}{{end}}"></div>
-          <button class="btn btn-primary dev-side-save" type="submit" form="cardf">Save</button>
+          <div class="dev-side-group">
+            <h4>Details</h4>
+            <label class="dev-side-field"><span>Column</span><select form="cardf" name="status">{{$s := .Status}}{{range $.Statuses}}<option value="{{.Key}}" {{if eq .Key $s}}selected{{end}}>{{.Label}}</option>{{end}}</select></label>
+            <label class="dev-side-field"><span>Priority</span><select form="cardf" name="priority">{{$p := .Priority}}<option value="urgent" {{if eq $p "urgent"}}selected{{end}}>Urgent</option><option value="high" {{if eq $p "high"}}selected{{end}}>High</option><option value="normal" {{if eq $p "normal"}}selected{{end}}>Normal</option><option value="low" {{if eq $p "low"}}selected{{end}}>Low</option></select></label>
+            <label class="dev-side-field"><span>Assignee</span><select form="cardf" name="assignee"><option value="0">Nobody</option>{{$a := .AssigneeID}}{{range $.Staff}}<option value="{{.ID}}" {{if eq .ID $a}}selected{{end}}>{{.Name}}</option>{{end}}</select></label>
+            <label class="dev-side-field"><span>Due date</span><input type="date" form="cardf" name="due" value="{{with .Due}}{{.Format "2006-01-02"}}{{end}}"></label>
+            <label class="dev-side-field"><span>Labels</span><input form="cardf" name="labels" value="{{range $i, $l := .Labels}}{{if $i}}, {{end}}{{$l}}{{end}}" placeholder="website, bug" list="dev-label-list"></label>
+            <button class="btn btn-primary btn-sm dev-side-btn" type="submit" form="cardf">Save changes</button>
+          </div>
 
           <div class="dev-side-group">
             <h4>Add to card</h4>
-            <form method="post" action="/admin/dev/board/{{.ID}}/checklists" class="dev-side-form">
+            <button class="btn btn-sm dev-side-btn" type="button" data-reveal><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg> Checklist</button>
+            <form method="post" action="/admin/dev/board/{{.ID}}/checklists" class="dev-side-form" data-reveal-form hidden>
               <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
-              <input class="dev-input" name="title" maxlength="80" placeholder="Checklist name" aria-label="Checklist name">
-              <button class="btn btn-sm" type="submit"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg> Checklist</button>
+              <input class="dev-input" name="title" maxlength="80" value="Checklist" aria-label="Checklist name" required>
+              <div class="dev-side-row"><button class="btn btn-sm btn-primary" type="submit">Add</button><button class="btn btn-sm" type="button" data-reveal-cancel>Cancel</button></div>
             </form>
           </div>
 
@@ -167,22 +186,23 @@
             <h4>Linked cards</h4>
             {{range .Links}}
             <div class="dev-link">
-              <a href="/admin/dev/board?task={{.OtherID}}"><span class="dev-muted">{{.Label}}</span> #{{.OtherID}} {{.OtherTitle}}<small class="dev-link-status dev-col-{{.OtherStatus}}">{{$.StatusLabel .OtherStatus}}</small></a>
+              <a href="/admin/dev/board?task={{.OtherID}}"><span class="dev-link-kind">{{.Label}}</span><span class="dev-link-title">#{{.OtherID}} {{.OtherTitle}}</span><small class="dev-link-status dev-col-{{.OtherStatus}}">{{$.StatusLabel .OtherStatus}}</small></a>
               <form method="post" action="/admin/dev/board/{{$id}}/links/{{.OtherID}}/delete"><input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><button class="dev-x" type="submit" aria-label="Remove link to #{{.OtherID}}">&times;</button></form>
             </div>
-            {{else}}<p class="dev-muted dev-small">No linked cards.</p>{{end}}
-            <form method="post" action="/admin/dev/board/{{.ID}}/links" class="dev-side-form">
+            {{end}}
+            <button class="btn btn-sm dev-side-btn" type="button" data-reveal><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg> Link a card</button>
+            <form method="post" action="/admin/dev/board/{{.ID}}/links" class="dev-side-form" data-reveal-form hidden>
               <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
               <select name="kind" aria-label="Link type">{{range $.LinkKinds}}<option value="{{.Key}}">{{.Label}}</option>{{end}}</select>
               <select name="other" aria-label="Card to link" required><option value="">Pick a card…</option>{{range $.Options}}{{if ne .ID $id}}<option value="{{.ID}}">#{{.ID}} {{.Title}}</option>{{end}}{{end}}</select>
-              <button class="btn btn-sm" type="submit"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg> Link</button>
+              <div class="dev-side-row"><button class="btn btn-sm btn-primary" type="submit">Link</button><button class="btn btn-sm" type="button" data-reveal-cancel>Cancel</button></div>
             </form>
           </div>
 
           <div class="dev-side-group">
             <form method="post" action="/admin/dev/board/{{.ID}}/delete" onsubmit="return confirm('Delete card #{{.ID}} and its checklists, comments and links?')">
               <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
-              <button class="btn btn-sm dev-del dev-side-del" type="submit">Delete card</button>
+              <button class="btn btn-sm dev-del dev-side-btn" type="submit">Delete card</button>
             </form>
           </div>
         </aside>

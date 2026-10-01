@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -19,6 +20,67 @@ type Card struct {
 	Links      []Link
 	Comments   []Comment
 	Activity   []Activity
+}
+
+// Block is part of a card's description as shown: a paragraph, or a run
+// of "- " / "* " lines shown as a bulleted list.
+type Block struct {
+	Text    string
+	Bullets []string
+}
+
+// DescriptionBlocks splits the description into paragraphs and lists.
+func (t Task) DescriptionBlocks() []Block {
+	var out []Block
+	var para []string
+	flush := func() {
+		if len(para) > 0 {
+			out = append(out, Block{Text: strings.Join(para, "\n")})
+			para = nil
+		}
+	}
+	for _, line := range strings.Split(strings.ReplaceAll(t.Body, "\r\n", "\n"), "\n") {
+		trim := strings.TrimSpace(line)
+		switch {
+		case trim == "":
+			flush()
+		case strings.HasPrefix(trim, "- ") || strings.HasPrefix(trim, "* ") || strings.HasPrefix(trim, "• "):
+			flush()
+			item := strings.TrimSpace(strings.TrimLeft(trim, "-*• "))
+			if n := len(out); n > 0 && out[n-1].Bullets != nil {
+				out[n-1].Bullets = append(out[n-1].Bullets, item)
+			} else {
+				out = append(out, Block{Bullets: []string{item}})
+			}
+		default:
+			para = append(para, trim)
+		}
+	}
+	flush()
+	return out
+}
+
+// FeedItem is one entry in a card's feed: a comment or a history line.
+type FeedItem struct {
+	Comment  bool
+	ID       int64 // comment id
+	AuthorID int64
+	Actor    string
+	Text     string
+	At       time.Time
+}
+
+// Feed is the card's comments and history together, newest first.
+func (c Card) Feed() []FeedItem {
+	var out []FeedItem
+	for _, m := range c.Comments {
+		out = append(out, FeedItem{Comment: true, ID: m.ID, AuthorID: m.AuthorID, Actor: m.Author, Text: m.Body, At: m.At})
+	}
+	for _, a := range c.Activity {
+		out = append(out, FeedItem{Actor: a.Actor, Text: a.What, At: a.At})
+	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].At.After(out[j].At) })
+	return out
 }
 
 // Checklist is one named list of items on a card.
