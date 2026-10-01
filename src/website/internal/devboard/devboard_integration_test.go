@@ -52,23 +52,23 @@ func TestBoard(t *testing.T) {
 		}
 		return ids
 	}
-	if err := Move(ctx, pool, c, "todo", a); err != nil {
+	if err := Move(ctx, pool, 0, c, "todo", a); err != nil {
 		t.Fatal(err)
 	}
 	if got := order("todo"); len(got) != 3 || got[0] != c || got[1] != a || got[2] != b {
 		t.Errorf("after moving c before a: %v (a=%d b=%d c=%d)", got, a, b, c)
 	}
-	if err := Move(ctx, pool, b, "done", 0); err != nil {
+	if err := Move(ctx, pool, 0, b, "done", 0); err != nil {
 		t.Fatal(err)
 	}
 	if done, _ := Get(ctx, pool, b); done.Status != "done" || done.DoneAt == nil {
 		t.Errorf("done task: %+v", done)
 	}
-	if err := Move(ctx, pool, b, "nope", 0); !errors.As(err, &ue) {
+	if err := Move(ctx, pool, 0, b, "nope", 0); !errors.As(err, &ue) {
 		t.Errorf("bad column: %v", err)
 	}
 	got.Status, got.Priority = "doing", "urgent"
-	if err := Update(ctx, pool, got); err != nil {
+	if err := Update(ctx, pool, 0, got); err != nil {
 		t.Fatal(err)
 	}
 	if got := order("doing"); len(got) != 1 || got[0] != a {

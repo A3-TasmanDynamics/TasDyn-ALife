@@ -235,21 +235,28 @@ func (d *Deps) DevLogsJSON(w http.ResponseWriter, r *http.Request) {
 type devBoardData struct {
 	Base
 	AdminShell
-	Columns  []devboard.Column
-	Staff    []devboard.Person
-	Labels   []string
-	Mine     bool
-	Q        string
-	Label    string
-	Edit     *devboard.Task
-	Statuses []devboard.Status
+	Columns   []devboard.Column
+	Staff     []devboard.Person
+	Labels    []string
+	Mine      bool
+	Q         string
+	Label     string
+	Edit      *devboard.Card
+	Statuses  []devboard.Status
+	Options   []devboard.Task // cards to link to
+	LinkKinds []struct{ Key, Label string }
+	Me        int64
 }
+
+// StatusLabel names a column for the board template.
+func (devBoardData) StatusLabel(key string) string { return devboard.StatusLabel(key) }
 
 func (d *Deps) DevBoard(w http.ResponseWriter, r *http.Request) {
 	sess, _ := auth.FromContext(r.Context())
 	q := r.URL.Query()
 	data := devBoardData{Base: baseFrom(r, "Project board"), AdminShell: d.adminShell(r, "dev-board"),
-		Mine: q.Get("mine") == "1", Q: strings.TrimSpace(q.Get("q")), Label: q.Get("label"), Statuses: devboard.Statuses}
+		Mine: q.Get("mine") == "1", Q: strings.TrimSpace(q.Get("q")), Label: q.Get("label"), Statuses: devboard.Statuses,
+		LinkKinds: devboard.LinkKinds, Me: sess.PlayerID}
 	f := devboard.Filter{Q: data.Q, Label: data.Label}
 	if data.Mine {
 		f.Assignee = sess.PlayerID
@@ -263,8 +270,11 @@ func (d *Deps) DevBoard(w http.ResponseWriter, r *http.Request) {
 	data.Staff, _ = devboard.People(r.Context(), d.Pool)
 	data.Labels, _ = devboard.Labels(r.Context(), d.Pool)
 	if id, _ := strconv.ParseInt(q.Get("task"), 10, 64); id > 0 {
-		if t, err := devboard.Get(r.Context(), d.Pool, id); err == nil {
-			data.Edit = &t
+		if c, err := devboard.GetCard(r.Context(), d.Pool, id); err == nil {
+			data.Edit = &c
+			data.Options, _ = devboard.Options(r.Context(), d.Pool)
+		} else if !errors.Is(err, pgx.ErrNoRows) {
+			slog.Error("dev board: card load failed", "error", err)
 		}
 	}
 	d.Render.Render(w, "dev_board.html", data)
@@ -301,8 +311,12 @@ func taskFromForm(r *http.Request) devboard.Task {
 			labels = append(labels, l)
 		}
 	}
-	return devboard.Task{Title: r.FormValue("title"), Body: r.FormValue("body"), Status: r.FormValue("status"),
+	t := devboard.Task{Title: r.FormValue("title"), Body: r.FormValue("body"), Status: r.FormValue("status"),
 		Priority: r.FormValue("priority"), Labels: labels, AssigneeID: assignee}
+	if due, err := time.ParseInLocation("2006-01-02", r.FormValue("due"), time.Local); err == nil {
+		t.Due = &due
+	}
+	return t
 }
 
 func (d *Deps) DevTaskCreate(w http.ResponseWriter, r *http.Request) {
@@ -312,18 +326,20 @@ func (d *Deps) DevTaskCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (d *Deps) DevTaskUpdate(w http.ResponseWriter, r *http.Request) {
+	sess, _ := auth.FromContext(r.Context())
 	id, _ := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	t := taskFromForm(r)
 	t.ID = id
-	devBoardBack(w, r, devboard.Update(r.Context(), d.Pool, t), "Task saved.")
+	cardBack(w, r, id, devboard.Update(r.Context(), d.Pool, sess.PlayerID, t), "Card saved.")
 }
 
 // DevTaskMove moves a card to a column, before another card (or to the
 // end). Answers JSON for the drag-and-drop board, or redirects for forms.
 func (d *Deps) DevTaskMove(w http.ResponseWriter, r *http.Request) {
+	sess, _ := auth.FromContext(r.Context())
 	id, _ := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	before, _ := strconv.ParseInt(r.FormValue("before"), 10, 64)
-	err := devboard.Move(r.Context(), d.Pool, id, r.FormValue("status"), before)
+	err := devboard.Move(r.Context(), d.Pool, sess.PlayerID, id, r.FormValue("status"), before)
 	if r.Header.Get("Accept") == "application/json" {
 		w.Header().Set("Content-Type", "application/json")
 		if err != nil {
@@ -340,4 +356,99 @@ func (d *Deps) DevTaskMove(w http.ResponseWriter, r *http.Request) {
 func (d *Deps) DevTaskDelete(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	devBoardBack(w, r, devboard.Delete(r.Context(), d.Pool, id), "Task deleted.")
+}
+
+// ---- Card details: checklists, links, comments ----
+
+// cardBack returns to the open card (or answers JSON for fetch requests).
+func cardBack(w http.ResponseWriter, r *http.Request, taskID int64, err error, notice string) {
+	back := fmt.Sprintf("/admin/dev/board?task=%d", taskID)
+	if r.Header.Get("Accept") == "application/json" {
+		w.Header().Set("Content-Type", "application/json")
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		w.Write([]byte(`{"ok":true}`))
+		return
+	}
+	if err != nil {
+		msg := "Something went wrong."
+		var ue devboard.UserError
+		if errors.As(err, &ue) {
+			msg = ue.Error()
+		} else {
+			slog.Error("dev board: card change failed", "error", err)
+		}
+		http.Redirect(w, r, back+"&error="+errMsg(msg), http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, back+"&notice="+errMsg(notice), http.StatusSeeOther)
+}
+
+func idParam(r *http.Request, name string) int64 {
+	n, _ := strconv.ParseInt(chi.URLParam(r, name), 10, 64)
+	return n
+}
+
+func (d *Deps) DevChecklistAdd(w http.ResponseWriter, r *http.Request) {
+	sess, _ := auth.FromContext(r.Context())
+	id := idParam(r, "id")
+	cardBack(w, r, id, devboard.AddChecklist(r.Context(), d.Pool, sess.PlayerID, id, r.FormValue("title")), "Checklist added.")
+}
+
+func (d *Deps) DevChecklistDelete(w http.ResponseWriter, r *http.Request) {
+	sess, _ := auth.FromContext(r.Context())
+	id := idParam(r, "id")
+	cardBack(w, r, id, devboard.DeleteChecklist(r.Context(), d.Pool, sess.PlayerID, id, idParam(r, "cid")), "Checklist deleted.")
+}
+
+func (d *Deps) DevItemAdd(w http.ResponseWriter, r *http.Request) {
+	id := idParam(r, "id")
+	cardBack(w, r, id, devboard.AddItem(r.Context(), d.Pool, id, idParam(r, "cid"), r.FormValue("body")), "Item added.")
+}
+
+// DevItemToggle ticks or unticks an item; fetch requests get the card's
+// new checklist progress back.
+func (d *Deps) DevItemToggle(w http.ResponseWriter, r *http.Request) {
+	sess, _ := auth.FromContext(r.Context())
+	id := idParam(r, "id")
+	done, total, err := devboard.SetItem(r.Context(), d.Pool, sess.PlayerID, id, idParam(r, "iid"), r.FormValue("done") == "1")
+	if r.Header.Get("Accept") == "application/json" && err == nil {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]int{"done": done, "total": total})
+		return
+	}
+	cardBack(w, r, id, err, "Checklist updated.")
+}
+
+func (d *Deps) DevItemDelete(w http.ResponseWriter, r *http.Request) {
+	id := idParam(r, "id")
+	cardBack(w, r, id, devboard.DeleteItem(r.Context(), d.Pool, id, idParam(r, "iid")), "Item removed.")
+}
+
+func (d *Deps) DevLinkAdd(w http.ResponseWriter, r *http.Request) {
+	sess, _ := auth.FromContext(r.Context())
+	id := idParam(r, "id")
+	other, _ := strconv.ParseInt(strings.TrimPrefix(strings.TrimSpace(r.FormValue("other")), "#"), 10, 64)
+	cardBack(w, r, id, devboard.AddLink(r.Context(), d.Pool, sess.PlayerID, id, other, r.FormValue("kind")), "Cards linked.")
+}
+
+func (d *Deps) DevLinkDelete(w http.ResponseWriter, r *http.Request) {
+	sess, _ := auth.FromContext(r.Context())
+	id := idParam(r, "id")
+	cardBack(w, r, id, devboard.RemoveLink(r.Context(), d.Pool, sess.PlayerID, id, idParam(r, "other")), "Link removed.")
+}
+
+func (d *Deps) DevCommentAdd(w http.ResponseWriter, r *http.Request) {
+	sess, _ := auth.FromContext(r.Context())
+	id := idParam(r, "id")
+	cardBack(w, r, id, devboard.AddComment(r.Context(), d.Pool, sess.PlayerID, id, r.FormValue("body")), "Comment added.")
+}
+
+func (d *Deps) DevCommentDelete(w http.ResponseWriter, r *http.Request) {
+	sess, _ := auth.FromContext(r.Context())
+	id := idParam(r, "id")
+	cardBack(w, r, id, devboard.DeleteComment(r.Context(), d.Pool, sess.PlayerID, id, idParam(r, "cid")), "Comment deleted.")
 }

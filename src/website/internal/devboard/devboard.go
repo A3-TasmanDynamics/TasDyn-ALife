@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -60,6 +61,46 @@ type Task struct {
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 	DoneAt     *time.Time
+	Due        *time.Time // due date (no time of day)
+
+	// Card-front counts.
+	ChecksDone, ChecksTotal int
+	Comments, Links         int
+}
+
+// DueState is "overdue", "soon" (within two days) or "" -- never for done
+// tasks.
+func (t Task) DueState() string {
+	if t.Due == nil || t.Status == "done" {
+		return ""
+	}
+	now := time.Now()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	switch {
+	case t.Due.Before(today):
+		return "overdue"
+	case t.Due.Before(today.Add(72 * time.Hour)):
+		return "soon"
+	}
+	return ""
+}
+
+// ChecksPercent is checklist progress, 0-100.
+func (t Task) ChecksPercent() int {
+	if t.ChecksTotal == 0 {
+		return 0
+	}
+	return t.ChecksDone * 100 / t.ChecksTotal
+}
+
+// StatusLabel names a column key.
+func StatusLabel(key string) string {
+	for _, s := range Statuses {
+		if s.Key == key {
+			return s.Label
+		}
+	}
+	return key
 }
 
 // Column is a status with its tasks.
@@ -80,14 +121,18 @@ const nameOf = `COALESCE(NULLIF(%[1]s.display_name, ''), NULLIF(%[1]s.name, ''),
 func taskSelect() string {
 	return `SELECT t.id, t.title, t.body, t.status, t.priority, t.labels, COALESCE(t.assignee_id, 0),
 		COALESCE(` + fmt.Sprintf(nameOf, "a") + `, ''), COALESCE(` + fmt.Sprintf(nameOf, "c") + `, ''),
-		t.created_at, t.updated_at, t.done_at
+		t.created_at, t.updated_at, t.done_at, t.due_date::timestamptz,
+		(SELECT count(*) FILTER (WHERE i.done) FROM dev_task_checklist_items i JOIN dev_task_checklists l ON l.id = i.checklist_id WHERE l.task_id = t.id),
+		(SELECT count(*) FROM dev_task_checklist_items i JOIN dev_task_checklists l ON l.id = i.checklist_id WHERE l.task_id = t.id),
+		(SELECT count(*) FROM dev_task_comments m WHERE m.task_id = t.id),
+		(SELECT count(*) FROM dev_task_links k WHERE k.task_id = t.id OR k.other_id = t.id)
 		FROM dev_tasks t LEFT JOIN players a ON a.id = t.assignee_id LEFT JOIN players c ON c.id = t.created_by`
 }
 
 func scanTask(row pgx.Row) (Task, error) {
 	var t Task
 	err := row.Scan(&t.ID, &t.Title, &t.Body, &t.Status, &t.Priority, &t.Labels, &t.AssigneeID, &t.Assignee, &t.CreatedBy,
-		&t.CreatedAt, &t.UpdatedAt, &t.DoneAt)
+		&t.CreatedAt, &t.UpdatedAt, &t.DoneAt, &t.Due, &t.ChecksDone, &t.ChecksTotal, &t.Comments, &t.Links)
 	return t, err
 }
 
@@ -189,6 +234,21 @@ func assignee(id int64) any {
 	return id
 }
 
+func dueDate(d *time.Time) any {
+	if d == nil {
+		return nil
+	}
+	return d.Format("2006-01-02")
+}
+
+// logActivity records one line of a card's history; failures are ignored
+// (history is a nicety, never a reason to fail the change).
+func logActivity(ctx context.Context, q interface {
+	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
+}, taskID, actor int64, what string) {
+	_, _ = q.Exec(ctx, `INSERT INTO dev_task_activity (task_id, actor_id, what) VALUES ($1, $2, $3)`, taskID, assignee(actor), what)
+}
+
 // Create adds a task at the bottom of its column.
 func Create(ctx context.Context, pool *pgxpool.Pool, by int64, t Task) (int64, error) {
 	if err := clean(&t); err != nil {
@@ -196,33 +256,73 @@ func Create(ctx context.Context, pool *pgxpool.Pool, by int64, t Task) (int64, e
 	}
 	var id int64
 	err := pool.QueryRow(ctx, `
-		INSERT INTO dev_tasks (title, body, status, priority, labels, assignee_id, created_by, sort, done_at)
+		INSERT INTO dev_tasks (title, body, status, priority, labels, assignee_id, created_by, sort, done_at, due_date)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE((SELECT max(sort) FROM dev_tasks WHERE status = $3), 0) + 1,
-		        CASE WHEN $3 = 'done' THEN now() END)
-		RETURNING id`, t.Title, t.Body, t.Status, t.Priority, t.Labels, assignee(t.AssigneeID), assignee(by)).Scan(&id)
+		        CASE WHEN $3 = 'done' THEN now() END, $8::date)
+		RETURNING id`, t.Title, t.Body, t.Status, t.Priority, t.Labels, assignee(t.AssigneeID), assignee(by), dueDate(t.Due)).Scan(&id)
+	if err == nil {
+		logActivity(ctx, pool, id, by, "added this card to "+StatusLabel(t.Status))
+	}
 	return id, err
 }
 
-// Update saves a task's fields (moving column keeps it at the bottom).
-func Update(ctx context.Context, pool *pgxpool.Pool, t Task) error {
+// Update saves a task's fields (moving column keeps it at the bottom),
+// noting moves, assignments and due-date changes in its history.
+func Update(ctx context.Context, pool *pgxpool.Pool, actor int64, t Task) error {
 	if err := clean(&t); err != nil {
 		return err
 	}
+	old, err := Get(ctx, pool, t.ID)
+	if err != nil {
+		return UserError("That task no longer exists.")
+	}
 	tag, err := pool.Exec(ctx, `
-		UPDATE dev_tasks SET title = $2, body = $3, priority = $5, labels = $6, assignee_id = $7, updated_at = now(),
+		UPDATE dev_tasks SET title = $2, body = $3, priority = $5, labels = $6, assignee_id = $7, due_date = $8::date, updated_at = now(),
 		       sort = CASE WHEN status = $4 THEN sort ELSE COALESCE((SELECT max(sort) FROM dev_tasks WHERE status = $4), 0) + 1 END,
 		       done_at = CASE WHEN $4 = 'done' THEN COALESCE(done_at, now()) END,
 		       status = $4
-		WHERE id = $1`, t.ID, t.Title, t.Body, t.Status, t.Priority, t.Labels, assignee(t.AssigneeID))
+		WHERE id = $1`, t.ID, t.Title, t.Body, t.Status, t.Priority, t.Labels, assignee(t.AssigneeID), dueDate(t.Due))
 	if err == nil && tag.RowsAffected() == 0 {
 		return UserError("That task no longer exists.")
 	}
-	return err
+	if err != nil {
+		return err
+	}
+	if old.Status != t.Status {
+		logActivity(ctx, pool, t.ID, actor, "moved this card from "+StatusLabel(old.Status)+" to "+StatusLabel(t.Status))
+	}
+	if old.AssigneeID != t.AssigneeID {
+		if t.AssigneeID == 0 {
+			logActivity(ctx, pool, t.ID, actor, "removed the assignee")
+		} else {
+			var name string
+			_ = pool.QueryRow(ctx, `SELECT `+fmt.Sprintf(nameOf, "p")+` FROM players p WHERE id = $1`, t.AssigneeID).Scan(&name)
+			logActivity(ctx, pool, t.ID, actor, "assigned this card to "+name)
+		}
+	}
+	oldDue, newDue := "", ""
+	if old.Due != nil {
+		oldDue = old.Due.Format("2 Jan 2006")
+	}
+	if t.Due != nil {
+		newDue = t.Due.Format("2 Jan 2006")
+	}
+	if oldDue != newDue {
+		if newDue == "" {
+			logActivity(ctx, pool, t.ID, actor, "removed the due date")
+		} else {
+			logActivity(ctx, pool, t.ID, actor, "set the due date to "+newDue)
+		}
+	}
+	if old.Title != t.Title || old.Body != t.Body {
+		logActivity(ctx, pool, t.ID, actor, "edited the card")
+	}
+	return nil
 }
 
 // Move puts a task in a column, just before the task before (0 = at the
 // end of the column).
-func Move(ctx context.Context, pool *pgxpool.Pool, id int64, status string, before int64) error {
+func Move(ctx context.Context, pool *pgxpool.Pool, actor, id int64, status string, before int64) error {
 	if !validStatus(status) {
 		return UserError("Unknown column.")
 	}
@@ -234,6 +334,8 @@ func Move(ctx context.Context, pool *pgxpool.Pool, id int64, status string, befo
 	if _, err := tx.Exec(ctx, `LOCK TABLE dev_tasks IN SHARE ROW EXCLUSIVE MODE`); err != nil {
 		return err
 	}
+	var from string
+	_ = tx.QueryRow(ctx, `SELECT status FROM dev_tasks WHERE id = $1`, id).Scan(&from)
 	var sortAt float64
 	if before != 0 && before != id {
 		var prev *float64
@@ -264,6 +366,9 @@ func Move(ctx context.Context, pool *pgxpool.Pool, id int64, status string, befo
 	}
 	if tag.RowsAffected() == 0 {
 		return UserError("That task no longer exists.")
+	}
+	if from != status {
+		logActivity(ctx, tx, id, actor, "moved this card from "+StatusLabel(from)+" to "+StatusLabel(status))
 	}
 	return tx.Commit(ctx)
 }
