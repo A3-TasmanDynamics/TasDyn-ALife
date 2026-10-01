@@ -448,6 +448,15 @@ func run() error {
 			r.Post("/admin/dev/board/{id}", d.DevTaskUpdate)
 			r.Post("/admin/dev/board/{id}/move", d.DevTaskMove)
 			r.Post("/admin/dev/board/{id}/delete", d.DevTaskDelete)
+			r.Post("/admin/dev/board/{id}/checklists", d.DevChecklistAdd)
+			r.Post("/admin/dev/board/{id}/checklists/{cid}/delete", d.DevChecklistDelete)
+			r.Post("/admin/dev/board/{id}/checklists/{cid}/items", d.DevItemAdd)
+			r.Post("/admin/dev/board/{id}/items/{iid}/toggle", d.DevItemToggle)
+			r.Post("/admin/dev/board/{id}/items/{iid}/delete", d.DevItemDelete)
+			r.Post("/admin/dev/board/{id}/links", d.DevLinkAdd)
+			r.Post("/admin/dev/board/{id}/links/{other}/delete", d.DevLinkDelete)
+			r.Post("/admin/dev/board/{id}/comments", d.DevCommentAdd)
+			r.Post("/admin/dev/board/{id}/comments/{cid}/delete", d.DevCommentDelete)
 		})
 
 		r.Group(func(r chi.Router) {

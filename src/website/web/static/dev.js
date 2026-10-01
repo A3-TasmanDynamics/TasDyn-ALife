@@ -80,6 +80,33 @@
     setInterval(poll, 3000);
   }
 
+  // ---- Card checklists: tick items without reloading ----
+  document.querySelectorAll("form[data-toggle]").forEach(function (form) {
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var btn = form.querySelector(".dev-check");
+      var doneInput = form.querySelector("input[name=done]");
+      var li = form.closest(".dev-item");
+      var list = form.closest("[data-checklist]");
+      var nowDone = doneInput.value === "1";
+      fetch(form.action, { method: "POST", headers: { Accept: "application/json" }, body: new URLSearchParams(new FormData(form)) })
+        .then(function (r) {
+          if (!r.ok) { form.submit(); return; }
+          btn.classList.toggle("on", nowDone);
+          btn.setAttribute("aria-checked", nowDone ? "true" : "false");
+          li.classList.toggle("done", nowDone);
+          doneInput.value = nowDone ? "0" : "1";
+          var items = list.querySelectorAll(".dev-item");
+          var done = list.querySelectorAll(".dev-item.done").length;
+          var pct = items.length ? Math.floor(done * 100 / items.length) : 0;
+          list.querySelector("[data-pct]").textContent = pct + "%";
+          list.querySelector("[data-bar]").style.width = pct + "%";
+          list.classList.toggle("complete", items.length > 0 && done === items.length);
+        })
+        .catch(function () { form.submit(); });
+    });
+  });
+
   // ---- Project board drag-and-drop ----
   var board = document.querySelector("[data-board]");
   if (!board) return;
