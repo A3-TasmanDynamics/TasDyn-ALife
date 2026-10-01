@@ -1,0 +1,52 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content">
+    <div class="dev-head">
+      <div>
+        <h1 class="page-title admin-title">System Health</h1>
+        <p class="admin-sub">The website, its database and the services it talks to. Refresh the page to update.</p>
+      </div>
+      <a class="btn" href="/admin/dev">Refresh</a>
+    </div>
+
+    <div class="dev-tiles">
+      <div class="dev-tile"><span class="dev-tile-label">Website</span><span class="dev-tile-value dev-mono">{{.Commit}}</span><span class="dev-tile-sub">{{.GoVersion}}</span></div>
+      <div class="dev-tile"><span class="dev-tile-label">Uptime</span><span class="dev-tile-value">{{if .Uptime}}{{.Uptime}}{{else}}—{{end}}</span><span class="dev-tile-sub">{{if not .Started.IsZero}}since {{.Started.Format "2 Jan 15:04"}}{{end}}</span></div>
+      <div class="dev-tile"><span class="dev-tile-label">Memory</span><span class="dev-tile-value">{{printf "%.1f" .MemMB}} MB</span><span class="dev-tile-sub">{{.Goroutine}} goroutines</span></div>
+      <a class="dev-tile dev-tile-link" href="/admin/dev/logs"><span class="dev-tile-label">Logged since start</span><span class="dev-tile-value"><span class="{{if .Errors}}dev-bad{{end}}">{{.Errors}} errors</span></span><span class="dev-tile-sub">{{.Warns}} warnings &middot; view logs &rarr;</span></a>
+    </div>
+
+    <div class="dev-grid">
+      <section class="card dev-card" aria-labelledby="dh-db">
+        <h2 class="card-label" id="dh-db">Database</h2>
+        <dl class="dev-dl">
+          <dt>PostgreSQL</dt><dd>{{.DBVersion}}</dd>
+          <dt>Size</dt><dd>{{.DBSize}}</dd>
+          <dt>Tables</dt><dd>{{.Tables}}</dd>
+          <dt>Players</dt><dd>{{money .Players}}</dd>
+          <dt>Connections</dt><dd>{{.DBConns}}</dd>
+          <dt>Query time</dt><dd>{{.DBLatency}}</dd>
+        </dl>
+      </section>
+
+      <section class="card dev-card" aria-labelledby="dh-int">
+        <h2 class="card-label" id="dh-int">Integrations</h2>
+        {{range .Checks}}
+        <div class="dev-check"><span class="dev-dot dev-dot-{{.State}}" aria-hidden="true"></span><div><strong>{{.Name}}</strong><span>{{.Detail}}</span></div><span class="dev-state dev-state-{{.State}}">{{if eq .State "ok"}}OK{{else if eq .State "warn"}}Check{{else if eq .State "bad"}}Down{{else}}Off{{end}}</span></div>
+        {{end}}
+      </section>
+    </div>
+
+    <section class="card dev-card" aria-labelledby="dh-jobs">
+      <h2 class="card-label" id="dh-jobs">Background jobs</h2>
+      <div class="dev-jobs">
+        <div class="dev-job dev-job-head"><span>Job</span><span>Last activity</span><span>Status</span></div>
+        {{range .Jobs}}
+        <div class="dev-job"><span><strong>{{.Name}}</strong></span><span>{{with .Last}}{{.Format "2 Jan 2006 15:04"}}{{else}}<span class="dev-muted">Never</span>{{end}}</span><span>{{.Detail}}{{if .Problem}}<span class="dev-problem">{{.Problem}}</span>{{end}}</span></div>
+        {{end}}
+      </div>
+    </section>
+  </div>
+</div>
+{{end}}

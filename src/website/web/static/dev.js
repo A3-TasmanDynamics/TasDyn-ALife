@@ -1,0 +1,147 @@
+// Admin → Development: the live website log and the project board's
+// drag-and-drop. Dialogs use admin.js's data-dialog-open / -close.
+(function () {
+  // A task opened by URL (?task=ID) shows its dialog straight away.
+  var auto = document.querySelector("dialog[data-open-on-load]");
+  if (auto && typeof auto.showModal === "function") {
+    auto.showModal();
+    auto.addEventListener("cancel", function () { location.href = "/admin/dev/board"; });
+  }
+
+  // ---- Website logs ----
+  var logs = document.querySelector("[data-dev-logs]");
+  if (logs) {
+    var view = logs.querySelector("[data-view]");
+    var q = logs.querySelector("[data-q]");
+    var pauseBtn = logs.querySelector("[data-pause]");
+    var countEl = logs.querySelector("[data-count]");
+    var entries = [], after = 0, level = "all", paused = false;
+
+    function show(e) {
+      if (level === "app" && e.level === "http") return false;
+      if (level === "warn" && e.level !== "warn" && e.level !== "error") return false;
+      if (level === "error" && e.level !== "error") return false;
+      var needle = q.value.trim().toLowerCase();
+      return !needle || (e.msg + " " + (e.attrs || "")).toLowerCase().indexOf(needle) !== -1;
+    }
+    function time(t) {
+      var d = new Date(t);
+      return d.toLocaleDateString(undefined, { day: "numeric", month: "short" }) + " " + d.toLocaleTimeString(undefined, { hour12: false });
+    }
+    function render() {
+      var stick = view.scrollTop + view.clientHeight >= view.scrollHeight - 30;
+      var shown = entries.filter(show);
+      view.textContent = "";
+      if (!shown.length) {
+        var p = document.createElement("p");
+        p.className = "dev-muted";
+        p.textContent = entries.length ? "No lines match." : "Nothing logged yet.";
+        view.appendChild(p);
+      }
+      shown.slice(-1000).forEach(function (e) {
+        var row = document.createElement("div");
+        row.className = "dev-log-line dev-log-" + e.level;
+        var t = document.createElement("span"); t.className = "dev-log-time"; t.textContent = time(e.time);
+        var l = document.createElement("span"); l.className = "dev-log-level"; l.textContent = e.level;
+        var m = document.createElement("span"); m.className = "dev-log-msg"; m.textContent = e.msg;
+        row.appendChild(t); row.appendChild(l); row.appendChild(m);
+        if (e.attrs) { var a = document.createElement("span"); a.className = "dev-log-attrs"; a.textContent = e.attrs; row.appendChild(a); }
+        view.appendChild(row);
+      });
+      countEl.textContent = shown.length + " of " + entries.length + " lines";
+      if (stick) view.scrollTop = view.scrollHeight;
+    }
+    function poll() {
+      if (paused) return;
+      fetch("/admin/dev/logs.json?after=" + after, { headers: { Accept: "application/json" } })
+        .then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (list) {
+          if (!list || !list.length) { if (!entries.length) render(); return; }
+          entries = entries.concat(list).slice(-2000);
+          after = list[list.length - 1].id;
+          render();
+        })
+        .catch(function () {});
+    }
+    logs.querySelectorAll("[data-level]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        level = b.getAttribute("data-level");
+        logs.querySelectorAll("[data-level]").forEach(function (x) { x.classList.toggle("active", x === b); });
+        render();
+      });
+    });
+    q.addEventListener("input", render);
+    pauseBtn.addEventListener("click", function () {
+      paused = !paused;
+      pauseBtn.textContent = paused ? "Resume" : "Pause";
+      if (!paused) poll();
+    });
+    poll();
+    setInterval(poll, 3000);
+  }
+
+  // ---- Project board drag-and-drop ----
+  var board = document.querySelector("[data-board]");
+  if (!board) return;
+  var csrf = board.getAttribute("data-csrf");
+  var dragging = null;
+
+  board.querySelectorAll("[data-task]").forEach(function (card) {
+    card.addEventListener("dragstart", function (e) {
+      dragging = card;
+      card.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", card.getAttribute("data-task"));
+    });
+    card.addEventListener("dragend", function () {
+      card.classList.remove("dragging");
+      board.querySelectorAll(".drop-target").forEach(function (c) { c.classList.remove("drop-target"); });
+      dragging = null;
+    });
+  });
+
+  function afterCard(list, y) {
+    var cards = Array.prototype.filter.call(list.querySelectorAll("[data-task]"), function (c) { return c !== dragging; });
+    for (var i = 0; i < cards.length; i++) {
+      var box = cards[i].getBoundingClientRect();
+      if (y < box.top + box.height / 2) return cards[i];
+    }
+    return null;
+  }
+
+  board.querySelectorAll("[data-col]").forEach(function (col) {
+    var list = col.querySelector("[data-cards]");
+    col.addEventListener("dragover", function (e) {
+      if (!dragging) return;
+      e.preventDefault();
+      col.classList.add("drop-target");
+      var before = afterCard(list, e.clientY);
+      var empty = list.querySelector(".dev-col-empty");
+      if (empty) empty.remove();
+      if (before) list.insertBefore(dragging, before); else list.appendChild(dragging);
+    });
+    col.addEventListener("dragleave", function (e) {
+      if (!col.contains(e.relatedTarget)) col.classList.remove("drop-target");
+    });
+    col.addEventListener("drop", function (e) {
+      if (!dragging) return;
+      e.preventDefault();
+      col.classList.remove("drop-target");
+      var card = dragging;
+      var next = card.nextElementSibling;
+      while (next && !next.hasAttribute("data-task")) next = next.nextElementSibling;
+      var body = new URLSearchParams();
+      body.set("csrf_token", csrf);
+      body.set("status", col.getAttribute("data-col"));
+      body.set("before", next ? next.getAttribute("data-task") : "0");
+      fetch("/admin/dev/board/" + card.getAttribute("data-task") + "/move", {
+        method: "POST", headers: { Accept: "application/json", "Content-Type": "application/x-www-form-urlencoded" }, body: body
+      }).then(function (r) {
+        if (!r.ok) { location.reload(); return; }
+        board.querySelectorAll("[data-col]").forEach(function (c) {
+          c.querySelector(".dev-col-count").textContent = c.querySelectorAll("[data-task]").length;
+        });
+      }).catch(function () { location.reload(); });
+    });
+  });
+})();

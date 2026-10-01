@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"io"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -24,6 +26,7 @@ import (
 	"website/internal/dbbrowser"
 	"website/internal/discord"
 	"website/internal/handlers"
+	"website/internal/logbuf"
 	"website/internal/render"
 	"website/internal/rolesync"
 	"website/internal/servercontrol"
@@ -75,6 +78,11 @@ func run() error {
 
 	loadDotEnv(".env")
 
+	// Keep recent log lines for Admin → Development → Website logs.
+	logs := logbuf.New(2000)
+	slog.SetDefault(slog.New(logs.Handler(slog.NewTextHandler(os.Stderr, nil))))
+	started := time.Now()
+
 	cfg, err := config.Load()
 	if err != nil {
 		return err
@@ -96,6 +104,9 @@ func run() error {
 		Render: renderer,
 		Auth:   &auth.Authenticator{Pool: pool, CookieSecure: cfg.CookieSecure},
 		Cfg:    cfg,
+
+		LogBuf:    logs,
+		StartedAt: started,
 	}
 	d.Auth.Denied = d.Denied
 	d.ServerMgr = &servercontrol.Client{URL: cfg.ServerManagerURL, Token: cfg.ServerManagerToken}
@@ -188,7 +199,8 @@ func run() error {
 	}
 
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+	r.Use(middleware.RequestLogger(&middleware.DefaultLogFormatter{
+		Logger: log.New(io.MultiWriter(os.Stdout, logs.RequestWriter()), "", log.LstdFlags), NoColor: true}))
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RealIP)
 	r.Use(d.Auth.Middleware)
@@ -425,6 +437,19 @@ func run() error {
 
 		// Discord bot settings: channels, toggles, welcome message
 		// (DISCORD_BOT.md §3).
+		// Development (dev.tools): system health, website logs, project board.
+		r.Group(func(r chi.Router) {
+			r.Use(d.Auth.RequirePermission("dev.tools"))
+			r.Get("/admin/dev", d.DevHealth)
+			r.Get("/admin/dev/logs", d.DevLogs)
+			r.Get("/admin/dev/logs.json", d.DevLogsJSON)
+			r.Get("/admin/dev/board", d.DevBoard)
+			r.Post("/admin/dev/board", d.DevTaskCreate)
+			r.Post("/admin/dev/board/{id}", d.DevTaskUpdate)
+			r.Post("/admin/dev/board/{id}/move", d.DevTaskMove)
+			r.Post("/admin/dev/board/{id}/delete", d.DevTaskDelete)
+		})
+
 		r.Group(func(r chi.Router) {
 			r.Use(d.Auth.RequirePermission("bot.admin"))
 			r.Get("/admin/discord", d.DiscordSettings)

@@ -1,0 +1,91 @@
+{{define "dev_task_fields"}}
+<div class="field"><label for="tf-title{{.ID}}">Title</label><input id="tf-title{{.ID}}" name="title" value="{{.Title}}" maxlength="140" required placeholder="e.g. Add the debug console"></div>
+<div class="field"><label for="tf-body{{.ID}}">Description</label><textarea id="tf-body{{.ID}}" name="body" rows="5" placeholder="What needs doing, links, notes">{{.Body}}</textarea></div>
+<div class="dev-form-row">
+  <div class="field"><label for="tf-status{{.ID}}">Column</label><select id="tf-status{{.ID}}" name="status">{{$s := .Status}}<option value="todo" {{if or (eq $s "todo") (eq $s "")}}selected{{end}}>To do</option><option value="doing" {{if eq $s "doing"}}selected{{end}}>In progress</option><option value="review" {{if eq $s "review"}}selected{{end}}>Review</option><option value="done" {{if eq $s "done"}}selected{{end}}>Done</option></select></div>
+  <div class="field"><label for="tf-pri{{.ID}}">Priority</label><select id="tf-pri{{.ID}}" name="priority">{{$p := .Priority}}<option value="urgent" {{if eq $p "urgent"}}selected{{end}}>Urgent</option><option value="high" {{if eq $p "high"}}selected{{end}}>High</option><option value="normal" {{if or (eq $p "normal") (eq $p "")}}selected{{end}}>Normal</option><option value="low" {{if eq $p "low"}}selected{{end}}>Low</option></select></div>
+</div>
+{{end}}
+
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content dev-board-page">
+    <div class="dev-head">
+      <div>
+        <h1 class="page-title admin-title">Project Board</h1>
+        <p class="admin-sub">The development to-do list. Drag cards between columns, or open one to edit it.</p>
+      </div>
+      <button class="btn btn-primary" type="button" data-dialog-open="dlg-new-task">New task</button>
+    </div>
+
+    <form class="dev-board-filters" method="get" action="/admin/dev/board">
+      <label class="dev-logs-search"><span class="visually-hidden">Search tasks</span><input type="search" name="q" value="{{.Q}}" placeholder="Search tasks…"></label>
+      <select name="label" aria-label="Label" onchange="this.form.submit()"><option value="">All labels</option>{{range .Labels}}<option {{if eq . $.Label}}selected{{end}}>{{.}}</option>{{end}}</select>
+      <label class="mod-check"><input type="checkbox" name="mine" value="1" {{if .Mine}}checked{{end}} onchange="this.form.submit()"> Only mine</label>
+      {{if or .Q .Label .Mine}}<a class="dev-clear" href="/admin/dev/board">Clear</a>{{end}}
+    </form>
+
+    <div class="dev-board" data-board data-csrf="{{.CSRFToken}}">
+      {{range .Columns}}
+      <section class="dev-col dev-col-{{.Key}}" data-col="{{.Key}}" aria-label="{{.Label}}">
+        <header class="dev-col-head"><span class="dev-col-dot" aria-hidden="true"></span><h2>{{.Label}}</h2><span class="dev-col-count">{{len .Tasks}}</span></header>
+        <div class="dev-cards" data-cards>
+          {{range .Tasks}}
+          <a class="dev-card-task dev-pri-{{.Priority}}" href="/admin/dev/board?task={{.ID}}" draggable="true" data-task="{{.ID}}">
+            <span class="dev-task-title">{{.Title}}</span>
+            {{if .Labels}}<span class="dev-task-labels">{{range .Labels}}<span class="dev-label">{{.}}</span>{{end}}</span>{{end}}
+            <span class="dev-task-foot">
+              <span class="dev-pri dev-pri-tag-{{.Priority}}">{{.Priority}}</span>
+              <span class="dev-muted">#{{.ID}}</span>
+              {{if .Assignee}}<span class="dev-avatar" title="{{.Assignee}}">{{slice .Assignee 0 1}}</span>{{end}}
+            </span>
+          </a>
+          {{else}}<p class="dev-col-empty">Nothing here.</p>{{end}}
+        </div>
+      </section>
+      {{end}}
+    </div>
+
+    <dialog id="dlg-new-task" class="modal" aria-labelledby="dlg-new-task-t">
+      <form method="post" action="/admin/dev/board">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <div class="modal-head"><h2 id="dlg-new-task-t">New task</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+        <div class="modal-body">
+          {{template "dev_task_fields" (dict "ID" 0 "Title" "" "Body" "" "Status" "todo" "Priority" "normal")}}
+          <div class="dev-form-row">
+            <div class="field"><label for="tf-asg0">Assignee</label><select id="tf-asg0" name="assignee"><option value="0">Nobody</option>{{range .Staff}}<option value="{{.ID}}">{{.Name}} &middot; {{.Rank}}</option>{{end}}</select></div>
+            <div class="field"><label for="tf-lab0">Labels</label><input id="tf-lab0" name="labels" placeholder="website, bug" list="dev-label-list"></div>
+          </div>
+        </div>
+        <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Add task</button></div>
+      </form>
+    </dialog>
+    <datalist id="dev-label-list">{{range .Labels}}<option value="{{.}}">{{end}}</datalist>
+
+    {{with .Edit}}
+    <dialog id="dlg-task" class="modal" aria-labelledby="dlg-task-t" data-open-on-load>
+      <form method="post" action="/admin/dev/board/{{.ID}}">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+        <div class="modal-head"><h2 id="dlg-task-t">Task #{{.ID}}</h2><a class="modal-x" href="/admin/dev/board" aria-label="Close">&times;</a></div>
+        <div class="modal-body">
+          {{template "dev_task_fields" .}}
+          <div class="dev-form-row">
+            <div class="field"><label for="tf-asg{{.ID}}">Assignee</label><select id="tf-asg{{.ID}}" name="assignee"><option value="0">Nobody</option>{{$a := .AssigneeID}}{{range $.Staff}}<option value="{{.ID}}" {{if eq .ID $a}}selected{{end}}>{{.Name}} &middot; {{.Rank}}</option>{{end}}</select></div>
+            <div class="field"><label for="tf-lab{{.ID}}">Labels</label><input id="tf-lab{{.ID}}" name="labels" value="{{range $i, $l := .Labels}}{{if $i}}, {{end}}{{$l}}{{end}}" list="dev-label-list"></div>
+          </div>
+          <p class="hint">Added by {{if .CreatedBy}}{{.CreatedBy}}{{else}}someone{{end}} on {{.CreatedAt.Format "2 Jan 2006"}} &middot; updated {{.UpdatedAt.Format "2 Jan 15:04"}}{{with .DoneAt}} &middot; done {{.Format "2 Jan 2006"}}{{end}}</p>
+        </div>
+        <div class="modal-foot">
+          <button class="btn dev-del" type="submit" formaction="/admin/dev/board/{{.ID}}/delete" onclick="return confirm('Delete task #{{.ID}}?')">Delete</button>
+          <a class="btn" href="/admin/dev/board">Cancel</a>
+          <button class="btn btn-primary" type="submit">Save</button>
+        </div>
+      </form>
+    </dialog>
+    {{end}}
+  </div>
+</div>
+<script src="/static/admin.js" defer></script>
+<script src="/static/dev.js" defer></script>
+{{end}}
