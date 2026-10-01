@@ -4,7 +4,12 @@
 //
 // Rules, enforced here so the website and any future bot command share
 // them:
-//   - you can only edit, move, create or delete ranks BELOW your own level;
+//   - you can only edit, move, create or delete ranks BELOW your own level,
+//     except the top rank (level 100, Management), which can also edit
+//     ranks at its own level -- there's nobody above it to do so -- but
+//     never remove its own access to Roles (roles.manage) or the admin
+//     panel;
+//   - a rank's level can be set directly, to an unused level below yours;
 //   - you can only grant a permission you currently hold yourself
 //     (removing any permission from a rank you may edit is fine);
 //   - only catalogue keys can be granted (auth.Known);
@@ -74,6 +79,25 @@ func List(ctx context.Context, pool *pgxpool.Pool) ([]Rank, error) {
 	return out, rows.Err()
 }
 
+// TopLevel is the highest staff level (Management).
+const TopLevel = 100
+
+// CanEdit reports whether an actor at actorLevel may edit a rank at
+// rankLevel: ranks below them, or, for the top level, ranks at it too.
+func CanEdit(rankLevel, actorLevel int) bool {
+	return rankLevel < actorLevel || (actorLevel >= TopLevel && rankLevel <= actorLevel)
+}
+
+// actorRank is the actor's own staff rank id (0 if not staff).
+func actorRank(ctx context.Context, tx pgx.Tx, actorID int64) int {
+	var id *int
+	_ = tx.QueryRow(ctx, `SELECT staff_rank_id FROM players WHERE id = $1`, actorID).Scan(&id)
+	if id == nil {
+		return 0
+	}
+	return *id
+}
+
 // ActorLevel is the level of the actor's own rank (0 if not staff).
 func ActorLevel(ctx context.Context, q interface {
 	QueryRow(context.Context, string, ...any) pgx.Row
@@ -118,7 +142,9 @@ func rankPerms(ctx context.Context, tx pgx.Tx, rankID int) ([]string, error) {
 }
 
 // Update saves a rank's name, default panels and permission set.
-func Update(ctx context.Context, pool *pgxpool.Pool, actorID int64, rankID int, name string, adminPanel, supportPanel bool, keys []string) error {
+// Update saves a rank's name, default panels, permissions and (when level
+// is non-zero and different) its level.
+func Update(ctx context.Context, pool *pgxpool.Pool, actorID int64, rankID int, name string, adminPanel, supportPanel bool, keys []string, level int) error {
 	name = strings.TrimSpace(name)
 	if name == "" || len(name) > 50 {
 		return notAllowed("the display name must be 1-50 characters")
@@ -145,8 +171,32 @@ func Update(ctx context.Context, pool *pgxpool.Pool, actorID int64, rankID int, 
 	if err != nil {
 		return err
 	}
-	if r.Level >= actorLevel {
+	if !CanEdit(r.Level, actorLevel) {
 		return notAllowed("%s is at or above your level, so it's read-only for you", r.Name)
+	}
+	if level == 0 {
+		level = r.Level
+	}
+	if level != r.Level {
+		if r.Level >= actorLevel {
+			return notAllowed("%s's level can't change: it's at your own level", r.Name)
+		}
+		if level < 1 || level >= actorLevel {
+			return notAllowed("the level must be between 1 and %d (below your own)", actorLevel-1)
+		}
+		var clash string
+		if err := tx.QueryRow(ctx, `SELECT display_name FROM staff_ranks WHERE level = $1 AND id <> $2`, level, rankID).Scan(&clash); err == nil {
+			return notAllowed("%s already uses level %d", clash, level)
+		}
+	}
+	if actorRank(ctx, tx, actorID) == rankID {
+		// Editing your own (top) rank: don't lock yourself out.
+		if !adminPanel {
+			return notAllowed("you can't take the admin panel away from your own rank")
+		}
+		if !want["roles.manage"] {
+			return notAllowed("you can't remove roles.manage from your own rank, or you'd lose this page")
+		}
 	}
 	before, err := rankPerms(ctx, tx, rankID)
 	if err != nil {
@@ -178,12 +228,12 @@ func Update(ctx context.Context, pool *pgxpool.Pool, actorID int64, rankID int, 
 			return notAllowed("you can't grant %s because you don't have it yourself", k)
 		}
 	}
-	if len(added) == 0 && len(removed) == 0 && name == r.Name && adminPanel == r.AdminPanel && supportPanel == r.SupportPanel {
+	if len(added) == 0 && len(removed) == 0 && name == r.Name && adminPanel == r.AdminPanel && supportPanel == r.SupportPanel && level == r.Level {
 		return notAllowed("nothing changed")
 	}
 
-	if _, err := tx.Exec(ctx, `UPDATE staff_ranks SET display_name = $2, default_admin_panel = $3, default_support_panel = $4 WHERE id = $1`,
-		rankID, name, adminPanel, supportPanel); err != nil {
+	if _, err := tx.Exec(ctx, `UPDATE staff_ranks SET display_name = $2, default_admin_panel = $3, default_support_panel = $4, level = $5 WHERE id = $1`,
+		rankID, name, adminPanel, supportPanel, level); err != nil {
 		return err
 	}
 	if len(removed) > 0 {
@@ -198,10 +248,16 @@ func Update(ctx context.Context, pool *pgxpool.Pool, actorID int64, rankID int, 
 	}
 
 	reason := describeChanges(r, name, adminPanel, supportPanel, added, removed)
+	if level != r.Level {
+		if reason != "" {
+			reason += "; "
+		}
+		reason += fmt.Sprintf("level %d → %d", r.Level, level)
+	}
 	if err := audit.LogStaffAction(ctx, tx, audit.Entry{
 		StaffID: actorID, Action: "rank_edit:" + r.Name, Reason: reason,
-		Before: map[string]any{"name": r.Name, "admin_panel": r.AdminPanel, "support_panel": r.SupportPanel, "permissions": before},
-		After:  map[string]any{"name": name, "admin_panel": adminPanel, "support_panel": supportPanel, "permissions": sortedKeys(want)},
+		Before: map[string]any{"name": r.Name, "level": r.Level, "admin_panel": r.AdminPanel, "support_panel": r.SupportPanel, "permissions": before},
+		After:  map[string]any{"name": name, "level": level, "admin_panel": adminPanel, "support_panel": supportPanel, "permissions": sortedKeys(want)},
 	}); err != nil {
 		return err
 	}
@@ -346,7 +402,7 @@ func Delete(ctx context.Context, pool *pgxpool.Pool, actorID int64, rankID int) 
 	if err != nil {
 		return err
 	}
-	if r.Level >= actorLevel {
+	if !CanEdit(r.Level, actorLevel) {
 		return notAllowed("%s is at or above your level", r.Name)
 	}
 	var members, top int

@@ -67,13 +67,38 @@ func TestRoleRules(t *testing.T) {
 	_, err = Create(ctx, pool, head, "Test Clash", 13)
 	denied("level clash", err)
 
-	ok("admin grants a key it holds", Update(ctx, pool, admin, a, "Test A", false, true, []string{"cases.view", "players.compensate"}))
-	denied("admin grants a key it lacks", Update(ctx, pool, admin, a, "Test A", false, true, []string{"cases.view", "roles.manage"}))
-	denied("unknown key", Update(ctx, pool, head, a, "Test A", false, true, []string{"no.such.key"}))
-	denied("nothing changed", Update(ctx, pool, admin, a, "Test A", false, true, []string{"cases.view", "players.compensate"}))
+	ok("admin grants a key it holds", Update(ctx, pool, admin, a, "Test A", false, true, []string{"cases.view", "players.compensate"}, 0))
+	denied("admin grants a key it lacks", Update(ctx, pool, admin, a, "Test A", false, true, []string{"cases.view", "roles.manage"}, 0))
+	denied("unknown key", Update(ctx, pool, head, a, "Test A", false, true, []string{"no.such.key"}, 0))
+	denied("nothing changed", Update(ctx, pool, admin, a, "Test A", false, true, []string{"cases.view", "players.compensate"}, 0))
 	var adminRank int
 	pool.QueryRow(ctx, `SELECT id FROM staff_ranks WHERE key = 'admin'`).Scan(&adminRank)
-	denied("admin edits own rank", Update(ctx, pool, admin, adminRank, "Admin", true, true, nil))
+	denied("admin edits own rank", Update(ctx, pool, admin, adminRank, "Admin", true, true, nil, 0))
+
+	// The top rank can edit its own level-100 rank, but not lock itself out
+	// or change its level.
+	var headRank int
+	var headName string
+	pool.QueryRow(ctx, `SELECT id, display_name FROM staff_ranks WHERE key = 'head_admin'`).Scan(&headRank, &headName)
+	var headPerms []string
+	pool.QueryRow(ctx, `SELECT array_agg(command_key) FROM rank_permissions WHERE rank_id = $1`, headRank).Scan(&headPerms)
+	ok("top rank renames itself", Update(ctx, pool, head, headRank, "Test Top", true, true, headPerms, 0))
+	var without []string
+	for _, k := range headPerms {
+		if k != "roles.manage" {
+			without = append(without, k)
+		}
+	}
+	denied("top rank drops roles.manage from itself", Update(ctx, pool, head, headRank, "Test Top", true, true, without, 0))
+	denied("top rank drops its admin panel", Update(ctx, pool, head, headRank, "Test Top", false, true, headPerms, 0))
+	denied("top rank changes its own level", Update(ctx, pool, head, headRank, "Test Top", true, true, headPerms, 90))
+	ok("restore top rank name", Update(ctx, pool, head, headRank, headName, true, true, headPerms, 0))
+
+	// Levels can be set directly, below your own and unused.
+	ok("set A's level directly", Update(ctx, pool, head, a, "Test A", false, true, []string{"cases.view", "players.compensate"}, 14))
+	denied("level clash on edit", Update(ctx, pool, head, a, "Test A", false, true, []string{"cases.view", "players.compensate"}, 12))
+	denied("level at or above your own", Update(ctx, pool, admin, a, "Test A", false, true, []string{"cases.view", "players.compensate"}, 40))
+	ok("set A back to 13", Update(ctx, pool, head, a, "Test A", false, true, []string{"cases.view", "players.compensate"}, 13))
 
 	ok("move B up", Move(ctx, pool, head, b, true))
 	var la, lb int
