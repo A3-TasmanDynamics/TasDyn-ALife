@@ -71,6 +71,11 @@ var docPolicy = func() *bluemonday.Policy {
 	p.AllowStyles("text-align").Matching(regexp.MustCompile(`^(left|right|center|justify)$`)).
 		OnElements("p", "div", "h1", "h2", "h3", "h4", "td", "th", "li", "blockquote")
 	p.AllowAttrs("colspan", "rowspan").Matching(regexp.MustCompile(`^[0-9]{1,2}$`)).OnElements("td", "th")
+	// The editor's Subtitle style, and text and highlight colours.
+	p.AllowAttrs("class").Matching(regexp.MustCompile(`^doc-subtitle$`)).OnElements("p")
+	p.AllowStyles("color", "background-color").
+		Matching(regexp.MustCompile(`^(#[0-9a-fA-F]{3,8}|rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*(,\s*[0-9.]+\s*)?\)|transparent)$`)).
+		OnElements("span", "font", "mark")
 	p.RequireNoFollowOnLinks(true)
 	p.AddTargetBlankToFullyQualifiedLinks(true)
 	return p
