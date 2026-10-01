@@ -1,12 +1,15 @@
 {{define "content"}}
-<h1 class="page-title">{{.Ticket.Subject}}</h1>
-
 {{if .IsStaff}}
-<div class="support-shell">
-  {{template "support_sidebar" ""}}
-  <div class="support-content">{{template "ticket_body" .}}</div>
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content">
+    <a class="cmd-back" href="/admin/tickets">&larr; Tickets</a>
+    <h1 class="page-title admin-title">#{{.Ticket.ID}} {{.Ticket.Subject}}</h1>
+    {{template "ticket_body" .}}
+  </div>
 </div>
 {{else}}
+  <h1 class="page-title">{{.Ticket.Subject}}</h1>
   {{template "ticket_body" .}}
 {{end}}
 {{end}}
@@ -68,9 +71,9 @@
         <dd>
           <span class="badge badge-status-{{.Ticket.Status}}">{{.Ticket.Status}}</span>
           {{if ne .Ticket.Status "closed"}}
-            <form method="post" action="/support/tickets/{{.Ticket.ID}}/close" class="inline-form"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="link-button" type="submit">Close</button></form>
+            <form method="post" action="/admin/tickets/{{.Ticket.ID}}/close" class="inline-form"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="link-button" type="submit">Close</button></form>
           {{else}}
-            <form method="post" action="/support/tickets/{{.Ticket.ID}}/reopen" class="inline-form"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="link-button" type="submit">Reopen</button></form>
+            <form method="post" action="/admin/tickets/{{.Ticket.ID}}/reopen" class="inline-form"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="link-button" type="submit">Reopen</button></form>
           {{end}}
         </dd>
         <dt>Priority</dt>
@@ -95,7 +98,7 @@
            toggle only gates visibility/interactivity, it doesn't change
            how saving works. -->
       <div id="ticket-edit-mode" hidden>
-        <form method="post" action="/support/tickets/{{.Ticket.ID}}/subject" class="field">
+        <form method="post" action="/admin/tickets/{{.Ticket.ID}}/subject" class="field">
           <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
           <label>Subject</label>
           <div class="edit-row">
@@ -106,7 +109,7 @@
 
         <div class="field">
           <label>Priority</label>
-          <form method="post" action="/support/tickets/{{.Ticket.ID}}/priority" class="inline-form">
+          <form method="post" action="/admin/tickets/{{.Ticket.ID}}/priority" class="inline-form">
             <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
             <select name="priority" onchange="this.form.submit()">
               <option value="low" {{if eq .Ticket.Priority "low"}}selected{{end}}>Low</option>
@@ -119,7 +122,7 @@
 
         <div class="field">
           <label>Assigned to</label>
-          <form method="post" action="/support/tickets/{{.Ticket.ID}}/assign" class="inline-form">
+          <form method="post" action="/admin/tickets/{{.Ticket.ID}}/assign" class="inline-form">
             <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
             <select name="staff_id" onchange="this.form.submit()">
               <option value="">— Unassigned —</option>
@@ -131,7 +134,7 @@
           </form>
         </div>
 
-        <form method="post" action="/support/tickets/{{.Ticket.ID}}/category" class="field">
+        <form method="post" action="/admin/tickets/{{.Ticket.ID}}/category" class="field">
           <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
           <label>Category</label>
           <select name="category_id" id="edit-category">

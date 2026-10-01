@@ -32,6 +32,9 @@ type AdminShell struct {
 	ActiveBans int
 	OpenFlags  int
 	OpenApps   int
+	// Support section: open tickets, and unassigned ones.
+	OpenTickets       int
+	UnassignedTickets int
 }
 
 // adminShell looks up the signed-in staff member's rank display name for
@@ -48,10 +51,12 @@ func (d *Deps) adminShell(r *http.Request, tab string) AdminShell {
 		       (SELECT count(*) FROM staff_cases WHERE status = 'open'),
 		       (SELECT count(*) FROM banlist WHERE expires_at IS NULL OR expires_at > now()),
 		       (SELECT count(*) FROM anti_cheat_flags WHERE resolution IS NULL),
-		       (SELECT count(*) FROM staff_applications WHERE status IN ('pending', 'interview'))
+		       (SELECT count(*) FROM staff_applications WHERE status IN ('pending', 'interview')),
+		       (SELECT count(*) FROM support_tickets WHERE status <> 'closed'),
+		       (SELECT count(*) FROM support_tickets WHERE status <> 'closed' AND assigned_staff_id IS NULL)
 		FROM players p LEFT JOIN staff_ranks sr ON sr.id = p.staff_rank_id
 		WHERE p.id = $1
-	`, sess.PlayerID).Scan(&s.StaffRank, &s.OpenCases, &s.ActiveBans, &s.OpenFlags, &s.OpenApps)
+	`, sess.PlayerID).Scan(&s.StaffRank, &s.OpenCases, &s.ActiveBans, &s.OpenFlags, &s.OpenApps, &s.OpenTickets, &s.UnassignedTickets)
 	return s
 }
 
@@ -105,6 +110,11 @@ func (d adminHomeData) MoneySupply() string { return players.Dollars(d.Money) }
 // browser and the arsenal editor are designed (docs/WEBSITE.md §7) but not
 // built yet -- the sidebar shows them as "Soon" rather than dead links.
 func (d *Deps) AdminHome(w http.ResponseWriter, r *http.Request) {
+	if sess, ok := auth.FromContext(r.Context()); ok && !sess.AdminPanelAccess {
+		// Support-only staff: their part of the panel is Support.
+		http.Redirect(w, r, "/admin/support", http.StatusSeeOther)
+		return
+	}
 	data := adminHomeData{Base: baseFrom(r, "Admin Panel"), AdminShell: d.adminShell(r, "dashboard")}
 
 	// Headline counts are non-essential -- a failed one shows 0 rather than
