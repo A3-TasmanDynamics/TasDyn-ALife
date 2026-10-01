@@ -2,61 +2,77 @@
 <div class="admin-shell">
   {{template "admin_sidebar" .}}
   <div class="admin-content">
-    <div class="rules-edit-head">
-      <div>
-        <h1 class="page-title admin-title">Server Rules</h1>
-        <p class="admin-sub">What players see on <a href="/rules">/rules</a>. Build it from sections (General, Gameplay, TeamSpeak and so on), each with numbered rules and dot points. Rules are numbered 1, 2, 3 in each section for you.</p>
+    <form class="gd-form rules-gd-form" method="post" action="/admin/rules/save" data-rules-form>
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      <input type="hidden" name="mode" value="{{if .TextMode}}text{{else}}sections{{end}}" data-rules-mode>
+      <input type="hidden" name="sections" data-rules-json>
+
+      <header class="gd-head">
+        <span class="gd-docicon doc-cat-policy" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/><path d="M9 12l2 2 4-4"/></svg></span>
+        <div class="gd-titles">
+          <h1 class="gd-title gd-title-static">Server rules</h1>
+          <p class="gd-subhead">What players see on <a href="/rules">/rules</a>. Write it like a document: <strong>Section</strong> and <strong>Subsection</strong> headings, each rule as a numbered <strong>Rule</strong>, and <strong>Dot points</strong> under a rule (Tab). Numbers like 1.4.1 are added for you.</p>
+        </div>
+        <div class="gd-head-actions">
+          <div class="re-tabs" role="tablist" aria-label="Editor">
+            <button type="button" role="tab" class="re-tab{{if not .TextMode}} active{{end}}" aria-selected="{{if .TextMode}}false{{else}}true{{end}}" data-rules-tab="sections">Document</button>
+            <button type="button" role="tab" class="re-tab{{if .TextMode}} active{{end}}" aria-selected="{{if .TextMode}}true{{else}}false{{end}}" data-rules-tab="text">Text</button>
+          </div>
+          {{if .HasLive}}<a class="btn" href="/rules" target="_blank" rel="noopener">View live page</a>{{end}}
+        </div>
+      </header>
+
+      <div class="gd" data-doc-editor data-rules="{{.Sections}}" {{if .TextMode}}hidden{{end}}>
+        <div class="gd-toolbar" data-doc-toolbar></div>
+        <div class="gd-body">
+          <aside class="gd-outline" data-doc-outline aria-label="Rules outline">
+            <h2>Contents</h2>
+            <div data-outline-list></div>
+          </aside>
+          <div class="gd-canvas">
+            <div class="doc-page gd-page rules-doc" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true" aria-label="Rules" data-doc-page></div>
+          </div>
+        </div>
+        <div class="gd-foot"><span data-doc-words></span><span>Ctrl+Alt+1 section &middot; Ctrl+Alt+2 subsection &middot; Ctrl+Shift+7 rule &middot; Tab dot point</span></div>
+        <noscript><p class="banner banner-error">The document editor needs JavaScript. Use the Text tab instead.</p></noscript>
       </div>
-      {{if .HasLive}}<a class="btn" href="/rules" target="_blank" rel="noopener">View live page</a>{{end}}
-    </div>
 
-    <div class="rules-edit-grid">
-      <form class="card rules-edit-form" method="post" action="/admin/rules/save" data-rules-form>
-        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-        <input type="hidden" name="mode" value="{{if .TextMode}}text{{else}}sections{{end}}" data-rules-mode>
-        <input type="hidden" name="sections" data-rules-json>
+      <div class="re-text card" data-rules-text {{if not .TextMode}}hidden{{end}}>
+        <p class="hint">Start each section with <code>#</code>, each subsection with <code>##</code> and each rule with its number. Lines starting with <code>&gt;</code> before the first section are the introduction, and after a heading they're its intro. <code>-</code> adds a dot point under the rule above, and an indented <code>-</code> a second-level point.</p>
+        <label class="visually-hidden" for="rules-body">Rulebook</label>
+        <textarea id="rules-body" name="body" rows="26" spellcheck="true" placeholder="# General rules&#10;1.1 Treat other players and staff with respect.&#10;## Chain of command&#10;1.2.1 Follow senior staff.&#10;- Unless it breaks a rule">{{.Body}}</textarea>
+      </div>
 
-        <div class="re-tabs" role="tablist" aria-label="Editor">
-          <button type="button" role="tab" class="re-tab{{if not .TextMode}} active{{end}}" aria-selected="{{if .TextMode}}false{{else}}true{{end}}" data-rules-tab="sections">Sections</button>
-          <button type="button" role="tab" class="re-tab{{if .TextMode}} active{{end}}" aria-selected="{{if .TextMode}}true{{else}}false{{end}}" data-rules-tab="text">Edit as text</button>
+      <div class="rules-publish card">
+        <div class="rules-publish-main">
+          <div class="field">
+            <label for="rules-note">What changed{{if not .HasLive}} (optional for the first version){{end}}</label>
+            <input id="rules-note" name="note" maxlength="300" value="{{.Note}}" placeholder="e.g. Added TeamSpeak rules; 2.1 now lists the Kavala car park.">
+            <span class="hint">Shown to players at the top of the rules for 30 days, with the changed rules highlighted.</span>
+          </div>
+          <label class="mod-check"><input type="checkbox" name="essential"> Also send an essential notice so every staff member has to acknowledge it</label>
         </div>
-
-        <div class="re-editor" data-rules-editor data-rules="{{.Sections}}" {{if .TextMode}}hidden{{end}}>
-          <noscript><p class="banner banner-error">The section editor needs JavaScript. Use "Edit as text" instead.</p></noscript>
-        </div>
-
-        <div class="re-text" data-rules-text {{if not .TextMode}}hidden{{end}}>
-          <p class="hint">Start each section with <code>#</code> and each rule with its number. Lines starting with <code>&gt;</code> before the first section are the introduction, and after a heading they're that section's intro. <code>-</code> adds a dot point under the rule above, and an indented <code>-</code> a second-level point.</p>
-          <label class="visually-hidden" for="rules-body">Rulebook</label>
-          <textarea id="rules-body" name="body" rows="26" spellcheck="true" placeholder="# General rules&#10;1.1 Treat other players and staff with respect.&#10;&#10;# Safe zones&#10;2.1 These areas are safe zones:&#10;- Kavala Markets&#10;- Kavala Hospital">{{.Body}}</textarea>
-        </div>
-
-        <div class="field">
-          <label for="rules-note">What changed{{if not .HasLive}} (optional for the first version){{end}}</label>
-          <input id="rules-note" name="note" maxlength="300" value="{{.Note}}" placeholder="e.g. Added TeamSpeak rules; 2.1 now lists the Kavala car park.">
-          <span class="hint">Shown to players at the top of the rules for 30 days, with the changed rules highlighted.</span>
-        </div>
-        <label class="mod-check"><input type="checkbox" name="essential"> Also send an essential notice so every staff member has to acknowledge it</label>
-        <div class="sync-form-foot">
-          <span class="hint">Publishing is logged to the Staff Log. Every version is kept.</span>
+        <div class="rules-publish-side">
           <button class="btn btn-primary" type="submit">Publish</button>
+          <span class="hint">Logged to the Staff Log. Every version is kept.</span>
         </div>
-      </form>
+      </div>
+    </form>
 
-      <aside class="card rules-history" aria-labelledby="rules-history-title">
-        <h2 class="card-label" id="rules-history-title">Version history</h2>
-        {{range .History}}
-        <div class="rules-history-row">
-          <div class="rules-history-when">{{.CreatedAt.Format "2 Jan 2006 15:04"}} &middot; {{.By}}</div>
-          <div>{{if .Note}}{{.Note}}{{else}}<span class="hint">First version</span>{{end}}</div>
-          {{if .Changed}}<div class="hint">Changed: {{range $i, $n := .Changed}}{{if $i}}, {{end}}{{$n}}{{end}}</div>{{end}}
-        </div>
-        {{else}}
-        <p class="hint">Nothing published yet.</p>
-        {{end}}
-      </aside>
-    </div>
+    <section class="card rules-history" aria-labelledby="rules-history-title">
+      <h2 class="card-label" id="rules-history-title">Version history</h2>
+      {{range .History}}
+      <div class="rules-history-row">
+        <div class="rules-history-when">{{.CreatedAt.Format "2 Jan 2006 15:04"}} &middot; {{.By}}</div>
+        <div>{{if .Note}}{{.Note}}{{else}}<span class="hint">First version</span>{{end}}</div>
+        {{if .Changed}}<div class="hint">Changed: {{range $i, $n := .Changed}}{{if $i}}, {{end}}{{$n}}{{end}}</div>{{end}}
+      </div>
+      {{else}}
+      <p class="hint">Nothing published yet.</p>
+      {{end}}
+    </section>
   </div>
 </div>
+<script src="/static/editor.js" defer></script>
 <script src="/static/rules_editor.js" defer></script>
 {{end}}

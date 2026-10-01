@@ -1,181 +1,178 @@
-// Section editor for /admin/rules: sections, numbered rules and dot points,
-// sent as JSON (the server writes the rules document and numbers them).
+// /admin/rules: the rulebook as a document in the shared editor (editor.js,
+// mode "rules"). Sections are Section headings (h2), subsections are
+// Subsection headings (h3), rules are numbered list items and dot points
+// are the list levels below them. On publish the page is read back into
+// sections, subsections, rules and points and sent as JSON; the server
+// writes the rules document, numbers it and checks it.
 (function () {
   var form = document.querySelector("[data-rules-form]");
-  var root = document.querySelector("[data-rules-editor]");
-  if (!form || !root) return;
+  var root = form && form.querySelector("[data-doc-editor]");
+  if (!form || !root || !window.DocEditor) return;
   var modeInput = form.querySelector("[data-rules-mode]");
   var jsonInput = form.querySelector("[data-rules-json]");
   var textPane = form.querySelector("[data-rules-text]");
   var textarea = textPane.querySelector("textarea");
   var tabs = form.querySelectorAll("[data-rules-tab]");
+  var page = root.querySelector("[data-doc-page]");
+  var dirty = false, textDirty = false;
 
   var doc = { intro: "", sections: [] };
   try { doc = JSON.parse(root.getAttribute("data-rules") || "{}") || doc; } catch (e) { /* keep empty */ }
   if (Array.isArray(doc)) doc = { intro: "", sections: doc };
   doc.sections = doc.sections || [];
-  var model = doc.sections;
-  var textDirty = false;
 
-  var SUGGESTED = ["General rules", "Gameplay rules", "Roleplay rules", "Safe zones", "TeamSpeak rules", "Discord rules", "Police rules", "EMS rules", "Gang rules"];
-
-  function h(tag, attrs, kids) {
-    var el = document.createElement(tag);
-    for (var k in attrs || {}) {
-      if (k === "on") { for (var ev in attrs.on) el.addEventListener(ev, attrs.on[ev]); }
-      else if (k === "text") el.textContent = attrs[k];
-      else if (attrs[k] === true) el.setAttribute(k, "");
-      else if (attrs[k] !== false && attrs[k] != null) el.setAttribute(k, attrs[k]);
-    }
-    (kids || []).forEach(function (c) { if (c) el.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
-    return el;
+  function esc(s) {
+    var d = document.createElement("div");
+    d.textContent = s == null ? "" : String(s);
+    return d.innerHTML;
   }
 
-  function grow(t) { t.style.height = "auto"; t.style.height = t.scrollHeight + 2 + "px"; }
-
-  var ICONS = { "↑": "M12 19V5M5 12l7-7 7 7", "↓": "M12 5v14M5 12l7 7 7-7", "×": "M6 6l12 12M18 6L6 18" };
-  function iconBtn(label, glyph, fn, cls) {
-    var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("width", "14"); svg.setAttribute("height", "14"); svg.setAttribute("viewBox", "0 0 24 24");
-    svg.setAttribute("fill", "none"); svg.setAttribute("stroke", "currentColor"); svg.setAttribute("stroke-width", "2.2");
-    svg.setAttribute("stroke-linecap", "round"); svg.setAttribute("stroke-linejoin", "round"); svg.setAttribute("aria-hidden", "true");
-    var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", ICONS[glyph]); svg.appendChild(path);
-    return h("button", { type: "button", class: "re-icon" + (cls ? " " + cls : ""), "aria-label": label, title: label, on: { click: fn } }, [svg]);
+  // Model -> page.
+  function rulesHTML(rules) {
+    if (!rules || !rules.length) return "";
+    return "<ol>" + rules.map(function (r) {
+      var pts = (r.points || []).filter(function (p) { return p.text; });
+      return "<li>" + esc(r.text) + (pts.length ? "<ul>" + pts.map(function (p) {
+        var sub = (p.sub || []).filter(Boolean);
+        return "<li>" + esc(p.text) + (sub.length ? "<ul>" + sub.map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + "</ul>" : "") + "</li>";
+      }).join("") + "</ul>" : "") + "</li>";
+    }).join("") + "</ol>";
   }
-
-  function move(list, i, d) {
-    var j = i + d;
-    if (j < 0 || j >= list.length) return;
-    var x = list[i]; list[i] = list[j]; list[j] = x;
-    render();
-  }
-
-  function focusLast(sel) {
-    var els = root.querySelectorAll(sel);
-    if (els.length) els[els.length - 1].focus();
-  }
-
-  function render() {
-    root.textContent = "";
-    var introBox = h("textarea", { class: "re-input re-book-intro", rows: "3", id: "re-book-intro", placeholder: "A short welcome shown at the top of the rules, before the contents. Leave empty to use the default.", on: { input: function (e) { doc.intro = e.target.value; grow(e.target); } } });
-    introBox.value = doc.intro || "";
-    root.appendChild(h("div", { class: "re-book" }, [
-      h("label", { class: "re-book-label", for: "re-book-intro", text: "Introduction" }),
-      introBox
-    ]));
-    if (!model.length) {
-      root.appendChild(h("p", { class: "re-empty", text: "No sections yet. Add your first one below." }));
-    }
-    model.forEach(function (sec, si) {
-      var n = si + 1;
-      var rulesBox = h("div", { class: "re-rules" });
-      sec.rules = sec.rules || [];
-      sec.rules.forEach(function (rule, ri) {
-        rule.points = rule.points || [];
-        var pts = h("ul", { class: "re-points" });
-        rule.points.forEach(function (pt, pi) {
-          pt.sub = pt.sub || [];
-          var subs = h("ul", { class: "re-points re-sub" });
-          pt.sub.forEach(function (sp, qi) {
-            subs.appendChild(h("li", { class: "re-point" }, [
-              h("input", { class: "re-input", value: sp, "aria-label": "Rule " + n + "." + (ri + 1) + " sub-point", placeholder: "Sub-point", on: { input: function (e) { pt.sub[qi] = e.target.value; } } }),
-              iconBtn("Delete sub-point", "×", function () { pt.sub.splice(qi, 1); render(); }, "re-del")
-            ]));
-          });
-          pts.appendChild(h("li", { class: "re-point-wrap" }, [
-            h("div", { class: "re-point" }, [
-              h("input", { class: "re-input", value: pt.text, "aria-label": "Rule " + n + "." + (ri + 1) + " dot point", placeholder: "Dot point", on: { input: function (e) { pt.text = e.target.value; } } }),
-              h("button", { type: "button", class: "re-mini", on: { click: function () { pt.sub.push(""); render(); focusLast(".re-sub .re-input"); } } }, ["+ Sub-point"]),
-              iconBtn("Delete dot point", "×", function () { rule.points.splice(pi, 1); render(); }, "re-del")
-            ]),
-            pt.sub.length ? subs : null
-          ]));
-        });
-        var ta = h("textarea", { class: "re-input re-rule-text", rows: "1", "aria-label": "Rule " + n + "." + (ri + 1), placeholder: "Write the rule", on: { input: function (e) { rule.text = e.target.value; grow(e.target); } } });
-        ta.value = rule.text || "";
-        rulesBox.appendChild(h("div", { class: "re-rule" }, [
-          h("span", { class: "re-num", text: (ri + 1) + "." }),
-          h("div", { class: "re-rule-body" }, [
-            ta,
-            rule.points.length ? pts : null,
-            h("button", { type: "button", class: "re-mini", on: { click: function () { rule.points.push({ text: "", sub: [] }); render(); focusLast(".re-point-wrap > .re-point .re-input"); } } }, ["+ Dot point"])
-          ]),
-          h("div", { class: "re-tools" }, [
-            iconBtn("Move rule up", "↑", function () { move(sec.rules, ri, -1); }),
-            iconBtn("Move rule down", "↓", function () { move(sec.rules, ri, 1); }),
-            iconBtn("Delete rule", "×", function () {
-              if (!rule.text || confirm("Delete rule " + (ri + 1) + " in “" + (sec.title || "this section") + "”?")) { sec.rules.splice(ri, 1); render(); }
-            }, "re-del")
-          ])
-        ]));
+  function toHTML(d) {
+    var h = String(d.intro || "").split("\n").filter(function (p) { return p.trim(); }).map(function (p) { return "<p>" + esc(p) + "</p>"; }).join("");
+    (d.sections || []).forEach(function (s) {
+      h += "<h2>" + esc(s.title) + "</h2>";
+      if (s.intro) h += "<p>" + esc(s.intro) + "</p>";
+      h += rulesHTML(s.rules);
+      (s.subs || []).forEach(function (sub) {
+        h += "<h3>" + esc(sub.title) + "</h3>";
+        if (sub.intro) h += "<p>" + esc(sub.intro) + "</p>";
+        h += rulesHTML(sub.rules);
       });
-
-      var intro = h("textarea", { class: "re-input re-intro", rows: "1", "aria-label": "Section " + n + " intro", placeholder: "Optional intro under the section title", on: { input: function (e) { sec.intro = e.target.value; grow(e.target); } } });
-      intro.value = sec.intro || "";
-      root.appendChild(h("section", { class: "re-section" }, [
-        h("div", { class: "re-section-head" }, [
-          h("span", { class: "re-section-n", text: n + "." }),
-          h("input", { class: "re-input re-title", value: sec.title || "", "aria-label": "Section " + n + " title", placeholder: "Section title, e.g. General rules", on: { input: function (e) { sec.title = e.target.value; } } }),
-          h("div", { class: "re-tools" }, [
-            iconBtn("Move section up", "↑", function () { move(model, si, -1); }),
-            iconBtn("Move section down", "↓", function () { move(model, si, 1); }),
-            iconBtn("Delete section", "×", function () {
-              if (!sec.rules.length || confirm("Delete “" + (sec.title || "this section") + "” and its " + sec.rules.length + " rule(s)?")) { model.splice(si, 1); render(); }
-            }, "re-del")
-          ])
-        ]),
-        intro,
-        rulesBox,
-        h("button", { type: "button", class: "btn re-add-rule", on: { click: function () { sec.rules.push({ text: "", points: [] }); render(); focusLast(".re-section:nth-of-type(" + n + ") .re-rule-text"); } } }, ["+ Add rule"])
-      ]));
     });
-
-    var have = {};
-    model.forEach(function (s) { have[(s.title || "").toLowerCase()] = true; });
-    var chips = SUGGESTED.filter(function (t) { return !have[t.toLowerCase()]; }).map(function (t) {
-      return h("button", { type: "button", class: "re-chip", on: { click: function () { addSection(t); } } }, ["+ " + t]);
-    });
-    root.appendChild(h("div", { class: "re-add" }, [
-      h("button", { type: "button", class: "btn btn-primary", on: { click: function () { addSection(""); } } }, ["+ Add section"]),
-      chips.length ? h("span", { class: "hint", text: "or quickly add:" }) : null
-    ].concat(chips)));
-
-    root.querySelectorAll("textarea").forEach(grow);
+    if (!h) h = "<p>Welcome to the server. Please read these rules before you play.</p><h2>General rules</h2><ol><li>Treat other players and staff with respect.</li></ol>";
+    return h;
   }
 
-  function addSection(title) {
-    model.push({ title: title, intro: "", rules: [{ text: "", points: [] }] });
-    render();
-    focusLast(title ? ".re-rule-text" : ".re-title");
+  // Page -> model.
+  function own(el) {
+    var c = el.cloneNode(true);
+    c.querySelectorAll("ul,ol").forEach(function (l) { l.remove(); });
+    return c.textContent.replace(/\s+/g, " ").trim();
+  }
+  function isList(el) { return el && (el.tagName === "UL" || el.tagName === "OL"); }
+  // entries reads a list as items with the lists nested under each. Browsers
+  // nest an indented list either inside the item or (Chrome) as the next
+  // sibling of the item; both mean "under this item".
+  function entries(list) {
+    var out = [];
+    Array.prototype.forEach.call(list.children, function (c) {
+      if (c.tagName === "LI") {
+        out.push({ li: c, lists: Array.prototype.filter.call(c.children, isList) });
+      } else if (isList(c)) {
+        if (out.length) out[out.length - 1].lists.push(c);
+        else entries(c).forEach(function (e) { out.push(e); });
+      }
+    });
+    return out;
+  }
+  function items(list) { return entries(list).map(function (e) { return e.li; }); }
+  function deeper(lists) {
+    var out = [];
+    lists.forEach(function (l) {
+      entries(l).forEach(function (e) {
+        var t = own(e.li);
+        if (t) out.push(t);
+        out = out.concat(deeper(e.lists));
+      });
+    });
+    return out;
+  }
+  function ruleFrom(e) {
+    var r = { text: own(e.li), points: [] };
+    e.lists.forEach(function (l) {
+      entries(l).forEach(function (pe) { r.points.push({ text: own(pe.li), sub: deeper(pe.lists) }); });
+    });
+    return r;
+  }
+  function fromPage() {
+    var d = { intro: [], sections: [] };
+    var sec = null, target = null; // target: the heading whose rules we're filling
+    var intro = [];
+    Array.prototype.forEach.call(page.children, function (el) {
+      var t = el.tagName;
+      if (t === "H1" || t === "H2") {
+        sec = { title: own(el), intro: "", rules: [], subs: [] };
+        d.sections.push(sec);
+        target = sec;
+        return;
+      }
+      if (t === "H3" || t === "H4") {
+        if (!sec) { sec = { title: "", intro: "", rules: [], subs: [] }; d.sections.push(sec); }
+        target = { title: own(el), intro: "", rules: [] };
+        sec.subs.push(target);
+        return;
+      }
+      if (t === "OL" || t === "UL") {
+        if (!target) { items(el).forEach(function (li) { var x = own(li); if (x) intro.push(x); }); return; }
+        if (t === "UL" && target.rules.length) {
+          // Bullets straight after a rule are its dot points.
+          var last = target.rules[target.rules.length - 1];
+          entries(el).forEach(function (pe) { last.points.push({ text: own(pe.li), sub: deeper(pe.lists) }); });
+          return;
+        }
+        entries(el).forEach(function (e) { target.rules.push(ruleFrom(e)); });
+        return;
+      }
+      var text = own(el);
+      if (!text) return;
+      if (!target) intro.push(text);
+      else if (target.rules.length) target.rules.push({ text: text, points: [] });
+      else target.intro = (target.intro ? target.intro + " " : "") + text;
+    });
+    d.intro = intro.join("\n");
+    return d;
   }
 
-  // The text form, matching the server's rules.Format.
+  // The text form, matching the server's rules.FormatDoc.
   function one(s) { return String(s || "").split(/\s+/).filter(Boolean).join(" "); }
-  function toText() {
-    var head = String(doc.intro || "").split("\n").map(one).filter(Boolean).map(function (p) { return "> " + p + "\n"; }).join("");
-    return (head ? head + "\n" : "") + model.map(function (s, i) {
+  function rulesText(rules, prefix) {
+    return (rules || []).map(function (r, j) {
+      var out = prefix + (j + 1) + " " + one(r.text) + "\n";
+      (r.points || []).forEach(function (p) {
+        if (!one(p.text)) return;
+        out += "- " + one(p.text) + "\n";
+        (p.sub || []).forEach(function (sp) { if (one(sp)) out += "  - " + one(sp) + "\n"; });
+      });
+      return out;
+    }).join("");
+  }
+  function toText(d) {
+    var head = String(d.intro || "").split("\n").map(one).filter(Boolean).map(function (p) { return "> " + p + "\n"; }).join("");
+    return (head ? head + "\n" : "") + d.sections.map(function (s, i) {
       var out = "# " + one(s.title) + "\n";
       if (one(s.intro)) out += "> " + one(s.intro) + "\n";
-      (s.rules || []).forEach(function (r, j) {
-        out += (i + 1) + "." + (j + 1) + " " + one(r.text) + "\n";
-        (r.points || []).forEach(function (p) {
-          if (!one(p.text)) return;
-          out += "- " + one(p.text) + "\n";
-          (p.sub || []).forEach(function (sp) { if (one(sp)) out += "  - " + one(sp) + "\n"; });
-        });
+      out += rulesText(s.rules, (i + 1) + ".");
+      (s.subs || []).forEach(function (sub, k) {
+        out += "## " + one(sub.title) + "\n";
+        if (one(sub.intro)) out += "> " + one(sub.intro) + "\n";
+        out += rulesText(sub.rules, (i + 1) + "." + ((s.rules || []).length + k + 1) + ".");
       });
       return out;
     }).join("\n");
   }
 
+  page.innerHTML = toHTML(doc);
+  var ed = window.DocEditor(root, { mode: "rules", onChange: function () { dirty = true; } });
+
   function setMode(mode) {
     if (mode === modeInput.value) return;
     if (mode === "text") {
-      textarea.value = toText();
+      textarea.value = toText(fromPage());
       textDirty = false;
-    } else if (textDirty && !confirm("Switch back to sections? Your text edits will be lost (publish them first to keep them).")) {
-      return;
+    } else {
+      if (textDirty && !confirm("Switch back to the document? Your text edits will be lost (publish them first to keep them).")) return;
+      ed.refresh();
     }
     modeInput.value = mode;
     root.hidden = mode !== "sections";
@@ -185,14 +182,21 @@
       t.classList.toggle("active", on);
       t.setAttribute("aria-selected", on ? "true" : "false");
     });
-    if (mode === "sections") render();
   }
-
   tabs.forEach(function (t) { t.addEventListener("click", function () { setMode(t.getAttribute("data-rules-tab")); }); });
-  textarea.addEventListener("input", function () { textDirty = true; });
+  textarea.addEventListener("input", function () { textDirty = true; dirty = true; });
+
   form.addEventListener("submit", function () {
-    if (modeInput.value === "sections") jsonInput.value = JSON.stringify(doc);
+    if (modeInput.value === "sections") jsonInput.value = JSON.stringify(fromPage());
+    dirty = false;
+  });
+  document.addEventListener("keydown", function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); form.requestSubmit(); }
+  });
+  window.addEventListener("beforeunload", function (e) {
+    if (dirty) { e.preventDefault(); e.returnValue = ""; }
   });
 
-  render();
+  // For tests and debugging.
+  window.RulesEditor = { fromPage: fromPage, toText: function () { return toText(fromPage()); } };
 })();

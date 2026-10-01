@@ -3,6 +3,7 @@ package rules
 import (
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -115,7 +116,7 @@ func TestDocIntroAndNumbering(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if intro != "Welcome.\nRead these." || secs[1].Rules[0].N != 1 || secs[0].Rules[1].N != 2 {
+	if intro != "Welcome.\nRead these." || secs[1].Rules[0].Disp != "2.1" || secs[0].Rules[1].Disp != "1.2" {
 		t.Errorf("intro %q, numbering %+v", intro, secs)
 	}
 	body := FormatDoc(intro, secs)
@@ -123,7 +124,39 @@ func TestDocIntroAndNumbering(t *testing.T) {
 		t.Errorf("round trip: %v\n%s", err, body)
 	}
 	d := Doc{Sections: secs, Changed: []string{"2.1", "1.2"}}
-	if got := d.ChangedLabels(); !reflect.DeepEqual(got, []string{"General rules 2", "Gameplay rules 1"}) {
+	if got := d.ChangedLabels(); !reflect.DeepEqual(got, []string{"1.2", "2.1"}) {
 		t.Errorf("labels = %v", got)
+	}
+}
+
+func TestSubsections(t *testing.T) {
+	body := "# General rules\n1.1 Be respectful.\n## Chain of command\n> Who answers to whom.\n1.2.1 Follow senior staff.\n- Unless it breaks a rule\n1.2.2 Report up the chain.\n## Discipline\n1.3.1 Points expire.\n\n# Gameplay rules\n## Safe zones\n2.1.1 No combat in:\n- Kavala"
+	intro, secs, err := ParseDoc(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := secs[0]
+	if len(g.Rules) != 1 || len(g.Subs) != 2 || g.Subs[0].Disp != "1.2" || g.Subs[0].Intro != "Who answers to whom." || g.Subs[0].Rules[1].Disp != "1.2.2" || g.Count() != 4 {
+		t.Fatalf("general = %+v", g)
+	}
+	if g.Subs[0].Rules[0].Points[0].Text != "Unless it breaks a rule" || secs[1].Subs[0].Disp != "2.1" || secs[1].Subs[0].Anchor != "r2-1" {
+		t.Errorf("points/anchors: %+v", secs[1])
+	}
+	if FormatDoc(intro, secs) != body+"\n" {
+		t.Errorf("format:\n%s", FormatDoc(intro, secs))
+	}
+	if got := Filter(secs, "chain"); len(got) != 1 || len(got[0].Subs) != 1 || len(got[0].Subs[0].Rules) != 2 || len(got[0].Rules) != 0 {
+		t.Errorf("subsection title search: %+v", got)
+	}
+	if got := Filter(secs, "1.3"); len(got) != 1 || len(got[0].Subs) != 1 || got[0].Subs[0].Title != "Discipline" {
+		t.Errorf("number search: %+v", got)
+	}
+	prev, _ := Parse(body)
+	next, _ := Parse(strings.Replace(body, "Points expire.", "Points expire after 90 days.", 1))
+	if got := Changed(prev, next); !reflect.DeepEqual(got, []string{"1.3.1"}) {
+		t.Errorf("changed = %v", got)
+	}
+	if _, err := Parse("## Orphan\n1.1 x"); !errors.Is(err, ErrInvalid) {
+		t.Errorf("subsection before a section: %v", err)
 	}
 }

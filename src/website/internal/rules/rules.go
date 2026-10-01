@@ -10,6 +10,9 @@
 //	1.1 Stay in character while in-game.
 //	1.2 Treat other players and staff with respect.
 //	    A line that doesn't start with a number continues the rule above.
+//	## Chain of command
+//	> A subsection (##) groups rules inside a section, with an optional intro.
+//	1.3.1 Follow the instructions of senior staff.
 //	# Safe zones
 //	2.1 These areas are safe zones:
 //	- Kavala Markets
@@ -42,8 +45,8 @@ const ChangedFor = 30 * 24 * time.Hour
 const MaxBody = 100_000
 
 type Rule struct {
-	Number  string // unique "section.rule", for anchors and change tracking
-	N       int    // position in its section: players see "1.", "2."...
+	Number  string // unique number from the document, for anchors and change tracking
+	Disp    string // outline number players see: "1.2", or "1.4.1" in a subsection
 	Text    string
 	Points  []Point
 	Changed bool
@@ -60,7 +63,51 @@ type Section struct {
 	Title  string
 	Anchor string
 	Intro  string
+	Rules  []Rule // rules directly in the section, before any subsection
+	Subs   []Subsection
+}
+
+// Subsection groups rules inside a section ("1.4 Chain of command").
+type Subsection struct {
+	Disp   string // "1.4"
+	Title  string
+	Anchor string
+	Intro  string
 	Rules  []Rule
+}
+
+// rules points at every rule in the section, subsections included.
+func (s *Section) rules() []*Rule {
+	var out []*Rule
+	for i := range s.Rules {
+		out = append(out, &s.Rules[i])
+	}
+	for j := range s.Subs {
+		for i := range s.Subs[j].Rules {
+			out = append(out, &s.Subs[j].Rules[i])
+		}
+	}
+	return out
+}
+
+// Count is how many rules the section holds, subsections included.
+func (s Section) Count() int { return len(s.rules()) }
+
+// number fills in display numbers and anchors in outline order: section
+// rules first (N.1, N.2...), then subsections continuing the count (N.3),
+// whose rules go a level deeper (N.3.1).
+func (s *Section) number() {
+	for i := range s.Rules {
+		s.Rules[i].Disp = fmt.Sprintf("%d.%d", s.N, i+1)
+	}
+	for j := range s.Subs {
+		sub := &s.Subs[j]
+		sub.Disp = fmt.Sprintf("%d.%d", s.N, len(s.Rules)+j+1)
+		sub.Anchor = "r" + strings.ReplaceAll(sub.Disp, ".", "-")
+		for i := range sub.Rules {
+			sub.Rules[i].Disp = fmt.Sprintf("%s.%d", sub.Disp, i+1)
+		}
+	}
 }
 
 // content is a rule's text and dot points, for spotting changes whatever
@@ -110,6 +157,14 @@ func Parse(body string) ([]Section, error) {
 func ParseDoc(body string) (intro string, out []Section, err error) {
 	seen := map[string]bool{}
 	inPoint := false // continuation lines extend the last dot point
+	// target is where rules go: the current subsection, else the section.
+	target := func() *[]Rule {
+		s := &out[len(out)-1]
+		if n := len(s.Subs); n > 0 {
+			return &s.Subs[n-1].Rules
+		}
+		return &s.Rules
+	}
 	for i, raw := range strings.Split(strings.ReplaceAll(body, "\r\n", "\n"), "\n") {
 		line := strings.TrimSpace(raw)
 		switch {
@@ -125,15 +180,19 @@ func ParseDoc(body string) (intro string, out []Section, err error) {
 				continue
 			}
 			s := &out[len(out)-1]
-			if len(s.Rules) > 0 {
-				return "", nil, fmt.Errorf("%w: line %d: a section's intro (>) goes before its first rule", ErrInvalid, i+1)
+			if len(*target()) > 0 {
+				return "", nil, fmt.Errorf("%w: line %d: an intro (>) goes before the first rule under its heading", ErrInvalid, i+1)
 			}
-			s.Intro = strings.TrimSpace(s.Intro + " " + text)
+			if n := len(s.Subs); n > 0 {
+				s.Subs[n-1].Intro = strings.TrimSpace(s.Subs[n-1].Intro + " " + text)
+			} else {
+				s.Intro = strings.TrimSpace(s.Intro + " " + text)
+			}
 		case pointLine.MatchString(line) && !ruleLine.MatchString(line):
-			if len(out) == 0 || len(out[len(out)-1].Rules) == 0 {
+			if len(out) == 0 || len(*target()) == 0 {
 				return "", nil, fmt.Errorf("%w: line %d: a dot point needs a rule above it", ErrInvalid, i+1)
 			}
-			rs := out[len(out)-1].Rules
+			rs := *target()
 			r := &rs[len(rs)-1]
 			text := pointLine.FindStringSubmatch(line)[1]
 			indented := len(raw)-len(strings.TrimLeft(raw, " \t")) >= 2
@@ -144,6 +203,17 @@ func ParseDoc(body string) (intro string, out []Section, err error) {
 				r.Points = append(r.Points, Point{Text: text})
 			}
 			inPoint = true
+		case strings.HasPrefix(line, "##"):
+			title := strings.TrimSpace(strings.TrimLeft(line, "#"))
+			if title == "" {
+				return "", nil, fmt.Errorf("%w: line %d: a subsection needs a title after the ##", ErrInvalid, i+1)
+			}
+			if len(out) == 0 {
+				return "", nil, fmt.Errorf("%w: line %d: a subsection (##) goes inside a section (#)", ErrInvalid, i+1)
+			}
+			s := &out[len(out)-1]
+			s.Subs = append(s.Subs, Subsection{Title: title})
+			inPoint = false
 		case strings.HasPrefix(line, "#"):
 			title := strings.TrimSpace(strings.TrimLeft(line, "#"))
 			if title == "" {
@@ -155,20 +225,20 @@ func ParseDoc(body string) (intro string, out []Section, err error) {
 			if len(out) == 0 {
 				return "", nil, fmt.Errorf("%w: line %d: start with a section heading, e.g. \"# General conduct\"", ErrInvalid, i+1)
 			}
-			s := &out[len(out)-1]
+			rules := target()
 			if m := ruleLine.FindStringSubmatch(line); m != nil {
 				if seen[m[1]] {
 					return "", nil, fmt.Errorf("%w: line %d: rule %s appears twice", ErrInvalid, i+1, m[1])
 				}
 				seen[m[1]] = true
-				s.Rules = append(s.Rules, Rule{Number: m[1], N: len(s.Rules) + 1, Text: m[2]})
+				*rules = append(*rules, Rule{Number: m[1], Text: m[2]})
 				inPoint = false
 				continue
 			}
-			if len(s.Rules) == 0 {
+			if len(*rules) == 0 {
 				return "", nil, fmt.Errorf("%w: line %d: expected a numbered rule, e.g. \"1.1 Stay in character\"", ErrInvalid, i+1)
 			}
-			r := &s.Rules[len(s.Rules)-1]
+			r := &(*rules)[len(*rules)-1]
 			if inPoint && len(r.Points) > 0 {
 				p := &r.Points[len(r.Points)-1]
 				if n := len(p.Sub); n > 0 {
@@ -184,6 +254,9 @@ func ParseDoc(body string) (intro string, out []Section, err error) {
 	if len(seen) == 0 {
 		return "", nil, fmt.Errorf("%w: there are no rules yet", ErrInvalid)
 	}
+	for i := range out {
+		out[i].number()
+	}
 	return intro, out, nil
 }
 
@@ -193,14 +266,14 @@ func ParseDoc(body string) (intro string, out []Section, err error) {
 // listed: there's nothing to highlight.
 func Changed(prev, next []Section) []string {
 	old := map[string]bool{}
-	for _, s := range prev {
-		for _, r := range s.Rules {
+	for i := range prev {
+		for _, r := range prev[i].rules() {
 			old[r.content()] = true
 		}
 	}
 	var out []string
-	for _, s := range next {
-		for _, r := range s.Rules {
+	for i := range next {
+		for _, r := range next[i].rules() {
 			if !old[r.content()] {
 				out = append(out, r.Number)
 			}
@@ -213,7 +286,7 @@ func Changed(prev, next []Section) []string {
 func Format(secs []Section) string { return FormatDoc("", secs) }
 
 // FormatDoc writes the introduction and sections back as the rules
-// document, numbering rules section.rule in order (the editor's output).
+// document, numbering rules in outline order (the editor's output).
 func FormatDoc(intro string, secs []Section) string {
 	var b strings.Builder
 	for _, para := range strings.Split(strings.ReplaceAll(intro, "\r\n", "\n"), "\n") {
@@ -233,16 +306,30 @@ func FormatDoc(intro string, secs []Section) string {
 			b.WriteString("> " + intro + "\n")
 		}
 		for j, r := range s.Rules {
-			fmt.Fprintf(&b, "%d.%d %s\n", i+1, j+1, oneLine(r.Text))
-			for _, p := range r.Points {
-				b.WriteString("- " + oneLine(p.Text) + "\n")
-				for _, sp := range p.Sub {
-					b.WriteString("  - " + oneLine(sp) + "\n")
-				}
+			writeRule(&b, fmt.Sprintf("%d.%d", i+1, j+1), r)
+		}
+		for k, sub := range s.Subs {
+			num := fmt.Sprintf("%d.%d", i+1, len(s.Rules)+k+1)
+			b.WriteString("## " + oneLine(sub.Title) + "\n")
+			if intro := oneLine(sub.Intro); intro != "" {
+				b.WriteString("> " + intro + "\n")
+			}
+			for j, r := range sub.Rules {
+				writeRule(&b, fmt.Sprintf("%s.%d", num, j+1), r)
 			}
 		}
 	}
 	return b.String()
+}
+
+func writeRule(b *strings.Builder, num string, r Rule) {
+	b.WriteString(num + " " + oneLine(r.Text) + "\n")
+	for _, p := range r.Points {
+		b.WriteString("- " + oneLine(p.Text) + "\n")
+		for _, sp := range p.Sub {
+			b.WriteString("  - " + oneLine(sp) + "\n")
+		}
+	}
 }
 
 func oneLine(s string) string { return strings.Join(strings.Fields(s), " ") }
@@ -276,32 +363,44 @@ func Current(ctx context.Context, pool *pgxpool.Pool) (Doc, bool, error) {
 			changed[n] = true
 		}
 		for i := range d.Sections {
-			for j := range d.Sections[i].Rules {
-				d.Sections[i].Rules[j].Changed = changed[d.Sections[i].Rules[j].Number]
+			for _, r := range d.Sections[i].rules() {
+				r.Changed = changed[r.Number]
 			}
 		}
 	}
 	return d, true, nil
 }
 
-// Filter keeps rules matching q (in the rule text, its number or its
-// section's title); sections left empty are dropped.
+// Filter keeps rules matching q (in the rule text, its number, or the
+// title of its section or subsection); empty subsections and sections are
+// dropped.
 func Filter(secs []Section, q string) []Section {
 	q = strings.ToLower(strings.TrimSpace(q))
 	if q == "" {
 		return secs
 	}
-	var out []Section
-	for _, s := range secs {
-		titleHit := strings.Contains(strings.ToLower(s.Title), q)
+	match := func(rs []Rule, all bool) []Rule {
 		var keep []Rule
-		for _, r := range s.Rules {
-			if titleHit || strings.Contains(strings.ToLower(r.content()), q) || strings.HasPrefix(r.Number, q) {
+		for _, r := range rs {
+			if all || strings.Contains(strings.ToLower(r.content()), q) || strings.HasPrefix(r.Number, q) || strings.HasPrefix(r.Disp, q) {
 				keep = append(keep, r)
 			}
 		}
-		if len(keep) > 0 {
-			s.Rules = keep
+		return keep
+	}
+	var out []Section
+	for _, s := range secs {
+		titleHit := strings.Contains(strings.ToLower(s.Title), q)
+		s.Rules = match(s.Rules, titleHit)
+		var subs []Subsection
+		for _, sub := range s.Subs {
+			hit := titleHit || strings.Contains(strings.ToLower(sub.Title), q)
+			if sub.Rules = match(sub.Rules, hit); len(sub.Rules) > 0 || hit {
+				subs = append(subs, sub)
+			}
+		}
+		s.Subs = subs
+		if len(s.Rules) > 0 || len(s.Subs) > 0 {
 			out = append(out, s)
 		}
 	}
@@ -410,18 +509,18 @@ func Save(ctx context.Context, pool *pgxpool.Pool, actorID int64, body, note str
 	return changed, tx.Commit(ctx)
 }
 
-// ChangedLabels names the changed rules the way players see them, e.g.
-// "General rules 1".
+// ChangedLabels names the changed rules by the numbers players see,
+// e.g. "1.4.1".
 func (d Doc) ChangedLabels() []string {
 	want := map[string]bool{}
 	for _, n := range d.Changed {
 		want[n] = true
 	}
 	var out []string
-	for _, s := range d.Sections {
-		for _, r := range s.Rules {
+	for i := range d.Sections {
+		for _, r := range d.Sections[i].rules() {
 			if want[r.Number] {
-				out = append(out, fmt.Sprintf("%s %d", s.Title, r.N))
+				out = append(out, r.Disp)
 			}
 		}
 	}

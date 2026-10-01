@@ -48,10 +48,20 @@ func (d *Deps) Rules(w http.ResponseWriter, r *http.Request) {
 	data.TOC = doc.Sections
 	data.Sections = rules.Filter(doc.Sections, data.Q)
 	if doc.Recent {
+	first:
 		for _, s := range doc.Sections {
 			for _, rl := range s.Rules {
-				if rl.Changed && data.FirstHit == "" {
-					data.FirstHit = s.Anchor
+				if rl.Changed {
+					data.FirstHit = "rule-" + rl.Number
+					break first
+				}
+			}
+			for _, sub := range s.Subs {
+				for _, rl := range sub.Rules {
+					if rl.Changed {
+						data.FirstHit = "rule-" + rl.Number
+						break first
+					}
 				}
 			}
 		}
@@ -80,9 +90,10 @@ type editDoc struct {
 }
 
 type editSection struct {
-	Title string     `json:"title"`
-	Intro string     `json:"intro"`
-	Rules []editRule `json:"rules"`
+	Title string        `json:"title"`
+	Intro string        `json:"intro"`
+	Rules []editRule    `json:"rules"`
+	Subs  []editSection `json:"subs,omitempty"` // subsections (one level only)
 }
 
 type editRule struct {
@@ -95,16 +106,24 @@ type editPoint struct {
 	Sub  []string `json:"sub"`
 }
 
+func editRules(rs []rules.Rule) []editRule {
+	out := []editRule{}
+	for _, r := range rs {
+		er := editRule{Text: r.Text, Points: []editPoint{}}
+		for _, p := range r.Points {
+			er.Points = append(er.Points, editPoint{Text: p.Text, Sub: append([]string{}, p.Sub...)})
+		}
+		out = append(out, er)
+	}
+	return out
+}
+
 func sectionsJSON(intro string, secs []rules.Section) string {
 	out := []editSection{}
 	for _, s := range secs {
-		es := editSection{Title: s.Title, Intro: s.Intro, Rules: []editRule{}}
-		for _, r := range s.Rules {
-			er := editRule{Text: r.Text, Points: []editPoint{}}
-			for _, p := range r.Points {
-				er.Points = append(er.Points, editPoint{Text: p.Text, Sub: append([]string{}, p.Sub...)})
-			}
-			es.Rules = append(es.Rules, er)
+		es := editSection{Title: s.Title, Intro: s.Intro, Rules: editRules(s.Rules), Subs: []editSection{}}
+		for _, sub := range s.Subs {
+			es.Subs = append(es.Subs, editSection{Title: sub.Title, Intro: sub.Intro, Rules: editRules(sub.Rules)})
 		}
 		out = append(out, es)
 	}
@@ -124,28 +143,21 @@ func bodyFromSections(raw string) (string, error) {
 	for i, es := range in.Sections {
 		s := rules.Section{Title: strings.TrimSpace(es.Title), Intro: es.Intro}
 		if s.Title == "" {
-			return "", fmt.Errorf("%w: section %d needs a title", rules.ErrInvalid, i+1)
+			return "", fmt.Errorf("%w: section %d needs a heading", rules.ErrInvalid, i+1)
 		}
-		for j, er := range es.Rules {
-			r := rules.Rule{Text: strings.TrimSpace(er.Text)}
-			if r.Text == "" {
-				return "", fmt.Errorf("%w: rule %d in %q is empty; write it or delete it", rules.ErrInvalid, j+1, s.Title)
+		var err error
+		if s.Rules, err = rulesFromEdit(es.Rules, s.Title); err != nil {
+			return "", err
+		}
+		for k, esub := range es.Subs {
+			sub := rules.Subsection{Title: strings.TrimSpace(esub.Title), Intro: esub.Intro}
+			if sub.Title == "" {
+				return "", fmt.Errorf("%w: subsection %d in %q needs a heading", rules.ErrInvalid, k+1, s.Title)
 			}
-			for _, ep := range er.Points {
-				pt := rules.Point{Text: strings.TrimSpace(ep.Text)}
-				for _, sp := range ep.Sub {
-					if sp = strings.TrimSpace(sp); sp != "" {
-						pt.Sub = append(pt.Sub, sp)
-					}
-				}
-				if pt.Text == "" && len(pt.Sub) > 0 {
-					return "", fmt.Errorf("%w: rule %d in %q has sub-points under an empty dot point", rules.ErrInvalid, j+1, s.Title)
-				}
-				if pt.Text != "" {
-					r.Points = append(r.Points, pt)
-				}
+			if sub.Rules, err = rulesFromEdit(esub.Rules, sub.Title); err != nil {
+				return "", err
 			}
-			s.Rules = append(s.Rules, r)
+			s.Subs = append(s.Subs, sub)
 		}
 		secs = append(secs, s)
 	}
@@ -230,4 +242,33 @@ func (d *Deps) RulesSave(w http.ResponseWriter, r *http.Request) {
 		slog.Error("rules: save failed", "error", err)
 		http.Redirect(w, r, back+"?error="+errMsg("Something went wrong. Nothing was published."), http.StatusSeeOther)
 	}
+}
+
+// rulesFromEdit checks and converts one heading's rules from the editor.
+// Blank dot points are dropped; a blank rule is an error, so nothing is
+// silently lost.
+func rulesFromEdit(in []editRule, where string) ([]rules.Rule, error) {
+	var out []rules.Rule
+	for j, er := range in {
+		r := rules.Rule{Text: strings.TrimSpace(er.Text)}
+		if r.Text == "" {
+			return nil, fmt.Errorf("%w: rule %d under %q is empty; write it or delete it", rules.ErrInvalid, j+1, where)
+		}
+		for _, ep := range er.Points {
+			pt := rules.Point{Text: strings.TrimSpace(ep.Text)}
+			for _, sp := range ep.Sub {
+				if sp = strings.TrimSpace(sp); sp != "" {
+					pt.Sub = append(pt.Sub, sp)
+				}
+			}
+			if pt.Text == "" && len(pt.Sub) > 0 {
+				return nil, fmt.Errorf("%w: rule %d under %q has sub-points under an empty dot point", rules.ErrInvalid, j+1, where)
+			}
+			if pt.Text != "" {
+				r.Points = append(r.Points, pt)
+			}
+		}
+		out = append(out, r)
+	}
+	return out, nil
 }
