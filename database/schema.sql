@@ -969,6 +969,10 @@ CREATE TABLE IF NOT EXISTS dev_labels (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_dev_labels_lower_name ON dev_labels (lower(name));
 
+-- Free-text tags on project board cards (e.g. "altis-life"), separate
+-- from the coloured labels.
+ALTER TABLE dev_tasks ADD COLUMN IF NOT EXISTS tags TEXT[] NOT NULL DEFAULT '{}';
+
 CREATE TABLE staff_permission_overrides (
     id           SERIAL PRIMARY KEY,
     player_id    BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,

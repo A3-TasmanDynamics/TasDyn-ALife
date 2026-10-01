@@ -55,6 +55,7 @@ type Task struct {
 	Status     string
 	Priority   string
 	Labels     []string
+	Tags       []string // free-text tags, e.g. "altis-life"
 	AssigneeID int64
 	Assignee   string
 	CreatedBy  string
@@ -113,13 +114,14 @@ type Column struct {
 type Filter struct {
 	Q        string
 	Label    string
+	Tag      string
 	Assignee int64
 }
 
 const nameOf = `COALESCE(NULLIF(%[1]s.display_name, ''), NULLIF(%[1]s.name, ''), NULLIF(%[1]s.steam_name, ''), 'Player #' || %[1]s.id)`
 
 func taskSelect() string {
-	return `SELECT t.id, t.title, t.body, t.status, t.priority, t.labels, COALESCE(t.assignee_id, 0),
+	return `SELECT t.id, t.title, t.body, t.status, t.priority, t.labels, t.tags, COALESCE(t.assignee_id, 0),
 		COALESCE(` + fmt.Sprintf(nameOf, "a") + `, ''), COALESCE(` + fmt.Sprintf(nameOf, "c") + `, ''),
 		t.created_at, t.updated_at, t.done_at, t.due_date::timestamptz,
 		(SELECT count(*) FILTER (WHERE i.done) FROM dev_task_checklist_items i JOIN dev_task_checklists l ON l.id = i.checklist_id WHERE l.task_id = t.id),
@@ -131,7 +133,7 @@ func taskSelect() string {
 
 func scanTask(row pgx.Row) (Task, error) {
 	var t Task
-	err := row.Scan(&t.ID, &t.Title, &t.Body, &t.Status, &t.Priority, &t.Labels, &t.AssigneeID, &t.Assignee, &t.CreatedBy,
+	err := row.Scan(&t.ID, &t.Title, &t.Body, &t.Status, &t.Priority, &t.Labels, &t.Tags, &t.AssigneeID, &t.Assignee, &t.CreatedBy,
 		&t.CreatedAt, &t.UpdatedAt, &t.DoneAt, &t.Due, &t.ChecksDone, &t.ChecksTotal, &t.Comments, &t.Links)
 	return t, err
 }
@@ -148,6 +150,10 @@ func Board(ctx context.Context, pool *pgxpool.Pool, f Filter) ([]Column, error) 
 	if f.Label != "" {
 		args = append(args, f.Label)
 		where = append(where, fmt.Sprintf("$%d = ANY(t.labels)", len(args)))
+	}
+	if f.Tag != "" {
+		args = append(args, f.Tag)
+		where = append(where, fmt.Sprintf("$%d = ANY(t.tags)", len(args)))
 	}
 	if f.Assignee != 0 {
 		args = append(args, f.Assignee)
@@ -224,6 +230,19 @@ func clean(t *Task) error {
 	if t.Labels == nil {
 		t.Labels = []string{}
 	}
+	tags := []string{}
+	seenTag := map[string]bool{}
+	for _, g := range t.Tags {
+		g = strings.ToLower(strings.Join(strings.Fields(strings.TrimPrefix(strings.TrimSpace(g), "#")), "-"))
+		if g != "" && len(g) <= 24 && !seenTag[g] {
+			seenTag[g] = true
+			tags = append(tags, g)
+		}
+	}
+	if len(tags) > 8 {
+		return UserError("Use at most 8 tags.")
+	}
+	t.Tags = tags
 	return nil
 }
 
@@ -261,10 +280,10 @@ func Create(ctx context.Context, pool *pgxpool.Pool, by int64, t Task) (int64, e
 	t.Labels = labels
 	var id int64
 	err = pool.QueryRow(ctx, `
-		INSERT INTO dev_tasks (title, body, status, priority, labels, assignee_id, created_by, sort, done_at, due_date)
+		INSERT INTO dev_tasks (title, body, status, priority, labels, assignee_id, created_by, sort, done_at, due_date, tags)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE((SELECT max(sort) FROM dev_tasks WHERE status = $3), 0) + 1,
-		        CASE WHEN $3 = 'done' THEN now() END, $8::date)
-		RETURNING id`, t.Title, t.Body, t.Status, t.Priority, t.Labels, assignee(t.AssigneeID), assignee(by), dueDate(t.Due)).Scan(&id)
+		        CASE WHEN $3 = 'done' THEN now() END, $8::date, $9)
+		RETURNING id`, t.Title, t.Body, t.Status, t.Priority, t.Labels, assignee(t.AssigneeID), assignee(by), dueDate(t.Due), t.Tags).Scan(&id)
 	if err == nil {
 		logActivity(ctx, pool, id, by, "added this card to "+StatusLabel(t.Status))
 	}
@@ -285,11 +304,11 @@ func Update(ctx context.Context, pool *pgxpool.Pool, actor int64, t Task) error 
 		return err
 	}
 	tag, err := pool.Exec(ctx, `
-		UPDATE dev_tasks SET title = $2, body = $3, priority = $5, labels = $6, assignee_id = $7, due_date = $8::date, updated_at = now(),
+		UPDATE dev_tasks SET title = $2, body = $3, priority = $5, labels = $6, assignee_id = $7, due_date = $8::date, tags = $9, updated_at = now(),
 		       sort = CASE WHEN status = $4 THEN sort ELSE COALESCE((SELECT max(sort) FROM dev_tasks WHERE status = $4), 0) + 1 END,
 		       done_at = CASE WHEN $4 = 'done' THEN COALESCE(done_at, now()) END,
 		       status = $4
-		WHERE id = $1`, t.ID, t.Title, t.Body, t.Status, t.Priority, t.Labels, assignee(t.AssigneeID), dueDate(t.Due))
+		WHERE id = $1`, t.ID, t.Title, t.Body, t.Status, t.Priority, t.Labels, assignee(t.AssigneeID), dueDate(t.Due), t.Tags)
 	if err == nil && tag.RowsAffected() == 0 {
 		return UserError("That task no longer exists.")
 	}
@@ -412,6 +431,23 @@ func People(ctx context.Context, pool *pgxpool.Pool) ([]Person, error) {
 			return nil, err
 		}
 		out = append(out, p)
+	}
+	return out, rows.Err()
+}
+
+// Tags lists every tag in use, alphabetically.
+func Tags(ctx context.Context, pool *pgxpool.Pool) ([]string, error) {
+	rows, err := pool.Query(ctx, `SELECT DISTINCT unnest(tags) FROM dev_tasks ORDER BY 1`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var g string
+		if rows.Scan(&g) == nil {
+			out = append(out, g)
+		}
 	}
 	return out, rows.Err()
 }

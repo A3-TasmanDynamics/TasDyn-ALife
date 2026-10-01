@@ -37,8 +37,9 @@
     <form class="dev-board-filters" method="get" action="/admin/dev/board">
       <label class="dev-logs-search"><span class="visually-hidden">Search tasks</span><input type="search" name="q" value="{{.Q}}" placeholder="Search tasks…"></label>
       <select name="label" aria-label="Label" onchange="this.form.submit()"><option value="">All labels</option>{{range .Labels}}<option {{if eq .Name $.Label}}selected{{end}}>{{.Name}}</option>{{end}}</select>
+      {{if .Tags}}<select name="tag" aria-label="Tag" onchange="this.form.submit()"><option value="">All tags</option>{{range .Tags}}<option {{if eq . $.Tag}}selected{{end}}>{{.}}</option>{{end}}</select>{{end}}
       <label class="mod-check"><input type="checkbox" name="mine" value="1" {{if .Mine}}checked{{end}} onchange="this.form.submit()"> Only mine</label>
-      {{if or .Q .Label .Mine}}<a class="dev-clear" href="/admin/dev/board">Clear</a>{{end}}
+      {{if or .Q .Label .Tag .Mine}}<a class="dev-clear" href="/admin/dev/board">Clear</a>{{end}}
     </form>
 
     <div class="dev-board" data-board data-csrf="{{.CSRFToken}}">
@@ -50,6 +51,7 @@
           <a class="dev-card-task dev-pri-{{.Priority}}" href="/admin/dev/board?task={{.ID}}" draggable="true" data-task="{{.ID}}">
             <span class="dev-task-title">{{.Title}}</span>
             {{if .Labels}}<span class="dev-task-labels">{{range .Labels}}<span class="dev-label dev-lc-{{$.LabelColor .}}" data-label-toggle title="{{.}}"><span class="dev-label-text">{{.}}</span></span>{{end}}</span>{{end}}
+            {{if .Tags}}<span class="dev-task-tags">{{range .Tags}}<span class="dev-tag">{{.}}</span>{{end}}</span>{{end}}
             <span class="dev-task-foot">
               <span class="dev-pri dev-pri-tag-{{.Priority}}">{{.Priority}}</span>
               {{if .Due}}<span class="dev-badge dev-due {{if eq .DueState "overdue"}}dev-due-overdue{{else if eq .DueState "soon"}}dev-due-soon{{end}}{{if eq .Status "done"}} dev-due-done{{end}}" title="Due"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>{{.Due.Format "2 Jan"}}</span>{{end}}
@@ -77,11 +79,13 @@
           </div>
           <div class="field dev-due-field"><label for="tf-due0">Due date</label><input id="tf-due0" type="date" name="due"></div>
           <div class="field"><span class="dev-field-label">Labels</span>{{template "dev_label_picker" (dict "Labels" .Labels "Board" . "On" .NoLabels "Form" "")}}</div>
+          <div class="field"><label for="tf-tags0">Tags</label><input id="tf-tags0" name="tags" placeholder="altis-life, website" list="dev-tag-list"></div>
         </div>
         <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Add task</button></div>
       </form>
     </dialog>
 
+    <datalist id="dev-tag-list">{{range .Tags}}<option value="{{.}}">{{end}}</datalist>
     <dialog id="dlg-labels" class="modal dev-labelsm" aria-labelledby="dlg-labels-t" autofocus>
       <div class="modal-head"><h2 id="dlg-labels-t">Labels</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
       <div class="modal-body">
@@ -128,6 +132,7 @@
             {{if .Due}}<span class="dev-pill dev-due {{if eq .DueState "overdue"}}dev-due-overdue{{else if eq .DueState "soon"}}dev-due-soon{{end}}{{if eq .Status "done"}} dev-due-done{{end}}">Due {{.Due.Format "2 Jan 2006"}}</span>{{end}}
             {{if .Assignee}}<span class="dev-pill"><span class="dev-avatar" aria-hidden="true">{{slice .Assignee 0 1}}</span>{{.Assignee}}</span>{{end}}
             {{range .Labels}}<span class="dev-label dev-lc-{{$.LabelColor .}}">{{.}}</span>{{end}}
+            {{range .Tags}}<span class="dev-tag">{{.}}</span>{{end}}
           </div>
           <span class="dev-cardm-sub">#{{.ID}} &middot; added by {{if .CreatedBy}}{{.CreatedBy}}{{else}}someone{{end}} on {{.CreatedAt.Format "2 Jan 2006"}}</span>
         </div>
@@ -215,6 +220,7 @@
             <label class="dev-side-field"><span>Assignee</span><select form="cardf" name="assignee"><option value="0">Nobody</option>{{$a := .AssigneeID}}{{range $.Staff}}<option value="{{.ID}}" {{if eq .ID $a}}selected{{end}}>{{.Name}}</option>{{end}}</select></label>
             <label class="dev-side-field"><span>Due date</span><input type="date" form="cardf" name="due" value="{{with .Due}}{{.Format "2006-01-02"}}{{end}}"></label>
             <div class="dev-side-field"><span class="dev-side-field-head">Labels <button class="link-button" type="button" data-dialog-open="dlg-labels">Manage</button></span>{{template "dev_label_picker" (dict "Labels" $.Labels "Board" $ "On" .Labels "Form" "cardf")}}</div>
+            <label class="dev-side-field"><span>Tags</span><input form="cardf" name="tags" value="{{range $i, $g := .Tags}}{{if $i}}, {{end}}{{$g}}{{end}}" placeholder="altis-life, website" list="dev-tag-list"></label>
             <button class="btn btn-primary btn-sm dev-side-btn" type="submit" form="cardf">Save changes</button>
           </div>
 

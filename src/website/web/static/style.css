@@ -2648,3 +2648,19 @@ textarea.dev-input { resize: vertical; min-height: 40px; }
 .dev-swatch:has(input:checked) { box-shadow: 0 0 0 2px var(--bg-card, #0f172a), 0 0 0 4px var(--lc); }
 .dev-swatch:has(input:focus-visible) { outline: 2px solid var(--amber); outline-offset: 3px; }
 @media (max-width: 520px) { .dev-swatches { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+
+/* Free-text tags (beside the coloured labels) and checklist alignment. */
+.dev-task-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.dev-tag { display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 9px; background: rgba(167, 139, 250, 0.14); color: #c4b5fd; }
+.dev-cardm-pills .dev-tag { height: 24px; padding: 0 9px; border-radius: 12px; font-size: 12px; }
+
+.dev-checklist .dev-progress { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; margin: 0 0 8px; }
+.dev-checklist .dev-progress-n { width: auto; text-align: center; }
+.dev-checklist .dev-progress-bar { height: 8px; background: rgba(255, 255, 255, 0.09); }
+.dev-checklist .dev-items { margin: 0 0 8px; }
+.dev-checklist .dev-item { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 0; margin: 0; }
+.dev-checklist .dev-item:hover { background: rgba(255, 255, 255, 0.03); }
+.dev-checklist .dev-item-toggle { justify-content: center; }
+.dev-checklist .dev-item .dev-x { margin-right: 6px; }
+.dev-checklist .dev-reveal, .dev-checklist .dev-add-row { margin-left: 40px; }
+@media (max-width: 800px) { .dev-checklist .dev-reveal, .dev-checklist .dev-add-row { margin-left: 40px; } }
