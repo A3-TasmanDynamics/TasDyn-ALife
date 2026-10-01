@@ -239,6 +239,8 @@ type devBoardData struct {
 	Columns   []devboard.Column
 	Staff     []devboard.Person
 	Labels    []devboard.Label
+	Tags      []string
+	Tag       string
 	Palette   []devboard.Colour
 	Mine      bool
 	Q         string
@@ -285,6 +287,9 @@ func (d devBoardData) BoardURL() string {
 	if d.Label != "" {
 		v.Set("label", d.Label)
 	}
+	if d.Tag != "" {
+		v.Set("tag", d.Tag)
+	}
 	if d.Mine {
 		v.Set("mine", "1")
 	}
@@ -301,9 +306,9 @@ func (d *Deps) DevBoard(w http.ResponseWriter, r *http.Request) {
 	sess, _ := auth.FromContext(r.Context())
 	q := r.URL.Query()
 	data := devBoardData{Base: baseFrom(r, "Project board"), AdminShell: d.adminShell(r, "dev-board"),
-		Mine: q.Get("mine") == "1", Q: strings.TrimSpace(q.Get("q")), Label: q.Get("label"), Statuses: devboard.Statuses,
+		Mine: q.Get("mine") == "1", Q: strings.TrimSpace(q.Get("q")), Label: q.Get("label"), Tag: q.Get("tag"), Statuses: devboard.Statuses,
 		LinkKinds: devboard.LinkKinds, Me: sess.PlayerID, Palette: devboard.Palette}
-	f := devboard.Filter{Q: data.Q, Label: data.Label}
+	f := devboard.Filter{Q: data.Q, Label: data.Label, Tag: data.Tag}
 	if data.Mine {
 		f.Assignee = sess.PlayerID
 	}
@@ -315,6 +320,7 @@ func (d *Deps) DevBoard(w http.ResponseWriter, r *http.Request) {
 	}
 	data.Staff, _ = devboard.People(r.Context(), d.Pool)
 	data.Labels, _ = devboard.ListLabels(r.Context(), d.Pool)
+	data.Tags, _ = devboard.Tags(r.Context(), d.Pool)
 	if id, _ := strconv.ParseInt(q.Get("task"), 10, 64); id > 0 {
 		if c, err := devboard.GetCard(r.Context(), d.Pool, id); err == nil {
 			data.Edit = &c
@@ -351,14 +357,14 @@ func devBoardBack(w http.ResponseWriter, r *http.Request, err error, notice stri
 
 func taskFromForm(r *http.Request) devboard.Task {
 	assignee, _ := strconv.ParseInt(r.FormValue("assignee"), 10, 64)
-	labels := r.Form["label"]
-	for _, l := range strings.Split(r.FormValue("labels"), ",") {
-		if l = strings.TrimSpace(l); l != "" {
-			labels = append(labels, l)
+	var tags []string
+	for _, g := range strings.Split(r.FormValue("tags"), ",") {
+		if g = strings.TrimSpace(g); g != "" {
+			tags = append(tags, g)
 		}
 	}
 	t := devboard.Task{Title: r.FormValue("title"), Body: r.FormValue("body"), Status: r.FormValue("status"),
-		Priority: r.FormValue("priority"), Labels: labels, AssigneeID: assignee}
+		Priority: r.FormValue("priority"), Labels: r.Form["label"], Tags: tags, AssigneeID: assignee}
 	if due, err := time.ParseInLocation("2006-01-02", r.FormValue("due"), time.Local); err == nil {
 		t.Due = &due
 	}

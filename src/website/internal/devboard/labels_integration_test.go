@@ -58,6 +58,16 @@ func TestLabels(t *testing.T) {
 	if len(got.Labels) != 2 || got.Labels[0] != "TL Police" || got.Labels[1] != "TL Core" {
 		t.Errorf("card labels: %v", got.Labels)
 	}
+	tid, err := Create(ctx, pool, 0, Task{Title: "TL tagged", Tags: []string{"Altis Life", "#altis-life", " web "}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tg, _ := Get(ctx, pool, tid); len(tg.Tags) != 2 || tg.Tags[0] != "altis-life" || tg.Tags[1] != "web" {
+		t.Errorf("tags: %v", tg.Tags)
+	}
+	if cols, _ := Board(ctx, pool, Filter{Q: "TL ", Tag: "altis-life"}); len(cols[0].Tasks) != 1 {
+		t.Errorf("tag filter: %+v", cols[0].Tasks)
+	}
 	if l, ok := find("TL Core"); !ok || l.Color != defaultColour("TL Core") || l.Cards != 1 {
 		t.Errorf("auto label: %+v %v", l, ok)
 	}
