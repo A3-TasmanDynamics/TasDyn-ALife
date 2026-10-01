@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -15,10 +16,11 @@ import (
 	"website/internal/config"
 	"website/internal/csrf"
 	"website/internal/dbbrowser"
-	"website/internal/servercontrol"
 	"website/internal/discord"
+	"website/internal/logbuf"
 	"website/internal/render"
 	"website/internal/rolesync"
+	"website/internal/servercontrol"
 	"website/internal/status"
 	"website/internal/steam"
 )
@@ -53,6 +55,11 @@ type Deps struct {
 	// ServerMgr reaches server_manager's control API (Admin → Server
 	// Control); unconfigured, the page says how to connect it.
 	ServerMgr *servercontrol.Client
+
+	// LogBuf holds recent log lines for Admin → Development → Website
+	// logs; StartedAt is when the website started (System health).
+	LogBuf    *logbuf.Buffer
+	StartedAt time.Time
 }
 
 // Base is the common template data every page needs -- embedded into each

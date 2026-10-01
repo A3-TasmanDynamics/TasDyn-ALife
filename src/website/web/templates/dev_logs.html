@@ -1,0 +1,28 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content">
+    <div class="dev-head">
+      <div>
+        <h1 class="page-title admin-title">Website Logs</h1>
+        <p class="admin-sub">The website's own log since it last started (the last 2,000 lines), updating live. Game server logs are on Server Control.</p>
+      </div>
+    </div>
+    <div class="card dev-logs" data-dev-logs>
+      <div class="dev-logs-bar">
+        <div class="seg" role="group" aria-label="Level">
+          <button type="button" class="seg-item active" data-level="all">All</button>
+          <button type="button" class="seg-item" data-level="app">Hide requests</button>
+          <button type="button" class="seg-item" data-level="warn">Warnings &amp; errors</button>
+          <button type="button" class="seg-item" data-level="error">Errors</button>
+        </div>
+        <label class="dev-logs-search"><span class="visually-hidden">Search the log</span><input type="search" placeholder="Search the log…" data-q></label>
+        <button type="button" class="btn btn-sm" data-pause>Pause</button>
+        <span class="dev-muted" data-count></span>
+      </div>
+      <div class="dev-log-view" data-view role="log" aria-live="polite"><p class="dev-muted">Loading…</p></div>
+    </div>
+  </div>
+</div>
+<script src="/static/dev.js" defer></script>
+{{end}}

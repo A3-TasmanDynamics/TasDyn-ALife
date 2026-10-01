@@ -443,8 +443,28 @@ JOIN (VALUES
     ('database.query', 100),
     ('announce.post', 40),
     ('rules.edit', 40),
-    ('bot.admin', 100)
+    ('bot.admin', 100),
+    ('dev.tools', 100)
 ) AS k(command_key, seed_level) ON sr.level >= k.seed_level;
+
+-- Development ranks (Admin → Development): project and tooling access
+-- without moderation powers, so they get explicit grants rather than the
+-- level-based seed above.
+INSERT INTO staff_ranks (key, display_name, level, default_admin_panel, default_support_panel) VALUES
+    ('lead_developer', 'Lead Developer', 48, true, false),
+    ('developer', 'Developer', 45, true, false),
+    ('trial_developer', 'Trial Developer', 35, true, false)
+ON CONFLICT (key) DO NOTHING;
+
+INSERT INTO rank_permissions (rank_id, command_key)
+SELECT sr.id, g.command_key
+FROM staff_ranks sr
+JOIN (VALUES
+    ('lead_developer', 'dev.tools'), ('lead_developer', 'staff.view'), ('lead_developer', 'server.logs'), ('lead_developer', 'database.query'),
+    ('developer', 'dev.tools'), ('developer', 'staff.view'), ('developer', 'server.logs'),
+    ('trial_developer', 'dev.tools'), ('trial_developer', 'staff.view')
+) AS g(rank_key, command_key) ON sr.key = g.rank_key
+ON CONFLICT DO NOTHING;
 
 -- Display names for police/EMS levels (GAMEPANEL_PARITY §6.3), shown
 -- wherever a raw cop_level / medic_level number used to appear.
@@ -864,6 +884,23 @@ INSERT INTO faction_offences (faction, tier, name, min_points, max_points, sort)
     ('ems', 'low',  'Leaving a patient without a handover',           5, 15, 26),
     ('ems', 'high', 'Refusing treatment to a patient without reason', 10, 20, 27)
 ON CONFLICT DO NOTHING;
+
+-- Admin → Development → Project board: the development to-do list.
+CREATE TABLE IF NOT EXISTS dev_tasks (
+    id           BIGSERIAL PRIMARY KEY,
+    title        TEXT NOT NULL CHECK (length(title) BETWEEN 1 AND 140),
+    body         TEXT NOT NULL DEFAULT '',
+    status       TEXT NOT NULL DEFAULT 'todo' CHECK (status IN ('todo', 'doing', 'review', 'done')),
+    priority     TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
+    labels       TEXT[] NOT NULL DEFAULT '{}',
+    assignee_id  BIGINT REFERENCES players(id) ON DELETE SET NULL,
+    created_by   BIGINT REFERENCES players(id) ON DELETE SET NULL,
+    sort         DOUBLE PRECISION NOT NULL DEFAULT 0,   -- order within its column
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    done_at      TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_dev_tasks_status_sort ON dev_tasks (status, sort);
 
 CREATE TABLE staff_permission_overrides (
     id           SERIAL PRIMARY KEY,

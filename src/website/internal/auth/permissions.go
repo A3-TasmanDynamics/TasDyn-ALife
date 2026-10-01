@@ -81,6 +81,8 @@ var Catalogue = []Permission{
 	{Key: "announce.post", Label: "Post announcements", Group: "Server", SeedLevel: LevelAdmin},
 	{Key: "rules.edit", Label: "Edit the server rules", Group: "Server", SeedLevel: LevelAdmin},
 	{Key: "bot.admin", Label: "Bot health and forced syncs", Group: "Server", SeedLevel: LevelHeadAdmin},
+
+	{Key: "dev.tools", Label: "Development: system health, website logs, project board", Group: "Development", SeedLevel: LevelHeadAdmin},
 }
 
 var catalogueByKey = func() map[string]Permission {
@@ -209,4 +211,52 @@ func Can(ctx context.Context, pool *pgxpool.Pool, playerID int64, key string) (D
 		return Allowed, nil
 	}
 	return DenyLevel, nil
+}
+
+// Effective returns every catalogue key the player currently holds (rank
+// grants plus per-player overrides), for showing only the pages they can
+// open. Empty for non-staff and inactive staff.
+func Effective(ctx context.Context, pool *pgxpool.Pool, playerID int64) (map[string]bool, error) {
+	out := map[string]bool{}
+	var status string
+	var rankID *int
+	err := pool.QueryRow(ctx, `SELECT staff_rank_id, staff_status FROM players WHERE id = $1`, playerID).Scan(&rankID, &status)
+	if errors.Is(err, pgx.ErrNoRows) || rankID == nil || status != "active" {
+		return out, nil
+	}
+	if err != nil {
+		return out, err
+	}
+	rows, err := pool.Query(ctx, `SELECT command_key FROM rank_permissions WHERE rank_id = $1`, *rankID)
+	if err != nil {
+		return out, err
+	}
+	for rows.Next() {
+		var k string
+		if rows.Scan(&k) == nil {
+			out[k] = true
+		}
+	}
+	rows.Close()
+	rows, err = pool.Query(ctx, `SELECT command_key, allow FROM staff_permission_overrides WHERE player_id = $1`, playerID)
+	if err != nil {
+		return out, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var k string
+		var allow bool
+		if rows.Scan(&k, &allow) != nil {
+			continue
+		}
+		if p, ok := catalogueByKey[k]; ok && !p.NoOverride {
+			out[k] = allow
+		}
+	}
+	for k := range out {
+		if _, ok := catalogueByKey[k]; !ok {
+			delete(out, k)
+		}
+	}
+	return out, rows.Err()
 }

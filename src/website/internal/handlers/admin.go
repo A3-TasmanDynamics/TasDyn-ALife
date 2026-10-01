@@ -35,6 +35,9 @@ type AdminShell struct {
 	// Support section: open tickets, and unassigned ones.
 	OpenTickets       int
 	UnassignedTickets int
+	// Perms are the viewer's permission keys: the sidebar only shows
+	// pages they can open.
+	Perms map[string]bool
 }
 
 // adminShell looks up the signed-in staff member's rank display name for
@@ -57,6 +60,7 @@ func (d *Deps) adminShell(r *http.Request, tab string) AdminShell {
 		FROM players p LEFT JOIN staff_ranks sr ON sr.id = p.staff_rank_id
 		WHERE p.id = $1
 	`, sess.PlayerID).Scan(&s.StaffRank, &s.OpenCases, &s.ActiveBans, &s.OpenFlags, &s.OpenApps, &s.OpenTickets, &s.UnassignedTickets)
+	s.Perms, _ = auth.Effective(r.Context(), d.Pool, sess.PlayerID)
 	return s
 }
 

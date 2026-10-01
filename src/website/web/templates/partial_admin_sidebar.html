@@ -7,24 +7,24 @@
     <a class="bell" href="/notifications" aria-label="Notifications{{if .Session.Unread}}, {{.Session.Unread}} unread{{end}}"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>{{if .Session.Unread}}<span class="bell-count">{{.Session.Unread}}</span>{{end}}</a>
   </div>
   {{if .Session.AdminPanelAccess}}
-  <form class="admin-sidebar-search" method="get" action="/admin/players" role="search">
+  {{if index .Perms "players.view"}}<form class="admin-sidebar-search" method="get" action="/admin/players" role="search">
     <label>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
       <input name="q" aria-label="Search players" placeholder="Search players">
     </label>
-  </form>
+  </form>{{end}}
 
   {{end}}
 
   {{if .Session.AdminPanelAccess}}
   <div class="admin-nav-group">Overview</div>
   <a href="/admin" class="admin-nav-item {{if eq .AdminTab "dashboard"}}active{{end}}" {{if eq .AdminTab "dashboard"}}aria-current="page"{{end}}>Dashboard</a>
-  <a href="/admin/devlog/new" class="admin-nav-item {{if eq .AdminTab "devlog"}}active{{end}}" {{if eq .AdminTab "devlog"}}aria-current="page"{{end}}>New Devlog Post</a>
+  {{if index .Perms "announce.post"}}<a href="/admin/devlog/new" class="admin-nav-item {{if eq .AdminTab "devlog"}}active{{end}}" {{if eq .AdminTab "devlog"}}aria-current="page"{{end}}>New Devlog Post</a>{{end}}
 
-  <div class="admin-nav-group">Moderation</div>
-  <a href="/admin/cases" class="admin-nav-item {{if eq .AdminTab "cases"}}active{{end}}" {{if eq .AdminTab "cases"}}aria-current="page"{{end}}>Cases{{if .OpenCases}}<span class="admin-nav-count admin-nav-count-hot">{{.OpenCases}}</span>{{end}}</a>
-  <a href="/admin/bans" class="admin-nav-item {{if eq .AdminTab "bans"}}active{{end}}" {{if eq .AdminTab "bans"}}aria-current="page"{{end}}>Bans{{if .ActiveBans}}<span class="admin-nav-count">{{.ActiveBans}}</span>{{end}}</a>
-  <a href="/admin/anticheat" class="admin-nav-item {{if eq .AdminTab "anticheat"}}active{{end}}" {{if eq .AdminTab "anticheat"}}aria-current="page"{{end}}>Anti-Cheat Flags{{if .OpenFlags}}<span class="admin-nav-count admin-nav-count-hot">{{.OpenFlags}}</span>{{end}}</a>
+  {{if or (index .Perms "cases.view") (index .Perms "anticheat.review")}}<div class="admin-nav-group">Moderation</div>{{end}}
+  {{if index .Perms "cases.view"}}<a href="/admin/cases" class="admin-nav-item {{if eq .AdminTab "cases"}}active{{end}}" {{if eq .AdminTab "cases"}}aria-current="page"{{end}}>Cases{{if .OpenCases}}<span class="admin-nav-count admin-nav-count-hot">{{.OpenCases}}</span>{{end}}</a>{{end}}
+  {{if index .Perms "cases.view"}}<a href="/admin/bans" class="admin-nav-item {{if eq .AdminTab "bans"}}active{{end}}" {{if eq .AdminTab "bans"}}aria-current="page"{{end}}>Bans{{if .ActiveBans}}<span class="admin-nav-count">{{.ActiveBans}}</span>{{end}}</a>{{end}}
+  {{if index .Perms "anticheat.review"}}<a href="/admin/anticheat" class="admin-nav-item {{if eq .AdminTab "anticheat"}}active{{end}}" {{if eq .AdminTab "anticheat"}}aria-current="page"{{end}}>Anti-Cheat Flags{{if .OpenFlags}}<span class="admin-nav-count admin-nav-count-hot">{{.OpenFlags}}</span>{{end}}</a>{{end}}
 
   {{end}}
 
@@ -35,23 +35,30 @@
   {{end}}
 
   {{if .Session.AdminPanelAccess}}
-  <div class="admin-nav-group">Players</div>
-  <a href="/admin/players" class="admin-nav-item {{if eq .AdminTab "players"}}active{{end}}" {{if eq .AdminTab "players"}}aria-current="page"{{end}}>Player Lookup</a>
+  {{if index .Perms "players.view"}}<div class="admin-nav-group">Players</div>{{end}}
+  {{if index .Perms "players.view"}}<a href="/admin/players" class="admin-nav-item {{if eq .AdminTab "players"}}active{{end}}" {{if eq .AdminTab "players"}}aria-current="page"{{end}}>Player Lookup</a>{{end}}
 
   <div class="admin-nav-group">Staff</div>
-  <a href="/admin/staff" class="admin-nav-item {{if eq .AdminTab "staff"}}active{{end}}" {{if eq .AdminTab "staff"}}aria-current="page"{{end}}>Staff Directory</a>
+  {{if index .Perms "staff.view"}}<a href="/admin/staff" class="admin-nav-item {{if eq .AdminTab "staff"}}active{{end}}" {{if eq .AdminTab "staff"}}aria-current="page"{{end}}>Staff Directory</a>{{end}}
   <a href="/admin/roles" class="admin-nav-item {{if eq .AdminTab "roles"}}active{{end}}" {{if eq .AdminTab "roles"}}aria-current="page"{{end}}>Roles &amp; Permissions</a>
-  <a href="/admin/role-sync" class="admin-nav-item {{if eq .AdminTab "rolesync"}}active{{end}}" {{if eq .AdminTab "rolesync"}}aria-current="page"{{end}}>Discord Role Sync</a>
-  <a href="/admin/applications" class="admin-nav-item {{if eq .AdminTab "applications"}}active{{end}}" {{if eq .AdminTab "applications"}}aria-current="page"{{end}}>Applications{{if .OpenApps}}<span class="admin-nav-count admin-nav-count-hot">{{.OpenApps}}</span>{{end}}</a>
+  {{if index .Perms "roles.manage"}}<a href="/admin/role-sync" class="admin-nav-item {{if eq .AdminTab "rolesync"}}active{{end}}" {{if eq .AdminTab "rolesync"}}aria-current="page"{{end}}>Discord Role Sync</a>{{end}}
+  {{if index .Perms "applications.view"}}<a href="/admin/applications" class="admin-nav-item {{if eq .AdminTab "applications"}}active{{end}}" {{if eq .AdminTab "applications"}}aria-current="page"{{end}}>Applications{{if .OpenApps}}<span class="admin-nav-count admin-nav-count-hot">{{.OpenApps}}</span>{{end}}</a>{{end}}
   <a href="/admin/staff-log" class="admin-nav-item {{if eq .AdminTab "stafflog"}}active{{end}}" {{if eq .AdminTab "stafflog"}}aria-current="page"{{end}}>Staff Log</a>
 
-  <div class="admin-nav-group">Server</div>
-  <a href="/admin/server" class="admin-nav-item {{if eq .AdminTab "server"}}active{{end}}" {{if eq .AdminTab "server"}}aria-current="page"{{end}}>Server Control</a>
-  <a href="/admin/database" class="admin-nav-item {{if eq .AdminTab "database"}}active{{end}}" {{if eq .AdminTab "database"}}aria-current="page"{{end}}>Database <span class="admin-nav-new">NEW</span></a>
-  <a href="/admin/prices" class="admin-nav-item {{if eq .AdminTab "prices"}}active{{end}}" {{if eq .AdminTab "prices"}}aria-current="page"{{end}}>Item Prices</a>
-  <a href="/admin/notices" class="admin-nav-item {{if eq .AdminTab "notices"}}active{{end}}" {{if eq .AdminTab "notices"}}aria-current="page"{{end}}>Essential Notices</a>
-  <a href="/admin/rules" class="admin-nav-item {{if eq .AdminTab "rules"}}active{{end}}" {{if eq .AdminTab "rules"}}aria-current="page"{{end}}>Server Rules</a>
-  <a href="/admin/discord" class="admin-nav-item {{if eq .AdminTab "discord"}}active{{end}}" {{if eq .AdminTab "discord"}}aria-current="page"{{end}}>Discord Bot</a>
+  {{if or (index .Perms "server.logs") (index .Perms "database.query") (index .Perms "players.compensate") (index .Perms "announce.post") (index .Perms "rules.edit") (index .Perms "bot.admin")}}<div class="admin-nav-group">Server</div>{{end}}
+  {{if index .Perms "server.logs"}}<a href="/admin/server" class="admin-nav-item {{if eq .AdminTab "server"}}active{{end}}" {{if eq .AdminTab "server"}}aria-current="page"{{end}}>Server Control</a>{{end}}
+  {{if index .Perms "database.query"}}<a href="/admin/database" class="admin-nav-item {{if eq .AdminTab "database"}}active{{end}}" {{if eq .AdminTab "database"}}aria-current="page"{{end}}>Database <span class="admin-nav-new">NEW</span></a>{{end}}
+  {{if index .Perms "players.compensate"}}<a href="/admin/prices" class="admin-nav-item {{if eq .AdminTab "prices"}}active{{end}}" {{if eq .AdminTab "prices"}}aria-current="page"{{end}}>Item Prices</a>{{end}}
+  {{if index .Perms "announce.post"}}<a href="/admin/notices" class="admin-nav-item {{if eq .AdminTab "notices"}}active{{end}}" {{if eq .AdminTab "notices"}}aria-current="page"{{end}}>Essential Notices</a>{{end}}
+  {{if index .Perms "rules.edit"}}<a href="/admin/rules" class="admin-nav-item {{if eq .AdminTab "rules"}}active{{end}}" {{if eq .AdminTab "rules"}}aria-current="page"{{end}}>Server Rules</a>{{end}}
+  {{if index .Perms "bot.admin"}}<a href="/admin/discord" class="admin-nav-item {{if eq .AdminTab "discord"}}active{{end}}" {{if eq .AdminTab "discord"}}aria-current="page"{{end}}>Discord Bot</a>{{end}}
+  {{end}}
+
+  {{if index .Perms "dev.tools"}}
+  <div class="admin-nav-group">Development</div>
+  <a href="/admin/dev" class="admin-nav-item {{if eq .AdminTab "dev-health"}}active{{end}}" {{if eq .AdminTab "dev-health"}}aria-current="page"{{end}}>System Health</a>
+  <a href="/admin/dev/logs" class="admin-nav-item {{if eq .AdminTab "dev-logs"}}active{{end}}" {{if eq .AdminTab "dev-logs"}}aria-current="page"{{end}}>Website Logs</a>
+  <a href="/admin/dev/board" class="admin-nav-item {{if eq .AdminTab "dev-board"}}active{{end}}" {{if eq .AdminTab "dev-board"}}aria-current="page"{{end}}>Project Board</a>
   {{end}}
 
   <div class="admin-sidebar-foot">
