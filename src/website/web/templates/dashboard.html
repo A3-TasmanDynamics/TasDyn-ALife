@@ -69,57 +69,6 @@
         {{end}}
       </section>
 
-      <section class="pdash-card pdash-pad" aria-labelledby="pd-licences">
-        <h2 id="pd-licences">Licences</h2>
-        {{if .Licences}}
-        <div class="pdash-chips">{{range .Licences}}<span class="pdash-chip">{{.}}</span>{{end}}</div>
-        {{else}}<p class="pdash-empty pdash-empty-flush">No licences yet. Buy them in-game.</p>{{end}}
-      </section>
-
-      <section class="pdash-card pdash-pad" aria-labelledby="pd-gang">
-        <h2 id="pd-gang">Gang</h2>
-        {{if .Gang}}
-          <p class="pdash-dim"><span class="pdash-strong">{{.Gang.Name}}</span> [{{.Gang.Tag}}] &middot; gang bank ${{money .Gang.Balance}}</p>
-          <table class="pdash-table">
-            <thead><tr><th>Member</th><th>Rank</th>{{if .Gang.IsLeader}}<th><span class="visually-hidden">Actions</span></th>{{end}}</tr></thead>
-            <tbody>
-              {{range .Gang.Members}}
-              <tr>
-                <td>{{.Name}}</td>
-                <td>{{.Rank}}</td>
-                {{if $.Gang.IsLeader}}
-                <td class="pdash-gang-actions">
-                  <form method="post" action="/dashboard/gang/rank" class="inline-form">
-                    <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
-                    <input type="hidden" name="member_id" value="{{.PlayerID}}">
-                    <select name="rank" aria-label="Rank for {{.Name}}" onchange="this.form.submit()">
-                      <option value="member" {{if eq .Rank "member"}}selected{{end}}>member</option>
-                      <option value="officer" {{if eq .Rank "officer"}}selected{{end}}>officer</option>
-                    </select>
-                  </form>
-                  <form method="post" action="/dashboard/gang/remove" class="inline-form">
-                    <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
-                    <input type="hidden" name="member_id" value="{{.PlayerID}}">
-                    <button class="link-button" type="submit">Remove</button>
-                  </form>
-                </td>
-                {{end}}
-              </tr>
-              {{end}}
-            </tbody>
-          </table>
-          {{if .Gang.IsLeader}}
-          <form method="post" action="/dashboard/gang/invite" class="pdash-inline-form">
-            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-            <input type="text" name="member_name" aria-label="Player to invite" placeholder="Exact player name" required>
-            <button class="btn" type="submit">Invite to gang</button>
-          </form>
-          {{end}}
-        {{else}}
-          <p class="pdash-empty pdash-empty-flush">You're not in a gang.</p>
-        {{end}}
-      </section>
-
       <section class="pdash-card pdash-pad" aria-labelledby="pd-money">
         <h2 id="pd-money">Send money</h2>
         <div class="pdash-money">
@@ -186,6 +135,24 @@
       {{range .FactionApps}}
       <section class="pdash-card pdash-pad"><div class="pdash-app-head"><h2>{{if eq .Faction "police"}}Police{{else}}EMS{{end}} application</h2><span class="mod-pill mod-pill-open">Waiting for command</span></div><p class="hint">Sent {{.CreatedAt.Format "2 Jan 2006"}}. <a href="/factions?faction={{.Faction}}">View</a></p></section>
       {{end}}
+      <section class="pdash-card" aria-labelledby="pd-chars">
+        <div class="pdash-card-head"><h2 id="pd-chars">My characters</h2>{{if .Bounty}}<span class="pdash-wanted">Wanted &middot; ${{money .Bounty}} bounty</span>{{end}}</div>
+        <div class="pdash-sides">
+          {{range .Sides}}
+          <div class="pdash-side pdash-side-{{.Key}}{{if not .Member}} pdash-side-off{{end}}">
+            <div class="pdash-side-name">{{.Name}}</div>
+            {{if .Member}}
+            <div class="pdash-side-rank">{{if .Rank}}{{.Rank}}{{else}}Citizen{{end}}</div>
+            <div class="pdash-side-stats"><span>{{.Hours}} h played</span><span>${{money .Cash}} cash</span><span>${{money .Bank}} bank</span></div>
+            {{else}}
+            <div class="pdash-side-rank">Not joined</div>
+            <div class="pdash-side-stats"><a href="/factions">Apply to join</a></div>
+            {{end}}
+          </div>
+          {{end}}
+        </div>
+      </section>
+
       <section class="pdash-card" aria-labelledby="pd-tickets">
         <div class="pdash-card-head"><h2 id="pd-tickets">My tickets</h2><a class="pdash-head-link" href="/tickets">All tickets</a></div>
         {{range .Tickets}}
@@ -216,6 +183,57 @@
         {{if .DiscordLinkCode}}<p class="hint">Run <code>/link {{.DiscordLinkCode}}</code> in the Discord server within 10 minutes.</p>{{end}}
       </section>
       {{end}}
+
+      <section class="pdash-card pdash-pad" aria-labelledby="pd-licences">
+        <h2 id="pd-licences">Licences</h2>
+        {{if .Licences}}
+        <div class="pdash-chips">{{range .Licences}}<span class="pdash-chip">{{.}}</span>{{end}}</div>
+        {{else}}<p class="pdash-empty pdash-empty-flush">No licences yet. Buy them in-game.</p>{{end}}
+      </section>
+
+      <section class="pdash-card pdash-pad" aria-labelledby="pd-gang">
+        <h2 id="pd-gang">Gang</h2>
+        {{if .Gang}}
+          <p class="pdash-dim"><span class="pdash-strong">{{.Gang.Name}}</span> [{{.Gang.Tag}}] &middot; gang bank ${{money .Gang.Balance}}</p>
+          <table class="pdash-table">
+            <thead><tr><th>Member</th><th>Rank</th>{{if .Gang.IsLeader}}<th><span class="visually-hidden">Actions</span></th>{{end}}</tr></thead>
+            <tbody>
+              {{range .Gang.Members}}
+              <tr>
+                <td>{{.Name}}</td>
+                <td>{{.Rank}}</td>
+                {{if $.Gang.IsLeader}}
+                <td class="pdash-gang-actions">
+                  <form method="post" action="/dashboard/gang/rank" class="inline-form">
+                    <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+                    <input type="hidden" name="member_id" value="{{.PlayerID}}">
+                    <select name="rank" aria-label="Rank for {{.Name}}" onchange="this.form.submit()">
+                      <option value="member" {{if eq .Rank "member"}}selected{{end}}>member</option>
+                      <option value="officer" {{if eq .Rank "officer"}}selected{{end}}>officer</option>
+                    </select>
+                  </form>
+                  <form method="post" action="/dashboard/gang/remove" class="inline-form">
+                    <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+                    <input type="hidden" name="member_id" value="{{.PlayerID}}">
+                    <button class="link-button" type="submit">Remove</button>
+                  </form>
+                </td>
+                {{end}}
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+          {{if .Gang.IsLeader}}
+          <form method="post" action="/dashboard/gang/invite" class="pdash-inline-form">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+            <input type="text" name="member_name" aria-label="Player to invite" placeholder="Exact player name" required>
+            <button class="btn" type="submit">Invite to gang</button>
+          </form>
+          {{end}}
+        {{else}}
+          <p class="pdash-empty pdash-empty-flush">You're not in a gang.</p>
+        {{end}}
+      </section>
     </div>
   </div>
 
@@ -223,7 +241,7 @@
     <div class="pdash-lb-head">
       <div>
         <h2 id="lb-title">Leaderboards</h2>
-        <p class="pdash-dim">Opt-in only. Wealth shows as a band, never an exact balance.</p>
+        <p class="pdash-dim">Opt-in only. Wealth shows as a band, never an exact balance. <a class="pdash-lb-all" href="/leaderboards">See all leaderboards &rarr;</a></p>
       </div>
       <form method="post" action="/dashboard/leaderboards" class="pdash-optin">
         <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">

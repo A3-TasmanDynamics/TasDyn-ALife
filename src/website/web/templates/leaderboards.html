@@ -1,0 +1,62 @@
+{{define "lb_icon"}}{{if eq . "wealth"}}<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>{{else if eq . "playtime"}}<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>{{else if eq . "houses"}}<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>{{else if eq . "vehicles"}}<path d="M5 17h14v-5l-2-5H7l-2 5z"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/>{{else if eq . "police"}}<path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/>{{else if eq . "ems"}}<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>{{else if eq . "wanted"}}<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>{{else}}<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>{{end}}{{end}}
+
+{{define "lb_board"}}
+<section class="lb-card lb-{{.Key}}" id="{{.Key}}" aria-labelledby="lb-{{.Key}}-h">
+  <header class="lb-card-head">
+    <span class="lb-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{{template "lb_icon" .Key}}</svg></span>
+    <div><h2 id="lb-{{.Key}}-h">{{.Title}}</h2><p>{{.Sub}}</p></div>
+  </header>
+  {{if .Rows}}
+  <ol class="lb-rows">
+    {{range .Rows}}
+    <li class="lb-row{{if .You}} lb-you{{end}}">
+      <span class="lb-rank lb-rank-{{.Rank}}">{{.Rank}}</span>
+      <span class="lb-name">{{.Name}}{{if .You}} <span class="lb-you-tag">You</span>{{end}}{{if .Note}}<small>{{.Note}}</small>{{end}}</span>
+      <span class="lb-value">{{.Value}}</span>
+    </li>
+    {{end}}
+  </ol>
+  {{else}}
+  <p class="lb-empty">Nobody on this board yet.</p>
+  {{end}}
+  <footer class="lb-card-foot">{{if .You}}You're <strong>{{.You}}</strong>{{else}}{{.Count}} on this board{{end}}</footer>
+</section>
+{{end}}
+
+{{define "content"}}
+<div class="lb-page">
+  <header class="lb-hero">
+    <div>
+      <h1>Leaderboards</h1>
+      <p class="lb-sub">The server's top players and gangs. Players only appear if they opt in, and wealth is always shown as a band, never an exact balance.</p>
+    </div>
+    <div class="lb-hero-side">
+      <span class="lb-stat"><strong>{{.LB.OptedIn}}</strong> player{{if ne .LB.OptedIn 1}}s{{end}} on the boards</span>
+      {{if .LB.SignedIn}}
+      <form method="post" action="/dashboard/leaderboards" class="lb-optin">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="back" value="leaderboards">
+        {{if .LB.YouIn}}<span class="lb-in">You're on the leaderboards</span><button class="btn" type="submit">Hide me</button>
+        {{else}}<input type="hidden" name="opt_in" value="on"><span class="lb-out">You're hidden</span><button class="btn btn-primary" type="submit">Show me on the boards</button>{{end}}
+      </form>
+      {{else}}
+      <a class="btn" href="/auth/steam/login">Sign in to join the boards</a>
+      {{end}}
+    </div>
+  </header>
+
+  <nav class="lb-jump" aria-label="Boards">
+    {{range .LB.Players}}<a href="#{{.Key}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{template "lb_icon" .Key}}</svg>{{.Title}}</a>{{end}}
+    {{range .LB.Gangs}}<a href="#{{.Key}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{template "lb_icon" .Key}}</svg>{{.Title}}</a>{{end}}
+  </nav>
+
+  <h2 class="lb-group">Players</h2>
+  <div class="lb-grid">
+    {{range .LB.Players}}{{template "lb_board" .}}{{end}}
+  </div>
+
+  <h2 class="lb-group">Gangs</h2>
+  <div class="lb-grid lb-grid-gangs">
+    {{range .LB.Gangs}}{{template "lb_board" .}}{{end}}
+  </div>
+</div>
+{{end}}

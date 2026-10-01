@@ -157,16 +157,20 @@ func (d *Deps) GenerateDiscordLinkCode(w http.ResponseWriter, r *http.Request) {
 func (d *Deps) SetLeaderboardOptIn(w http.ResponseWriter, r *http.Request) {
 	sess, _ := auth.FromContext(r.Context())
 	on := r.FormValue("opt_in") == "on"
+	back, anchor := "/dashboard", "#leaderboards"
+	if r.FormValue("back") == "leaderboards" {
+		back, anchor = "/leaderboards", ""
+	}
 	if err := dashboard.SetOptIn(r.Context(), d.Pool, sess.PlayerID, on); err != nil {
 		slog.Error("dashboard: leaderboard opt-in failed", "error", err)
-		http.Redirect(w, r, "/dashboard?error="+errMsg("Couldn't save that. Try again.")+"#leaderboards", http.StatusSeeOther)
+		http.Redirect(w, r, back+"?error="+errMsg("Couldn't save that. Try again.")+anchor, http.StatusSeeOther)
 		return
 	}
 	msg := "You're now hidden from the leaderboards."
 	if on {
 		msg = "You now appear on the leaderboards."
 	}
-	http.Redirect(w, r, "/dashboard?notice="+errMsg(msg)+"#leaderboards", http.StatusSeeOther)
+	http.Redirect(w, r, back+"?notice="+errMsg(msg)+anchor, http.StatusSeeOther)
 }
 
 // Transfer handles both "Send Money" forms on the dashboard (move between
