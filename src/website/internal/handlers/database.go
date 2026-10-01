@@ -15,7 +15,7 @@ import (
 )
 
 // Database is Admin → Database (layout plan "Database browser (read-only)"),
-// Head Admin only (database.query).
+// Management only (database.query).
 
 type databaseData struct {
 	Base

@@ -14,7 +14,7 @@
       <a class="seg-item {{if eq .Tab "sql"}}active{{end}}" href="/admin/database?tab=sql&amp;table={{.Table}}">SQL Console</a>
     </nav>
     <details class="dbb-lock">
-      <summary><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Read-only &middot; Head Admin only</summary>
+      <summary><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Read-only &middot; Management only</summary>
       <div class="dbb-lock-body">
         <p>{{if .Dedicated}}This connection uses a SELECT-only database role, so writes are impossible at the connection level.{{else}}Every query runs in a read-only transaction, which Postgres enforces, and functions that affect other sessions are refused. For the strongest guarantee, set <code>DATABASE_READONLY_URL</code> to a SELECT-only role.{{end}}</p>
         <p>Every console query is written to the Staff Log. Secret columns (session and link-code hashes, request tokens) are masked.</p>

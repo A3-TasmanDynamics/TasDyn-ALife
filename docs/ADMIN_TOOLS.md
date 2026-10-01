@@ -85,7 +85,7 @@ Default seed ranks (same as before, unchanged):
 | Trial Moderator | 10 | Low-risk, reversible actions |
 | Moderator | 20 | + standard moderation |
 | Admin | 40 | + server-ops, arsenal editing, anti-cheat review |
-| Head Admin / Developer | 100 | + rank/permission management, debug console |
+| Management (head_admin) | 100 | + rank/permission management, debug console |
 
 Replaces the prototype's loose `adminlevel` field — the one silently overwritten by the save/load
 field-mapping bug this project exists to not repeat.
@@ -145,7 +145,7 @@ broadcast, per [ANTI_CHEAT.md's information-leakage mitigation](ANTI_CHEAT.md#5-
 **anti-cheat flag review panel** (unchanged from before), server lockdown toggle (whitelist-only
 join mode), restart scheduler + countdown warnings, mission/time/weather/date control.
 
-### Level 100 — Head Admin / Developer
+### Level 100 — Management (key head_admin)
 
 Adds: staff rank management (create/rename/delete a rank, change its level), **per-command
 permission overrides (§7)**, **debug console (§6)**, whitelist/banlist management (§8), metrics
