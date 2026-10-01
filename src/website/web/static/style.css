@@ -2605,3 +2605,46 @@ textarea.dev-input { resize: vertical; min-height: 40px; }
 .dev-link-kind { font-size: 11px; color: var(--text-dim); }
 .dev-link-title { font-weight: 600; }
 @media (max-width: 800px) { .dev-reveal, .dev-add-row { margin-left: 0; } }
+
+/* Board labels: Trello colours; click one on the board to shrink them all to colour bars. */
+.dev-lc-green { --lc: #4bce97; } .dev-lc-yellow { --lc: #f5cd47; } .dev-lc-orange { --lc: #fea362; }
+.dev-lc-red { --lc: #f87168; } .dev-lc-purple { --lc: #9f8fef; } .dev-lc-blue { --lc: #579dff; }
+.dev-lc-sky { --lc: #6cc3e0; } .dev-lc-lime { --lc: #94c748; } .dev-lc-pink { --lc: #e774bb; }
+.dev-lc-grey { --lc: #8590a2; }
+.dev-label[class*="dev-lc-"] { background: var(--lc); color: #1d2125; font-weight: 700; }
+.dev-task-labels { gap: 4px; }
+.dev-task-labels .dev-label { display: inline-flex; align-items: center; max-width: 100%; min-width: 40px; height: 18px; padding: 0 8px; border-radius: 4px; font-size: 11.5px; line-height: 18px; cursor: pointer; overflow: hidden; box-sizing: border-box; transition: height 0.15s ease, max-width 0.2s ease, padding 0.15s ease; }
+.dev-task-labels .dev-label:hover { filter: brightness(1.1); }
+.dev-label-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity 0.12s ease; }
+.dev-labels-min .dev-task-labels .dev-label { height: 8px; min-width: 40px; max-width: 40px; padding: 0; }
+.dev-labels-min .dev-label-text { opacity: 0; }
+.dev-head-actions { display: flex; gap: 8px; align-items: center; margin-left: auto; flex-shrink: 0; }
+.dev-head-actions .btn { display: inline-flex; align-items: center; gap: 6px; }
+
+.dev-cardm-pills .dev-label[class*="dev-lc-"] { border-radius: 4px; }
+.dev-label-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+.dev-label-opt { position: relative; cursor: pointer; }
+.dev-label-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.dev-label-opt .dev-label { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 9px; border-radius: 4px; font-size: 12px; opacity: 0.38; transition: opacity 0.12s; }
+.dev-label-opt:hover .dev-label { opacity: 0.7; }
+.dev-label-opt input:checked + .dev-label { opacity: 1; }
+.dev-label-opt input:checked + .dev-label::before { content: "\2713"; font-weight: 900; }
+.dev-label-opt input:focus-visible + .dev-label { outline: 2px solid var(--amber); outline-offset: 2px; }
+.dev-side-field-head { display: flex; justify-content: space-between; align-items: baseline; }
+.dev-side-field-head .link-button { font-size: 12px; color: var(--amber); }
+.dev-field-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+
+.modal.dev-labelsm { width: min(520px, calc(100vw - 32px)); }
+.dev-label-rows { list-style: none; margin: 12px 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.dev-label-line { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.dev-label-big { flex: 1; min-width: 0; height: 32px; display: flex; align-items: center; padding: 0 12px; border-radius: 4px; font-size: 13.5px; }
+.dev-label-line > .dev-small { width: 60px; text-align: right; }
+.dev-label-form { flex-basis: 100%; display: flex; flex-direction: column; gap: 10px; padding: 12px; margin-top: 2px; border-radius: 8px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-soft); }
+.dev-label-new { margin-top: 10px; }
+.dev-label-del { margin-left: auto; margin-right: 0; }
+.dev-swatches { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 6px; }
+.dev-swatch { height: 28px; border-radius: 4px; background: var(--lc); cursor: pointer; position: relative; }
+.dev-swatch input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.dev-swatch:has(input:checked) { box-shadow: 0 0 0 2px var(--bg-card, #0f172a), 0 0 0 4px var(--lc); }
+.dev-swatch:has(input:focus-visible) { outline: 2px solid var(--amber); outline-offset: 3px; }
+@media (max-width: 520px) { .dev-swatches { grid-template-columns: repeat(5, minmax(0, 1fr)); } }

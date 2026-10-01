@@ -958,6 +958,17 @@ CREATE TABLE IF NOT EXISTS dev_task_activity (
 );
 CREATE INDEX IF NOT EXISTS idx_dev_task_activity_task ON dev_task_activity (task_id);
 
+-- Project board labels: a coloured, named tag (e.g. "Police", "Core
+-- functions"). Cards keep label names in dev_tasks.labels.
+CREATE TABLE IF NOT EXISTS dev_labels (
+    name        TEXT PRIMARY KEY CHECK (length(name) BETWEEN 1 AND 32),
+    color       TEXT NOT NULL DEFAULT 'blue'
+                CHECK (color IN ('green', 'yellow', 'orange', 'red', 'purple', 'blue', 'sky', 'lime', 'pink', 'grey')),
+    sort        DOUBLE PRECISION NOT NULL DEFAULT 0,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_dev_labels_lower_name ON dev_labels (lower(name));
+
 CREATE TABLE staff_permission_overrides (
     id           SERIAL PRIMARY KEY,
     player_id    BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,

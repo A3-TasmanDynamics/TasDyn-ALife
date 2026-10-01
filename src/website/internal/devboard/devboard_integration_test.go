@@ -20,20 +20,24 @@ func TestBoard(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { pool.Exec(ctx, `DELETE FROM dev_tasks WHERE title LIKE 'TB %'`); pool.Close() })
+	t.Cleanup(func() {
+		pool.Exec(ctx, `DELETE FROM dev_tasks WHERE title LIKE 'TB %'`)
+		pool.Exec(ctx, `DELETE FROM dev_labels WHERE name IN ('Web Site', 'bug')`)
+		pool.Close()
+	})
 
 	var ue UserError
 	if _, err := Create(ctx, pool, 0, Task{Title: "  "}); !errors.As(err, &ue) {
 		t.Errorf("blank title: %v", err)
 	}
-	a, err := Create(ctx, pool, 0, Task{Title: "TB  a", Labels: []string{"Web Site", "web-site", " bug "}})
+	a, err := Create(ctx, pool, 0, Task{Title: "TB  a", Labels: []string{"Web  Site", "web site", " bug "}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	b, _ := Create(ctx, pool, 0, Task{Title: "TB b"})
 	c, _ := Create(ctx, pool, 0, Task{Title: "TB c"})
 	got, _ := Get(ctx, pool, a)
-	if got.Title != "TB a" || len(got.Labels) != 2 || got.Labels[0] != "web-site" || got.Status != "todo" || got.Priority != "normal" {
+	if got.Title != "TB a" || len(got.Labels) != 2 || got.Labels[0] != "Web Site" || got.Labels[1] != "bug" || got.Status != "todo" || got.Priority != "normal" {
 		t.Errorf("cleaned task: %+v", got)
 	}
 
