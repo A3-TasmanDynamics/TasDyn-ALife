@@ -1,97 +1,179 @@
+{{define "dbb_cell"}}{{if .Null}}<span class="dbb-null">NULL</span>{{else}}{{.Text}}{{end}}{{end}}
+
 {{define "content"}}
 <div class="dbb">
-  <div class="dbb-security">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-    <span><strong>Read-only.</strong> {{if .Dedicated}}This connection uses a SELECT-only database role, so writes are impossible at the connection level.{{else}}Every query runs in a read-only transaction, which Postgres enforces; functions that affect other sessions are refused. For the strongest guarantee, set DATABASE_READONLY_URL to a SELECT-only role.{{end}} Every console query is written to the Staff Log. Secret columns are masked.</span>
-    <span class="dbb-security-who">Head Admin only</span>
-  </div>
-  <div class="dbb-top">
-    <a class="btn btn-sm" href="/admin">&larr; Admin</a>
-    <h1>Database</h1>
-    <span class="dbb-chip">alife_db &middot; PostgreSQL</span>
+  <header class="dbb-top">
+    <a class="dbb-back" href="/admin" title="Back to the admin panel" aria-label="Back to the admin panel"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></a>
+    <div class="dbb-title">
+      <div class="dbb-crumb"><a href="/admin">Admin</a> / Database</div>
+      <h1>Database</h1>
+    </div>
     <nav class="seg dbb-tabs" aria-label="Database views">
       <a class="seg-item {{if eq .Tab "data"}}active{{end}}" href="/admin/database?table={{.Table}}">Data</a>
       <a class="seg-item {{if eq .Tab "schema"}}active{{end}}" href="/admin/database?tab=schema&amp;table={{.Table}}">Schema</a>
       <a class="seg-item {{if eq .Tab "sql"}}active{{end}}" href="/admin/database?tab=sql&amp;table={{.Table}}">SQL Console</a>
     </nav>
-    <span class="dbb-who">Signed in as <strong>{{.Session.Name}}</strong></span>
-  </div>
+    <details class="dbb-lock">
+      <summary><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Read-only &middot; Head Admin only</summary>
+      <div class="dbb-lock-body">
+        <p>{{if .Dedicated}}This connection uses a SELECT-only database role, so writes are impossible at the connection level.{{else}}Every query runs in a read-only transaction, which Postgres enforces, and functions that affect other sessions are refused. For the strongest guarantee, set <code>DATABASE_READONLY_URL</code> to a SELECT-only role.{{end}}</p>
+        <p>Every console query is written to the Staff Log. Secret columns (session and link-code hashes, request tokens) are masked.</p>
+      </div>
+    </details>
+  </header>
 
-  <div class="dbb-body">
+  <div class="dbb-body{{if ne .Tab "data"}} dbb-body-wide{{end}}">
     <aside class="dbb-tables" aria-label="Tables">
-      <form method="get" action="/admin/database" class="dbb-tsearch">
-        <input type="hidden" name="tab" value="{{.Tab}}">
-        <input name="tq" value="{{.TableQ}}" aria-label="Search tables" placeholder="Search tables…">
+      <form method="get" action="/admin/database" class="dbb-tsearch" role="search">
+        <input type="hidden" name="tab" value="{{.Tab}}"><input type="hidden" name="table" value="{{.Table}}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input name="tq" value="{{.TableQ}}" aria-label="Search tables" placeholder="Search {{.TableCount}} tables…">
       </form>
-      <div class="dbb-tlabel">Public schema &middot; {{len .Tables}} tables</div>
-      {{range .Tables}}
-      <a class="dbb-trow{{if eq .Name $.Table}} active{{end}}" href="/admin/database?table={{.Name}}{{if ne $.Tab "data"}}&amp;tab={{$.Tab}}{{end}}"><span>{{.Name}}</span><span class="dbb-tcount">{{.Rows}}</span></a>
-      {{end}}
+      {{range .Groups}}
+      <details class="dbb-group" {{if .Open}}open{{end}}>
+        <summary><span class="dbb-chev" aria-hidden="true"></span>{{.Name}}<span class="dbb-gcount">{{len .Tables}}</span></summary>
+        {{range .Tables}}
+        <a class="dbb-trow{{if eq .Name $.Table}} active{{end}}{{if not .Rows}} dbb-empty-t{{end}}" href="/admin/database?table={{.Name}}{{if ne $.Tab "data"}}&amp;tab={{$.Tab}}{{end}}"><span class="dbb-tname">{{.Name}}</span><span class="dbb-tcount">{{money .Rows}}</span></a>
+        {{end}}
+      </details>
+      {{else}}<p class="dbb-muted dbb-pad">No tables match.</p>{{end}}
     </aside>
 
     {{if eq .Tab "data"}}
     <section class="dbb-data">
-      <form class="dbb-datahead" method="get" action="/admin/database">
-        <input type="hidden" name="table" value="{{.Table}}">
-        <strong>{{.Table}}</strong><span class="mod-dim">{{.Page.Total}} rows{{if .Filter}} matching{{end}}</span>
-        <input name="q" value="{{.Filter}}" aria-label="Filter rows" placeholder="Filter rows…">
-      </form>
+      <div class="dbb-datahead">
+        <div class="dbb-tablename"><h2>{{.Table}}</h2><span class="dbb-muted">{{money .Page.Total}} row{{if ne .Page.Total 1}}s{{end}}{{if or .Filter .Col}} matching{{end}} &middot; {{len .Page.Columns}} columns</span></div>
+        {{if .Col}}<a class="dbb-pill" href="{{.URL "col" "" "eq" "" "page" "" "row" ""}}" title="Clear this filter">{{.Col}} = {{.Eq}} <span aria-hidden="true">&times;</span></a>{{end}}
+        <form class="dbb-filter" method="get" action="/admin/database" role="search">
+          <input type="hidden" name="table" value="{{.Table}}">{{if .Sort}}<input type="hidden" name="sort" value="{{.Sort}}">{{if .Asc}}<input type="hidden" name="dir" value="asc">{{end}}{{end}}{{if ne .PageSize 50}}<input type="hidden" name="size" value="{{.PageSize}}">{{end}}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input name="q" value="{{.Filter}}" aria-label="Filter rows" placeholder="Filter rows…">
+          {{if .Filter}}<a class="dbb-clear" href="{{.URL "q" "" "page" "" "row" ""}}" aria-label="Clear the filter">&times;</a>{{end}}
+        </form>
+        <a class="btn btn-sm" href="/admin/database?tab=schema&amp;table={{.Table}}">Schema</a>
+        <button class="btn btn-sm" type="button" data-csv="#dbb-grid" data-csv-name="{{.Table}}">Export CSV</button>
+      </div>
       <div class="dbb-grid-wrap">
-        <table class="dbb-grid">
-          <thead><tr>{{range .Page.Columns}}<th title="{{.Type}}{{if .Ref}} → {{.Ref}}{{end}}">{{if .PK}}<span class="dbb-pk">PK</span> {{end}}{{.Name}}</th>{{end}}</tr></thead>
+        <table class="dbb-grid" id="dbb-grid">
+          <thead><tr>{{range .Page.Columns}}<th class="dbb-k-{{.Kind}}"><a href="{{$.SortURL .Name}}" title="Sort by {{.Name}}{{if .Ref}} · references {{.Ref}}{{end}}">
+            <span class="dbb-th-name">{{if .PK}}<span class="dbb-pk">PK</span>{{end}}{{if .Ref}}<span class="dbb-fk">FK</span>{{end}}{{.Name}}{{if eq .Name $.Page.Sort}}<span class="dbb-sort">{{if $.Page.Desc}}&darr;{{else}}&uarr;{{end}}</span>{{end}}</span>
+            <span class="dbb-th-type">{{.Type}}</span></a></th>{{end}}</tr></thead>
           <tbody>
             {{range $i, $row := .Page.Rows}}{{$k := index $.Page.Keys $i}}
-            <tr class="{{if and $k (eq $k $.RowKey)}}active{{end}}">{{range $row}}<td>{{if $k}}<a href="/admin/database?table={{$.Table}}&amp;page={{$.PageN}}{{if $.Filter}}&amp;q={{$.Filter}}{{end}}&amp;row={{$k}}">{{.}}</a>{{else}}{{.}}{{end}}</td>{{end}}</tr>
-            {{else}}<tr><td class="mod-dim">No rows.</td></tr>{{end}}
+            <tr class="{{if and $k (eq $k $.RowKey)}}active{{end}}" {{if $k}}data-href="{{$.URL "row" $k}}"{{end}}>{{range $j, $c := $row}}{{$col := index $.Page.Columns $j}}<td class="dbb-k-{{$col.Kind}}{{if and (eq $col.Kind "bool") (not $c.Null)}} dbb-bool-{{$c.Text}}{{end}}" title="{{$c.Text}}">{{if and $col.Ref (not $c.Null)}}<a class="dbb-fklink" href="/admin/database?table={{$col.RefTable}}&amp;col={{$col.RefColumn}}&amp;eq={{$c.Text}}" title="Open {{$col.Ref}} = {{$c.Text}}">{{$c.Text}}</a>{{else}}{{template "dbb_cell" $c}}{{end}}</td>{{end}}</tr>
+            {{else}}<tr><td class="dbb-muted dbb-norows" colspan="{{len .Page.Columns}}">{{if or .Filter .Col}}No rows match.{{else}}This table is empty.{{end}}</td></tr>{{end}}
           </tbody>
         </table>
       </div>
       <div class="dbb-pager">
-        <span class="mod-dim">Page {{.PageN}} of {{if .Pages}}{{.Pages}}{{else}}1{{end}}</span>
-        {{if gt .PageN 1}}<a class="btn btn-sm" href="/admin/database?table={{.Table}}&amp;page={{dec .PageN}}{{if .Filter}}&amp;q={{.Filter}}{{end}}">Prev</a>{{end}}
-        {{if lt .PageN .Pages}}<a class="btn btn-sm" href="/admin/database?table={{.Table}}&amp;page={{inc .PageN}}{{if .Filter}}&amp;q={{.Filter}}{{end}}">Next</a>{{end}}
+        <span class="dbb-muted">{{if .Page.Total}}{{money .From}}–{{money .To}} of {{money .Page.Total}}{{else}}0 rows{{end}}</span>
+        <form method="get" action="/admin/database" class="dbb-size">
+          <input type="hidden" name="table" value="{{.Table}}">{{if .Filter}}<input type="hidden" name="q" value="{{.Filter}}">{{end}}{{if .Col}}<input type="hidden" name="col" value="{{.Col}}"><input type="hidden" name="eq" value="{{.Eq}}">{{end}}{{if .Sort}}<input type="hidden" name="sort" value="{{.Sort}}">{{if .Asc}}<input type="hidden" name="dir" value="asc">{{end}}{{end}}
+          <label>Rows per page <select name="size" onchange="this.form.submit()"><option {{if eq .PageSize 25}}selected{{end}}>25</option><option {{if eq .PageSize 50}}selected{{end}}>50</option><option {{if eq .PageSize 100}}selected{{end}}>100</option><option {{if eq .PageSize 200}}selected{{end}}>200</option></select></label>
+        </form>
+        <div class="dbb-pages">
+          {{if gt .PageN 1}}<a class="btn btn-sm" href="{{.URL "page" "" "row" ""}}" aria-label="First page">&laquo;</a><a class="btn btn-sm" href="{{.URL "page" (printf "%d" (dec .PageN)) "row" ""}}">Prev</a>{{end}}
+          <span class="dbb-muted">Page {{.PageN}} of {{if .Pages}}{{.Pages}}{{else}}1{{end}}</span>
+          {{if lt .PageN .Pages}}<a class="btn btn-sm" href="{{.URL "page" (printf "%d" (inc .PageN)) "row" ""}}">Next</a><a class="btn btn-sm" href="{{.URL "page" (printf "%d" .Pages) "row" ""}}" aria-label="Last page">&raquo;</a>{{end}}
+        </div>
       </div>
     </section>
+
     <aside class="dbb-inspector" aria-label="Inspector">
-      <div class="dbb-tlabel">Inspector</div>
       {{if .RowKey}}
-      <div class="strong">{{.Table}} #{{.RowKey}}</div>
-      {{range $i, $c := .Row}}<div class="dbb-field"><div class="mod-dim">{{$c.Name}}{{if $c.Ref}} → {{$c.Ref}}{{end}}</div><div class="mono">{{index $.RowVals $i}}</div></div>{{end}}
-      <div class="dbb-tlabel dbb-rel">Relationships</div>
-      {{range .Refs}}<a class="dbb-reflink" href="/admin/database?table={{.Table}}&amp;q={{$.RowKey}}">&rarr; {{.Count}} row{{if ne .Count 1}}s{{end}} in <strong>{{.Table}}</strong> <span class="mod-dim">({{.Column}})</span></a>{{else}}<p class="mod-dim">Nothing else points at this row.</p>{{end}}
-      {{else}}<p class="mod-dim">Pick a row.</p>{{end}}
+      <div class="dbb-insp-head"><span class="dbb-muted">Row</span><strong>{{.Table}} #{{.RowKey}}</strong></div>
+      {{range $i, $c := .Row}}{{$v := index $.RowCells $i}}
+      <div class="dbb-field">
+        <div class="dbb-field-name">{{if $c.PK}}<span class="dbb-pk">PK</span>{{end}}{{$c.Name}}<span class="dbb-field-type">{{$c.Type}}</span>{{if not $v.Null}}<button type="button" class="dbb-copy" data-copy="{{$v.Text}}" aria-label="Copy {{$c.Name}}" title="Copy">&#x2398;</button>{{end}}</div>
+        {{if and $c.Ref (not $v.Null)}}<a class="dbb-field-val dbb-fklink" href="/admin/database?table={{$c.RefTable}}&amp;col={{$c.RefColumn}}&amp;eq={{$v.Text}}">{{$v.Text}} <span class="dbb-muted">&rarr; {{$c.Ref}}</span></a>
+        {{else if eq $c.Kind "json"}}<pre class="dbb-field-val dbb-json">{{template "dbb_cell" $v}}</pre>
+        {{else}}<div class="dbb-field-val{{if eq $c.Kind "bool"}} dbb-bool-{{$v.Text}}{{end}}">{{template "dbb_cell" $v}}</div>{{end}}
+      </div>
+      {{end}}
+      <div class="dbb-insp-sub">Linked rows</div>
+      {{range .Refs}}<a class="dbb-reflink" href="/admin/database?table={{.Table}}&amp;col={{.Column}}&amp;eq={{$.RowKey}}"><strong>{{money .Count}}</strong> in <span class="dbb-mono">{{.Table}}</span><span class="dbb-muted"> by {{.Column}}</span></a>{{else}}<p class="dbb-muted">Nothing else points at this row.</p>{{end}}
+      {{else}}<p class="dbb-muted dbb-pad">Select a row to inspect it.</p>{{end}}
     </aside>
     {{end}}
 
     {{if eq .Tab "schema"}}
     <section class="dbb-schema">
-      <p class="mod-dim">Foreign-key relationships, read from information_schema. Not editable here.</p>
-      <div class="dbb-fks">
-        {{range .FKs}}<div class="dbb-fk"><span><strong>{{.Table}}</strong>.{{.Column}}</span><span class="mod-dim">&rarr;</span><span><strong>{{.RefTable}}</strong>.{{.RefColumn}}</span></div>{{else}}<p class="mod-dim">No foreign keys.</p>{{end}}
+      {{with .Info}}
+      <div class="dbb-schema-head">
+        <div><h2>{{$.Table}}</h2><span class="dbb-muted">{{money .Rows}} rows &middot; {{len .Columns}} columns &middot; {{.Size}} on disk</span></div>
+        <a class="btn btn-sm" href="/admin/database?table={{$.Table}}">Browse data</a>
       </div>
+      <div class="dbb-card">
+        <div class="dbb-card-head">Columns</div>
+        <table class="dbb-cols">
+          <thead><tr><th>Name</th><th>Type</th><th>Null</th><th>Default</th><th>Key</th></tr></thead>
+          <tbody>{{range .Columns}}<tr>
+            <td class="dbb-mono"><strong>{{.Name}}</strong>{{if .Hidden}} <span class="dbb-pill dbb-pill-dim">masked</span>{{end}}</td>
+            <td class="dbb-mono dbb-muted">{{.Type}}</td>
+            <td>{{if .Nullable}}<span class="dbb-muted">yes</span>{{else}}no{{end}}</td>
+            <td class="dbb-mono dbb-muted dbb-default">{{.Default}}</td>
+            <td>{{if .PK}}<span class="dbb-pk">PK</span>{{end}}{{if .Ref}} <a class="dbb-fklink" href="/admin/database?tab=schema&amp;table={{.RefTable}}"><span class="dbb-fk">FK</span> {{.Ref}}</a>{{end}}</td>
+          </tr>{{end}}</tbody>
+        </table>
+      </div>
+      <div class="dbb-schema-grid">
+        <div class="dbb-card">
+          <div class="dbb-card-head">Indexes <span class="dbb-muted">{{len .Indexes}}</span></div>
+          {{range .Indexes}}<div class="dbb-index"><span class="dbb-mono"><strong>{{.Name}}</strong>{{if .Unique}} <span class="dbb-pill">unique</span>{{end}}</span><span class="dbb-mono dbb-muted">{{.Def}}</span></div>{{else}}<p class="dbb-muted dbb-pad">No indexes.</p>{{end}}
+        </div>
+        <div class="dbb-card">
+          <div class="dbb-card-head">Referenced by <span class="dbb-muted">{{len .Incoming}}</span></div>
+          {{range .Incoming}}<a class="dbb-index dbb-fklink" href="/admin/database?tab=schema&amp;table={{.Table}}"><span class="dbb-mono"><strong>{{.Table}}</strong>.{{.Column}}</span><span class="dbb-muted dbb-mono">&rarr; {{.RefColumn}}</span></a>{{else}}<p class="dbb-muted dbb-pad">No other table points here.</p>{{end}}
+        </div>
+      </div>
+      {{end}}
+      <details class="dbb-card dbb-allfks">
+        <summary class="dbb-card-head">All foreign keys <span class="dbb-muted">{{len .FKs}}</span></summary>
+        <div class="dbb-fks">
+          {{range .FKs}}<a class="dbb-fk-row" href="/admin/database?tab=schema&amp;table={{.Table}}"><span class="dbb-mono"><strong>{{.Table}}</strong>.{{.Column}}</span><span class="dbb-muted">&rarr;</span><span class="dbb-mono"><strong>{{.RefTable}}</strong>.{{.RefColumn}}</span></a>{{else}}<p class="dbb-muted">No foreign keys.</p>{{end}}
+        </div>
+      </details>
     </section>
     {{end}}
 
     {{if eq .Tab "sql"}}
     <section class="dbb-sql">
-      <p class="mod-dim">SELECT statements only, one at a time. Results are capped at 500 rows and queries stop after 5 seconds.</p>
-      <form method="post" action="/admin/database/query">
+      <form method="post" action="/admin/database/query" data-sql-form>
         <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-        <textarea name="sql" rows="6" spellcheck="false" aria-label="SQL query" placeholder="SELECT id, name, civ_cash, cop_level FROM players WHERE cop_level > 0 ORDER BY civ_cash DESC LIMIT 50;">{{.SQL}}</textarea>
-        <div class="dbb-sql-actions"><button class="btn btn-primary" type="submit">&#9654; Run query</button><span class="hint">Logged to the Staff Log as database.query.</span></div>
+        <div class="dbb-card">
+          <div class="dbb-card-head">Query <span class="dbb-muted">SELECT only &middot; one statement &middot; 500 rows max &middot; 5 second limit</span></div>
+          <textarea name="sql" rows="7" spellcheck="false" aria-label="SQL query" data-sql placeholder="SELECT id, name, civ_cash, cop_level FROM players WHERE cop_level > 0 ORDER BY civ_cash DESC LIMIT 50;">{{.SQL}}</textarea>
+          <div class="dbb-sql-actions">
+            <button class="btn btn-primary" type="submit">&#9654; Run <span class="dbb-kbd">Ctrl+Enter</span></button>
+            <span class="dbb-muted">Logged to the Staff Log as database.query.</span>
+          </div>
+        </div>
       </form>
-      {{if .QueryErr}}<div class="banner banner-error">{{.QueryErr}}</div>{{end}}
+      <div class="dbb-examples">
+        <span class="dbb-muted">Examples:</span>
+        <button type="button" class="dbb-chip" data-example="SELECT id, name, cop_level, medic_level, last_seen FROM players ORDER BY last_seen DESC NULLS LAST LIMIT 50">Recently online</button>
+        <button type="button" class="dbb-chip" data-example="SELECT p.name, sum(b.balance) AS bank FROM bank_accounts b JOIN players p ON p.id = b.player_id GROUP BY p.name ORDER BY bank DESC LIMIT 25">Richest by bank</button>
+        <button type="button" class="dbb-chip" data-example="SELECT id, uid, reason, expires_at, created_at FROM banlist WHERE lifted_at IS NULL AND (expires_at IS NULL OR expires_at > now()) ORDER BY created_at DESC">Active bans</button>
+        <button type="button" class="dbb-chip" data-example="SELECT status, count(*) FROM support_tickets GROUP BY status">Tickets by status</button>
+        <button type="button" class="dbb-chip" data-example="SELECT g.name, g.tag, count(m.id) AS members FROM gangs g LEFT JOIN gang_members m ON m.gang_id = g.id GROUP BY g.id ORDER BY members DESC">Gangs by size</button>
+      </div>
+      <div class="dbb-examples" data-sql-recent hidden><span class="dbb-muted">Recent:</span></div>
+      {{if .QueryErr}}<div class="banner banner-error">Not run: {{.QueryErr}}.</div>{{end}}
       {{with .Result}}
+      <div class="dbb-result-head">
+        <span><strong>{{len .Rows}}</strong> row{{if ne (len .Rows) 1}}s{{end}}{{if .Capped}} (capped at 500){{end}} <span class="dbb-muted">&middot; {{.Elapsed.Milliseconds}} ms</span></span>
+        <button class="btn btn-sm" type="button" data-csv="#dbb-result" data-csv-name="query">Export CSV</button>
+      </div>
       <div class="dbb-grid-wrap">
-        <table class="dbb-grid">
-          <thead><tr>{{range .Columns}}<th>{{.}}</th>{{end}}</tr></thead>
-          <tbody>{{range .Rows}}<tr>{{range .}}<td>{{.}}</td>{{end}}</tr>{{else}}<tr><td class="mod-dim">No rows.</td></tr>{{end}}</tbody>
+        <table class="dbb-grid" id="dbb-result">
+          <thead><tr>{{range .Columns}}<th><span class="dbb-th-name">{{.}}</span></th>{{end}}</tr></thead>
+          <tbody>{{range .Rows}}<tr>{{range .}}<td title="{{.Text}}">{{template "dbb_cell" .}}</td>{{end}}</tr>{{else}}<tr><td class="dbb-muted dbb-norows">No rows.</td></tr>{{end}}</tbody>
         </table>
       </div>
-      <p class="hint">{{len .Rows}} row{{if ne (len .Rows) 1}}s{{end}}{{if .Capped}} (capped at 500){{end}} &middot; {{.Elapsed.Milliseconds}} ms &middot; logged to the Staff Log</p>
       {{end}}
     </section>
     {{end}}
   </div>
 </div>
+<script src="/static/database.js" defer></script>
 {{end}}

@@ -13,11 +13,12 @@
 package dbbrowser
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -99,27 +100,60 @@ func (b *Browser) Tables(ctx context.Context) ([]Table, error) {
 
 // Column describes one column.
 type Column struct {
-	Name   string
-	Type   string
-	PK     bool
-	Ref    string // "table.column" for a foreign key
-	Hidden bool
+	Name     string
+	Type     string
+	PK       bool
+	Ref      string // "table.column" for a foreign key
+	Hidden   bool
+	Nullable bool
+	Default  string
+	Kind     string // num / bool / json / time / text: how the grid shows it
 }
+
+// RefTable and RefColumn split Ref.
+func (c Column) RefTable() string  { t, _, _ := strings.Cut(c.Ref, "."); return t }
+func (c Column) RefColumn() string { _, col, _ := strings.Cut(c.Ref, "."); return col }
+
+func kindOf(dataType string) string {
+	switch {
+	case strings.Contains(dataType, "int"), dataType == "numeric", dataType == "real", dataType == "double precision":
+		return "num"
+	case dataType == "boolean":
+		return "bool"
+	case strings.HasPrefix(dataType, "json"):
+		return "json"
+	case strings.HasPrefix(dataType, "timestamp"), dataType == "date":
+		return "time"
+	}
+	return "text"
+}
+
+// fkPairs is every foreign-key column pair in the public schema, from
+// pg_catalog (information_schema pairs composite keys up wrongly).
+const fkPairs = `
+	SELECT src.relname, sa.attname, dst.relname, da.attname
+	FROM pg_constraint c
+	JOIN pg_class src ON src.oid = c.conrelid
+	JOIN pg_class dst ON dst.oid = c.confrelid
+	JOIN pg_namespace n ON n.oid = src.relnamespace AND n.nspname = 'public'
+	CROSS JOIN LATERAL unnest(c.conkey, c.confkey) AS k(src_att, dst_att)
+	JOIN pg_attribute sa ON sa.attrelid = c.conrelid AND sa.attnum = k.src_att
+	JOIN pg_attribute da ON da.attrelid = c.confrelid AND da.attnum = k.dst_att
+	WHERE c.contype = 'f'`
 
 // Columns returns a table's columns, or an error if the table isn't known.
 func (b *Browser) Columns(ctx context.Context, table string) ([]Column, error) {
 	var out []Column
 	err := b.readOnly(ctx, func(tx pgx.Tx) error {
 		rows, err := tx.Query(ctx, `
+			WITH fk(src, scol, dst, dcol) AS (`+fkPairs+`)
 			SELECT c.column_name, c.data_type,
 			       EXISTS (SELECT 1 FROM information_schema.table_constraints tc
 			               JOIN information_schema.key_column_usage k ON k.constraint_name = tc.constraint_name AND k.table_name = tc.table_name
 			               WHERE tc.table_schema = 'public' AND tc.table_name = c.table_name AND tc.constraint_type = 'PRIMARY KEY' AND k.column_name = c.column_name),
-			       COALESCE((SELECT ccu.table_name || '.' || ccu.column_name FROM information_schema.table_constraints tc
-			                 JOIN information_schema.key_column_usage k ON k.constraint_name = tc.constraint_name AND k.table_name = tc.table_name
-			                 JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name
-			                 WHERE tc.table_schema = 'public' AND tc.table_name = c.table_name AND tc.constraint_type = 'FOREIGN KEY'
-			                   AND k.column_name = c.column_name LIMIT 1), '')
+			       COALESCE((SELECT fk.dst || '.' || fk.dcol FROM fk
+			                 WHERE fk.src = c.table_name AND fk.scol = c.column_name ORDER BY 1 LIMIT 1), ''),
+			       c.is_nullable = 'YES', COALESCE(c.column_default, '')
 			FROM information_schema.columns c
 			WHERE c.table_schema = 'public' AND c.table_name = $1 ORDER BY c.ordinal_position`, table)
 		if err != nil {
@@ -128,10 +162,11 @@ func (b *Browser) Columns(ctx context.Context, table string) ([]Column, error) {
 		defer rows.Close()
 		for rows.Next() {
 			var c Column
-			if err := rows.Scan(&c.Name, &c.Type, &c.PK, &c.Ref); err != nil {
+			if err := rows.Scan(&c.Name, &c.Type, &c.PK, &c.Ref, &c.Nullable, &c.Default); err != nil {
 				return err
 			}
 			c.Hidden = Hidden(table, c.Name)
+			c.Kind = kindOf(c.Type)
 			out = append(out, c)
 		}
 		return rows.Err()
@@ -142,12 +177,29 @@ func (b *Browser) Columns(ctx context.Context, table string) ([]Column, error) {
 	return out, err
 }
 
+// Cell is one value as shown.
+type Cell struct {
+	Text string
+	Null bool
+}
+
 // Page is a page of rows as display strings.
 type Page struct {
 	Columns []Column
-	Rows    [][]string
+	Rows    [][]Cell
 	Keys    []string // primary key value per row ("" if none)
 	Total   int64
+	Sort    string // column sorted on
+	Desc    bool
+}
+
+// Opts narrows and orders Rows.
+type Opts struct {
+	Filter       string // matches anywhere in the row
+	Col, Eq      string // exact match on one column (foreign-key links)
+	Sort         string // column to sort on ("" = primary key, newest first)
+	Asc          bool
+	Offset, Limit int
 }
 
 func display(v any) string {
@@ -160,18 +212,35 @@ func display(v any) string {
 		return string(x)
 	case string:
 		return x
+	case map[string]any, []any:
+		b, err := json.Marshal(x)
+		if err == nil {
+			return string(b)
+		}
 	}
 	return fmt.Sprint(v)
 }
 
-// Rows returns one page of a table. filter matches anywhere in the row's
-// text form. Hidden columns are masked.
-func (b *Browser) Rows(ctx context.Context, table, filter string, offset, limit int) (Page, error) {
+// PrettyJSON indents a JSON value for the inspector; other text is
+// returned as is.
+func PrettyJSON(s string) string {
+	var buf bytes.Buffer
+	if json.Indent(&buf, []byte(s), "", "  ") != nil {
+		return s
+	}
+	return buf.String()
+}
+
+// Rows returns one page of a table. o.Filter matches anywhere in the row's
+// text form; o.Col/o.Eq is an exact match on one column. Hidden columns are
+// masked.
+func (b *Browser) Rows(ctx context.Context, table string, o Opts) (Page, error) {
 	cols, err := b.Columns(ctx, table)
 	if err != nil {
 		return Page{}, err
 	}
 	p := Page{Columns: cols}
+	filter, offset, limit := o.Filter, o.Offset, o.Limit
 	pk := ""
 	// Secret columns are never selected at all (a dedicated read-only role
 	// isn't allowed to), and the filter searches only the visible ones.
@@ -189,15 +258,43 @@ func (b *Browser) Rows(ctx context.Context, table, filter string, offset, limit 
 		}
 	}
 	tbl := pgx.Identifier{table}.Sanitize()
-	where := ""
+	var conds []string
 	args := []any{}
 	if filter = strings.TrimSpace(filter); filter != "" {
-		where = ` WHERE concat_ws(' ', ` + strings.Join(visible, ", ") + `) ILIKE '%' || $1 || '%'`
 		args = append(args, filter)
+		conds = append(conds, fmt.Sprintf(`concat_ws(' ', %s) ILIKE '%%' || $%d || '%%'`, strings.Join(visible, ", "), len(args)))
+	}
+	known := func(name string) bool {
+		for _, c := range cols {
+			if c.Name == name && !c.Hidden {
+				return true
+			}
+		}
+		return false
+	}
+	if o.Col != "" && known(o.Col) {
+		args = append(args, o.Eq)
+		conds = append(conds, fmt.Sprintf(`%s::text = $%d`, pgx.Identifier{o.Col}.Sanitize(), len(args)))
+	}
+	where := ""
+	if len(conds) > 0 {
+		where = " WHERE " + strings.Join(conds, " AND ")
 	}
 	order := "1"
 	if pk != "" {
 		order = pgx.Identifier{pk}.Sanitize() + " DESC"
+		p.Sort, p.Desc = pk, true
+	}
+	if o.Sort != "" && known(o.Sort) {
+		dir := " DESC NULLS LAST"
+		if o.Asc {
+			dir = " ASC NULLS LAST"
+		}
+		order = pgx.Identifier{o.Sort}.Sanitize() + dir
+		p.Sort, p.Desc = o.Sort, !o.Asc
+		if pk != "" && o.Sort != pk {
+			order += ", " + pgx.Identifier{pk}.Sanitize()
+		}
 	}
 	err = b.readOnly(ctx, func(tx pgx.Tx) error {
 		if err := tx.QueryRow(ctx, `SELECT count(*) FROM `+tbl+` t`+where, args...).Scan(&p.Total); err != nil {
@@ -214,13 +311,13 @@ func (b *Browser) Rows(ctx context.Context, table, filter string, offset, limit 
 			if err != nil {
 				return err
 			}
-			row := make([]string, len(vals))
+			row := make([]Cell, len(vals))
 			key := ""
 			for i, v := range vals {
 				if cols[i].Hidden {
-					row[i] = "••••••"
+					row[i] = Cell{Text: "••••••"}
 				} else {
-					row[i] = display(v)
+					row[i] = Cell{Text: display(v), Null: v == nil}
 				}
 				if cols[i].Name == pk {
 					key = display(v)
@@ -246,11 +343,13 @@ type Ref struct {
 func (b *Browser) Referencing(ctx context.Context, table, key string) ([]Ref, error) {
 	var out []Ref
 	err := b.readOnly(ctx, func(tx pgx.Tx) error {
+		// Only foreign keys onto the table's primary key: the key passed in
+		// is that row's primary key value.
 		rows, err := tx.Query(ctx, `
-			SELECT k.table_name, k.column_name FROM information_schema.table_constraints tc
-			JOIN information_schema.key_column_usage k ON k.constraint_name = tc.constraint_name AND k.table_name = tc.table_name
-			JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name
-			WHERE tc.table_schema = 'public' AND tc.constraint_type = 'FOREIGN KEY' AND ccu.table_name = $1
+			SELECT DISTINCT fk.src, fk.scol FROM (`+fkPairs+`) fk(src, scol, dst, dcol)
+			WHERE fk.dst = $1 AND fk.dcol IN (
+				SELECT a.attname FROM pg_index i JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+				WHERE i.indrelid = ('public.' || quote_ident($1))::regclass AND i.indisprimary)
 			ORDER BY 1, 2`, table)
 		if err != nil {
 			return err
@@ -285,12 +384,7 @@ type FK struct {
 func (b *Browser) ForeignKeys(ctx context.Context) ([]FK, error) {
 	var out []FK
 	err := b.readOnly(ctx, func(tx pgx.Tx) error {
-		rows, err := tx.Query(ctx, `
-			SELECT k.table_name, k.column_name, ccu.table_name, ccu.column_name
-			FROM information_schema.table_constraints tc
-			JOIN information_schema.key_column_usage k ON k.constraint_name = tc.constraint_name AND k.table_name = tc.table_name
-			JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name
-			WHERE tc.table_schema = 'public' AND tc.constraint_type = 'FOREIGN KEY' ORDER BY 3, 1, 2`)
+		rows, err := tx.Query(ctx, `SELECT DISTINCT * FROM (`+fkPairs+`) fk(src, scol, dst, dcol) ORDER BY 1, 2, 3`)
 		if err != nil {
 			return err
 		}
@@ -304,8 +398,66 @@ func (b *Browser) ForeignKeys(ctx context.Context) ([]FK, error) {
 		}
 		return rows.Err()
 	})
-	sort.SliceStable(out, func(i, j int) bool { return out[i].RefTable < out[j].RefTable })
 	return out, err
+}
+
+// Index is one index on a table.
+type Index struct {
+	Name, Def string
+	Unique    bool
+}
+
+// TableInfo is the Schema tab's view of one table.
+type TableInfo struct {
+	Columns  []Column
+	Indexes  []Index
+	Incoming []FK // other tables' columns pointing here
+	Size     string
+	Rows     int64
+}
+
+// Describe reads one table's columns, indexes, incoming foreign keys and
+// size.
+func (b *Browser) Describe(ctx context.Context, table string) (TableInfo, error) {
+	var ti TableInfo
+	cols, err := b.Columns(ctx, table)
+	if err != nil {
+		return ti, err
+	}
+	ti.Columns = cols
+	all, err := b.ForeignKeys(ctx)
+	if err != nil {
+		return ti, err
+	}
+	for _, f := range all {
+		if f.RefTable == table {
+			ti.Incoming = append(ti.Incoming, f)
+		}
+	}
+	err = b.readOnly(ctx, func(tx pgx.Tx) error {
+		rows, err := tx.Query(ctx, `SELECT indexname, indexdef, indexdef ILIKE 'CREATE UNIQUE%' FROM pg_indexes WHERE schemaname = 'public' AND tablename = $1 ORDER BY 1`, table)
+		if err != nil {
+			return err
+		}
+		for rows.Next() {
+			var ix Index
+			if err := rows.Scan(&ix.Name, &ix.Def, &ix.Unique); err != nil {
+				rows.Close()
+				return err
+			}
+			if _, after, ok := strings.Cut(ix.Def, " USING "); ok {
+				ix.Def = after
+			}
+			ti.Indexes = append(ti.Indexes, ix)
+		}
+		rows.Close()
+		tbl := pgx.Identifier{table}.Sanitize()
+		if err := tx.QueryRow(ctx, `SELECT pg_size_pretty(pg_total_relation_size('public.' || quote_ident($1)))`, table).Scan(&ti.Size); err != nil {
+			return err
+		}
+		return tx.QueryRow(ctx, `SELECT count(*) FROM `+tbl).Scan(&ti.Rows)
+	})
+	return ti, err
 }
 
 // ---- SQL console ----
@@ -325,7 +477,7 @@ var (
 // Result is a console result.
 type Result struct {
 	Columns []string
-	Rows    [][]string
+	Rows    [][]Cell
 	Elapsed time.Duration
 	Capped  bool // more rows than MaxRows
 }
@@ -389,9 +541,9 @@ func (b *Browser) Query(ctx context.Context, sql string) (Result, error) {
 			if err != nil {
 				return err
 			}
-			row := make([]string, len(vals))
+			row := make([]Cell, len(vals))
 			for i, v := range vals {
-				row[i] = display(v)
+				row[i] = Cell{Text: display(v), Null: v == nil}
 			}
 			res.Rows = append(res.Rows, row)
 		}
