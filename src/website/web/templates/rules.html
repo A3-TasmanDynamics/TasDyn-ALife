@@ -39,20 +39,29 @@
       {{end}}
 
       {{if and (not .Q) .TOC}}
-      <nav class="rules-contents" aria-labelledby="rules-contents-h">
-        <h2 id="rules-contents-h">Contents</h2>
-        <ol>
+      <details class="rules-contents" open>
+        <summary class="rc-head"><span class="rc-chev" aria-hidden="true"></span><h2>Contents</h2><span class="rc-meta">{{len .TOC}} section{{if ne (len .TOC) 1}}s{{end}}</span></summary>
+        <ol class="rc-list">
           {{range .TOC}}<li>
-            <a class="rules-contents-l1" href="#{{.Anchor}}"><span class="rules-contents-n">{{.N}}.</span><span>{{.Title}}</span><span class="rules-contents-count">{{.Count}} rule{{if ne .Count 1}}s{{end}}</span></a>
-            {{if or .Rules .Subs}}<ol>
-              {{range .Rules}}<li><a class="rules-contents-l2" href="#rule-{{.Number}}"><span class="rules-contents-n">{{.Disp}}</span><span class="rules-contents-t">{{.Text}}</span></a></li>{{end}}
-              {{range .Subs}}<li><a class="rules-contents-l2" href="#{{.Anchor}}"><span class="rules-contents-n">{{.Disp}}</span><span class="rules-contents-t">{{.Title}}</span></a>
-                {{if .Rules}}<ol>{{range .Rules}}<li><a class="rules-contents-l3" href="#rule-{{.Number}}"><span class="rules-contents-n">{{.Disp}}</span><span class="rules-contents-t">{{.Text}}</span></a></li>{{end}}</ol>{{end}}
-              </li>{{end}}
-            </ol>{{end}}
+            {{if or .Rules .Subs}}
+            <details class="rc-sec">
+              <summary><span class="rc-chev" aria-hidden="true"></span><a href="#{{.Anchor}}"><span class="rc-n">{{.N}}.</span>{{.Title}}</a><span class="rc-count">{{.Count}} rule{{if ne .Count 1}}s{{end}}</span></summary>
+              <ol class="rc-sub">
+                {{range .Rules}}<li><a class="rc-rule" href="#rule-{{.Number}}"><span class="rc-n">{{.Disp}}</span><span class="rc-t">{{.Text}}</span></a></li>{{end}}
+                {{range .Subs}}<li>
+                  {{if .Rules}}
+                  <details class="rc-subsec">
+                    <summary><span class="rc-chev" aria-hidden="true"></span><a href="#{{.Anchor}}"><span class="rc-n">{{.Disp}}</span>{{.Title}}</a><span class="rc-count">{{len .Rules}}</span></summary>
+                    <ol class="rc-sub">{{range .Rules}}<li><a class="rc-rule" href="#rule-{{.Number}}"><span class="rc-n">{{.Disp}}</span><span class="rc-t">{{.Text}}</span></a></li>{{end}}</ol>
+                  </details>
+                  {{else}}<a class="rc-rule rc-flat" href="#{{.Anchor}}"><span class="rc-n">{{.Disp}}</span><span class="rc-t">{{.Title}}</span></a>{{end}}
+                </li>{{end}}
+              </ol>
+            </details>
+            {{else}}<a class="rc-flat rc-l1" href="#{{.Anchor}}"><span class="rc-n">{{.N}}.</span>{{.Title}}</a>{{end}}
           </li>{{end}}
         </ol>
-      </nav>
+      </details>
       {{end}}
 
       {{if .Q}}<p class="rules-meta">Showing rules matching &ldquo;{{.Q}}&rdquo; &middot; <a href="/rules">Show all</a></p>{{end}}
