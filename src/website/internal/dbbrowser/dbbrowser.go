@@ -195,10 +195,10 @@ type Page struct {
 
 // Opts narrows and orders Rows.
 type Opts struct {
-	Filter       string // matches anywhere in the row
-	Col, Eq      string // exact match on one column (foreign-key links)
-	Sort         string // column to sort on ("" = primary key, newest first)
-	Asc          bool
+	Filter        string // matches anywhere in the row
+	Col, Eq       string // exact match on one column (foreign-key links)
+	Sort          string // column to sort on ("" = primary key, newest first)
+	Asc           bool
 	Offset, Limit int
 }
 
