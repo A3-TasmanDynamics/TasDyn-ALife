@@ -32,17 +32,17 @@
         </div>
         {{end}}
         <button class="new-rank" type="button" data-dialog-open="dlg-new-rank">New rank</button>
-        <p class="hint rank-list-foot">Moving a rank changes its level. You can't create or edit ranks at or above your own level ({{.MyLevel}}), and the last level-100 rank can't be removed.</p>
+        <p class="hint rank-list-foot">Moving a rank changes its level. You can't create or edit ranks above your own level ({{.MyLevel}}){{if lt .MyLevel 100}} or at it{{end}}, and the last level-100 rank can't be removed. Type a new level in the editor to move a rank anywhere below you.</p>
       </aside>
 
       {{with .Selected}}
       <form class="rank-editor" method="post" action="/admin/roles/save">
         <input type="hidden" name="csrf_token" value="{{$csrf}}">
         <input type="hidden" name="rank_id" value="{{.ID}}">
-        {{if .Locked}}<div class="banner banner-warn">{{.Name}} is at or above your level, so it's read-only for you.</div>{{end}}
+        {{if .Locked}}<div class="banner banner-warn">{{.Name}} is at or above your level, so it's read-only for you.</div>{{else if .LevelFixed}}<div class="banner banner-notice">This rank is at the top level. You can edit it, but its level stays {{.Level}}, and you can't remove your own access to Roles or the admin panel.</div>{{end}}
         <div class="rank-fields">
           <div class="field grow"><label for="rank-name">Display name</label><input id="rank-name" name="name" value="{{.Name}}" maxlength="50" required {{if .Locked}}disabled{{end}}></div>
-          <div class="field"><label>Level</label><div class="readonly-box">{{.Level}}</div></div>
+          <div class="field"><label for="rank-level">Level</label>{{if or .Locked .LevelFixed}}<div class="readonly-box" title="{{if .LevelFixed}}Your own level can't change{{end}}">{{.Level}}</div>{{else}}<input id="rank-level" name="level" type="number" min="1" max="{{dec $.MyLevel}}" value="{{.Level}}" required class="rank-level-input">{{end}}</div>
           <fieldset class="field panel-defaults" {{if .Locked}}disabled{{end}}>
             <legend>Default panels</legend>
             <label><input type="checkbox" name="admin_panel" {{if .AdminPanel}}checked{{end}}> Admin panel</label>

@@ -31,11 +31,13 @@ type rolesData struct {
 
 type rankRow struct {
 	roles.Rank
-	Locked    bool
-	PermCount int
-	CanUp     bool
-	CanDown   bool
-	CanDelete bool
+	Locked bool
+	// LevelFixed: the level can't be changed (your own level).
+	LevelFixed bool
+	PermCount  int
+	CanUp      bool
+	CanDown    bool
+	CanDelete  bool
 }
 
 type permGroupView struct {
@@ -45,7 +47,7 @@ type permGroupView struct {
 
 type permView struct {
 	auth.Permission
-	On       bool
+	On        bool
 	Grantable bool // actor holds it, so may tick it
 }
 
@@ -105,9 +107,9 @@ func (d *Deps) Roles(w http.ResponseWriter, r *http.Request) {
 	used := map[int]bool{}
 	for i, rk := range list {
 		used[rk.Level] = true
-		row := rankRow{Rank: rk, Locked: rk.Level >= myLevel, PermCount: len(rk.Perms)}
-		row.CanUp = !row.Locked && i > 0 && list[i-1].Level < myLevel
-		row.CanDown = !row.Locked && i < len(list)-1
+		row := rankRow{Rank: rk, Locked: !roles.CanEdit(rk.Level, myLevel), LevelFixed: rk.Level >= myLevel, PermCount: len(rk.Perms)}
+		row.CanUp = !row.LevelFixed && i > 0 && list[i-1].Level < myLevel
+		row.CanDown = !row.LevelFixed && i < len(list)-1
 		row.CanDelete = !row.Locked && rk.Members == 0
 		data.Ranks = append(data.Ranks, row)
 	}
@@ -154,8 +156,9 @@ func (d *Deps) RoleSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sess, _ := auth.FromContext(r.Context())
+	level, _ := strconv.Atoi(r.FormValue("level"))
 	err := roles.Update(r.Context(), d.Pool, sess.PlayerID, id, r.FormValue("name"),
-		r.FormValue("admin_panel") == "on", r.FormValue("support_panel") == "on", r.Form["perm"])
+		r.FormValue("admin_panel") == "on", r.FormValue("support_panel") == "on", r.Form["perm"], level)
 	finishRolesAction(w, r, rankBack(id), err, "Rank saved. Staff pick up panel changes at their next sign-in; permissions apply immediately.")
 }
 
