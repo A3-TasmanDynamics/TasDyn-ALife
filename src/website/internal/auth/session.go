@@ -337,6 +337,13 @@ func (a *Authenticator) RequireSupportPanel(next http.Handler) http.Handler {
 	return a.requirePanel("support", next)
 }
 
+// RequireStaffPanel lets in staff with either admin or support panel
+// access: the admin panel's shell, where support-only staff see just the
+// Support section.
+func (a *Authenticator) RequireStaffPanel(next http.Handler) http.Handler {
+	return a.requirePanel("any", next)
+}
+
 func (a *Authenticator) requirePanel(area string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sess, ok := FromContext(r.Context())
@@ -346,7 +353,7 @@ func (a *Authenticator) requirePanel(area string, next http.Handler) http.Handle
 		}
 		admin, support := a.livePanelAccess(r.Context(), sess)
 		sess.AdminPanelAccess, sess.SupportPanelAccess = admin, support
-		if (area == "admin" && !admin) || (area == "support" && !support) {
+		if (area == "admin" && !admin) || (area == "support" && !support) || (area == "any" && !admin && !support) {
 			a.deny(w, r, sess.PlayerID, area, "")
 			return
 		}

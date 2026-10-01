@@ -1,11 +1,9 @@
 {{define "content"}}
-<h1 class="page-title">Support Panel</h1>
-{{if .Session.AdminPanelAccess}}<p class="hint" style="margin-top:-14px;margin-bottom:20px;"><a href="/admin">Switch to Admin Panel</a></p>{{end}}
-
-<div class="support-shell">
-  {{template "support_sidebar" .ActiveSupportTab}}
-
-  <div class="support-content">
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content">
+    <h1 class="page-title admin-title">Support Overview</h1>
+    <p class="admin-sub">Player tickets at a glance. Moderation investigations are under Moderation &rarr; Cases.</p>
     <div class="stat-grid">
       <div class="stat-tile">
         <div class="label">Open</div>
@@ -39,12 +37,12 @@
               <td>{{.CategoryLabel}}{{if .SubcategoryLabel}}<div class="hint">{{.SubcategoryLabel}}</div>{{end}}</td>
               <td><span class="badge badge-status-{{.Status}}">{{.Status}}</span></td>
               <td>{{.CreatedAt}}</td>
-              <td><a href="/tickets/{{.ID}}">Open</a></td>
+              <td><a href="/admin/tickets/{{.ID}}">Open</a></td>
             </tr>
             {{end}}
           </tbody>
         </table>
-        <p class="hint" style="margin-top:14px;"><a href="/support/tickets">View all tickets →</a></p>
+        <p class="hint" style="margin-top:14px;"><a href="/admin/tickets">View all tickets →</a></p>
       {{else}}
         <p class="empty-state">No tickets yet.</p>
       {{end}}

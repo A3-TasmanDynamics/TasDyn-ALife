@@ -22,6 +22,7 @@ type queueStats struct {
 
 type supportDashboardData struct {
 	Base
+	AdminShell
 	ActiveSupportTab string
 	Stats            queueStats
 	RecentTickets    []ticketSummary
@@ -34,7 +35,7 @@ type supportDashboardData struct {
 // an at-a-glance dashboard and the full filterable list.
 func (d *Deps) SupportDashboard(w http.ResponseWriter, r *http.Request) {
 	sess, _ := auth.FromContext(r.Context())
-	data := supportDashboardData{Base: baseFrom(r, "Support Panel"), ActiveSupportTab: "dashboard"}
+	data := supportDashboardData{Base: baseFrom(r, "Support"), AdminShell: d.adminShell(r, "support"), ActiveSupportTab: "dashboard"}
 
 	stats, err := fetchQueueStats(r.Context(), d.Pool, sess.PlayerID)
 	if err != nil {
@@ -75,6 +76,7 @@ func (d *Deps) SupportDashboard(w http.ResponseWriter, r *http.Request) {
 
 type supportQueueData struct {
 	Base
+	AdminShell
 	ActiveSupportTab string
 	Tickets          []ticketSummary
 	TopCategories    []categoryOption
@@ -121,7 +123,8 @@ func (d *Deps) SupportQueue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := supportQueueData{
-		Base:             baseFrom(r, "Support Panel · Tickets"),
+		Base:             baseFrom(r, "Tickets"),
+		AdminShell:       d.adminShell(r, "tickets"),
 		ActiveSupportTab: "tickets",
 		TopCategories:    topCats,
 		FilterStatus:     filterStatus,
@@ -270,7 +273,7 @@ func (d *Deps) AssignTicket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := r.ParseForm(); err != nil {
-		http.Redirect(w, r, "/tickets/"+id, http.StatusSeeOther)
+		http.Redirect(w, r, "/admin/tickets/"+id, http.StatusSeeOther)
 		return
 	}
 
@@ -281,13 +284,13 @@ func (d *Deps) AssignTicket(w http.ResponseWriter, r *http.Request) {
 		`, ticketID); err != nil {
 			slog.Error("unassign ticket failed", "error", err)
 		}
-		http.Redirect(w, r, "/tickets/"+id, http.StatusSeeOther)
+		http.Redirect(w, r, "/admin/tickets/"+id, http.StatusSeeOther)
 		return
 	}
 
 	staffID, err := strconv.ParseInt(staffIDStr, 10, 64)
 	if err != nil {
-		http.Redirect(w, r, "/tickets/"+id+"?error="+errMsg("Invalid staff member."), http.StatusSeeOther)
+		http.Redirect(w, r, "/admin/tickets/"+id+"?error="+errMsg("Invalid staff member."), http.StatusSeeOther)
 		return
 	}
 
@@ -305,7 +308,7 @@ func (d *Deps) AssignTicket(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if !found {
-		http.Redirect(w, r, "/tickets/"+id+"?error="+errMsg("That player doesn't currently have Support Panel access."), http.StatusSeeOther)
+		http.Redirect(w, r, "/admin/tickets/"+id+"?error="+errMsg("That player doesn't currently have Support Panel access."), http.StatusSeeOther)
 		return
 	}
 
@@ -321,7 +324,7 @@ func (d *Deps) AssignTicket(w http.ResponseWriter, r *http.Request) {
 		slog.Error("assign ticket failed", "error", err)
 	}
 
-	http.Redirect(w, r, "/tickets/"+id, http.StatusSeeOther)
+	http.Redirect(w, r, "/admin/tickets/"+id, http.StatusSeeOther)
 }
 
 // SetTicketPriority lets staff re-triage a ticket's priority after actually
@@ -335,7 +338,7 @@ func (d *Deps) SetTicketPriority(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := r.ParseForm(); err != nil {
-		http.Redirect(w, r, "/tickets/"+id, http.StatusSeeOther)
+		http.Redirect(w, r, "/admin/tickets/"+id, http.StatusSeeOther)
 		return
 	}
 	priority := normalizePriority(r.FormValue("priority"))
@@ -346,7 +349,7 @@ func (d *Deps) SetTicketPriority(w http.ResponseWriter, r *http.Request) {
 		slog.Error("set ticket priority failed", "error", err)
 	}
 
-	http.Redirect(w, r, "/tickets/"+id, http.StatusSeeOther)
+	http.Redirect(w, r, "/admin/tickets/"+id, http.StatusSeeOther)
 }
 
 // SetTicketCategory lets staff re-categorize a misfiled ticket -- the
@@ -363,13 +366,13 @@ func (d *Deps) SetTicketCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := r.ParseForm(); err != nil {
-		http.Redirect(w, r, "/tickets/"+id, http.StatusSeeOther)
+		http.Redirect(w, r, "/admin/tickets/"+id, http.StatusSeeOther)
 		return
 	}
 
 	categoryID, err := strconv.Atoi(r.FormValue("category_id"))
 	if err != nil {
-		http.Redirect(w, r, "/tickets/"+id+"?error="+errMsg("Please choose a category."), http.StatusSeeOther)
+		http.Redirect(w, r, "/admin/tickets/"+id+"?error="+errMsg("Please choose a category."), http.StatusSeeOther)
 		return
 	}
 	var subcategoryID int
@@ -377,7 +380,7 @@ func (d *Deps) SetTicketCategory(w http.ResponseWriter, r *http.Request) {
 		subcategoryID, _ = strconv.Atoi(v)
 	}
 	if err := validateCategoryPair(r.Context(), d.Pool, categoryID, subcategoryID); err != nil {
-		http.Redirect(w, r, "/tickets/"+id+"?error="+errMsg(err.Error()), http.StatusSeeOther)
+		http.Redirect(w, r, "/admin/tickets/"+id+"?error="+errMsg(err.Error()), http.StatusSeeOther)
 		return
 	}
 
@@ -391,7 +394,7 @@ func (d *Deps) SetTicketCategory(w http.ResponseWriter, r *http.Request) {
 		slog.Error("set ticket category failed", "error", err)
 	}
 
-	http.Redirect(w, r, "/tickets/"+id, http.StatusSeeOther)
+	http.Redirect(w, r, "/admin/tickets/"+id, http.StatusSeeOther)
 }
 
 // SetTicketSubject lets staff correct/clarify a ticket's title -- players
@@ -404,13 +407,13 @@ func (d *Deps) SetTicketSubject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := r.ParseForm(); err != nil {
-		http.Redirect(w, r, "/tickets/"+id, http.StatusSeeOther)
+		http.Redirect(w, r, "/admin/tickets/"+id, http.StatusSeeOther)
 		return
 	}
 
 	subject := r.FormValue("subject")
 	if subject == "" {
-		http.Redirect(w, r, "/tickets/"+id+"?error="+errMsg("Subject cannot be empty."), http.StatusSeeOther)
+		http.Redirect(w, r, "/admin/tickets/"+id+"?error="+errMsg("Subject cannot be empty."), http.StatusSeeOther)
 		return
 	}
 
@@ -420,7 +423,7 @@ func (d *Deps) SetTicketSubject(w http.ResponseWriter, r *http.Request) {
 		slog.Error("set ticket subject failed", "error", err)
 	}
 
-	http.Redirect(w, r, "/tickets/"+id, http.StatusSeeOther)
+	http.Redirect(w, r, "/admin/tickets/"+id, http.StatusSeeOther)
 }
 
 func (d *Deps) CloseTicket(w http.ResponseWriter, r *http.Request) {
@@ -449,5 +452,5 @@ func (d *Deps) setTicketStatus(w http.ResponseWriter, r *http.Request, status st
 		slog.Error("set ticket status failed", "error", err, "status", status)
 	}
 
-	http.Redirect(w, r, "/tickets/"+id, http.StatusSeeOther)
+	http.Redirect(w, r, "/admin/tickets/"+id, http.StatusSeeOther)
 }

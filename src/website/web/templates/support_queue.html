@@ -1,15 +1,13 @@
 {{define "content"}}
-<h1 class="page-title">Support Panel</h1>
-{{if .Session.AdminPanelAccess}}<p class="hint" style="margin-top:-14px;margin-bottom:20px;"><a href="/admin">Switch to Admin Panel</a></p>{{end}}
-
-<div class="support-shell">
-  {{template "support_sidebar" .ActiveSupportTab}}
-
-  <div class="support-content">
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content">
+    <h1 class="page-title admin-title">Tickets</h1>
+    <p class="admin-sub">Every player ticket, filtered and sorted. Open one to reply, assign or close it.</p>
     <section class="card">
       <h2>Tickets</h2>
 
-      <form method="get" action="/support/tickets" class="filter-bar">
+      <form method="get" action="/admin/tickets" class="filter-bar">
         <div class="field" style="flex:2; min-width:220px;">
           <label>Search</label>
           <input type="text" name="q" value="{{.SearchQuery}}" placeholder="Subject, player name, or Steam UID..." />
@@ -73,7 +71,7 @@
               <td><span class="badge badge-status-{{.Status}}">{{.Status}}</span></td>
               <td>{{if .AssignedTo}}{{.AssignedTo}}{{else}}<span class="hint">unassigned</span>{{end}}</td>
               <td>{{.CreatedAt}}</td>
-              <td><a href="/tickets/{{.ID}}">Open</a></td>
+              <td><a href="/admin/tickets/{{.ID}}">Open</a></td>
             </tr>
             {{end}}
           </tbody>
