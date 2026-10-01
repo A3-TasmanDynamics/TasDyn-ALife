@@ -39,6 +39,20 @@ type Overview struct {
 	Licences []string
 	Tickets  []Ticket
 	OptIn    bool
+
+	Sides  []Side // civilian, police, EMS at a glance
+	Bounty int64  // outstanding civilian bounty, 0 = not wanted
+}
+
+// Side is one of the player's three characters (civilian, police, EMS).
+type Side struct {
+	Key    string // civilian / police / ems
+	Name   string // "Civilian", "Police", "EMS"
+	Member bool   // civilian always; police/EMS when ranked
+	Rank   string // police/EMS rank name
+	Hours  int64
+	Cash   int64
+	Bank   int64
 }
 
 func (o Overview) NetWorth() int64 { return o.Cash + o.Bank }
@@ -72,20 +86,42 @@ func Load(ctx context.Context, pool *pgxpool.Pool, playerID int64) (Overview, er
 	var cop, medic int
 	var copName, medName string
 	var discord *string
+	var civCash, copCash, medCash, civBank, copBank, medBank int64
 	err := pool.QueryRow(ctx, `
-		SELECT COALESCE(NULLIF(p.name, ''), NULLIF(p.steam_name, ''), 'Player #' || p.id), p.uid, p.created_at, p.discord_username,
-		       COALESCE(p.civ_cash, 0) + COALESCE(p.cop_cash, 0) + COALESCE(p.medic_cash, 0),
-		       COALESCE((SELECT sum(balance) FROM bank_accounts WHERE player_id = p.id), 0),
+		SELECT COALESCE(NULLIF(p.display_name, ''), NULLIF(p.name, ''), NULLIF(p.steam_name, ''), 'Player #' || p.id), p.uid, p.created_at, p.discord_username,
+		       COALESCE(p.civ_cash, 0), COALESCE(p.cop_cash, 0), COALESCE(p.medic_cash, 0),
+		       COALESCE((SELECT sum(balance) FROM bank_accounts WHERE player_id = p.id AND faction = 'civilian'), 0),
+		       COALESCE((SELECT sum(balance) FROM bank_accounts WHERE player_id = p.id AND faction = 'police'), 0),
+		       COALESCE((SELECT sum(balance) FROM bank_accounts WHERE player_id = p.id AND faction = 'medic'), 0),
 		       COALESCE(p.cop_level, 0), COALESCE(p.medic_level, 0),
 		       COALESCE((SELECT name FROM faction_rank_names WHERE faction = 'police' AND level = p.cop_level), ''),
 		       COALESCE((SELECT name FROM faction_rank_names WHERE faction = 'ems' AND level = p.medic_level), ''),
 		       COALESCE(p.civ_playtime_seconds, 0), COALESCE(p.cop_playtime_seconds, 0), COALESCE(p.medic_playtime_seconds, 0),
-		       p.civ_licence, p.cop_licence, p.medic_licence, p.leaderboard_opt_in
+		       p.civ_licence, p.cop_licence, p.medic_licence, p.leaderboard_opt_in, COALESCE(p.civ_bounty, 0)
 		FROM players p WHERE p.id = $1`, playerID).Scan(
-		&o.Name, &o.UID, &o.Since, &discord, &o.Cash, &o.Bank, &cop, &medic, &copName, &medName,
-		&civSecs, &copSecs, &medSecs, &civL, &copL, &medL, &o.OptIn)
+		&o.Name, &o.UID, &o.Since, &discord, &civCash, &copCash, &medCash, &civBank, &copBank, &medBank,
+		&cop, &medic, &copName, &medName,
+		&civSecs, &copSecs, &medSecs, &civL, &copL, &medL, &o.OptIn, &o.Bounty)
 	if err != nil {
 		return o, err
+	}
+	o.Cash, o.Bank = civCash+copCash+medCash, civBank+copBank+medBank
+	rankName := func(n string, lvl int) string {
+		if n != "" {
+			return n
+		}
+		return fmt.Sprintf("Level %d", lvl)
+	}
+	o.Sides = []Side{
+		{Key: "civilian", Name: "Civilian", Member: true, Hours: civSecs / 3600, Cash: civCash, Bank: civBank},
+		{Key: "police", Name: "Police", Member: cop > 0, Hours: copSecs / 3600, Cash: copCash, Bank: copBank},
+		{Key: "ems", Name: "EMS", Member: medic > 0, Hours: medSecs / 3600, Cash: medCash, Bank: medBank},
+	}
+	if cop > 0 {
+		o.Sides[1].Rank = rankName(copName, cop)
+	}
+	if medic > 0 {
+		o.Sides[2].Rank = rankName(medName, medic)
 	}
 	if discord != nil {
 		o.DiscordUsername = *discord
@@ -217,7 +253,7 @@ func factionLine(cop, medic int, copName, medName string, civSecs int64) (string
 	case medic > 0:
 		return name(medName, medic), "EMS" + also
 	}
-	return "Civilian", "Apply to police or EMS in the Discord"
+	return "Civilian", "Apply to Police or EMS from the Factions page"
 }
 
 func mergeLicences(sets ...[]byte) []string {
@@ -266,6 +302,7 @@ type BoardRow struct {
 	Rank  string
 	Name  string
 	Value string
+	Note  string // e.g. a rank name or gang tag, shown small
 	You   bool
 }
 
@@ -320,7 +357,7 @@ func rankRows(es []entry, same func(a, b entry) bool, youID int64, limit int) (r
 // Leaderboards builds the three boards from opted-in players only.
 func Leaderboards(ctx context.Context, pool *pgxpool.Pool, youID int64, youOptIn bool) ([]Board, error) {
 	rows, err := pool.Query(ctx, `
-		SELECT p.id, COALESCE(NULLIF(p.name, ''), NULLIF(p.steam_name, ''), 'Player #' || p.id),
+		SELECT p.id, COALESCE(NULLIF(p.display_name, ''), NULLIF(p.name, ''), NULLIF(p.steam_name, ''), 'Player #' || p.id),
 		       COALESCE(p.civ_cash, 0) + COALESCE(p.cop_cash, 0) + COALESCE(p.medic_cash, 0)
 		         + COALESCE((SELECT sum(balance) FROM bank_accounts b WHERE b.player_id = p.id), 0),
 		       (SELECT count(*) FROM houses h WHERE h.owner_player_id = p.id),

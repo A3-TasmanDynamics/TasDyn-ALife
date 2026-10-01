@@ -20,6 +20,7 @@
       {{if and .Session .Session.HasCommand}}<a class="nav-pill {{if hasPrefix .Path "/command"}}active{{end}}" href="/command" {{if hasPrefix .Path "/command"}}aria-current="page"{{end}}>Command</a>{{end}}
       {{if and .Session (not .Session.StaffRank)}}<a class="nav-pill {{if hasPrefix .Path "/staff/apply"}}active{{end}}" href="/staff/apply" {{if hasPrefix .Path "/staff/apply"}}aria-current="page"{{end}}>Join the staff team</a>{{end}}
       <a class="nav-pill {{if hasPrefix .Path "/rules"}}active{{end}}" href="/rules" {{if hasPrefix .Path "/rules"}}aria-current="page"{{end}}>Rules</a>
+      <a class="nav-pill {{if hasPrefix .Path "/leaderboards"}}active{{end}}" href="/leaderboards" {{if hasPrefix .Path "/leaderboards"}}aria-current="page"{{end}}>Leaderboards</a>
       <a class="nav-pill {{if hasPrefix .Path "/tickets"}}active{{end}}" href="/tickets" {{if hasPrefix .Path "/tickets"}}aria-current="page"{{end}}>Support</a>
       <a class="nav-pill {{if hasPrefix .Path "/devlog"}}active{{end}}" href="/devlog" {{if hasPrefix .Path "/devlog"}}aria-current="page"{{end}}>Devlog</a>
       <a class="nav-pill {{if hasPrefix .Path "/status"}}active{{end}}" href="/status" {{if hasPrefix .Path "/status"}}aria-current="page"{{end}}>Status</a>

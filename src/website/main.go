@@ -213,6 +213,7 @@ func run() error {
 	r.Get("/devlog/{slug}", d.DevlogPost)
 	r.Get("/status", d.Status)
 	r.Get("/rules", d.Rules)
+	r.Get("/leaderboards", d.Leaderboards)
 
 	r.Get("/auth/steam/login", d.SteamLogin)
 	r.Get("/auth/steam/callback", d.SteamCallback)
