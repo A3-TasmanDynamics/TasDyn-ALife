@@ -159,6 +159,18 @@
     applyFeed();
   }
 
+  // ---- Board labels: click one to hide or show every label's name ----
+  var root = document.documentElement;
+  try { if (localStorage.getItem("devLabelsMin") === "1") root.classList.add("dev-labels-min"); } catch (e) {}
+  document.addEventListener("click", function (e) {
+    var lab = e.target.closest("[data-label-toggle]");
+    if (!lab) return;
+    e.preventDefault();
+    e.stopPropagation();
+    var min = root.classList.toggle("dev-labels-min");
+    try { localStorage.setItem("devLabelsMin", min ? "1" : "0"); } catch (err) {}
+  }, true);
+
   // ---- Project board drag-and-drop ----
   var board = document.querySelector("[data-board]");
   if (!board) return;

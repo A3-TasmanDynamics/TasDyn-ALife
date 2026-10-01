@@ -7,6 +7,18 @@
 </div>
 {{end}}
 
+{{define "dev_label_picker"}}
+<div class="dev-label-pick" role="group" aria-label="Labels">
+  {{range .Labels}}<label class="dev-label-opt"><input type="checkbox" name="label" value="{{.Name}}" {{if $.Form}}form="{{$.Form}}"{{end}} {{if $.Board.HasLabel $.On .Name}}checked{{end}}><span class="dev-label dev-lc-{{.Color}}">{{.Name}}</span></label>{{else}}<p class="dev-muted dev-small">No labels yet.</p>{{end}}
+</div>
+{{end}}
+
+{{define "dev_label_colours"}}
+<div class="dev-swatches" role="radiogroup" aria-label="Colour">
+  {{range .Palette}}<label class="dev-swatch dev-lc-{{.Key}}" title="{{.Name}}"><input type="radio" name="color" value="{{.Key}}" {{if eq .Key $.Pick}}checked{{end}} aria-label="{{.Name}}"></label>{{end}}
+</div>
+{{end}}
+
 {{define "content"}}
 <div class="admin-shell">
   {{template "admin_sidebar" .}}
@@ -16,12 +28,15 @@
         <h1 class="page-title admin-title">Project Board</h1>
         <p class="admin-sub">The development to-do list. Drag cards between columns, or open one to edit it.</p>
       </div>
-      <button class="btn btn-primary" type="button" data-dialog-open="dlg-new-task">New task</button>
+      <div class="dev-head-actions">
+        <button class="btn" type="button" data-dialog-open="dlg-labels"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg> Labels</button>
+        <button class="btn btn-primary" type="button" data-dialog-open="dlg-new-task">New task</button>
+      </div>
     </div>
 
     <form class="dev-board-filters" method="get" action="/admin/dev/board">
       <label class="dev-logs-search"><span class="visually-hidden">Search tasks</span><input type="search" name="q" value="{{.Q}}" placeholder="Search tasks…"></label>
-      <select name="label" aria-label="Label" onchange="this.form.submit()"><option value="">All labels</option>{{range .Labels}}<option {{if eq . $.Label}}selected{{end}}>{{.}}</option>{{end}}</select>
+      <select name="label" aria-label="Label" onchange="this.form.submit()"><option value="">All labels</option>{{range .Labels}}<option {{if eq .Name $.Label}}selected{{end}}>{{.Name}}</option>{{end}}</select>
       <label class="mod-check"><input type="checkbox" name="mine" value="1" {{if .Mine}}checked{{end}} onchange="this.form.submit()"> Only mine</label>
       {{if or .Q .Label .Mine}}<a class="dev-clear" href="/admin/dev/board">Clear</a>{{end}}
     </form>
@@ -34,7 +49,7 @@
           {{range .Tasks}}
           <a class="dev-card-task dev-pri-{{.Priority}}" href="/admin/dev/board?task={{.ID}}" draggable="true" data-task="{{.ID}}">
             <span class="dev-task-title">{{.Title}}</span>
-            {{if .Labels}}<span class="dev-task-labels">{{range .Labels}}<span class="dev-label">{{.}}</span>{{end}}</span>{{end}}
+            {{if .Labels}}<span class="dev-task-labels">{{range .Labels}}<span class="dev-label dev-lc-{{$.LabelColor .}}" data-label-toggle title="{{.}}"><span class="dev-label-text">{{.}}</span></span>{{end}}</span>{{end}}
             <span class="dev-task-foot">
               <span class="dev-pri dev-pri-tag-{{.Priority}}">{{.Priority}}</span>
               {{if .Due}}<span class="dev-badge dev-due {{if eq .DueState "overdue"}}dev-due-overdue{{else if eq .DueState "soon"}}dev-due-soon{{end}}{{if eq .Status "done"}} dev-due-done{{end}}" title="Due"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>{{.Due.Format "2 Jan"}}</span>{{end}}
@@ -59,18 +74,49 @@
           {{template "dev_task_fields" (dict "ID" 0 "Title" "" "Body" "" "Status" "todo" "Priority" "normal")}}
           <div class="dev-form-row">
             <div class="field"><label for="tf-asg0">Assignee</label><select id="tf-asg0" name="assignee"><option value="0">Nobody</option>{{range .Staff}}<option value="{{.ID}}">{{.Name}} &middot; {{.Rank}}</option>{{end}}</select></div>
-            <div class="field"><label for="tf-lab0">Labels</label><input id="tf-lab0" name="labels" placeholder="website, bug" list="dev-label-list"></div>
           </div>
           <div class="field dev-due-field"><label for="tf-due0">Due date</label><input id="tf-due0" type="date" name="due"></div>
+          <div class="field"><span class="dev-field-label">Labels</span>{{template "dev_label_picker" (dict "Labels" .Labels "Board" . "On" .NoLabels "Form" "")}}</div>
         </div>
         <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Add task</button></div>
       </form>
     </dialog>
-    <datalist id="dev-label-list">{{range .Labels}}<option value="{{.}}">{{end}}</datalist>
+
+    <dialog id="dlg-labels" class="modal dev-labelsm" aria-labelledby="dlg-labels-t" autofocus>
+      <div class="modal-head"><h2 id="dlg-labels-t">Labels</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+      <div class="modal-body">
+        <p class="dev-muted dev-small">Colour-code cards by area, like <em>Police</em> or <em>Core functions</em>. Click a label on the board to hide or show label names.</p>
+        <ul class="dev-label-rows">
+          {{range .Labels}}
+          <li class="dev-label-row">
+            <div class="dev-label-line">
+              <span class="dev-label dev-label-big dev-lc-{{.Color}}">{{.Name}}</span>
+              <span class="dev-muted dev-small">{{.Cards}} card{{if ne .Cards 1}}s{{end}}</span>
+              <button class="btn btn-sm" type="button" data-reveal>Edit</button>
+              <form method="post" action="/admin/dev/labels" class="dev-label-form" data-reveal-form hidden>
+                <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="back" value="{{$.BoardURL}}"><input type="hidden" name="old" value="{{.Name}}">
+                <input class="dev-input" name="name" value="{{.Name}}" maxlength="32" required aria-label="Label name">
+                {{template "dev_label_colours" (dict "Palette" $.Palette "Pick" .Color)}}
+                <div class="dev-side-row"><button class="btn btn-sm btn-primary" type="submit">Save</button><button class="btn btn-sm" type="button" data-reveal-cancel>Cancel</button>
+                  <button class="btn btn-sm dev-del dev-label-del" type="submit" formaction="/admin/dev/labels/delete" formnovalidate onclick="return confirm('Delete the label {{.Name}}? It comes off every card.')">Delete</button></div>
+              </form>
+            </div>
+          </li>
+          {{end}}
+        </ul>
+        <button class="btn btn-sm" type="button" data-reveal>+ Create a new label</button>
+        <form method="post" action="/admin/dev/labels" class="dev-label-form dev-label-new" data-reveal-form hidden>
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="back" value="{{.BoardURL}}">
+          <input class="dev-input" name="name" maxlength="32" required placeholder="e.g. Police" aria-label="New label name">
+          {{template "dev_label_colours" (dict "Palette" .Palette "Pick" "blue")}}
+          <div class="dev-side-row"><button class="btn btn-sm btn-primary" type="submit">Create</button><button class="btn btn-sm" type="button" data-reveal-cancel>Cancel</button></div>
+        </form>
+      </div>
+    </dialog>
 
     {{with .Edit}}
     {{$id := .ID}}
-    <dialog id="dlg-task" class="modal dev-cardm" aria-labelledby="cm-title" data-open-on-load>
+    <dialog id="dlg-task" class="modal dev-cardm" aria-labelledby="cm-title" data-open-on-load autofocus>
       <form id="cardf" method="post" action="/admin/dev/board/{{.ID}}"><input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"></form>
       <div class="dev-cardm-head dev-pri-{{.Priority}}">
         <div class="dev-cardm-titles">
@@ -81,11 +127,11 @@
             <span class="dev-pill dev-pri-tag-{{.Priority}}">{{.Priority}} priority</span>
             {{if .Due}}<span class="dev-pill dev-due {{if eq .DueState "overdue"}}dev-due-overdue{{else if eq .DueState "soon"}}dev-due-soon{{end}}{{if eq .Status "done"}} dev-due-done{{end}}">Due {{.Due.Format "2 Jan 2006"}}</span>{{end}}
             {{if .Assignee}}<span class="dev-pill"><span class="dev-avatar" aria-hidden="true">{{slice .Assignee 0 1}}</span>{{.Assignee}}</span>{{end}}
-            {{range .Labels}}<span class="dev-label">{{.}}</span>{{end}}
+            {{range .Labels}}<span class="dev-label dev-lc-{{$.LabelColor .}}">{{.}}</span>{{end}}
           </div>
           <span class="dev-cardm-sub">#{{.ID}} &middot; added by {{if .CreatedBy}}{{.CreatedBy}}{{else}}someone{{end}} on {{.CreatedAt.Format "2 Jan 2006"}}</span>
         </div>
-        <a class="modal-x" href="/admin/dev/board" aria-label="Close" autofocus>&times;</a>
+        <a class="modal-x" href="/admin/dev/board" aria-label="Close">&times;</a>
       </div>
 
       <div class="dev-cardm-body">
@@ -168,7 +214,7 @@
             <label class="dev-side-field"><span>Priority</span><select form="cardf" name="priority">{{$p := .Priority}}<option value="urgent" {{if eq $p "urgent"}}selected{{end}}>Urgent</option><option value="high" {{if eq $p "high"}}selected{{end}}>High</option><option value="normal" {{if eq $p "normal"}}selected{{end}}>Normal</option><option value="low" {{if eq $p "low"}}selected{{end}}>Low</option></select></label>
             <label class="dev-side-field"><span>Assignee</span><select form="cardf" name="assignee"><option value="0">Nobody</option>{{$a := .AssigneeID}}{{range $.Staff}}<option value="{{.ID}}" {{if eq .ID $a}}selected{{end}}>{{.Name}}</option>{{end}}</select></label>
             <label class="dev-side-field"><span>Due date</span><input type="date" form="cardf" name="due" value="{{with .Due}}{{.Format "2006-01-02"}}{{end}}"></label>
-            <label class="dev-side-field"><span>Labels</span><input form="cardf" name="labels" value="{{range $i, $l := .Labels}}{{if $i}}, {{end}}{{$l}}{{end}}" placeholder="website, bug" list="dev-label-list"></label>
+            <div class="dev-side-field"><span class="dev-side-field-head">Labels <button class="link-button" type="button" data-dialog-open="dlg-labels">Manage</button></span>{{template "dev_label_picker" (dict "Labels" $.Labels "Board" $ "On" .Labels "Form" "cardf")}}</div>
             <button class="btn btn-primary btn-sm dev-side-btn" type="submit" form="cardf">Save changes</button>
           </div>
 

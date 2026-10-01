@@ -448,6 +448,8 @@ func run() error {
 			r.Post("/admin/dev/board/{id}", d.DevTaskUpdate)
 			r.Post("/admin/dev/board/{id}/move", d.DevTaskMove)
 			r.Post("/admin/dev/board/{id}/delete", d.DevTaskDelete)
+			r.Post("/admin/dev/labels", d.DevLabelSave)
+			r.Post("/admin/dev/labels/delete", d.DevLabelDelete)
 			r.Post("/admin/dev/board/{id}/checklists", d.DevChecklistAdd)
 			r.Post("/admin/dev/board/{id}/checklists/{cid}/delete", d.DevChecklistDelete)
 			r.Post("/admin/dev/board/{id}/checklists/{cid}/items", d.DevItemAdd)

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os/exec"
 	"runtime"
 	"runtime/debug"
@@ -237,7 +238,8 @@ type devBoardData struct {
 	AdminShell
 	Columns   []devboard.Column
 	Staff     []devboard.Person
-	Labels    []string
+	Labels    []devboard.Label
+	Palette   []devboard.Colour
 	Mine      bool
 	Q         string
 	Label     string
@@ -251,12 +253,56 @@ type devBoardData struct {
 // StatusLabel names a column for the board template.
 func (devBoardData) StatusLabel(key string) string { return devboard.StatusLabel(key) }
 
+// LabelColor is the palette key for a label name.
+func (d devBoardData) LabelColor(name string) string {
+	for _, l := range d.Labels {
+		if l.Name == name {
+			return l.Color
+		}
+	}
+	return "grey"
+}
+
+// HasLabel reports whether a card carries the label.
+func (devBoardData) HasLabel(labels []string, name string) bool {
+	for _, l := range labels {
+		if l == name {
+			return true
+		}
+	}
+	return false
+}
+
+// NoLabels is an empty selection for the new-task label picker.
+func (devBoardData) NoLabels() []string { return nil }
+
+// BoardURL is the board with the current filters, for returning to.
+func (d devBoardData) BoardURL() string {
+	v := url.Values{}
+	if d.Q != "" {
+		v.Set("q", d.Q)
+	}
+	if d.Label != "" {
+		v.Set("label", d.Label)
+	}
+	if d.Mine {
+		v.Set("mine", "1")
+	}
+	if d.Edit != nil {
+		v.Set("task", strconv.FormatInt(d.Edit.ID, 10))
+	}
+	if len(v) == 0 {
+		return "/admin/dev/board"
+	}
+	return "/admin/dev/board?" + v.Encode()
+}
+
 func (d *Deps) DevBoard(w http.ResponseWriter, r *http.Request) {
 	sess, _ := auth.FromContext(r.Context())
 	q := r.URL.Query()
 	data := devBoardData{Base: baseFrom(r, "Project board"), AdminShell: d.adminShell(r, "dev-board"),
 		Mine: q.Get("mine") == "1", Q: strings.TrimSpace(q.Get("q")), Label: q.Get("label"), Statuses: devboard.Statuses,
-		LinkKinds: devboard.LinkKinds, Me: sess.PlayerID}
+		LinkKinds: devboard.LinkKinds, Me: sess.PlayerID, Palette: devboard.Palette}
 	f := devboard.Filter{Q: data.Q, Label: data.Label}
 	if data.Mine {
 		f.Assignee = sess.PlayerID
@@ -268,7 +314,7 @@ func (d *Deps) DevBoard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data.Staff, _ = devboard.People(r.Context(), d.Pool)
-	data.Labels, _ = devboard.Labels(r.Context(), d.Pool)
+	data.Labels, _ = devboard.ListLabels(r.Context(), d.Pool)
 	if id, _ := strconv.ParseInt(q.Get("task"), 10, 64); id > 0 {
 		if c, err := devboard.GetCard(r.Context(), d.Pool, id); err == nil {
 			data.Edit = &c
@@ -305,7 +351,7 @@ func devBoardBack(w http.ResponseWriter, r *http.Request, err error, notice stri
 
 func taskFromForm(r *http.Request) devboard.Task {
 	assignee, _ := strconv.ParseInt(r.FormValue("assignee"), 10, 64)
-	var labels []string
+	labels := r.Form["label"]
 	for _, l := range strings.Split(r.FormValue("labels"), ",") {
 		if l = strings.TrimSpace(l); l != "" {
 			labels = append(labels, l)
@@ -451,4 +497,14 @@ func (d *Deps) DevCommentDelete(w http.ResponseWriter, r *http.Request) {
 	sess, _ := auth.FromContext(r.Context())
 	id := idParam(r, "id")
 	cardBack(w, r, id, devboard.DeleteComment(r.Context(), d.Pool, sess.PlayerID, id, idParam(r, "cid")), "Comment deleted.")
+}
+
+// ---- Board labels ----
+
+func (d *Deps) DevLabelSave(w http.ResponseWriter, r *http.Request) {
+	devBoardBack(w, r, devboard.SaveLabel(r.Context(), d.Pool, r.FormValue("old"), r.FormValue("name"), r.FormValue("color")), "Label saved.")
+}
+
+func (d *Deps) DevLabelDelete(w http.ResponseWriter, r *http.Request) {
+	devBoardBack(w, r, devboard.DeleteLabel(r.Context(), d.Pool, r.FormValue("old")), "Label deleted.")
 }

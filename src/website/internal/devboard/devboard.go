@@ -211,9 +211,9 @@ func clean(t *Task) error {
 	seen := map[string]bool{}
 	var labels []string
 	for _, l := range t.Labels {
-		l = strings.ToLower(strings.Join(strings.Fields(l), "-"))
-		if l != "" && len(l) <= 24 && !seen[l] {
-			seen[l] = true
+		l = labelName(l)
+		if l != "" && len([]rune(l)) <= 32 && !seen[strings.ToLower(l)] {
+			seen[strings.ToLower(l)] = true
 			labels = append(labels, l)
 		}
 	}
@@ -254,8 +254,13 @@ func Create(ctx context.Context, pool *pgxpool.Pool, by int64, t Task) (int64, e
 	if err := clean(&t); err != nil {
 		return 0, err
 	}
+	labels, err := matchLabels(ctx, pool, t.Labels)
+	if err != nil {
+		return 0, err
+	}
+	t.Labels = labels
 	var id int64
-	err := pool.QueryRow(ctx, `
+	err = pool.QueryRow(ctx, `
 		INSERT INTO dev_tasks (title, body, status, priority, labels, assignee_id, created_by, sort, done_at, due_date)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE((SELECT max(sort) FROM dev_tasks WHERE status = $3), 0) + 1,
 		        CASE WHEN $3 = 'done' THEN now() END, $8::date)
@@ -275,6 +280,9 @@ func Update(ctx context.Context, pool *pgxpool.Pool, actor int64, t Task) error 
 	old, err := Get(ctx, pool, t.ID)
 	if err != nil {
 		return UserError("That task no longer exists.")
+	}
+	if t.Labels, err = matchLabels(ctx, pool, t.Labels); err != nil {
+		return err
 	}
 	tag, err := pool.Exec(ctx, `
 		UPDATE dev_tasks SET title = $2, body = $3, priority = $5, labels = $6, assignee_id = $7, due_date = $8::date, updated_at = now(),
@@ -404,23 +412,6 @@ func People(ctx context.Context, pool *pgxpool.Pool) ([]Person, error) {
 			return nil, err
 		}
 		out = append(out, p)
-	}
-	return out, rows.Err()
-}
-
-// Labels lists every label in use, alphabetically.
-func Labels(ctx context.Context, pool *pgxpool.Pool) ([]string, error) {
-	rows, err := pool.Query(ctx, `SELECT DISTINCT unnest(labels) AS l FROM dev_tasks ORDER BY 1`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var out []string
-	for rows.Next() {
-		var l string
-		if rows.Scan(&l) == nil {
-			out = append(out, l)
-		}
 	}
 	return out, rows.Err()
 }
