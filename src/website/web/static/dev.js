@@ -107,6 +107,58 @@
     });
   });
 
+  // ---- Card dialog: description edit, click-to-reveal forms, feed filter ----
+  var desc = document.querySelector("[data-desc]");
+  if (desc) {
+    var view = desc.querySelector("[data-desc-view]");
+    var empty = desc.querySelector(".dev-desc-empty");
+    var formBox = desc.querySelector("[data-desc-form]");
+    var area = formBox.querySelector("textarea");
+    var original = area.value;
+    var editBtns = desc.querySelectorAll("[data-desc-edit]");
+    function editing(on) {
+      formBox.hidden = !on;
+      editBtns.forEach(function (b) { b.hidden = on || (b === empty ? original !== "" : original === ""); });
+      if (view) view.hidden = on || original === "";
+      if (on) { area.focus(); area.setSelectionRange(area.value.length, area.value.length); }
+      else area.value = original;
+    }
+    editBtns.forEach(function (b) { b.addEventListener("click", function () { editing(true); }); });
+    desc.querySelector("[data-desc-cancel]").addEventListener("click", function () { editing(false); });
+  }
+
+  document.querySelectorAll("[data-reveal]").forEach(function (btn) {
+    var form = btn.nextElementSibling;
+    if (!form || !form.hasAttribute("data-reveal-form")) return;
+    function show(on) {
+      btn.hidden = on;
+      form.hidden = !on;
+      if (on) { var f = form.querySelector("input:not([type=hidden]), select"); if (f) { f.focus(); if (f.select) f.select(); } }
+    }
+    btn.addEventListener("click", function () { show(true); });
+    var cancel = form.querySelector("[data-reveal-cancel]");
+    if (cancel) cancel.addEventListener("click", function () { show(false); });
+    form.addEventListener("keydown", function (e) { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); show(false); } });
+  });
+
+  var feed = document.querySelector("[data-feed]");
+  var feedBtn = feed && feed.querySelector("[data-feed-toggle]");
+  if (feedBtn) {
+    var hide = false;
+    try { hide = localStorage.getItem("devFeedHide") === "1"; } catch (e) {}
+    function applyFeed() {
+      feed.classList.toggle("hide-acts", hide);
+      feedBtn.textContent = hide ? "Show details" : "Hide details";
+      feedBtn.setAttribute("aria-pressed", hide ? "true" : "false");
+    }
+    feedBtn.addEventListener("click", function () {
+      hide = !hide;
+      try { localStorage.setItem("devFeedHide", hide ? "1" : "0"); } catch (e) {}
+      applyFeed();
+    });
+    applyFeed();
+  }
+
   // ---- Project board drag-and-drop ----
   var board = document.querySelector("[data-board]");
   if (!board) return;
