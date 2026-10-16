@@ -16,6 +16,7 @@
 */
 
 #define IDD_ATM      5400
+#define IDC_TITLE    5401
 #define IDC_ACCOUNT  5402
 #define IDC_BALANCE  5403
 #define IDC_AMOUNT   5410
@@ -45,6 +46,7 @@ switch (_mode) do {
 
     case "refresh": {
         if (isNull _display) exitWith {};
+        (_display displayCtrl IDC_TITLE) ctrlSetText "ALTIS BANK";
         private _faction = _phone getOrDefault ["faction", missionNamespace getVariable ["ALife_faction", "civ"]];
         (_display displayCtrl IDC_ACCOUNT) ctrlSetText format ["%1 account", switch (_faction) do {
             case "cop": { "Police" }; case "medic": { "EMS" }; default { "Civilian" };

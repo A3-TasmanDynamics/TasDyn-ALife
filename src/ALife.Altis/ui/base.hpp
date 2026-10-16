@@ -291,7 +291,7 @@ class ALife_RscMap
     {
         color[] = { 0.45, 0.64, 0.33, 0.4 };
         icon = "\A3\ui_f\data\map\mapcontrol\bush_ca.paa";
-        size = "14/2";
+        size = 7;
         importance = "0.2 * 14 * 0.05 * 0.05";
         coefMin = 0.25;
         coefMax = 4;

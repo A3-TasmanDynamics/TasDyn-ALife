@@ -51,7 +51,9 @@ class ALife_Atm
     {
         class Title: ALife_RscText
         {
+            idc = 5401;
             text = "ALTIS BANK";
+            colorText[] = { 1, 1, 1, 1 };
             font = "RobotoCondensedBold";
             sizeEx = 0.038;
             x = "safezoneX + safezoneW * 0.366";
