@@ -79,7 +79,7 @@ switch (_mode) do {
         if (isNull _display) exitWith {};
         private _amount = if (_arg isEqualTo true) then { [_bank, _cash] select (_mode == "deposit") } else { call _fnc_amount };
         if (_amount < 1) exitWith {
-            hint (if (_arg isEqualTo true) then { ["The bank account is empty.", "You have no cash on you."] select (_mode == "deposit") } else { "Enter an amount." });
+            [(if (_arg isEqualTo true) then { ["The bank account is empty.", "You have no cash on you."] select (_mode == "deposit") } else { "Enter an amount." }), "warning"] call ALife_fnc_toast;
         };
         [player, _mode, _amount] remoteExecCall ["ALife_fnc_atmAction", 2];
         (_display displayCtrl IDC_AMOUNT) ctrlSetText "";
@@ -92,8 +92,8 @@ switch (_mode) do {
         private _targets = missionNamespace getVariable ["ALife_atmTargets", []];
         private _target = if (_row < 0 || { _targets isEqualTo [] }) then { objNull } else { _targets param [_list lnbValue [_row, 0], objNull] };
         private _amount = call _fnc_amount;
-        if (isNull _target) exitWith { hint "Pick who to send it to."; };
-        if (_amount < 1) exitWith { hint "Enter an amount."; };
+        if (isNull _target) exitWith { ["Pick who to send it to.", "warning"] call ALife_fnc_toast; };
+        if (_amount < 1) exitWith { ["Enter an amount.", "warning"] call ALife_fnc_toast; };
         [player, _target, _amount] remoteExec ["ALife_fnc_bankTransfer", 2];
         (_display displayCtrl IDC_AMOUNT) ctrlSetText "";
     };

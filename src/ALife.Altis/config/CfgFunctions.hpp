@@ -43,7 +43,8 @@ class CfgFunctions
             class spawnApproved {};   // server -> client: go here
             class deathScreen {};     // death screen: killer, medic distance, respawn timer
             class setupUnit {};       // per-spawn setup: death screen, revive/shop actions, settings
-            class notify {};          // server -> client: short notice
+            class notify {};          // server -> client: short notice (as a toast)
+            class toast {};           // our in-game notifications (instead of hints)
             class phone {};           // the phone (Y)
             class phoneData {};       // server -> client: items, money, levels
             class phoneSettings {};   // view distance / grass

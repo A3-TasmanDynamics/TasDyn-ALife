@@ -15,7 +15,7 @@ params [["_pos", []], ["_name", ""], ["_error", ""]];
 ALife_spawnPending = false;
 
 if (_pos isEqualTo []) exitWith {
-    hint _error;
+    [_error, "warning"] call ALife_fnc_toast;
     ["open"] call ALife_fnc_spawnMenu;
 };
 

@@ -168,9 +168,12 @@ switch (_mode) do {
             };
         } forEach (allControls _display);
         _display displayAddEventHandler ["KeyDown", {
-            params ["", "_key"];
-            if (_key == getNumber (missionConfigFile >> "CfgALife" >> "phoneKey")) exitWith { closeDialog 0; true };
-            false
+            params ["_disp", "_key"];
+            if (_key != getNumber (missionConfigFile >> "CfgALife" >> "phoneKey")) exitWith { false };
+            // Typing in a text box (message, amount): Y is just a letter.
+            if (ctrlType (focusedCtrl _disp) == 2) exitWith { false };
+            closeDialog 0;
+            true
         }];
         ["home"] call ALife_fnc_phone;
     };
@@ -356,8 +359,17 @@ switch (_mode) do {
                 private _keep = lnbCurSelRow _list;
                 lnbClear _list;
                 private _items = (_data getOrDefault ["items", []]) select { (_x select 1) > 0 };
+                // Cash on hand first (physical money: give it or drop it like an item).
+                private _cash = _data getOrDefault ["cash", 0];
+                if (_cash > 0) then {
+                    private _row = _list lnbAddRow ["Cash", _cash call _fnc_money];
+                    _list lnbSetData [[_row, 0], "cash"];
+                    _list lnbSetPicture [[_row, 0], getText (missionConfigFile >> "CfgALife" >> "cashIcon")];
+                    _items = [["cash", _cash]] + _items; // keeps the row count right below
+                };
                 {
                     _x params ["_class", "_count"];
+                    if (_class == "cash") then { continue; };
                     private _row = _list lnbAddRow [getText (missionConfigFile >> "CfgItems" >> _class >> "displayName"), format ["x%1", _count]];
                     _list lnbSetData [[_row, 0], _class];
                     _list lnbSetPicture [[_row, 0], getText (missionConfigFile >> "CfgItems" >> _class >> "icon")];
@@ -445,23 +457,27 @@ switch (_mode) do {
                 private _row = lnbCurSelRow _list;
                 private _class = if (_row < 0) then { "" } else { _list lnbData [_row, 0] };
                 private _qty = floor parseNumber ctrlText (_display displayCtrl IDC_EDIT);
-                if (_class == "") exitWith { hint "Pick an item first."; };
-                if (_qty < 1) exitWith { hint "Enter how many."; };
+                if (_class == "") exitWith { ["Pick an item first.", "warning"] call ALife_fnc_toast; };
+                if (_qty < 1) exitWith { [["Enter how many.", "Enter an amount ($)."] select (_class == "cash"), "warning"] call ALife_fnc_toast; };
                 if (_n == 0) then {
                     private _target = call _fnc_target;
-                    if (isNull _target) exitWith { hint "Pick who to give it to."; };
+                    if (isNull _target) exitWith { ["Pick who to give it to.", "warning"] call ALife_fnc_toast; };
                     [player, _target, _class, _qty] remoteExec ["ALife_fnc_giveItem", 2];
                 } else {
-                    // Drop: into a bag at your feet (Windows key to open it again).
-                    [player, "", "store", [[_class, _qty]], 0] remoteExecCall ["ALife_fnc_containerTransfer", 2];
+                    // Drop: into a bag at your feet (cash: a money stack). Windows key to pick it up.
+                    if (_class == "cash") then {
+                        [player, "", "store", [], _qty] remoteExecCall ["ALife_fnc_containerTransfer", 2];
+                    } else {
+                        [player, "", "store", [[_class, _qty]], 0] remoteExecCall ["ALife_fnc_containerTransfer", 2];
+                    };
                 };
             };
 
             case "bank": {
                 private _target = call _fnc_target;
                 private _amount = floor parseNumber ctrlText (_display displayCtrl IDC_EDIT);
-                if (isNull _target) exitWith { hint "Pick who to send it to."; };
-                if (_amount < 1) exitWith { hint "Enter an amount."; };
+                if (isNull _target) exitWith { ["Pick who to send it to.", "warning"] call ALife_fnc_toast; };
+                if (_amount < 1) exitWith { ["Enter an amount.", "warning"] call ALife_fnc_toast; };
                 [player, _target, _amount] remoteExec ["ALife_fnc_bankTransfer", 2];
                 (_display displayCtrl IDC_EDIT) ctrlSetText "";
             };
@@ -475,8 +491,8 @@ switch (_mode) do {
                     case 4: {
                         private _text = ctrlText (_display displayCtrl IDC_MESSAGE);
                         private _target = [objNull, call _fnc_target] select (ALife_phoneChannel == "player");
-                        if ((_text splitString " ") isEqualTo []) exitWith { hint "Type a message first."; };
-                        if (ALife_phoneChannel == "player" && { isNull _target }) exitWith { hint "Pick who to message."; };
+                        if ((_text splitString " ") isEqualTo []) exitWith { ["Type a message first.", "warning"] call ALife_fnc_toast; };
+                        if (ALife_phoneChannel == "player" && { isNull _target }) exitWith { ["Pick who to message.", "warning"] call ALife_fnc_toast; };
                         [player, ALife_phoneChannel, _target, _text, ALife_phoneAnon] remoteExec ["ALife_fnc_sendMessage", 2];
                         (_display displayCtrl IDC_MESSAGE) ctrlSetText "";
                     };

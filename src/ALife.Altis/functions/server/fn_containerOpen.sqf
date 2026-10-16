@@ -16,9 +16,9 @@ if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith {};
 if (!alive _unit || { (_unit getVariable ["alife_faction", ""]) == "" }) exitWith {};
 
 private _id = [_object] call ALife_fnc_containerGet;
-if (_id == "") exitWith { ["That has no storage."] remoteExecCall ["ALife_fnc_notify", owner _unit]; };
+if (_id == "") exitWith { ["That has no storage.", "warning"] remoteExecCall ["ALife_fnc_notify", owner _unit]; };
 
 private _range = [4, 8] select ((_id select [0, 4]) == "veh_"); // vehicles are bigger
-if (_unit distance _object > _range) exitWith { ["Get closer."] remoteExecCall ["ALife_fnc_notify", owner _unit]; };
+if (_unit distance _object > _range) exitWith { ["Get closer.", "warning"] remoteExecCall ["ALife_fnc_notify", owner _unit]; };
 
 [_unit, _id] call ALife_fnc_containerSend;

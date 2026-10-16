@@ -16,7 +16,7 @@ if (!isServer || { isNull _unit } || { isNull _target }) exitWith {};
 if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith {};
 
 private _owner = owner _unit;
-private _fnc_reply = { [_this] remoteExecCall ["ALife_fnc_notify", _owner]; };
+private _fnc_reply = { (if (_this isEqualType []) then { _this } else { [_this, "warning"] }) remoteExecCall ["ALife_fnc_notify", _owner]; };
 
 private _uid = getPlayerUID _unit;
 private _faction = _unit getVariable ["alife_faction", ""];
@@ -47,7 +47,7 @@ if (_result != "OK") exitWith {
 } forEach [[_uid, _faction, -_amount], [_targetUid, _targetFaction, _amount]];
 
 diag_log format ["[ALife] %1 sent $%2 to %3", _uid, _amount, _targetUid];
-(format ["Sent $%1 to %2.", [_amount] call BIS_fnc_numberText, name _target]) call _fnc_reply;
-[format ["%1 sent you $%2 (bank).", name _unit, [_amount] call BIS_fnc_numberText]] remoteExecCall ["ALife_fnc_notify", owner _target];
+[format ["Sent $%1 to %2.", [_amount] call BIS_fnc_numberText, name _target], "success"] call _fnc_reply;
+[format ["%1 sent you $%2 (bank).", name _unit, [_amount] call BIS_fnc_numberText], "success"] remoteExecCall ["ALife_fnc_notify", owner _target];
 [_unit] call ALife_fnc_requestPhoneData;
 [_target] call ALife_fnc_requestPhoneData;

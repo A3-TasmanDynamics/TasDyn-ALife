@@ -78,6 +78,12 @@ and its wallpapers) or `make_layout.py`.
 Everything that changes something is checked by the server (`ALife_fnc_giveItem`,
 `ALife_fnc_bankTransfer`, `ALife_fnc_sendMessage`), which answers with fresh phone data.
 
+## Notifications
+
+Our own notifications replace Arma's hint box (`ALife_fnc_toast`; the server sends them with
+`ALife_fnc_notify`): cards stacking in the top-right with a coloured stripe — green done, amber
+heads-up, red error, blue info, purple messages — fading after 5 s, drawn above any open menu.
+
 ## Inventory screen (Windows key)
 
 One screen (`ui/transfer.hpp`, `ALife_fnc_transfer`) for dropped bags and vehicle trunks — the
@@ -90,7 +96,10 @@ bag/trunk on the left, you on the right, with weights.
   `bagLifetime` (15 min); they aren't saved over restarts.
 - **Moving things:** select rows (Ctrl/Shift for several), enter a quantity, **Take** / **Store**
   (**Drop** on the ground); **Take all** / **Store all**; double-click a row to move all of it.
-- **Cash** is a row like any item: physical money you carry (`<faction>_cash`), moved with the same
+- **Dropping only cash** leaves a stack of money (`CfgALife >> cashClass`, `Land_Money_F`) instead of a
+  bag; pick it up the same way.
+- **Cash** is a row like any item (also in the phone's Inventory, where you can give it to someone
+  within 5 m or drop it): physical money you carry (`<faction>_cash`), moved with the same
   idempotent delta save as purchases.
 - **Limits:** what you carry is capped at `carryWeight` (24), trunks by vehicle type
   (`CfgALife >> Trunks`), using each item's `weight`.
@@ -110,7 +119,8 @@ buttons ($100 / $500 / $1,000 / $5,000), **Deposit**, **Withdraw**, **Deposit al
 
 ## Shops and items
 
-- Items: `config/CfgItems.hpp` (just **Medkit** so far). Saved per faction in
+- Items: `config/CfgItems.hpp` (just **Medkit** so far). Icons in `ui/items/`, drawn by
+  `tools/phone_icons/make_items.py`. Saved per faction in
   `players.<faction>_items`.
 - Shops: `config/CfgShops.hpp`. **Medical Supplies** (medics only) at the three hospital spawn
   markers: Medkit $250, paid by cash or bank. Use **Open shop** in the scroll menu there.

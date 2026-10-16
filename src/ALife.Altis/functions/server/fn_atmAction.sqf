@@ -19,7 +19,7 @@ if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith {};
 if (!(_op in ["deposit", "withdraw"])) exitWith {};
 
 private _owner = owner _unit;
-private _fnc_reply = { [_this] remoteExecCall ["ALife_fnc_notify", _owner]; };
+private _fnc_reply = { (if (_this isEqualType []) then { _this } else { [_this, "warning"] }) remoteExecCall ["ALife_fnc_notify", _owner]; };
 private _uid = getPlayerUID _unit;
 private _faction = _unit getVariable ["alife_faction", ""];
 private _record = ALife_sessions getOrDefault [_uid, createHashMap];
@@ -48,5 +48,5 @@ _record set [_faction + "_cash", (_record getOrDefault [_faction + "_cash", 0]) 
 _record set [_faction + "_bank", (_record getOrDefault [_faction + "_bank", 0]) - _change];
 
 diag_log format ["[ALife] ATM: %1 %2 $%3 (%4)", _uid, ["withdrew", "deposited"] select (_op == "deposit"), _amount, _faction];
-(format ["%1 $%2.", ["Withdrew", "Deposited"] select (_op == "deposit"), [_amount] call BIS_fnc_numberText]) call _fnc_reply;
+[format ["%1 $%2.", ["Withdrew", "Deposited"] select (_op == "deposit"), [_amount] call BIS_fnc_numberText], "success"] call _fnc_reply;
 [_unit] call ALife_fnc_requestPhoneData;

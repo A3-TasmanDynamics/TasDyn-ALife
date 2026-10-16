@@ -19,7 +19,7 @@ if (!isServer || { isNull _unit }) exitWith {};
 if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith {};
 
 private _owner = owner _unit;
-private _fnc_reply = { [_this] remoteExecCall ["ALife_fnc_notify", _owner]; };
+private _fnc_reply = { (if (_this isEqualType []) then { _this } else { [_this, "warning"] }) remoteExecCall ["ALife_fnc_notify", _owner]; };
 private _uid = getPlayerUID _unit;
 if ((_unit getVariable ["alife_faction", ""]) == "") exitWith {};
 
@@ -61,8 +61,8 @@ diag_log format ["[ALife][SMS] %1 (%2)%3 -> %4 (%5 recipient(s)): %6",
     [_from, _channel, _text, _time] remoteExecCall ["ALife_fnc_messageReceived", owner _x];
 } forEach _recipients;
 
-(switch (_channel) do {
+[(switch (_channel) do {
     case "police": { format ["Message sent to the police (%1 on duty).", count _recipients] };
     case "ems": { format ["Message sent to EMS (%1 on duty).", count _recipients] };
     default { format ["Message sent to %1.", name (_recipients select 0)] };
-}) call _fnc_reply;
+}), "success"] call _fnc_reply;
