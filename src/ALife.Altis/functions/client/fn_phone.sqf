@@ -260,7 +260,7 @@ switch (_mode) do {
                 [2, "QTY", 0.72, 0, 0.25] call _fnc_label;
                 ([IDC_EDIT, 0.77, 0.075, 0, 0.25] call _fnc_place) ctrlSetText "1";
                 [0, "Give", 0.77, 0.075, 0.28, 0.72, true] call _fnc_button;
-                [1, "Discard", 0.87, 0.07] call _fnc_button;
+                [1, "Drop", 0.87, 0.07] call _fnc_button;
             };
             case "playerid": {
                 [0, 0, 0.36, [0.08, 0.63, 0.59, 0.16]] call _fnc_card;
@@ -452,7 +452,8 @@ switch (_mode) do {
                     if (isNull _target) exitWith { hint "Pick who to give it to."; };
                     [player, _target, _class, _qty] remoteExec ["ALife_fnc_giveItem", 2];
                 } else {
-                    [player, objNull, _class, _qty] remoteExec ["ALife_fnc_giveItem", 2];
+                    // Drop: into a bag at your feet (Windows key to open it again).
+                    [player, "", "store", [[_class, _qty]], 0] remoteExecCall ["ALife_fnc_containerTransfer", 2];
                 };
             };
 

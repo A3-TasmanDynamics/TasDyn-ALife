@@ -27,4 +27,19 @@ class CfgALife
     giveDistance = 5;
     messageCooldown = 3;
     messageMaxLength = 300;
+
+    // Inventory screen (Windows key): look at a dropped bag or a vehicle to
+    // open it; look at nothing to open your own inventory and drop things.
+    interactKeys[] = { 219, 220 };      // left / right Windows (DIK codes)
+    carryWeight = 24;                   // how much a player can carry
+    bagClass = "B_AssaultPack_khk";     // what dropped items look like (placeholder)
+    bagLifetime = 900;                  // seconds before a dropped bag disappears
+    class Trunks                        // vehicle storage by type
+    {
+        car = 50;
+        truck = 150;
+        air = 100;
+        ship = 80;
+        other = 30;
+    };
 };
