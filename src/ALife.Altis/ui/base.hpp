@@ -624,6 +624,10 @@ class ALife_RscListNBox
     autoScrollRewind = 0;
     class ListScrollBar: ALife_RscScrollBar {};
     class ScrollBar: ALife_RscScrollBar {};
+    // Read by the renderer even when unused ("No entry" warnings otherwise).
+    drawSideArrows = 0;
+    idcLeft = -1;
+    idcRight = -1;
     x = 0; y = 0; w = 0.26; h = 0.55;
 };
 

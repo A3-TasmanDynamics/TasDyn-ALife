@@ -13,6 +13,8 @@
 if (!alive player || { !(missionNamespace getVariable ["ALife_spawned", false]) } || { dialog }) exitWith { false };
 
 private _target = cursorObject;
+diag_log format ["[ALife] interact: looking at %1 (%2, model %3) %4 m away", _target, typeOf _target,
+    if (isNull _target) then { "-" } else { (getModelInfo _target) select 0 }, round (player distance _target)];
 
 if ([_target] call ALife_fnc_isAtm && { player distance _target <= getNumber (missionConfigFile >> "CfgALife" >> "atmRange") + 1 }) exitWith {
     ["open"] call ALife_fnc_atm;
