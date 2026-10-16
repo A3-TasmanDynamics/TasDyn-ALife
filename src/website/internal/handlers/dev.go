@@ -170,6 +170,21 @@ func (d *Deps) DevHealth(w http.ResponseWriter, r *http.Request) {
 	}
 	data.Checks = append(data.Checks, sc)
 
+	// Bank integrity: the real balance (bank_accounts), the cached copy
+	// (players.*_bank) and the history (sum of bank_transactions) must
+	// agree. Database triggers keep them in step, even for manual edits.
+	bank := healthCheck{Name: "Bank balances", State: "ok", Detail: "Balances, cached balances and history all match"}
+	var outOfStep int
+	if err := d.Pool.QueryRow(ctx, `
+		SELECT count(*) FROM bank_accounts b JOIN players p ON p.id = b.player_id
+		WHERE b.balance <> CASE b.faction WHEN 'civilian' THEN p.civ_bank WHEN 'police' THEN p.cop_bank ELSE p.medic_bank END
+		   OR b.balance <> (SELECT COALESCE(sum(t.amount), 0) FROM bank_transactions t WHERE t.account_id = b.id)`).Scan(&outOfStep); err != nil {
+		bank.State, bank.Detail = "warn", "Couldn't check ("+err.Error()+")"
+	} else if outOfStep > 0 {
+		bank.State, bank.Detail = "bad", fmt.Sprintf("%d account(s) out of step -- the bank integrity triggers may be missing (database/fixes/2026-10-17_bank_integrity.sql)", outOfStep)
+	}
+	data.Checks = append(data.Checks, bank)
+
 	// Background jobs.
 	var outboxLast *time.Time
 	var outboxErr string
