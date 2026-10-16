@@ -1055,7 +1055,8 @@ CREATE TABLE anti_cheat_flags (
     id            BIGSERIAL PRIMARY KEY,
     player_id     BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
     -- 'steam_ban': a new VAC/game ban appeared on the player's Steam account (internal/steam).
-    flag_type     TEXT NOT NULL CHECK (flag_type IN ('honeypot', 'movement', 'idempotency_reject', 'rate_limit', 'steam_ban')),
+    -- 'combat_log': disconnected while incapacitated (the game server, via the extension).
+    flag_type     TEXT NOT NULL CHECK (flag_type IN ('honeypot', 'movement', 'idempotency_reject', 'rate_limit', 'steam_ban', 'combat_log')),
     confidence    TEXT NOT NULL CHECK (confidence IN ('high', 'medium')),
     details       JSONB,
     reviewed_by   BIGINT REFERENCES players(id) ON DELETE SET NULL,

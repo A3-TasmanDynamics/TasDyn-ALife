@@ -392,3 +392,42 @@ bool Database::SaveField(const std::string& uid, const std::string& field, const
     outError = "field not allowlisted: " + field;
     return true;
 }
+
+bool Database::RecordCombatLog(const std::string& uid, const std::string& faction, const std::string& killer,
+                                const std::string& weapon, const std::string& distance,
+                                const std::string& secondsIncapacitated, std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+
+    const char* params[6] = {uid.c_str(), faction.c_str(), killer.c_str(),
+                             weapon.c_str(), distance.c_str(), secondsIncapacitated.c_str()};
+    PGresult* res = PQexecParams(
+        conn_,
+        "WITH p AS (SELECT id FROM players WHERE uid = $1), "
+        "d AS (SELECT jsonb_strip_nulls(jsonb_build_object("
+        "        'faction', $2::text, "
+        "        'killed_by', NULLIF($3::text, ''), "
+        "        'weapon', NULLIF($4::text, ''), "
+        "        'distance_m', NULLIF($5::text, '')::int, "
+        "        'seconds_incapacitated', NULLIF($6::text, '')::int)) AS details), "
+        "f AS (INSERT INTO anti_cheat_flags (player_id, flag_type, confidence, details) "
+        "      SELECT p.id, 'combat_log', 'high', d.details FROM p, d RETURNING player_id) "
+        "INSERT INTO staff_log (target_player_id, action, reason, after_value, source) "
+        "SELECT f.player_id, 'player.combat_log', 'Disconnected while incapacitated', d.details, 'game' "
+        "FROM f, d",
+        6, nullptr, params, nullptr, nullptr, 0);
+
+    bool ok = (PQresultStatus(res) == PGRES_COMMAND_OK);
+    if (!ok) {
+        outError = PQerrorMessage(conn_);
+    } else if (std::strcmp(PQcmdTuples(res), "0") == 0) {
+        ok = false;
+        outError = "unknown uid";
+    }
+    PQclear(res);
+    return ok;
+}

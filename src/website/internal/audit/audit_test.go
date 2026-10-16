@@ -63,3 +63,18 @@ func TestDescribeDiscordModeration(t *testing.T) {
 		t.Error("discord.* categories wrong")
 	}
 }
+
+func TestFormatCombatLog(t *testing.T) {
+	after := []byte(`{"faction": "civ", "killed_by": "Bad Guy", "weapon": "MX 6.5 mm", "distance_m": 143, "seconds_incapacitated": 34}`)
+	got := Format("", "Andrew", "player.combat_log", "Disconnected while incapacitated", nil, after, SourceGame)
+	want := "**In-game** flagged combat logging for **Andrew** — Disconnected while incapacitated · downed by Bad Guy with MX 6.5 mm at 143 m, left 34 s after going down · _via game_"
+	if got != want {
+		t.Fatalf("got  %q\nwant %q", got, want)
+	}
+	if d := CombatLogDetail([]byte(`{"faction": "medic", "seconds_incapacitated": 12}`)); d != "left 12 s after going down" {
+		t.Fatalf("no killer: %q", d)
+	}
+	if Category("player.combat_log") != "Moderation" {
+		t.Fatal("combat log should be under Moderation")
+	}
+}

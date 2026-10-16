@@ -43,6 +43,7 @@ var flagTitles = map[string]string{
 	"idempotency_reject": "Replayed transaction rejected",
 	"rate_limit":         "Request rate limit exceeded",
 	"steam_ban":          "New Steam ban on account",
+	"combat_log":         "Combat logging (left while incapacitated)",
 }
 
 // Open reports whether nobody has reviewed the flag yet.
