@@ -14,8 +14,8 @@
         ["tick"]                            - refresh timer, bar and medic distance
         ["camera"] / ["cameraOff"]          - bird's-eye view of the body / back to normal
         ["respawn"]                         - Respawn button
-        ["leave"]                           - Leave button
-        ["keyDown", ...]                    - swallow Esc
+        ["keyDown", ...]                    - swallow Esc (no leaving while
+                                              incapacitated: that's combat logging)
 */
 
 #define IDD_DEATH    4900
@@ -112,10 +112,10 @@ switch (_mode) do {
             side group _x == independent && { alive _x } && { _x != player } && { !isObjectHidden _x }
         };
         private _medicText = if (_medics isEqualTo []) then {
-            "<t align='right' color='#ff7b72'>No medics on duty</t>"
+            "<t color='#ff7b72'>No medics on duty</t>"
         } else {
             private _nearest = selectMin (_medics apply { _x distance _body });
-            format ["<t align='right'><t color='#9aa4b2'>Nearest medic </t><t font='RobotoCondensedBold'>%1</t></t>",
+            format ["<t color='#9aa4b2'>Nearest medic </t><t font='RobotoCondensedBold'>%1</t>",
                 if (_nearest >= 1000) then { ((_nearest / 1000) toFixed 1) + " km" } else { (str round _nearest) + " m" }]
         };
         (_display displayCtrl IDC_MEDIC) ctrlSetStructuredText parseText _medicText;
@@ -159,12 +159,6 @@ switch (_mode) do {
         closeDialog 0;
         ["show", "Respawning..."] call ALife_fnc_loading;
         setPlayerRespawnTime 0;
-    };
-
-    case "leave": {
-        ["cameraOff"] call ALife_fnc_deathScreen;
-        closeDialog 0;
-        ["end1", false] call BIS_fnc_endMission;
     };
 
     case "keyDown": {

@@ -31,6 +31,11 @@ publicVariable "ALife_serverStatus";
 addMissionEventHandler ["HandleDisconnect", {
     params ["_unit", "_id", "_uid", "_name"];
     diag_log format ["[ALife] %1 (%2) disconnected", _name, _uid];
+    // Leaving while incapacitated (dead, waiting on the death screen) is
+    // combat logging -- against the rules, so make it easy to find.
+    if (!alive _unit && { (_unit getVariable ["alife_uid", ""]) != "" }) then {
+        diag_log format ["[ALife][COMBAT LOG] %1 (%2) disconnected while incapacitated", _name, _uid];
+    };
     [_unit, _uid] call ALife_fnc_savePlayer;
     ALife_sessions deleteAt _uid;
     false // don't hand the body to AI

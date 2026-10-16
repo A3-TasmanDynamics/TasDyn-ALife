@@ -30,8 +30,10 @@ other system (shops, jobs, gear, whitelisting, ...) builds on top of this.
 ## Dying
 
 Dying sets `<faction>_alive = false` and opens the **death screen** (`ALife_fnc_deathScreen`,
-`ui/deathScreen.hpp`). The view switches to a camera 5 m above your body looking straight
-down, following it until you respawn.
+`ui/deathScreen.hpp`) titled **YOU ARE INCAPACITATED**. The view switches to a camera 5 m above
+your body looking straight down, following it until you respawn. There's no way to leave from the
+death screen: disconnecting while incapacitated is combat logging, and the server logs it as
+`[ALife][COMBAT LOG]`.
 
 - **Killed by** — the killer's name, weapon (or vehicle, for a roadkill) and distance in metres
   (`ALife_fnc_killInfo`; also written to the server log). Falls and drowning just say "You died."
