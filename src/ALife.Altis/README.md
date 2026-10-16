@@ -97,7 +97,7 @@ bag/trunk on the left, you on the right, with weights.
 - **Moving things:** select rows (Ctrl/Shift for several), enter a quantity, **Take** / **Store**
   (**Drop** on the ground); **Take all** / **Store all**; double-click a row to move all of it.
 - **Dropping only cash** leaves a stack of money (`CfgALife >> cashClass`, `Land_Money_F`) instead of a
-  bag; pick it up the same way.
+  bag. Windows on a stack that's only cash picks it straight up (no menu).
 - **Cash** is a row like any item (also in the phone's Inventory, where you can give it to someone
   within 5 m or drop it): physical money you carry (`<faction>_cash`), moved with the same
   idempotent delta save as purchases.
