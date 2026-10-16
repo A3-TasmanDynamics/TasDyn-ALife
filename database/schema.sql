@@ -97,6 +97,7 @@ CREATE TABLE players (
     civ_bank       BIGINT NOT NULL DEFAULT 0,
     civ_licence    JSONB NOT NULL DEFAULT '[]'::jsonb,   -- array of licence keys, e.g. ["driver","boat"]
     civ_gear       JSONB NOT NULL DEFAULT '[]'::jsonb,   -- [[key,value],...] pairs, not an object -- see JSONB SHAPE RULE above
+    civ_items    JSONB NOT NULL DEFAULT '[]'::jsonb,   -- virtual items, [[class,count],...] (config/CfgItems.hpp)
     civ_alive      BOOLEAN NOT NULL DEFAULT true,
     civ_position   JSONB NOT NULL DEFAULT '[]'::jsonb,   -- [] until the first death is ever recorded
     civ_bounty     BIGINT NOT NULL DEFAULT 0,            -- cache of wanted_crimes, see below
@@ -108,6 +109,7 @@ CREATE TABLE players (
     cop_bank       BIGINT NOT NULL DEFAULT 0,
     cop_licence    JSONB NOT NULL DEFAULT '[]'::jsonb,
     cop_gear       JSONB NOT NULL DEFAULT '[]'::jsonb,
+    cop_items    JSONB NOT NULL DEFAULT '[]'::jsonb,   -- virtual items, [[class,count],...] (config/CfgItems.hpp)
     cop_alive      BOOLEAN NOT NULL DEFAULT true,
     cop_position   JSONB NOT NULL DEFAULT '[]'::jsonb,
     cop_playtime_seconds BIGINT NOT NULL DEFAULT 0,
@@ -118,6 +120,7 @@ CREATE TABLE players (
     medic_bank     BIGINT NOT NULL DEFAULT 0,
     medic_licence  JSONB NOT NULL DEFAULT '[]'::jsonb,
     medic_gear     JSONB NOT NULL DEFAULT '[]'::jsonb,
+    medic_items    JSONB NOT NULL DEFAULT '[]'::jsonb,   -- virtual items, [[class,count],...] (config/CfgItems.hpp)
     medic_alive    BOOLEAN NOT NULL DEFAULT true,
     medic_position JSONB NOT NULL DEFAULT '[]'::jsonb,
     medic_playtime_seconds BIGINT NOT NULL DEFAULT 0,

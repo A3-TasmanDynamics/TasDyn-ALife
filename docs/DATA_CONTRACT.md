@@ -83,6 +83,7 @@ On `OK`, every key below is present:
 | `civ_gear` / `cop_gear` / `medic_gear` | array of `[key, value]` pairs | `players.<faction>_gear` (JSONB) | Full loadout + virtual items, e.g. `[["primaryWeapon","arifle_MX_F"],["uniform","U_B_CombatUniform_mcam"]]` — **not a JSON object**, see [Why array-of-pairs, not objects](#why-array-of-pairs-not-objects) |
 | `civ_alive` / `cop_alive` / `medic_alive` | boolean | `players.<faction>_alive` | **Must be checked on spawn.** A player who disconnects dead/unconscious has to resume dead at `*_position`, not respawn fresh — see the comment on `players` in `database/schema.sql` for why this isn't optional (a well-known disconnect-to-escape exploit in this genre) |
 | `civ_position` / `cop_position` / `medic_position` | array of `[key, value]` pairs | `players.<faction>_position` | World position to resume at when `*_alive` is `false`. Empty array (`[]`) until the first death is ever recorded for that faction — **not `null`** |
+| `civ_items` / `cop_items` / `medic_items` | array of `[class, count]` pairs | `players.<faction>_items` | Virtual items (e.g. `[["medkit", 3]]`), classes from the mission's `config/CfgItems.hpp`. `[]` when empty |
 | `civ_bounty` | number | `players.civ_bounty` | **Cache** — authoritative source is `wanted_crimes` (sum of outstanding, i.e. `cleared_at IS NULL`, rows), synced by trigger. No `cop_bounty`/`medic_bounty` — the wanted list is civilian-only |
 
 **`BANNED`.** If `banlist` has an active row for `uid` (no `expires_at`, or one in the future; lifting a
@@ -110,15 +111,14 @@ Request (SQF → C++): `"tasdyn_alife" callExtension ["save", [uid, field, value
 | Arg | Type | Notes |
 |---|---|---|
 | `uid` | string | Same as above. |
-| `field` | string | **An allowlist, not an arbitrary column name** — one of: `name`, `civ_cash`, `cop_cash`, `medic_cash`, `civ_licence`, `cop_licence`, `medic_licence`, `civ_gear`, `cop_gear`, `medic_gear`, `cop_level`, `medic_level`, `cop_dept`, `medic_dept`, `civ_alive`, `cop_alive`, `medic_alive`, `civ_position`, `cop_position`, `medic_position`. Validated server-side against this known set before it ever reaches a query — the same "never trust client input as authoritative" principle as [ANTI_CHEAT.md Layer 1](ANTI_CHEAT.md#layer-1--api-surface-remoteexec-allowlist). |
+| `field` | string | **An allowlist, not an arbitrary column name** — one of: `name`, `civ_cash`, `cop_cash`, `medic_cash`, `civ_licence`, `cop_licence`, `medic_licence`, `civ_gear`, `cop_gear`, `medic_gear`, `cop_level`, `medic_level`, `cop_dept`, `medic_dept`, `civ_alive`, `cop_alive`, `medic_alive`, `civ_position`, `cop_position`, `medic_position`, `civ_items`, `cop_items`, `medic_items`. Validated server-side against this known set before it ever reaches a query — the same "never trust client input as authoritative" principle as [ANTI_CHEAT.md Layer 1](ANTI_CHEAT.md#layer-1--api-surface-remoteexec-allowlist). |
 | `value` | string | Meaning depends on `field` — see [Delta vs. absolute-set fields](#delta-vs-absolute-set-fields) below. Always parsed and range/type-checked server-side before use — never interpolated into SQL. For array-of-pairs fields (`*_gear`, `*_position`), this is SQF's `str` of the array — e.g. `str [["primaryWeapon","arifle_MX_F"]]` — which happens to already be valid JSON text, but the C++ side still structurally validates it before writing to the JSONB column rather than trusting that it is. |
 | `requestToken` | string | Idempotency token — required for `civ_cash`/`cop_cash`/`medic_cash`, ignored for every other field (see below). A token seen again for the same player is rejected, not re-applied — checked against `applied_request_tokens` in the same transaction as the cash update, so a check-then-insert race can't slip a duplicate through. |
 
 **`civ_bank`/`cop_bank`/`medic_bank` are deliberately not in the `save` allowlist.** Bank balance
-changes go through a separate `bank_tx` command (deposit/withdrawal/transfer against
-`bank_accounts`, writing a `bank_transactions` row) — never a direct field write, since a balance
-is a ledger-derived number, not free-standing state. That command gets its own contract entry once
-Phase 2's economy work defines the actual transaction types it needs.
+changes go through the `bank` command below (writing `bank_transactions` rows against
+`bank_accounts`) — never a direct field write, since a balance is a ledger-derived number, not
+free-standing state.
 
 ### Delta vs. absolute-set fields
 
@@ -138,6 +138,29 @@ a wide positional array on the request side either.
 
 Response: plain string, one of `OK`, `ERROR`, or `DUPLICATE` (the idempotency-token-rejected
 case, cash fields only). No data payload — there's nothing to echo back for a single-field write.
+
+## `bank` — bank ledger changes
+
+Args: `[op, uid, faction, amount, requestToken, otherUid, otherFaction, memo]`.
+
+| `op` | Does |
+|---|---|
+| `purchase` | Debits `uid`'s `faction` account by `amount` (`bank_transactions.type = 'purchase'`). `otherUid`/`otherFaction` are `""`. |
+| `transfer` | Moves `amount` from `uid`'s `faction` account to `otherUid`'s `otherFaction` account (`transfer_out` + `transfer_in`). |
+
+`faction` is `civ`/`cop`/`medic` (mapped to `bank_accounts.faction` civilian/police/medic).
+`amount` is a positive whole number. Both accounts are locked (in id order, like the website's
+`bank.moveMoney`) and the debit is only written if the balance covers it; the DB triggers then
+update `bank_accounts.balance` and `players.<faction>_bank`. `requestToken` is required — a repeat
+is rejected by `idx_bank_transactions_token`. Response: `OK`, `INSUFFICIENT`, `DUPLICATE`,
+`NO_ACCOUNT`, or `ERROR[:reason]`.
+
+## `combatlog` — disconnected while incapacitated
+
+Args: `[uid, faction, killer, weapon, distance, secondsIncapacitated]` (`killer`/`weapon`/`distance`
+are `""` when nobody else was involved). Writes, in one statement, an `anti_cheat_flags` row
+(`combat_log`, high) and a `staff_log` row (`player.combat_log`, source `game`), both with the
+details as JSON. Response: `OK` or `ERROR:reason`.
 
 ## Escaping
 

@@ -43,11 +43,18 @@ corpseRemovalMaxTime = 900;
 #include "config\CfgRemoteExec.hpp"
 #include "config\CfgSpawnPoints.hpp"
 #include "config\CfgALife.hpp"
+#include "config\CfgItems.hpp"
+#include "config\CfgShops.hpp"
+#include "config\CfgLicences.hpp"
+#include "config\CfgPhone.hpp"
 #include "ui\base.hpp"
 #include "ui\spawnMenu.hpp"
 #include "ui\deathScreen.hpp"
+#include "ui\phone.hpp"
+#include "ui\shop.hpp"
 
 class RscTitles
 {
 #include "ui\loading.hpp"
+#include "ui\progress.hpp"
 };

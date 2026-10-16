@@ -61,6 +61,29 @@ std::string HandleCombatLog(Database& db, const std::vector<std::string>& args) 
     return "OK";
 }
 
+// args = [op, uid, faction, amount, requestToken, otherUid, otherFaction, memo]
+std::string HandleBank(Database& db, const std::vector<std::string>& args) {
+    if (args.size() < 8) return "ERROR:expected [op, uid, faction, amount, token, otherUid, otherFaction, memo]";
+    const std::string& op = args[0];
+    if (op != "purchase" && op != "transfer") return "ERROR:unknown bank op";
+    if (!IsSteam64(args[1])) return "ERROR:invalid uid";
+    if (op == "transfer" && !IsSteam64(args[5])) return "ERROR:invalid recipient uid";
+    const std::string& amount = args[3];
+    if (amount.empty() || amount.size() > 12 || amount[0] == '0') return "ERROR:invalid amount";
+    for (char c : amount) {
+        if (c < '0' || c > '9') return "ERROR:invalid amount";
+    }
+    if (args[4].empty() || args[4].size() > 128) return "ERROR:missing request token";
+    if (args[7].size() > 200) return "ERROR:memo too long";
+
+    std::string status;
+    std::string error;
+    if (!db.BankTx(op, args[1], args[2], amount, args[4], args[5], args[6], args[7], status, error)) {
+        return "ERROR:" + error;
+    }
+    return status;
+}
+
 }  // namespace
 
 std::string UnwrapArmaString(const std::string& arg) {
@@ -92,6 +115,7 @@ std::string DispatchCommand(Database& db, const std::string& command,
     if (command == "load") return HandleLoad(db, args);
     if (command == "save") return HandleSave(db, args);
     if (command == "combatlog") return HandleCombatLog(db, args);
+    if (command == "bank") return HandleBank(db, args);
 
     return "ERROR:unknown command";
 }

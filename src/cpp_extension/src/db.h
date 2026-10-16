@@ -42,6 +42,18 @@ public:
     // website) and a staff_log row (website Staff Log, posted to Discord
     // #staff-log by the website's audit poster). killer/weapon/distance are
     // "" when nobody else was involved.
+    // Bank ledger changes (docs/DATA_CONTRACT.md "bank"): op "purchase"
+    // debits uid's faction account; op "transfer" moves money from uid's
+    // faction account to otherUid's otherFaction account. Locks the
+    // account(s), refuses to go below zero, and writes bank_transactions
+    // rows (DB triggers update the balance and players.*_bank). The
+    // request token makes a retried request a no-op. outStatus: "OK",
+    // "INSUFFICIENT", "DUPLICATE", "NO_ACCOUNT" or "ERROR".
+    bool BankTx(const std::string& op, const std::string& uid, const std::string& faction,
+                const std::string& amount, const std::string& token, const std::string& otherUid,
+                const std::string& otherFaction, const std::string& memo, std::string& outStatus,
+                std::string& outError);
+
     bool RecordCombatLog(const std::string& uid, const std::string& faction, const std::string& killer,
                          const std::string& weapon, const std::string& distance,
                          const std::string& secondsIncapacitated, std::string& outError);
