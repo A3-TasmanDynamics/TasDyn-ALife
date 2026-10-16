@@ -87,6 +87,17 @@ std::string HandleBank(Database& db, const std::vector<std::string>& args) {
     return status;
 }
 
+// args = [op, uid]  (op: start / end / reset; reset takes no uid)
+std::string HandleSession(Database& db, const std::vector<std::string>& args) {
+    if (args.empty()) return "ERROR:expected [op, uid]";
+    const std::string& op = args[0];
+    std::string uid = args.size() > 1 ? args[1] : "";
+    if (op != "reset" && !IsSteam64(uid)) return "ERROR:invalid uid";
+    std::string error;
+    if (!db.RecordSession(op, uid, error)) return "ERROR:" + error;
+    return "OK";
+}
+
 }  // namespace
 
 std::string UnwrapArmaString(const std::string& arg) {
@@ -119,6 +130,7 @@ std::string DispatchCommand(Database& db, const std::string& command,
     if (command == "save") return HandleSave(db, args);
     if (command == "combatlog") return HandleCombatLog(db, args);
     if (command == "bank") return HandleBank(db, args);
+    if (command == "session") return HandleSession(db, args);
 
     return "ERROR:unknown command";
 }

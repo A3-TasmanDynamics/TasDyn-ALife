@@ -164,6 +164,13 @@ are `""` when nobody else was involved). Writes, in one statement, an `anti_chea
 (`combat_log`, high) and a `staff_log` row (`player.combat_log`, source `game`), both with the
 details as JSON. Response: `OK` or `ERROR:reason`.
 
+## `session` — who's online
+
+Args: `[op, uid]`. `start` opens a `player_sessions` row for `uid` (closing any left open first),
+`end` closes it, `reset` (no uid) closes every open row — the server calls it at start, when nobody
+is connected yet. The website's online counts, player status and `players.last_seen` (trigger)
+read these rows. Response: `OK` or `ERROR:reason`.
+
 ## Escaping
 
 `name` is the only genuinely free-text field. Any characters that would break `parseSimpleArray`'s
