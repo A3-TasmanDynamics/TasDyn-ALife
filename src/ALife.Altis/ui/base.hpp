@@ -666,4 +666,44 @@ class ALife_RscPicture
     x = 0; y = 0; w = 0.1; h = 0.1;
 };
 
+// Drop-down. Property set matches the engine's RscCombo (the renderer
+// reads all of these, including the scrollbar class).
+class ALife_RscCombo
+{
+    type = 4; // CT_COMBO
+    style = 528; // ST_MULTI + ST_NO_RECT
+    idc = -1;
+    font = "RobotoCondensed";
+    sizeEx = 0.03;
+    shadow = 0;
+    colorBackground[] = { 0.1, 0.11, 0.14, 1 };
+    colorText[] = { 1, 1, 1, 1 };
+    colorDisabled[] = { 1, 1, 1, 0.25 };
+    colorSelect[] = { 0.05, 0.05, 0.05, 1 };
+    colorSelectBackground[] = { 0.96, 0.62, 0.04, 1 };
+    colorScrollbar[] = { 1, 1, 1, 1 };
+    colorActive[] = { 0.96, 0.62, 0.04, 1 };
+    colorPicture[] = { 1, 1, 1, 1 };
+    colorPictureSelected[] = { 1, 1, 1, 1 };
+    colorPictureDisabled[] = { 1, 1, 1, 0.25 };
+    colorPictureRight[] = { 1, 1, 1, 1 };
+    colorPictureRightSelected[] = { 1, 1, 1, 1 };
+    colorPictureRightDisabled[] = { 1, 1, 1, 0.25 };
+    colorTextRight[] = { 1, 1, 1, 1 };
+    colorSelectRight[] = { 0.05, 0.05, 0.05, 1 };
+    colorSelect2Right[] = { 0.05, 0.05, 0.05, 1 };
+    tooltipColorText[] = { 1, 1, 1, 1 };
+    tooltipColorBox[] = { 1, 1, 1, 1 };
+    tooltipColorShade[] = { 0, 0, 0, 0.65 };
+    soundSelect[] = { "\A3\ui_f\data\sound\RscCombo\soundSelect", 0.1, 1 };
+    soundExpand[] = { "\A3\ui_f\data\sound\RscCombo\soundExpand", 0.1, 1 };
+    soundCollapse[] = { "\A3\ui_f\data\sound\RscCombo\soundCollapse", 0.1, 1 };
+    maxHistoryDelay = 1;
+    arrowEmpty = "\A3\ui_f\data\GUI\RscCommon\rsccombo\arrow_combo_ca.paa";
+    arrowFull = "\A3\ui_f\data\GUI\RscCommon\rsccombo\arrow_combo_active_ca.paa";
+    wholeHeight = 0.45;
+    class ComboScrollBar: ALife_RscScrollBar {};
+    x = 0; y = 0; w = 0.12; h = 0.035;
+};
+
 #endif // __ALIFE_COMMON_UI_HPP

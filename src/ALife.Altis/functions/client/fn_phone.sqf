@@ -39,6 +39,7 @@
 #define IDC_LABEL0   5215
 #define IDC_BUTTON   5220
 #define IDC_CARD0    5230
+#define IDC_COMBO    5240
 
 params ["_mode"];
 private _args = _this select [1];
@@ -52,9 +53,18 @@ private _factionName = switch (_faction) do { case "cop": { "Police" }; case "me
 private _appControls = [IDC_HEADER, IDC_BACK, IDC_TITLE, IDC_APPICON, IDC_INFO, IDC_LIST, IDC_LIST2, IDC_EDIT, IDC_MESSAGE]
     + ([0, 1, 2] apply { IDC_LABEL0 + _x })
     + ([0, 1] apply { IDC_CARD0 + _x })
+    + [IDC_COMBO]
     + ([0, 1, 2, 3, 4, 5] apply { IDC_BUTTON + _x });
 
 private _fnc_safe = { (_this splitString "<>&") joinString "" };
+
+// Sharp text: structured text sits on a 1-pixel base (ui\phone.hpp), so
+// every <t size> is a whole number of screen pixels. Sizes below are for a
+// 1080p screen and scale with the resolution, like the phone itself.
+private _k = (safezoneH / pixelH) / 1080;
+private _fnc_px = { str ((round (_this * _k)) max 8) };
+private _fnc_snapX = { (round (_this / pixelW)) * pixelW };
+private _fnc_snapY = { (round (_this / pixelH)) * pixelH };
 private _fnc_money = { "$" + ([_this] call BIS_fnc_numberText) };
 
 // Place a control in the app area: top/height (and left/width) are
@@ -63,10 +73,10 @@ private _fnc_place = {
     params ["_idc", "_top", "_height", ["_left", 0], ["_width", 1]];
     private _ctrl = _display displayCtrl _idc;
     _ctrl ctrlSetPosition [
-        safezoneX + safezoneW * (0.757 + 0.181 * _left),
-        safezoneY + safezoneH * (0.382 + 0.545 * _top),
-        safezoneW * 0.181 * _width,
-        safezoneH * 0.545 * _height
+        (safezoneX + safezoneW * (0.757 + 0.181 * _left)) call _fnc_snapX,
+        (safezoneY + safezoneH * (0.382 + 0.545 * _top)) call _fnc_snapY,
+        (safezoneW * 0.181 * _width) call _fnc_snapX,
+        (safezoneH * 0.545 * _height) call _fnc_snapY
     ];
     _ctrl ctrlCommit 0;
     _ctrl ctrlShow true;
@@ -96,7 +106,8 @@ private _fnc_time = {
 };
 private _fnc_status = {
     (_display displayCtrl IDC_STATUS) ctrlSetStructuredText parseText format [
-        "<t align='left' font='RobotoCondensedBold'>%1</t><t align='right' color='#c0c7d1'>%2</t>", call _fnc_time, _factionName];
+        "<t align='left' size='%3' font='RobotoCondensedBold'>%1</t><t align='right' size='%4' color='#c0c7d1'>%2</t>",
+        call _fnc_time, _factionName, 24 call _fnc_px, 22 call _fnc_px];
 };
 // Players to pick from: everyone spawned in except you, optionally within range.
 private _fnc_players = {
@@ -130,7 +141,8 @@ private _fnc_comingSoon = {
     params ["_what"];
     [0, 0, 0.42] call _fnc_card;
     ([IDC_INFO, 0.03, 0.38, 0.05, 0.9] call _fnc_place) ctrlSetStructuredText parseText format [
-        "<t size='0.8' color='#f5a524' font='RobotoCondensedBold'>COMING SOON</t><br/><br/><t size='0.95' color='#d6dbe2'>%1</t>", _what];
+        "<t size='%2' color='#f5a524' font='RobotoCondensedBold'>COMING SOON</t><br/><br/><t size='%3' color='#d6dbe2'>%1</t>",
+        _what, 22 call _fnc_px, 27 call _fnc_px];
 };
 
 switch (_mode) do {
@@ -144,6 +156,15 @@ switch (_mode) do {
         _args params ["_new"];
         uiNamespace setVariable ["ALife_phoneDisplay", _new];
         _display = _new;
+        // Whole-pixel positions and font sizes keep the text sharp.
+        {
+            (ctrlPosition _x) params ["_px", "_py", "_pw", "_ph"];
+            _x ctrlSetPosition [_px call _fnc_snapX, _py call _fnc_snapY, _pw call _fnc_snapX, _ph call _fnc_snapY];
+            _x ctrlCommit 0;
+            if (ctrlType _x in [0, 1, 2, 4, 102]) then {
+                _x ctrlSetFontHeight ((ctrlFontHeight _x) call _fnc_snapY);
+            };
+        } forEach (allControls _display);
         _display displayAddEventHandler ["KeyDown", {
             params ["", "_key"];
             if (_key == getNumber (missionConfigFile >> "CfgALife" >> "phoneKey")) exitWith { closeDialog 0; true };
@@ -166,8 +187,8 @@ switch (_mode) do {
         date params ["_year", "_month", "_day"];
         private _months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         (_display displayCtrl IDC_CLOCK) ctrlSetStructuredText parseText format [
-            "<t align='center' size='2.6' font='RobotoCondensedLight'>%1</t><br/><t align='center' size='0.95' color='#c0c7d1'>%2 %3 %4</t>",
-            call _fnc_time, _day, _months select ((_month - 1) max 0), _year];
+            "<t align='center' size='%5' font='RobotoCondensedLight'>%1</t><br/><t align='center' size='%6' color='#c0c7d1'>%2 %3 %4</t>",
+            call _fnc_time, _day, _months select ((_month - 1) max 0), _year, 76 call _fnc_px, 26 call _fnc_px];
         call _fnc_status;
     };
 
@@ -235,15 +256,20 @@ switch (_mode) do {
             };
             case "settings": {
                 [0, "VIEW DISTANCE", 0] call _fnc_label;
-                [IDC_INFO, 0.05, 0.08] call _fnc_place;
-                [IDC_LIST, 0.14, 0.44] call _fnc_place;
-                [0, "Apply view distance", 0.6, 0.075, 0, 1, true] call _fnc_button;
-                [1, "GRASS", 0.71] call _fnc_label;
-                [1, "", 0.76, 0.075] call _fnc_button;
-                private _list = _display displayCtrl IDC_LIST;
+                private _combo = [IDC_COMBO, 0.05, 0.07] call _fnc_place;
+                [1, "GRASS", 0.16] call _fnc_label;
+                [1, "", 0.21, 0.075] call _fnc_button;
+                [IDC_INFO, 0.32, 0.2] call _fnc_place;
+                // Fill the drop-down; picking a distance applies it straight away.
+                private _current = (["get"] call ALife_fnc_phoneSettings) select 0;
+                ALife_phoneFilling = true;
+                lbClear _combo;
                 {
-                    _list lnbSetValue [[_list lnbAddRow [format ["%1 m", _x], ""], 0], _x];
-                } forEach [1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000];
+                    private _row = _combo lbAdd format ["%1 m", _x];
+                    _combo lbSetValue [_row, _x];
+                    if (_x == _current) then { _combo lbSetCurSel _row; };
+                } forEach [500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 5000, 6000];
+                ALife_phoneFilling = false;
             };
             case "perks": { ["A talent tree: earn perk points as you play and spend them on perks for your faction -- faster repairs, better prices, quicker revives and more."] call _fnc_comingSoon; };
             case "gang": { ["Create or join a gang, invite members, manage ranks and the gang bank."] call _fnc_comingSoon; };
@@ -273,7 +299,7 @@ switch (_mode) do {
                 if (_inbox isEqualTo []) then {
                     _list lnbAddRow ["No messages yet", ""];
                     _list lnbSetColor [[0, 0], [0.62, 0.66, 0.72, 1]];
-                    _info ctrlSetStructuredText parseText "<t size='0.9' color='#c0c7d1'>Messages you receive show up here.</t>";
+                    _info ctrlSetStructuredText parseText format ["<t size='%1' color='#c0c7d1'>Messages you receive show up here.</t>", 26 call _fnc_px];
                 } else {
                     _list lnbSetCurSelRow ((_keep max 0) min (count _inbox - 1));
                     ["select", IDC_LIST, lnbCurSelRow _list] call ALife_fnc_phone;
@@ -297,8 +323,9 @@ switch (_mode) do {
 
             case "bank": {
                 _info ctrlSetStructuredText parseText format [
-                    "<t size='0.8' color='#f5c26b' font='RobotoCondensedBold'>%1 ACCOUNT</t><br/><t size='2' font='RobotoCondensedBold'>%2</t><br/><t size='0.9' color='#d6dbe2'>Cash on hand  </t><t size='0.9' font='RobotoCondensedBold'>%3</t>",
-                    toUpper _factionName, (_data getOrDefault ["bank", 0]) call _fnc_money, (_data getOrDefault ["cash", 0]) call _fnc_money];
+                    "<t size='%4' color='#f5c26b' font='RobotoCondensedBold'>%1 ACCOUNT</t><br/><t size='%5' font='RobotoCondensedBold'>%2</t><br/><t size='%6' color='#d6dbe2'>Cash on hand  </t><t size='%6' font='RobotoCondensedBold'>%3</t>",
+                    toUpper _factionName, (_data getOrDefault ["bank", 0]) call _fnc_money, (_data getOrDefault ["cash", 0]) call _fnc_money,
+                    22 call _fnc_px, 54 call _fnc_px, 26 call _fnc_px];
                 [[] call _fnc_players, "Nobody else is online"] call _fnc_fillPlayers;
             };
 
@@ -330,15 +357,16 @@ switch (_mode) do {
                     ((_staff splitString "_") apply { (toUpper (_x select [0, 1])) + (_x select [1]) }) joinString " "
                 };
                 _info ctrlSetStructuredText parseText format [
-                    "<t size='0.8' color='#5eead4' font='RobotoCondensedBold'>ALTIS IDENTITY CARD</t><br/>" +
-                    "<t size='1.5' font='RobotoCondensedBold'>%1</t><br/>" +
-                    "<t size='0.9' color='#d6dbe2'>%2</t><br/><br/>" +
-                    "<t size='0.85' color='#c0c7d1'>Police </t><t size='0.85' font='RobotoCondensedBold'>%3</t>" +
-                    "<t size='0.85' color='#c0c7d1'>     EMS </t><t size='0.85' font='RobotoCondensedBold'>%4</t>%5",
+                    "<t size='%6' color='#5eead4' font='RobotoCondensedBold'>ALTIS IDENTITY CARD</t><br/>" +
+                    "<t size='%7' font='RobotoCondensedBold'>%1</t><br/>" +
+                    "<t size='%8' color='#d6dbe2'>%2</t><br/><br/>" +
+                    "<t size='%9' color='#c0c7d1'>Police  </t><t size='%9' font='RobotoCondensedBold'>%3</t><br/>" +
+                    "<t size='%9' color='#c0c7d1'>EMS  </t><t size='%9' font='RobotoCondensedBold'>%4</t>%5",
                     name player call _fnc_safe, _factionName,
                     ["Not whitelisted", format ["Level %1", _cop]] select (_cop > 0),
                     ["Not whitelisted", format ["Level %1", _medic]] select (_medic > 0),
-                    ["", format ["<br/><t size='0.85' color='#c0c7d1'>Staff </t><t size='0.85' font='RobotoCondensedBold'>%1</t>", _staffName call _fnc_safe]] select (_staff != "")];
+                    ["", format ["<br/><t size='%2' color='#c0c7d1'>Staff  </t><t size='%2' font='RobotoCondensedBold'>%1</t>", _staffName call _fnc_safe, 25 call _fnc_px]] select (_staff != ""),
+                    22 call _fnc_px, 42 call _fnc_px, 26 call _fnc_px, 25 call _fnc_px];
 
                 private _list = _display displayCtrl IDC_LIST;
                 lnbClear _list;
@@ -356,7 +384,7 @@ switch (_mode) do {
             case "settings": {
                 (["get"] call ALife_fnc_phoneSettings) params ["_distance", "_grass"];
                 _info ctrlSetStructuredText parseText format [
-                    "<t size='1.4' font='RobotoCondensedBold'>%1 m</t><t size='0.85' color='#c0c7d1'>  current</t>", _distance];
+                    "<t size='%2' color='#c0c7d1'>Your view distance is %1 m. Lower it if the game runs slowly.</t>", _distance, 24 call _fnc_px];
                 (_display displayCtrl (IDC_BUTTON + 1)) ctrlSetText (["Grass: Off", "Grass: On"] select _grass);
             };
         };
@@ -365,13 +393,18 @@ switch (_mode) do {
     case "select": {
         _args params ["_idc", "_row"];
         if (isNull _display || { _row < 0 }) exitWith {};
+        if (_idc == IDC_COMBO) exitWith {
+            if (missionNamespace getVariable ["ALife_phoneFilling", false]) exitWith {};
+            ["viewDistance", (_display displayCtrl IDC_COMBO) lbValue _row] call ALife_fnc_phoneSettings;
+            ["refresh"] call ALife_fnc_phone;
+        };
         if (ALife_phoneApp == "messages" && { _idc == IDC_LIST }) then {
             private _inbox = missionNamespace getVariable ["ALife_inbox", []];
             if (_row < count _inbox) then {
                 (_inbox select _row) params ["_from", "_text", "_time"];
                 (_display displayCtrl IDC_INFO) ctrlSetStructuredText parseText format [
-                    "<t size='0.8' color='#c0c7d1'>%1  |  %2</t><br/><t size='0.95'>%3</t>",
-                    _from call _fnc_safe, _time, _text call _fnc_safe];
+                    "<t size='%4' color='#c0c7d1'>%1  |  %2</t><br/><t size='%5'>%3</t>",
+                    _from call _fnc_safe, _time, _text call _fnc_safe, 22 call _fnc_px, 27 call _fnc_px];
             };
         };
     };
@@ -424,15 +457,10 @@ switch (_mode) do {
             };
 
             case "settings": {
-                if (_n == 0) then {
-                    private _list = _display displayCtrl IDC_LIST;
-                    private _row = lnbCurSelRow _list;
-                    if (_row < 0) exitWith { hint "Pick a view distance first."; };
-                    ["viewDistance", _list lnbValue [_row, 0]] call ALife_fnc_phoneSettings;
-                } else {
+                if (_n == 1) then {
                     ["toggleGrass"] call ALife_fnc_phoneSettings;
+                    ["refresh"] call ALife_fnc_phone;
                 };
-                ["refresh"] call ALife_fnc_phone;
             };
         };
     };

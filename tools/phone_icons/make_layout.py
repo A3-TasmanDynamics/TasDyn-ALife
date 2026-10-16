@@ -50,8 +50,15 @@ bg.append(ctrl("Screen", "ALife_RscBackground", '            colorBackground[] =
 bg.append(ctrl("Glow", "ALife_RscBackground", '            colorBackground[] = { 0.25, 0.3, 0.55, 0.12 };\n', SX, SY, SW, 0.22))
 bg.append(ctrl("Camera", "ALife_RscBackground", '            colorBackground[] = { 0, 0, 0, 1 };\n', 0.8445, 0.289, 0.006, 0.01))
 
-fg.append(ctrl("Status", "ALife_RscStructuredText", '            idc = 5003;\n            size = 0.026;\n', 0.757, 0.29, 0.181, 0.025))
-fg.append(ctrl("Clock", "ALife_RscStructuredText", '            idc = 5005;\n            size = 0.03;\n', SX, 0.315, SW, 0.1))
+# Structured text in these controls is sized in whole screen pixels by
+# fn_phone.sqf (<t size='N'> on a 1-pixel base) so it renders sharp.
+PX_TEXT = ('            size = "pixelH";\n'
+           '            class Attributes\n            {\n'
+           '                font = "RobotoCondensed";\n                color = "#FFFFFF";\n'
+           '                align = "left";\n                shadow = 0;\n            };\n')
+
+fg.append(ctrl("Status", "ALife_RscStructuredText", '            idc = 5003;\n' + PX_TEXT, 0.757, 0.289, 0.181, 0.026))
+fg.append(ctrl("Clock", "ALife_RscStructuredText", '            idc = 5005;\n' + PX_TEXT, SX, 0.315, SW, 0.1))
 
 # Home tiles: rounded icon (keeps aspect), label under it, transparent button over both.
 col_w = SW / 3
@@ -96,7 +103,11 @@ for n in range(3):
     fg.append(ctrl(f"Label{n}", "ALife_RscText",
                    f'            idc = {5215 + n};\n            font = "RobotoCondensedBold";\n            sizeEx = 0.024;\n'
                    '            colorText[] = { 0.62, 0.66, 0.72, 1 };\n', 0.757, 0.38, 0.181, 0.025))
-fg.append(ctrl("Info", "ALife_RscStructuredText", '            idc = 5210;\n            size = 0.028;\n', 0.757, 0.38, 0.181, 0.1))
+fg.append(ctrl("Info", "ALife_RscStructuredText", '            idc = 5210;\n' + PX_TEXT, 0.757, 0.38, 0.181, 0.1))
+fg.append(ctrl("Combo", "ALife_RscCombo",
+               '            idc = 5240;\n            sizeEx = 0.03;\n'
+               '            onLBSelChanged = "[\'select\', 5240, _this select 1] call ALife_fnc_phone";\n',
+               0.757, 0.42, 0.181, 0.035))
 fg.append(ctrl("List", "ALife_RscListNBox",
                '            idc = 5211;\n' + LIST_STYLE + '            columns[] = { 0.04, 0.72 };\n'
                '            onLBSelChanged = "[\'select\', 5211, _this select 1] call ALife_fnc_phone";\n',

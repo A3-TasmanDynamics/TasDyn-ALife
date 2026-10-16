@@ -55,16 +55,30 @@ class ALife_Phone
         class Status: ALife_RscStructuredText
         {
             idc = 5003;
-            size = 0.026;
+            size = "pixelH";
+            class Attributes
+            {
+                font = "RobotoCondensed";
+                color = "#FFFFFF";
+                align = "left";
+                shadow = 0;
+            };
             x = "safezoneX + safezoneW * 0.757";
-            y = "safezoneY + safezoneH * 0.29";
+            y = "safezoneY + safezoneH * 0.289";
             w = "safezoneW * 0.181";
-            h = "safezoneH * 0.025";
+            h = "safezoneH * 0.026";
         };
         class Clock: ALife_RscStructuredText
         {
             idc = 5005;
-            size = 0.03;
+            size = "pixelH";
+            class Attributes
+            {
+                font = "RobotoCondensed";
+                color = "#FFFFFF";
+                align = "left";
+                shadow = 0;
+            };
             x = "safezoneX + safezoneW * 0.752";
             y = "safezoneY + safezoneH * 0.315";
             w = "safezoneW * 0.191";
@@ -493,11 +507,28 @@ class ALife_Phone
         class Info: ALife_RscStructuredText
         {
             idc = 5210;
-            size = 0.028;
+            size = "pixelH";
+            class Attributes
+            {
+                font = "RobotoCondensed";
+                color = "#FFFFFF";
+                align = "left";
+                shadow = 0;
+            };
             x = "safezoneX + safezoneW * 0.757";
             y = "safezoneY + safezoneH * 0.38";
             w = "safezoneW * 0.181";
             h = "safezoneH * 0.1";
+        };
+        class Combo: ALife_RscCombo
+        {
+            idc = 5240;
+            sizeEx = 0.03;
+            onLBSelChanged = "['select', 5240, _this select 1] call ALife_fnc_phone";
+            x = "safezoneX + safezoneW * 0.757";
+            y = "safezoneY + safezoneH * 0.42";
+            w = "safezoneW * 0.181";
+            h = "safezoneH * 0.035";
         };
         class List: ALife_RscListNBox
         {
