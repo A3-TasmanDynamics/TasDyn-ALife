@@ -627,4 +627,43 @@ class ALife_RscListNBox
     x = 0; y = 0; w = 0.26; h = 0.55;
 };
 
+// Text input (single line; set style = 16 for multi-line). Property set
+// matches the engine's RscEdit so the renderer finds everything it reads.
+class ALife_RscEdit
+{
+    type = 2; // CT_EDIT
+    style = 0;
+    idc = -1;
+    font = "RobotoCondensed";
+    sizeEx = 0.03;
+    shadow = 0;
+    text = "";
+    autocomplete = "";
+    canModify = 1;
+    maxChars = 300;
+    colorBackground[] = { 0, 0, 0, 0.45 };
+    colorText[] = { 1, 1, 1, 1 };
+    colorDisabled[] = { 1, 1, 1, 0.25 };
+    colorSelection[] = { 0.96, 0.62, 0.04, 1 };
+    tooltipColorText[] = { 1, 1, 1, 1 };
+    tooltipColorBox[] = { 1, 1, 1, 1 };
+    tooltipColorShade[] = { 0, 0, 0, 0.65 };
+    x = 0; y = 0; w = 0.2; h = 0.04;
+};
+
+// Picture (icon) that keeps its aspect ratio.
+class ALife_RscPicture
+{
+    type = ALIFE_CT_STATIC;
+    style = 2096; // ST_PICTURE + ST_KEEP_ASPECT_RATIO
+    idc = -1;
+    colorBackground[] = { 0, 0, 0, 0 };
+    colorText[] = { 1, 1, 1, 1 };
+    font = "RobotoCondensed";
+    sizeEx = 0;
+    shadow = 0;
+    text = "";
+    x = 0; y = 0; w = 0.1; h = 0.1;
+};
+
 #endif // __ALIFE_COMMON_UI_HPP

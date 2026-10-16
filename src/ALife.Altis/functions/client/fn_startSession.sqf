@@ -11,6 +11,7 @@ if (!hasInterface) exitWith {};
 
 waitUntil { !isNull player && { !isNull (findDisplay 46) } };
 
+ALife_spawned = false;
 player allowDamage false;
 player enableSimulation false;
 ALife_sessionReply = nil;

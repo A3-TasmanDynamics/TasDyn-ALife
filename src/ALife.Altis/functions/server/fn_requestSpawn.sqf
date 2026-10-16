@@ -51,6 +51,7 @@ _unit setPosATL _target;
 _unit hideObjectGlobal false;
 _unit setVariable ["alife_uid", _uid];
 _unit setVariable ["alife_faction", _faction];
+_unit setVariable ["alife_name", name _unit, true]; // shown to medics reviving them
 
 _record set [_faction + "_alive", true];
 // Save the destination itself: the unit's own position may not have

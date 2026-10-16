@@ -17,6 +17,14 @@ class CfgFunctions
             class requestSpawn {};   // client -> server: "spawn me here"
             class savePlayer {};     // save alive/position
             class syncLoop {};       // periodic ping + autosave
+            class itemsChange {};    // add/remove virtual items (saved)
+            class requestPhoneData {}; // send a player their phone data
+            class shopBuy {};        // client -> server: buy from a shop
+            class giveItem {};       // client -> server: give/discard items
+            class bankTransfer {};   // client -> server: send money to a player
+            class sendMessage {};    // client -> server: phone message
+            class requestRevive {};  // medic's client -> server: revive finished
+            class completeRevive {}; // revived player's client -> server: put me back
         };
 
         class Client
@@ -28,6 +36,16 @@ class CfgFunctions
             class spawnMenu {};       // the spawn point picker
             class spawnApproved {};   // server -> client: go here
             class deathScreen {};     // death screen: killer, medic distance, respawn timer
+            class setupUnit {};       // per-spawn setup: death screen, revive/shop actions, settings
+            class notify {};          // server -> client: short notice
+            class phone {};           // the phone (Y)
+            class phoneData {};       // server -> client: items, money, levels
+            class phoneSettings {};   // view distance / grass
+            class messageReceived {}; // server -> client: phone message
+            class shop {};            // shop window
+            class revive {};          // medic: the Revive action
+            class revived {};         // server -> downed client: a medic revived you
+            class reviveApplied {};   // server -> client: back up where you fell
         };
 
         class Common

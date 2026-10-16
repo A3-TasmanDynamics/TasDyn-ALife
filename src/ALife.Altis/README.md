@@ -48,8 +48,42 @@ them, the weapon, the distance and how long they'd been down.
   `config/CfgALife.hpp`). Respawn is locked until 0%; after that you can respawn or keep waiting
   for a medic. The game's own automatic respawn is held off the whole time.
 
-Respawning takes you back through the spawn menu (`onPlayerRespawn.sqf`). Medics can't revive
-yet — that's the next step for the medic side.
+Respawning takes you back through the spawn menu (`onPlayerRespawn.sqf`).
+
+### Revive
+
+Medics revive downed players with a **medkit** (a virtual item). Look at the body and use
+**Revive** (scroll menu): an 8-second action with a progress bar, cancelled if you move away. When
+it finishes the server checks the medic has a medkit, uses one, and the downed player gets up where
+they fell, with their gear, at 50% health (`reviveTime` / `reviveHealth` in `config/CfgALife.hpp`).
+Flow: `ALife_fnc_revive` (medic) → `ALife_fnc_requestRevive` (server) → `ALife_fnc_revived`
+(patient respawns) → `ALife_fnc_completeRevive` (server) → `ALife_fnc_reviveApplied`.
+
+## Phone (Y)
+
+A Galaxy-style phone (`ui/phone.hpp`, `ALife_fnc_phone`) with app tiles:
+
+| App | What it does |
+|---|---|
+| Inventory | Your virtual items for the faction you're playing; give to a player within 5 m, or discard |
+| Bank | Bank and cash balance; send money from your bank to any online player |
+| Levels | Police level, EMS level, staff rank |
+| Messages | Inbox (this session); send to Police, EMS or a player, optionally anonymous (the server log keeps the real sender) |
+| Settings | View distance, grass on/off (saved in your Arma profile) |
+| Gang, Keys, Admin | "Coming soon" |
+
+Everything that changes something is checked by the server (`ALife_fnc_giveItem`,
+`ALife_fnc_bankTransfer`, `ALife_fnc_sendMessage`), which answers with fresh phone data.
+
+## Shops and items
+
+- Items: `config/CfgItems.hpp` (just **Medkit** so far). Saved per faction in
+  `players.<faction>_items`.
+- Shops: `config/CfgShops.hpp`. **Medical Supplies** (medics only) at the three hospital spawn
+  markers: Medkit $250, paid by cash or bank. Use **Open shop** in the scroll menu there.
+- Money: bank payments and transfers go through the extension's `bank` command (the
+  `bank_transactions` ledger); cash uses the `*_cash` delta save. Nobody starts with money yet —
+  staff can add some on the website (player profile → bank adjustment).
 
 ## What's saved, and when
 
@@ -105,6 +139,7 @@ in-game; Athira, Pyrgos and Sofia are town centres — move them onto the statio
 
 ## Not built yet
 
+- Phone apps Gang, Keys (needs vehicles) and Admin.
+- Paychecks / ATMs (staff add money on the website for now).
 - Medic whitelisting (all Medic slots are open).
 - Gear/loadouts (slot weapons are removed on spawn; uniforms stay).
-- Cash/bank use in game (they're loaded and shown, not yet spent).

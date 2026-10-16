@@ -67,7 +67,7 @@ struct SaveFieldSpec {
     const char* sql;  // $1 = uid, $2 = value
 };
 
-constexpr std::array<SaveFieldSpec, 17> kSaveFields{{
+constexpr std::array<SaveFieldSpec, 20> kSaveFields{{
     {"name", "UPDATE players SET name = $2, updated_at = now() WHERE uid = $1"},
     {"civ_licence", "UPDATE players SET civ_licence = $2::jsonb, updated_at = now() WHERE uid = $1"},
     {"cop_licence", "UPDATE players SET cop_licence = $2::jsonb, updated_at = now() WHERE uid = $1"},
@@ -85,6 +85,9 @@ constexpr std::array<SaveFieldSpec, 17> kSaveFields{{
     {"civ_position", "UPDATE players SET civ_position = $2::jsonb, updated_at = now() WHERE uid = $1"},
     {"cop_position", "UPDATE players SET cop_position = $2::jsonb, updated_at = now() WHERE uid = $1"},
     {"medic_position", "UPDATE players SET medic_position = $2::jsonb, updated_at = now() WHERE uid = $1"},
+    {"civ_items", "UPDATE players SET civ_items = $2::jsonb, updated_at = now() WHERE uid = $1"},
+    {"cop_items", "UPDATE players SET cop_items = $2::jsonb, updated_at = now() WHERE uid = $1"},
+    {"medic_items", "UPDATE players SET medic_items = $2::jsonb, updated_at = now() WHERE uid = $1"},
 }};
 
 }  // namespace
@@ -259,7 +262,8 @@ bool Database::LoadPlayer(const std::string& uid, std::string& outResponse, std:
         "       p.civ_gear::text, p.cop_gear::text, p.medic_gear::text, "
         "       p.civ_alive, p.cop_alive, p.medic_alive, "
         "       p.civ_position::text, p.cop_position::text, p.medic_position::text, "
-        "       p.civ_bounty "
+        "       p.civ_bounty, "
+        "       p.civ_items::text, p.cop_items::text, p.medic_items::text "
         "FROM players p LEFT JOIN staff_ranks sr ON sr.id = p.staff_rank_id "
         "WHERE p.uid = $1",
         1, nullptr, selectParams, nullptr, nullptr, 0);
@@ -301,6 +305,9 @@ bool Database::LoadPlayer(const std::string& uid, std::string& outResponse, std:
     AppendRawKv(out, first, "cop_position", col(24));
     AppendRawKv(out, first, "medic_position", col(25));
     AppendRawKv(out, first, "civ_bounty", col(26));
+    AppendRawKv(out, first, "civ_items", col(27));
+    AppendRawKv(out, first, "cop_items", col(28));
+    AppendRawKv(out, first, "medic_items", col(29));
     out += "]";
 
     PQclear(res);
@@ -430,4 +437,139 @@ bool Database::RecordCombatLog(const std::string& uid, const std::string& factio
     }
     PQclear(res);
     return ok;
+}
+
+namespace {
+
+// "civ"/"cop"/"medic" (the mission's faction keys) -> bank_accounts.faction.
+const char* BankFaction(const std::string& faction) {
+    if (faction == "civ") return "civilian";
+    if (faction == "cop") return "police";
+    if (faction == "medic") return "medic";
+    return nullptr;
+}
+
+}  // namespace
+
+bool Database::BankTx(const std::string& op, const std::string& uid, const std::string& faction,
+                      const std::string& amount, const std::string& token, const std::string& otherUid,
+                      const std::string& otherFaction, const std::string& memo, std::string& outStatus,
+                      std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+
+    const bool transfer = (op == "transfer");
+    const char* bankFaction = BankFaction(faction);
+    const char* otherBankFaction = transfer ? BankFaction(otherFaction) : nullptr;
+    if ((op != "purchase" && !transfer) || !bankFaction || (transfer && !otherBankFaction)) {
+        outStatus = "ERROR";
+        outError = "bad bank operation";
+        return true;
+    }
+
+    auto exec = [&](const char* sql, int n, const char* const* params) {
+        return PQexecParams(conn_, sql, n, nullptr, params, nullptr, nullptr, 0);
+    };
+    auto fail = [&](PGresult* res, const char* status) {
+        if (res) {
+            outError = PQerrorMessage(conn_);
+            PQclear(res);
+        }
+        PQclear(PQexec(conn_, "ROLLBACK"));
+        outStatus = status;
+        return true;
+    };
+
+    PQclear(PQexec(conn_, "BEGIN"));
+
+    // Accounts are seeded when a player is created; make sure older
+    // records have them too, then lock both in a fixed (id) order so two
+    // opposite transfers can't deadlock -- same as the website's moveMoney.
+    const char* ensureSql =
+        "INSERT INTO bank_accounts (player_id, faction, balance) "
+        "SELECT id, $2, 0 FROM players WHERE uid = $1 ON CONFLICT (player_id, faction) DO NOTHING";
+    const char* lookupSql =
+        "SELECT b.id, b.balance, p.id FROM bank_accounts b JOIN players p ON p.id = b.player_id "
+        "WHERE p.uid = $1 AND b.faction = $2";
+
+    const char* fromParams[2] = {uid.c_str(), bankFaction};
+    PQclear(exec(ensureSql, 2, fromParams));
+    const char* toParams[2] = {otherUid.c_str(), otherBankFaction};
+    if (transfer) PQclear(exec(ensureSql, 2, toParams));
+
+    PGresult* fromRes = exec(lookupSql, 2, fromParams);
+    if (PQresultStatus(fromRes) != PGRES_TUPLES_OK) return fail(fromRes, "ERROR");
+    if (PQntuples(fromRes) == 0) {
+        PQclear(fromRes);
+        return fail(nullptr, "NO_ACCOUNT");
+    }
+    std::string fromId = PQgetvalue(fromRes, 0, 0);
+    std::string playerId = PQgetvalue(fromRes, 0, 2);
+    PQclear(fromRes);
+
+    std::string toId;
+    if (transfer) {
+        PGresult* toRes = exec(lookupSql, 2, toParams);
+        if (PQresultStatus(toRes) != PGRES_TUPLES_OK) return fail(toRes, "ERROR");
+        if (PQntuples(toRes) == 0) {
+            PQclear(toRes);
+            return fail(nullptr, "NO_ACCOUNT");
+        }
+        toId = PQgetvalue(toRes, 0, 0);
+        PQclear(toRes);
+        if (toId == fromId) return fail(nullptr, "ERROR");
+    }
+
+    const char* lockParams[2] = {fromId.c_str(), toId.empty() ? fromId.c_str() : toId.c_str()};
+    PGresult* lockRes = exec(
+        "SELECT id FROM bank_accounts WHERE id IN ($1::bigint, $2::bigint) ORDER BY id FOR UPDATE", 2, lockParams);
+    if (PQresultStatus(lockRes) != PGRES_TUPLES_OK) return fail(lockRes, "ERROR");
+    PQclear(lockRes);
+
+    // The debit is only inserted if the balance (re-read under the lock)
+    // covers it. The bank_transactions trigger then updates the balance.
+    const char* debitParams[6] = {fromId.c_str(), amount.c_str(), token.c_str(),
+                                  toId.empty() ? nullptr : toId.c_str(), memo.c_str(), playerId.c_str()};
+    PGresult* debitRes = exec(
+        transfer
+            ? "INSERT INTO bank_transactions (account_id, type, amount, balance_after, related_account_id, memo, request_token, created_by) "
+              "SELECT id, 'transfer_out', -$2::bigint, balance - $2::bigint, $4::bigint, NULLIF($5, ''), $3, $6::bigint "
+              "FROM bank_accounts WHERE id = $1::bigint AND balance >= $2::bigint RETURNING id"
+            : "INSERT INTO bank_transactions (account_id, type, amount, balance_after, related_account_id, memo, request_token, created_by) "
+              "SELECT id, 'purchase', -$2::bigint, balance - $2::bigint, $4::bigint, NULLIF($5, ''), $3, $6::bigint "
+              "FROM bank_accounts WHERE id = $1::bigint AND balance >= $2::bigint RETURNING id",
+        6, debitParams);
+    if (PQresultStatus(debitRes) != PGRES_TUPLES_OK) {
+        bool duplicate = IsUniqueViolation(debitRes);
+        return fail(debitRes, duplicate ? "DUPLICATE" : "ERROR");
+    }
+    bool covered = PQntuples(debitRes) > 0;
+    PQclear(debitRes);
+    if (!covered) return fail(nullptr, "INSUFFICIENT");
+
+    if (transfer) {
+        const char* creditParams[6] = {toId.c_str(), amount.c_str(), token.c_str(),
+                                       fromId.c_str(), memo.c_str(), playerId.c_str()};
+        PGresult* creditRes = exec(
+            "INSERT INTO bank_transactions (account_id, type, amount, balance_after, related_account_id, memo, request_token, created_by) "
+            "SELECT id, 'transfer_in', $2::bigint, balance + $2::bigint, $4::bigint, NULLIF($5, ''), $3, $6::bigint "
+            "FROM bank_accounts WHERE id = $1::bigint",
+            6, creditParams);
+        if (PQresultStatus(creditRes) != PGRES_COMMAND_OK) {
+            bool duplicate = IsUniqueViolation(creditRes);
+            return fail(creditRes, duplicate ? "DUPLICATE" : "ERROR");
+        }
+        PQclear(creditRes);
+    }
+
+    PGresult* commitRes = PQexec(conn_, "COMMIT");
+    bool committed = PQresultStatus(commitRes) == PGRES_COMMAND_OK;
+    if (!committed) outError = PQerrorMessage(conn_);
+    PQclear(commitRes);
+    outStatus = committed ? "OK" : "ERROR";
+    return true;
 }
