@@ -4,8 +4,9 @@
     The server's answer to ALife_fnc_requestSession.
 
     Arguments:
-        0: STRING - "OK", "BANNED" or "ERROR"
-        1: STRING - message (BANNED / ERROR)
+        0: STRING - "OK", "BANNED", "WHITELIST" (not whitelisted for this
+           slot) or "ERROR"
+        1: STRING - message (BANNED / WHITELIST / ERROR)
         2: STRING - faction ("civ" / "cop" / "medic")
         3: ARRAY  - spawn options [[key, name, description, position], ...]
         4: ARRAY  - [name, cash, bank]
@@ -25,6 +26,13 @@ switch (_status) do {
             ["error", "There are no spawn points for your faction.<br/>Tell a developer: the spawn markers are missing from mission.sqm."] call ALife_fnc_loading;
         };
         ["open"] call ALife_fnc_spawnMenu;
+    };
+    case "WHITELIST": {
+        ["error", _message + "<br/><br/>Returning you to the lobby..."] call ALife_fnc_loading;
+        [] spawn {
+            sleep 8;
+            ["end1", false] call BIS_fnc_endMission;
+        };
     };
     case "BANNED": {
         ["error", _message] call ALife_fnc_loading;

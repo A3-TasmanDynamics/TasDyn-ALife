@@ -14,6 +14,10 @@ other system (shops, jobs, gear, whitelisting, ...) builds on top of this.
    | Independent | Medic | `medic_*` |
    | Civilian | Civilian | `civ_*` |
 
+   Police slots 1–4 are **public**; slots 5–10 are **whitelisted** (`cop_level` 1+, set in
+   `config/CfgALife.hpp`). Taking a whitelisted slot without the level shows a message and returns
+   you to the lobby.
+
 2. **Loading screen.** `initPlayerLocal.sqf` → `ALife_fnc_startSession` freezes you behind a black
    overlay, waits until the server says its database is connected, then asks the server for your
    character (`ALife_fnc_requestSession`). The overlay always says what it's waiting for, and shows
@@ -101,6 +105,6 @@ in-game; Athira, Pyrgos and Sofia are town centres — move them onto the statio
 
 ## Not built yet
 
-- Cop/medic whitelisting (anyone can take a Police or Medic slot).
+- Medic whitelisting (all Medic slots are open).
 - Gear/loadouts (slot weapons are removed on spawn; uniforms stay).
 - Cash/bank use in game (they're loaded and shown, not yet spent).
