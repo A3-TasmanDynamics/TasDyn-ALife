@@ -225,7 +225,11 @@ func UpdateMember(ctx context.Context, pool *pgxpool.Pool, actor Actor, faction 
 	var enrolled *time.Time
 	if md.Enrolled != "" {
 		t, err := time.Parse("2006-01-02", md.Enrolled)
-		if err != nil || t.After(time.Now()) || t.Year() < 2000 {
+		// t is UTC midnight; compare it with today's local date (also as UTC
+		// midnight) so an enrollment of today is allowed east of UTC.
+		y, m, d := time.Now().Date()
+		today := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+		if err != nil || t.After(today) || t.Year() < 2000 {
 			return nil, notAllowed("the enrollment date isn't a valid past date")
 		}
 		enrolled = &t
