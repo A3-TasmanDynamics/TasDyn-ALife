@@ -61,16 +61,18 @@ Flow: `ALife_fnc_revive` (medic) → `ALife_fnc_requestRevive` (server) → `ALi
 
 ## Phone (Y)
 
-A Galaxy-style phone (`ui/phone.hpp`, `ALife_fnc_phone`) with app tiles:
+A Galaxy-style phone (`ui/phone.hpp`, `ALife_fnc_phone`): a clock and a 3 x 3 grid of app icons
+(`ui/icons/*.paa`). The icons and the layout are generated — edit and re-run
+`tools/phone_icons/make_icons.py` (needs Arma 3 Tools' ImageToPAA) or `make_layout.py`.
 
 | App | What it does |
 |---|---|
-| Inventory | Your virtual items for the faction you're playing; give to a player within 5 m, or discard |
-| Bank | Bank and cash balance; send money from your bank to any online player |
-| Levels | Police level, EMS level, staff rank |
 | Messages | Inbox (this session); send to Police, EMS or a player, optionally anonymous (the server log keeps the real sender) |
+| Bank | Bank and cash balance; send money from your bank to any online player |
+| Inventory | Your virtual items for the faction you're playing; give to a player within 5 m, or discard |
+| Player ID | Your name, faction, police/EMS level, staff rank and licences (`config/CfgLicences.hpp` names them) |
 | Settings | View distance, grass on/off (saved in your Arma profile) |
-| Gang, Keys, Admin | "Coming soon" |
+| Perks, Gang, Keys, Admin | "Coming soon" (Perks will be a talent tree) |
 
 Everything that changes something is checked by the server (`ALife_fnc_giveItem`,
 `ALife_fnc_bankTransfer`, `ALife_fnc_sendMessage`), which answers with fresh phone data.
