@@ -98,6 +98,16 @@ bag/trunk on the left, you on the right, with weights.
   players can't race each other) and checks distance, what each side has, and space.
   Trunks live on the server only (vehicles aren't saved yet).
 
+## ATMs (Windows key)
+
+Every ATM on the map works — no markers: `ALife_fnc_isAtm` recognises them by model or class
+(`CfgALife >> atmModels` / `atmClasses`). Look at one and press **Windows** for the bank menu
+(`ui/atm.hpp`, `ALife_fnc_atm`): balances for the faction you're playing, an amount with quick
+buttons ($100 / $500 / $1,000 / $5,000), **Deposit**, **Withdraw**, **Deposit all cash**,
+**Withdraw all**, and **Send** to an online player. Deposit/withdraw go through
+`ALife_fnc_atmAction`, which checks you're really at an ATM, then the extension's `bank`
+`deposit` / `withdraw` (cash and bank change in one transaction, logged in `bank_transactions`).
+
 ## Shops and items
 
 - Items: `config/CfgItems.hpp` (just **Medkit** so far). Saved per faction in
@@ -163,6 +173,6 @@ in-game; Athira, Pyrgos and Sofia are town centres — move them onto the statio
 ## Not built yet
 
 - Phone apps Gang, Keys (needs vehicles) and Admin.
-- Paychecks / ATMs (staff add money on the website for now).
+- Paychecks (staff add money on the website for now; withdraw it at an ATM).
 - Medic whitelisting (all Medic slots are open).
 - Gear/loadouts (slot weapons are removed on spawn; uniforms stay).
