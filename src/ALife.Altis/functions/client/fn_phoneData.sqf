@@ -32,3 +32,4 @@ ALife_phone = createHashMapFromArray [
 
 if (!isNull (findDisplay 5000)) then { ["refresh"] call ALife_fnc_phone; };
 if (!isNull (findDisplay 5100)) then { ["refresh"] call ALife_fnc_shop; };
+if (!isNull (findDisplay 5300)) then { ["refresh"] call ALife_fnc_transfer; };
