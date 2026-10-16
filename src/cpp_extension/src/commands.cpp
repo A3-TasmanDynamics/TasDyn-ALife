@@ -38,6 +38,29 @@ std::string HandleSave(Database& db, const std::vector<std::string>& args) {
     return status;  // already "OK" / "ERROR" / "DUPLICATE" per the contract
 }
 
+// args = [uid, faction, killer, weapon, distance, secondsIncapacitated]
+std::string HandleCombatLog(Database& db, const std::vector<std::string>& args) {
+    if (args.size() < 6) return "ERROR:expected [uid, faction, killer, weapon, distance, seconds]";
+    if (!IsSteam64(args[0])) return "ERROR:invalid uid";
+    if (args[1] != "civ" && args[1] != "cop" && args[1] != "medic") return "ERROR:invalid faction";
+    auto isWholeNumber = [](const std::string& s) {
+        if (s.empty()) return true;  // "" = not applicable
+        size_t i = (s[0] == '-') ? 1 : 0;
+        if (i == s.size() || s.size() > 10) return false;
+        for (; i < s.size(); ++i) {
+            if (s[i] < '0' || s[i] > '9') return false;
+        }
+        return true;
+    };
+    if (!isWholeNumber(args[4]) || !isWholeNumber(args[5])) return "ERROR:distance/seconds must be whole numbers";
+
+    std::string error;
+    if (!db.RecordCombatLog(args[0], args[1], args[2], args[3], args[4], args[5], error)) {
+        return "ERROR:" + error;
+    }
+    return "OK";
+}
+
 }  // namespace
 
 std::string UnwrapArmaString(const std::string& arg) {
@@ -68,6 +91,7 @@ std::string DispatchCommand(Database& db, const std::string& command,
     if (command == "ping") return HandlePing(db);
     if (command == "load") return HandleLoad(db, args);
     if (command == "save") return HandleSave(db, args);
+    if (command == "combatlog") return HandleCombatLog(db, args);
 
     return "ERROR:unknown command";
 }

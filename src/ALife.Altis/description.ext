@@ -17,6 +17,8 @@ class Header
 
 // Respawn at base, but never at mission start: every player goes through
 // the spawn menu instead (onPlayerRespawn.sqf opens it again after death).
+// The death screen holds respawn until you press its Respawn button
+// (CfgALife >> respawnTime); respawnDelay is only the fallback.
 respawn = 3;
 respawnDelay = 10;
 respawnOnStart = -1;
@@ -40,8 +42,10 @@ corpseRemovalMaxTime = 900;
 #include "config\CfgFunctions.hpp"
 #include "config\CfgRemoteExec.hpp"
 #include "config\CfgSpawnPoints.hpp"
+#include "config\CfgALife.hpp"
 #include "ui\base.hpp"
 #include "ui\spawnMenu.hpp"
+#include "ui\deathScreen.hpp"
 
 class RscTitles
 {

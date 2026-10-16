@@ -37,6 +37,15 @@ public:
     bool SaveField(const std::string& uid, const std::string& field, const std::string& value,
                    const std::string& token, std::string& outStatus, std::string& outError);
 
+    // A player disconnected while incapacitated (combat logging). Writes, in
+    // one statement, an anti_cheat_flags row ('combat_log', for review on the
+    // website) and a staff_log row (website Staff Log, posted to Discord
+    // #staff-log by the website's audit poster). killer/weapon/distance are
+    // "" when nobody else was involved.
+    bool RecordCombatLog(const std::string& uid, const std::string& faction, const std::string& killer,
+                         const std::string& weapon, const std::string& distance,
+                         const std::string& secondsIncapacitated, std::string& outError);
+
 private:
     PGconn* conn_ = nullptr;
     mutable std::mutex mutex_;

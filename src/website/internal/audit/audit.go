@@ -159,6 +159,7 @@ var moderationPhrases = map[string]string{
 	"anticheat.dismiss":          "dismissed an anti-cheat flag",
 	"anticheat.watch":            "put a player on watch from an anti-cheat flag",
 	"anticheat.reopen":           "reopened an anti-cheat flag",
+	"player.combat_log":          "flagged combat logging",
 	"application.interview":      "moved a staff application to interview",
 	"application.accept":         "accepted a staff application",
 	"application.reject":         "rejected a staff application",

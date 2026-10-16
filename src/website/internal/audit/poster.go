@@ -2,8 +2,10 @@ package audit
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -163,5 +165,40 @@ func Format(staff, target, action, reason string, before, after []byte, source s
 	if reason != "" {
 		msg += " — " + webhook.Escape(reason)
 	}
+	if action == "player.combat_log" {
+		if d := CombatLogDetail(after); d != "" {
+			msg += " · " + webhook.Escape(d)
+		}
+	}
 	return fmt.Sprintf("%s · _via %s_", msg, source)
+}
+
+// CombatLogDetail summarises a player.combat_log row's details (written by
+// the game server): who downed them, with what, from how far, and how long
+// they'd been incapacitated when they left.
+func CombatLogDetail(after []byte) string {
+	var v struct {
+		KilledBy string `json:"killed_by"`
+		Weapon   string `json:"weapon"`
+		Distance *int   `json:"distance_m"`
+		Seconds  *int   `json:"seconds_incapacitated"`
+	}
+	if len(after) == 0 || json.Unmarshal(after, &v) != nil {
+		return ""
+	}
+	var parts []string
+	if v.KilledBy != "" {
+		s := "downed by " + v.KilledBy
+		if v.Weapon != "" {
+			s += " with " + v.Weapon
+		}
+		if v.Distance != nil {
+			s += fmt.Sprintf(" at %d m", *v.Distance)
+		}
+		parts = append(parts, s)
+	}
+	if v.Seconds != nil {
+		parts = append(parts, fmt.Sprintf("left %d s after going down", *v.Seconds))
+	}
+	return strings.Join(parts, ", ")
 }

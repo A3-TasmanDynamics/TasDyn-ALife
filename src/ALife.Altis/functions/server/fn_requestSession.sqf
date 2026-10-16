@@ -56,6 +56,20 @@ if (_status != "OK") exitWith {
     ["ERROR", "Your character couldn't be loaded: " + (_record getOrDefault ["reason", "unknown error"])] remoteExecCall ["ALife_fnc_sessionReceived", _owner];
 };
 
+// Whitelisted police slots: past the first copPublicSlots police slots,
+// you need cop_level >= copWhitelistLevel.
+private _slot = vehicleVarName _unit;
+private _slotNumber = parseNumber (_slot select [count "police_"]);
+private _publicSlots = getNumber (missionConfigFile >> "CfgALife" >> "copPublicSlots");
+private _minLevel = getNumber (missionConfigFile >> "CfgALife" >> "copWhitelistLevel");
+private _copLevel = _record getOrDefault ["cop_level", 0];
+private _whitelistDenied = _faction == "cop" && { (_slot find "police_") == 0 } && { _slotNumber > _publicSlots } && { _copLevel < _minLevel };
+if (_whitelistDenied) exitWith {
+    diag_log format ["[ALife] %1 (%2) refused whitelisted slot %3 (cop_level %4, needs %5)", _name, _uid, _slot, _copLevel, _minLevel];
+    ["WHITELIST", format ["This is a whitelisted Police slot (level %1+).<br/>Pick one of the Police (Public) slots instead.", _minLevel]]
+        remoteExecCall ["ALife_fnc_sessionReceived", _owner];
+};
+
 // The player may have changed their in-game name since last time.
 if ((_record getOrDefault ["name", ""]) != _name) then {
     ["save", [_uid, "name", _name, "-"]] call ALife_fnc_extension;

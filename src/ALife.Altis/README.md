@@ -14,6 +14,10 @@ other system (shops, jobs, gear, whitelisting, ...) builds on top of this.
    | Independent | Medic | `medic_*` |
    | Civilian | Civilian | `civ_*` |
 
+   Police slots 1–4 are **public**; slots 5–10 are **whitelisted** (`cop_level` 1+, set in
+   `config/CfgALife.hpp`). Taking a whitelisted slot without the level shows a message and returns
+   you to the lobby.
+
 2. **Loading screen.** `initPlayerLocal.sqf` → `ALife_fnc_startSession` freezes you behind a black
    overlay, waits until the server says its database is connected, then asks the server for your
    character (`ALife_fnc_requestSession`). The overlay always says what it's waiting for, and shows
@@ -27,8 +31,25 @@ other system (shops, jobs, gear, whitelisting, ...) builds on top of this.
    checks it's one of your faction's points, finds a clear spot nearby, saves you as alive there,
    and tells your client to move in (`ALife_fnc_spawnApproved`).
 
-Dying sets `<faction>_alive = false`. After the respawn timer you go back through the spawn menu
-(`onPlayerRespawn.sqf`).
+## Dying
+
+Dying sets `<faction>_alive = false` and opens the **death screen** (`ALife_fnc_deathScreen`,
+`ui/deathScreen.hpp`) titled **YOU ARE INCAPACITATED**. The view switches to a camera 5 m above
+your body looking straight down, following it until you respawn. There's no way to leave from the
+death screen: disconnecting while incapacitated is combat logging. The server records it (the
+extension's `combatlog` command) as a **Combat logging** anti-cheat flag (website → Anti-Cheat
+Flags) and a staff log entry (website → Staff Log, posted to Discord #staff-log), with who downed
+them, the weapon, the distance and how long they'd been down.
+
+- **Killed by** — the killer's name, weapon (or vehicle, for a roadkill) and distance in metres
+  (`ALife_fnc_killInfo`; also written to the server log). Falls and drowning just say "You died."
+- **Nearest medic** — live distance to the closest spawned-in medic, or "No medics on duty".
+- **Respawn timer** — a bar from 100% to 0% over `CfgALife >> respawnTime` (120 s, in
+  `config/CfgALife.hpp`). Respawn is locked until 0%; after that you can respawn or keep waiting
+  for a medic. The game's own automatic respawn is held off the whole time.
+
+Respawning takes you back through the spawn menu (`onPlayerRespawn.sqf`). Medics can't revive
+yet — that's the next step for the medic side.
 
 ## What's saved, and when
 
@@ -55,16 +76,19 @@ config/
   CfgFunctions.hpp       function list
   CfgRemoteExec.hpp      the only functions callable over the network
   CfgSpawnPoints.hpp     spawn points per faction
+  CfgALife.hpp           gameplay settings (respawn timer)
 ui/
   base.hpp               shared control classes (kept from the previous mission: each one
                          was fixed against a real in-game error, the map especially)
   loading.hpp            the black loading overlay
   spawnMenu.hpp          the spawn picker
+  deathScreen.hpp        the death screen
 functions/
   server/                extension, serverInit, loadRecord, requestSession, spawnOptions,
                          requestSpawn, savePlayer, syncLoop
-  client/                startSession, loading, sessionReceived, spawnMenu, spawnApproved
-  common/                sideToFaction, parsePosition
+  client/                startSession, loading, sessionReceived, spawnMenu, spawnApproved,
+                         deathScreen
+  common/                sideToFaction, parsePosition, killInfo
 ```
 
 ## Spawn points
@@ -81,6 +105,6 @@ in-game; Athira, Pyrgos and Sofia are town centres — move them onto the statio
 
 ## Not built yet
 
-- Cop/medic whitelisting (anyone can take a Police or Medic slot).
+- Medic whitelisting (all Medic slots are open).
 - Gear/loadouts (slot weapons are removed on spawn; uniforms stay).
 - Cash/bank use in game (they're loaded and shown, not yet spent).

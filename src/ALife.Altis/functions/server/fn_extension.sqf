@@ -2,7 +2,7 @@
     ALife_fnc_extension (server)
 
     The only place that talks to the database DLL (tasdyn_alife_x64.dll,
-    src/cpp_extension). Commands: "ping", "load", "save".
+    src/cpp_extension). Commands: "ping", "load", "save", "combatlog".
 
     Arguments:
         0: STRING - command
