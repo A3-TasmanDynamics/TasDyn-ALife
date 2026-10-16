@@ -45,10 +45,12 @@ LIST_STYLE = ('            sizeEx = 0.028;\n            rowHeight = 0.042;\n'
 
 bg, fg = [], []
 
-bg.append(ctrl("Bezel", "ALife_RscBackground", '            colorBackground[] = { 0.015, 0.015, 0.02, 0.98 };\n', 0.745, 0.26, 0.205, 0.71))
-bg.append(ctrl("Screen", "ALife_RscBackground", '            colorBackground[] = { 0.06, 0.07, 0.1, 1 };\n', SX, SY, SW, SH))
-bg.append(ctrl("Glow", "ALife_RscBackground", '            colorBackground[] = { 0.25, 0.3, 0.55, 0.12 };\n', SX, SY, SW, 0.22))
-bg.append(ctrl("Camera", "ALife_RscBackground", '            colorBackground[] = { 0, 0, 0, 1 };\n', 0.8445, 0.289, 0.006, 0.01))
+# The phone itself: one stretched picture (rounded body, bezel, rounded
+# screen, camera) drawn by make_frame.py. fn_phone.sqf swaps the home
+# wallpaper for the dark app background when an app is open.
+bg.append(ctrl("Body", "ALife_RscPicture",
+               '            idc = 5001;\n            style = 48; // stretch to fill\n'
+               '            text = "ui\\phone\\phone_home_ca.paa";\n', 0.745, 0.26, 0.205, 0.71))
 
 # Structured text in these controls is sized in whole screen pixels by
 # fn_phone.sqf (<t size='N'> on a 1-pixel base) so it renders sharp.
@@ -57,15 +59,17 @@ PX_TEXT = ('            size = "pixelH";\n'
            '                font = "RobotoCondensed";\n                color = "#FFFFFF";\n'
            '                align = "left";\n                shadow = 0;\n            };\n')
 
-fg.append(ctrl("Status", "ALife_RscStructuredText", '            idc = 5003;\n' + PX_TEXT, 0.757, 0.289, 0.181, 0.026))
-fg.append(ctrl("Clock", "ALife_RscStructuredText", '            idc = 5005;\n' + PX_TEXT, SX, 0.315, SW, 0.1))
+# Status bar sits clear of the screen's rounded corners and the camera.
+fg.append(ctrl("Status", "ALife_RscStructuredText", '            idc = 5003;\n' + PX_TEXT, 0.765, 0.293, 0.165, 0.026))
+# Stacked clock (hours over minutes) and date, top-left like the reference.
+fg.append(ctrl("Clock", "ALife_RscStructuredText", '            idc = 5005;\n' + PX_TEXT, 0.768, 0.33, 0.16, 0.2))
 
 # Home tiles: rounded icon (keeps aspect), label under it, transparent button over both.
 col_w = SW / 3
 for i, (label, icon) in enumerate(APPS):
     col, row = i % 3, i // 3
     cx = SX + col_w * (col + 0.5)
-    y = 0.44 + row * 0.15
+    y = 0.56 + row * 0.125
     fg.append(ctrl(f"TileIcon{i}", "ALife_RscPicture",
                    f'            idc = {5110 + i};\n            text = "ui\\icons\\{icon}_ca.paa";\n',
                    cx - 0.022, y, 0.044, 0.078))

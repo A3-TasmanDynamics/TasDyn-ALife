@@ -16,37 +16,15 @@ class ALife_Phone
 
     class controlsBackground
     {
-        class Bezel: ALife_RscBackground
+        class Body: ALife_RscPicture
         {
-            colorBackground[] = { 0.015, 0.015, 0.02, 0.98 };
+            idc = 5001;
+            style = 48; // stretch to fill
+            text = "ui\phone\phone_home_ca.paa";
             x = "safezoneX + safezoneW * 0.745";
             y = "safezoneY + safezoneH * 0.26";
             w = "safezoneW * 0.205";
             h = "safezoneH * 0.71";
-        };
-        class Screen: ALife_RscBackground
-        {
-            colorBackground[] = { 0.06, 0.07, 0.1, 1 };
-            x = "safezoneX + safezoneW * 0.752";
-            y = "safezoneY + safezoneH * 0.285";
-            w = "safezoneW * 0.191";
-            h = "safezoneH * 0.66";
-        };
-        class Glow: ALife_RscBackground
-        {
-            colorBackground[] = { 0.25, 0.3, 0.55, 0.12 };
-            x = "safezoneX + safezoneW * 0.752";
-            y = "safezoneY + safezoneH * 0.285";
-            w = "safezoneW * 0.191";
-            h = "safezoneH * 0.22";
-        };
-        class Camera: ALife_RscBackground
-        {
-            colorBackground[] = { 0, 0, 0, 1 };
-            x = "safezoneX + safezoneW * 0.8445";
-            y = "safezoneY + safezoneH * 0.289";
-            w = "safezoneW * 0.006";
-            h = "safezoneH * 0.01";
         };
     };
 
@@ -63,9 +41,9 @@ class ALife_Phone
                 align = "left";
                 shadow = 0;
             };
-            x = "safezoneX + safezoneW * 0.757";
-            y = "safezoneY + safezoneH * 0.289";
-            w = "safezoneW * 0.181";
+            x = "safezoneX + safezoneW * 0.765";
+            y = "safezoneY + safezoneH * 0.293";
+            w = "safezoneW * 0.165";
             h = "safezoneH * 0.026";
         };
         class Clock: ALife_RscStructuredText
@@ -79,17 +57,17 @@ class ALife_Phone
                 align = "left";
                 shadow = 0;
             };
-            x = "safezoneX + safezoneW * 0.752";
-            y = "safezoneY + safezoneH * 0.315";
-            w = "safezoneW * 0.191";
-            h = "safezoneH * 0.1";
+            x = "safezoneX + safezoneW * 0.768";
+            y = "safezoneY + safezoneH * 0.33";
+            w = "safezoneW * 0.16";
+            h = "safezoneH * 0.2";
         };
         class TileIcon0: ALife_RscPicture
         {
             idc = 5110;
             text = "ui\icons\messages_ca.paa";
             x = "safezoneX + safezoneW * 0.7618";
-            y = "safezoneY + safezoneH * 0.44";
+            y = "safezoneY + safezoneH * 0.56";
             w = "safezoneW * 0.044";
             h = "safezoneH * 0.078";
         };
@@ -101,7 +79,7 @@ class ALife_Phone
             colorText[] = { 0.9, 0.92, 0.95, 1 };
             text = "Messages";
             x = "safezoneX + safezoneW * 0.752";
-            y = "safezoneY + safezoneH * 0.522";
+            y = "safezoneY + safezoneH * 0.642";
             w = "safezoneW * 0.0637";
             h = "safezoneH * 0.028";
         };
@@ -116,7 +94,7 @@ class ALife_Phone
             offsetPressedX = 0; offsetPressedY = 0;
             action = "['app', 0] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.756";
-            y = "safezoneY + safezoneH * 0.434";
+            y = "safezoneY + safezoneH * 0.554";
             w = "safezoneW * 0.0557";
             h = "safezoneH * 0.118";
         };
@@ -125,7 +103,7 @@ class ALife_Phone
             idc = 5111;
             text = "ui\icons\bank_ca.paa";
             x = "safezoneX + safezoneW * 0.8255";
-            y = "safezoneY + safezoneH * 0.44";
+            y = "safezoneY + safezoneH * 0.56";
             w = "safezoneW * 0.044";
             h = "safezoneH * 0.078";
         };
@@ -137,7 +115,7 @@ class ALife_Phone
             colorText[] = { 0.9, 0.92, 0.95, 1 };
             text = "Bank";
             x = "safezoneX + safezoneW * 0.8157";
-            y = "safezoneY + safezoneH * 0.522";
+            y = "safezoneY + safezoneH * 0.642";
             w = "safezoneW * 0.0637";
             h = "safezoneH * 0.028";
         };
@@ -152,7 +130,7 @@ class ALife_Phone
             offsetPressedX = 0; offsetPressedY = 0;
             action = "['app', 1] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.8197";
-            y = "safezoneY + safezoneH * 0.434";
+            y = "safezoneY + safezoneH * 0.554";
             w = "safezoneW * 0.0557";
             h = "safezoneH * 0.118";
         };
@@ -161,7 +139,7 @@ class ALife_Phone
             idc = 5112;
             text = "ui\icons\inventory_ca.paa";
             x = "safezoneX + safezoneW * 0.8892";
-            y = "safezoneY + safezoneH * 0.44";
+            y = "safezoneY + safezoneH * 0.56";
             w = "safezoneW * 0.044";
             h = "safezoneH * 0.078";
         };
@@ -173,7 +151,7 @@ class ALife_Phone
             colorText[] = { 0.9, 0.92, 0.95, 1 };
             text = "Inventory";
             x = "safezoneX + safezoneW * 0.8793";
-            y = "safezoneY + safezoneH * 0.522";
+            y = "safezoneY + safezoneH * 0.642";
             w = "safezoneW * 0.0637";
             h = "safezoneH * 0.028";
         };
@@ -188,7 +166,7 @@ class ALife_Phone
             offsetPressedX = 0; offsetPressedY = 0;
             action = "['app', 2] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.8833";
-            y = "safezoneY + safezoneH * 0.434";
+            y = "safezoneY + safezoneH * 0.554";
             w = "safezoneW * 0.0557";
             h = "safezoneH * 0.118";
         };
@@ -197,7 +175,7 @@ class ALife_Phone
             idc = 5113;
             text = "ui\icons\playerid_ca.paa";
             x = "safezoneX + safezoneW * 0.7618";
-            y = "safezoneY + safezoneH * 0.59";
+            y = "safezoneY + safezoneH * 0.685";
             w = "safezoneW * 0.044";
             h = "safezoneH * 0.078";
         };
@@ -209,7 +187,7 @@ class ALife_Phone
             colorText[] = { 0.9, 0.92, 0.95, 1 };
             text = "Player ID";
             x = "safezoneX + safezoneW * 0.752";
-            y = "safezoneY + safezoneH * 0.672";
+            y = "safezoneY + safezoneH * 0.767";
             w = "safezoneW * 0.0637";
             h = "safezoneH * 0.028";
         };
@@ -224,7 +202,7 @@ class ALife_Phone
             offsetPressedX = 0; offsetPressedY = 0;
             action = "['app', 3] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.756";
-            y = "safezoneY + safezoneH * 0.584";
+            y = "safezoneY + safezoneH * 0.679";
             w = "safezoneW * 0.0557";
             h = "safezoneH * 0.118";
         };
@@ -233,7 +211,7 @@ class ALife_Phone
             idc = 5114;
             text = "ui\icons\perks_ca.paa";
             x = "safezoneX + safezoneW * 0.8255";
-            y = "safezoneY + safezoneH * 0.59";
+            y = "safezoneY + safezoneH * 0.685";
             w = "safezoneW * 0.044";
             h = "safezoneH * 0.078";
         };
@@ -245,7 +223,7 @@ class ALife_Phone
             colorText[] = { 0.9, 0.92, 0.95, 1 };
             text = "Perks";
             x = "safezoneX + safezoneW * 0.8157";
-            y = "safezoneY + safezoneH * 0.672";
+            y = "safezoneY + safezoneH * 0.767";
             w = "safezoneW * 0.0637";
             h = "safezoneH * 0.028";
         };
@@ -260,7 +238,7 @@ class ALife_Phone
             offsetPressedX = 0; offsetPressedY = 0;
             action = "['app', 4] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.8197";
-            y = "safezoneY + safezoneH * 0.584";
+            y = "safezoneY + safezoneH * 0.679";
             w = "safezoneW * 0.0557";
             h = "safezoneH * 0.118";
         };
@@ -269,7 +247,7 @@ class ALife_Phone
             idc = 5115;
             text = "ui\icons\gang_ca.paa";
             x = "safezoneX + safezoneW * 0.8892";
-            y = "safezoneY + safezoneH * 0.59";
+            y = "safezoneY + safezoneH * 0.685";
             w = "safezoneW * 0.044";
             h = "safezoneH * 0.078";
         };
@@ -281,7 +259,7 @@ class ALife_Phone
             colorText[] = { 0.9, 0.92, 0.95, 1 };
             text = "Gang";
             x = "safezoneX + safezoneW * 0.8793";
-            y = "safezoneY + safezoneH * 0.672";
+            y = "safezoneY + safezoneH * 0.767";
             w = "safezoneW * 0.0637";
             h = "safezoneH * 0.028";
         };
@@ -296,7 +274,7 @@ class ALife_Phone
             offsetPressedX = 0; offsetPressedY = 0;
             action = "['app', 5] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.8833";
-            y = "safezoneY + safezoneH * 0.584";
+            y = "safezoneY + safezoneH * 0.679";
             w = "safezoneW * 0.0557";
             h = "safezoneH * 0.118";
         };
@@ -305,7 +283,7 @@ class ALife_Phone
             idc = 5116;
             text = "ui\icons\keys_ca.paa";
             x = "safezoneX + safezoneW * 0.7618";
-            y = "safezoneY + safezoneH * 0.74";
+            y = "safezoneY + safezoneH * 0.81";
             w = "safezoneW * 0.044";
             h = "safezoneH * 0.078";
         };
@@ -317,7 +295,7 @@ class ALife_Phone
             colorText[] = { 0.9, 0.92, 0.95, 1 };
             text = "Keys";
             x = "safezoneX + safezoneW * 0.752";
-            y = "safezoneY + safezoneH * 0.822";
+            y = "safezoneY + safezoneH * 0.892";
             w = "safezoneW * 0.0637";
             h = "safezoneH * 0.028";
         };
@@ -332,7 +310,7 @@ class ALife_Phone
             offsetPressedX = 0; offsetPressedY = 0;
             action = "['app', 6] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.756";
-            y = "safezoneY + safezoneH * 0.734";
+            y = "safezoneY + safezoneH * 0.804";
             w = "safezoneW * 0.0557";
             h = "safezoneH * 0.118";
         };
@@ -341,7 +319,7 @@ class ALife_Phone
             idc = 5117;
             text = "ui\icons\admin_ca.paa";
             x = "safezoneX + safezoneW * 0.8255";
-            y = "safezoneY + safezoneH * 0.74";
+            y = "safezoneY + safezoneH * 0.81";
             w = "safezoneW * 0.044";
             h = "safezoneH * 0.078";
         };
@@ -353,7 +331,7 @@ class ALife_Phone
             colorText[] = { 0.9, 0.92, 0.95, 1 };
             text = "Admin";
             x = "safezoneX + safezoneW * 0.8157";
-            y = "safezoneY + safezoneH * 0.822";
+            y = "safezoneY + safezoneH * 0.892";
             w = "safezoneW * 0.0637";
             h = "safezoneH * 0.028";
         };
@@ -368,7 +346,7 @@ class ALife_Phone
             offsetPressedX = 0; offsetPressedY = 0;
             action = "['app', 7] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.8197";
-            y = "safezoneY + safezoneH * 0.734";
+            y = "safezoneY + safezoneH * 0.804";
             w = "safezoneW * 0.0557";
             h = "safezoneH * 0.118";
         };
@@ -377,7 +355,7 @@ class ALife_Phone
             idc = 5118;
             text = "ui\icons\settings_ca.paa";
             x = "safezoneX + safezoneW * 0.8892";
-            y = "safezoneY + safezoneH * 0.74";
+            y = "safezoneY + safezoneH * 0.81";
             w = "safezoneW * 0.044";
             h = "safezoneH * 0.078";
         };
@@ -389,7 +367,7 @@ class ALife_Phone
             colorText[] = { 0.9, 0.92, 0.95, 1 };
             text = "Settings";
             x = "safezoneX + safezoneW * 0.8793";
-            y = "safezoneY + safezoneH * 0.822";
+            y = "safezoneY + safezoneH * 0.892";
             w = "safezoneW * 0.0637";
             h = "safezoneH * 0.028";
         };
@@ -404,7 +382,7 @@ class ALife_Phone
             offsetPressedX = 0; offsetPressedY = 0;
             action = "['app', 8] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.8833";
-            y = "safezoneY + safezoneH * 0.734";
+            y = "safezoneY + safezoneH * 0.804";
             w = "safezoneW * 0.0557";
             h = "safezoneH * 0.118";
         };

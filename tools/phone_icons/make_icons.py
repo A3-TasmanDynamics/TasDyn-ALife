@@ -185,10 +185,10 @@ def render(name):
     return b"".join(rows)
 
 
-def write_png(path, raw):
+def write_png(path, raw, width=SIZE, height=SIZE):
     def chunk(kind, data):
         return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
-    ihdr = struct.pack(">IIBBBBB", SIZE, SIZE, 8, 6, 0, 0, 0)
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
     with open(path, "wb") as f:
         f.write(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
 

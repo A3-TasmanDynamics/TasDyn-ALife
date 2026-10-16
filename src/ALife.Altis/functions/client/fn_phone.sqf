@@ -22,6 +22,7 @@
 */
 
 #define IDD_PHONE    5000
+#define IDC_BODY     5001
 #define IDC_STATUS   5003
 #define IDC_CLOCK    5005
 #define IDC_ICON     5110
@@ -184,11 +185,22 @@ switch (_mode) do {
         private _unread = missionNamespace getVariable ["ALife_unread", 0];
         (_display displayCtrl IDC_LABEL) ctrlSetText (["Messages", format ["Messages (%1)", _unread]] select (_unread > 0));
 
+        (_display displayCtrl IDC_BODY) ctrlSetText "ui\phone\phone_home_ca.paa";
+
+        // Stacked clock (hours over minutes) and "Sat, 24 Jun", top-left.
         date params ["_year", "_month", "_day"];
-        private _months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        private _months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        // Day of the week (Zeller's congruence, 0 = Saturday).
+        private _m = [_month, _month + 12] select (_month < 3);
+        private _y = [_year, _year - 1] select (_month < 3);
+        private _weekday = (_day + floor (13 * (_m + 1) / 5) + (_y % 100) + floor ((_y % 100) / 4) + floor ((floor (_y / 100)) / 4) + 5 * floor (_y / 100)) % 7;
+        private _hour = floor daytime;
+        private _minute = floor ((daytime - _hour) * 60);
         (_display displayCtrl IDC_CLOCK) ctrlSetStructuredText parseText format [
-            "<t align='center' size='%5' font='RobotoCondensedLight'>%1</t><br/><t align='center' size='%6' color='#c0c7d1'>%2 %3 %4</t>",
-            call _fnc_time, _day, _months select ((_month - 1) max 0), _year, 76 call _fnc_px, 26 call _fnc_px];
+            "<t size='%4' font='RobotoCondensedLight'>%1</t><br/><t size='%4' font='RobotoCondensedLight'>%2</t><br/><t size='%5' color='#eef3f8'>%3</t>",
+            _hour, (["", "0"] select (_minute < 10)) + str _minute,
+            format ["%1, %2 %3", ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"] select _weekday, _day, _months select ((_month - 1) max 0)],
+            64 call _fnc_px, 24 call _fnc_px];
         call _fnc_status;
     };
 
@@ -204,6 +216,7 @@ switch (_mode) do {
         { (_display displayCtrl _x) ctrlShow true; } forEach [IDC_HEADER, IDC_BACK, IDC_TITLE, IDC_APPICON];
         (_display displayCtrl IDC_TITLE) ctrlSetText (_titles select _index);
         (_display displayCtrl IDC_APPICON) ctrlSetText format ["ui\icons\%1_ca.paa", ALife_phoneApp];
+        (_display displayCtrl IDC_BODY) ctrlSetText "ui\phone\phone_app_ca.paa";
         (_display displayCtrl IDC_EDIT) ctrlSetText "";
         lnbClear (_display displayCtrl IDC_LIST);
         lnbClear (_display displayCtrl IDC_LIST2);
