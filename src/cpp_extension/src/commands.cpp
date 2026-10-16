@@ -65,7 +65,7 @@ std::string HandleCombatLog(Database& db, const std::vector<std::string>& args) 
 std::string HandleBank(Database& db, const std::vector<std::string>& args) {
     if (args.size() < 8) return "ERROR:expected [op, uid, faction, amount, token, otherUid, otherFaction, memo]";
     const std::string& op = args[0];
-    if (op != "purchase" && op != "transfer") return "ERROR:unknown bank op";
+    if (op != "purchase" && op != "transfer" && op != "deposit" && op != "withdraw") return "ERROR:unknown bank op";
     if (!IsSteam64(args[1])) return "ERROR:invalid uid";
     if (op == "transfer" && !IsSteam64(args[5])) return "ERROR:invalid recipient uid";
     const std::string& amount = args[3];
@@ -78,7 +78,10 @@ std::string HandleBank(Database& db, const std::vector<std::string>& args) {
 
     std::string status;
     std::string error;
-    if (!db.BankTx(op, args[1], args[2], amount, args[4], args[5], args[6], args[7], status, error)) {
+    bool ok = (op == "deposit" || op == "withdraw")
+                  ? db.BankCash(op, args[1], args[2], amount, args[4], status, error)
+                  : db.BankTx(op, args[1], args[2], amount, args[4], args[5], args[6], args[7], status, error);
+    if (!ok) {
         return "ERROR:" + error;
     }
     return status;
