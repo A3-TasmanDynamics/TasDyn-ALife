@@ -41,6 +41,7 @@
 #define IDC_BUTTON   5220
 #define IDC_CARD0    5230
 #define IDC_COMBO    5240
+#define IDC_COMBO2   5241
 
 params ["_mode"];
 private _args = _this select [1];
@@ -54,7 +55,7 @@ private _factionName = switch (_faction) do { case "cop": { "Police" }; case "me
 private _appControls = [IDC_HEADER, IDC_BACK, IDC_TITLE, IDC_APPICON, IDC_INFO, IDC_LIST, IDC_LIST2, IDC_EDIT, IDC_MESSAGE]
     + ([0, 1, 2] apply { IDC_LABEL0 + _x })
     + ([0, 1] apply { IDC_CARD0 + _x })
-    + [IDC_COMBO]
+    + [IDC_COMBO, IDC_COMBO2]
     + ([0, 1, 2, 3, 4, 5] apply { IDC_BUTTON + _x });
 
 private _fnc_safe = { (_this splitString "<>&") joinString "" };
@@ -185,7 +186,7 @@ switch (_mode) do {
         private _unread = missionNamespace getVariable ["ALife_unread", 0];
         (_display displayCtrl IDC_LABEL) ctrlSetText (["Messages", format ["Messages (%1)", _unread]] select (_unread > 0));
 
-        (_display displayCtrl IDC_BODY) ctrlSetText "ui\phone\phone_home_ca.paa";
+        (_display displayCtrl IDC_BODY) ctrlSetText (["wallpaperTexture"] call ALife_fnc_phoneSettings);
 
         // Stacked clock (hours over minutes) and "Sat, 24 Jun", top-left.
         date params ["_year", "_month", "_day"];
@@ -216,7 +217,7 @@ switch (_mode) do {
         { (_display displayCtrl _x) ctrlShow true; } forEach [IDC_HEADER, IDC_BACK, IDC_TITLE, IDC_APPICON];
         (_display displayCtrl IDC_TITLE) ctrlSetText (_titles select _index);
         (_display displayCtrl IDC_APPICON) ctrlSetText format ["ui\icons\%1_ca.paa", ALife_phoneApp];
-        (_display displayCtrl IDC_BODY) ctrlSetText "ui\phone\phone_app_ca.paa";
+        (_display displayCtrl IDC_BODY) ctrlSetText getText (missionConfigFile >> "CfgPhone" >> "appBackground");
         (_display displayCtrl IDC_EDIT) ctrlSetText "";
         lnbClear (_display displayCtrl IDC_LIST);
         lnbClear (_display displayCtrl IDC_LIST2);
@@ -272,10 +273,18 @@ switch (_mode) do {
                 private _combo = [IDC_COMBO, 0.05, 0.07] call _fnc_place;
                 [1, "GRASS", 0.16] call _fnc_label;
                 [1, "", 0.21, 0.075] call _fnc_button;
-                [IDC_INFO, 0.32, 0.2] call _fnc_place;
-                // Fill the drop-down; picking a distance applies it straight away.
-                private _current = (["get"] call ALife_fnc_phoneSettings) select 0;
+                [2, "WALLPAPER", 0.32] call _fnc_label;
+                private _combo2 = [IDC_COMBO2, 0.37, 0.07] call _fnc_place;
+                [IDC_INFO, 0.48, 0.2] call _fnc_place;
+                // Fill the drop-downs; picking an option applies it straight away.
+                (["get"] call ALife_fnc_phoneSettings) params ["_current", "", "_currentWallpaper"];
                 ALife_phoneFilling = true;
+                lbClear _combo2;
+                {
+                    private _row = _combo2 lbAdd getText (_x >> "displayName");
+                    _combo2 lbSetData [_row, configName _x];
+                    if (configName _x == _currentWallpaper) then { _combo2 lbSetCurSel _row; };
+                } forEach ("true" configClasses (missionConfigFile >> "CfgPhone" >> "Wallpapers"));
                 lbClear _combo;
                 {
                     private _row = _combo lbAdd format ["%1 m", _x];
@@ -397,7 +406,7 @@ switch (_mode) do {
             case "settings": {
                 (["get"] call ALife_fnc_phoneSettings) params ["_distance", "_grass"];
                 _info ctrlSetStructuredText parseText format [
-                    "<t size='%2' color='#c0c7d1'>Your view distance is %1 m. Lower it if the game runs slowly.</t>", _distance, 24 call _fnc_px];
+                    "<t size='%2' color='#c0c7d1'>Your view distance is %1 m. Lower it if the game runs slowly.<br/><br/>The wallpaper shows on the home screen; apps keep the dark background.</t>", _distance, 24 call _fnc_px];
                 (_display displayCtrl (IDC_BUTTON + 1)) ctrlSetText (["Grass: Off", "Grass: On"] select _grass);
             };
         };
@@ -410,6 +419,10 @@ switch (_mode) do {
             if (missionNamespace getVariable ["ALife_phoneFilling", false]) exitWith {};
             ["viewDistance", (_display displayCtrl IDC_COMBO) lbValue _row] call ALife_fnc_phoneSettings;
             ["refresh"] call ALife_fnc_phone;
+        };
+        if (_idc == IDC_COMBO2) exitWith {
+            if (missionNamespace getVariable ["ALife_phoneFilling", false]) exitWith {};
+            ["wallpaper", (_display displayCtrl IDC_COMBO2) lbData _row] call ALife_fnc_phoneSettings;
         };
         if (ALife_phoneApp == "messages" && { _idc == IDC_LIST }) then {
             private _inbox = missionNamespace getVariable ["ALife_inbox", []];

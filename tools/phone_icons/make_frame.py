@@ -4,8 +4,8 @@ The phone dialog is made of rectangles; the curves come from these
 textures: a rounded body with a thin bezel, a rounded screen, a punch-hole
 camera and a speaker slot. Two versions:
 
-    phone_home_ca.paa -- home screen wallpaper (sky, mountains, hills)
-    phone_app_ca.paa  -- dark background for apps (keeps text readable)
+    phone_<key>_ca.paa -- one per wallpaper (WALLPAPERS below); "dark" is the
+                          default and the background apps use
 
 512 x 1024 RGBA, matching the phone's on-screen shape (ui/phone.hpp:
 x 0.745-0.950, y 0.26-0.97 of the safe zone, screen inset 0.007 / 0.025).
@@ -88,6 +88,85 @@ def app_background(u, v):
     return lerp(c, hexc("#2b3f6e"), 0.35 * glow)
 
 
+def ridge(u, base, waves):
+    return base - sum(a * math.sin(u * f + p) for a, f, p in waves)
+
+
+def sunset_wallpaper(u, v):
+    c = gradient([(0, hexc("#2a1b4d")), (0.3, hexc("#6b2d6b")), (0.55, hexc("#d9534f")),
+                  (0.7, hexc("#f59e0b")), (0.74, hexc("#fde68a")), (1, hexc("#fde68a"))], v)
+    # sun on the horizon
+    d = math.hypot(u - 0.5, (v - 0.72) * 2)
+    if d < 0.16:
+        c = lerp(c, hexc("#fff3c4"), min(1, (0.16 - d) / 0.03))
+    if v > 0.74:  # sea, with the sun's reflection
+        c = gradient([(0.74, hexc("#7c2d4f")), (1, hexc("#2a1240"))], v)
+        if abs(u - 0.5) < 0.12 * (1 - (v - 0.74) / 0.3) and int(v * 140) % 3 == 0:
+            c = lerp(c, hexc("#fcd34d"), 0.7)
+    # headlands sloping down to the sea on both sides
+    shore = 0.76 + 0.22 * math.exp(-((u - 0.5) / 0.2) ** 2) - 0.01 * math.sin(u * 23)
+    if v > shore:
+        c = hexc("#1a0d26")
+    return c
+
+
+def ocean_wallpaper(u, v):
+    # dark at the top so the white clock stays readable
+    c = gradient([(0, hexc("#062a43")), (0.35, hexc("#0c4a6e")), (0.7, hexc("#0e7490")), (1, hexc("#22b5c9"))], v)
+    for i in range(7):
+        y = 0.45 + i * 0.08
+        if abs(v - ridge(u, y, [(0.012, 9 + i, i)])) < 0.004:
+            c = lerp(c, (255, 255, 255), 0.25)
+    return c
+
+
+def forest_wallpaper(u, v):
+    c = gradient([(0, hexc("#0f2b1d")), (0.5, hexc("#3f7d5a")), (0.75, hexc("#b7d7a8")), (1, hexc("#e5f2d5"))], v)
+    layers = [(0.62, "#5f8f6a", [(0.04, 3, 0), (0.015, 11, 1)]),
+              (0.72, "#3d6b4b", [(0.035, 4, 2), (0.01, 17, 0)]),
+              (0.84, "#22442f", [(0.025, 5, 1)])]
+    for base, colour, waves in layers:
+        if v > ridge(u, base, waves):
+            c = hexc(colour)
+    for tx, th, tw in [(0.06, 0.24, 0.08), (0.16, 0.17, 0.06), (0.83, 0.2, 0.07), (0.94, 0.27, 0.09), (0.5, 0.1, 0.04)]:
+        top = 0.94 - th
+        if v > top and abs(u - tx) < tw * (v - top) / th:
+            c = hexc("#11261a")
+    if v > 0.94:
+        c = hexc("#11261a")
+    return c
+
+
+def aurora_wallpaper(u, v):
+    c = gradient([(0, hexc("#050814")), (0.6, hexc("#0b1530")), (1, hexc("#0e1a36"))], v)
+    for centre, colour, strength, waves in [
+        (0.28, "#34d399", 0.85, [(0.06, 4, 0), (0.02, 11, 1)]),
+        (0.38, "#a78bfa", 0.6, [(0.05, 3, 2), (0.015, 13, 0)]),
+        (0.5, "#22d3ee", 0.45, [(0.04, 5, 1)]),
+    ]:
+        d = v - ridge(u, centre, waves)
+        glow = math.exp(-(d / 0.035) ** 2) if d > -0.02 else math.exp(-(d / 0.012) ** 2)
+        c = lerp(c, hexc(colour), strength * glow)
+    if v > ridge(u, 0.88, [(0.025, 4, 0.5), (0.01, 14, 0)]):
+        c = hexc("#03050b")
+    for sx, sy in [(0.15, 0.06), (0.8, 0.1), (0.6, 0.04), (0.33, 0.12), (0.9, 0.2), (0.07, 0.18)]:
+        if (u - sx) ** 2 + ((v - sy) * 2) ** 2 < 0.003 ** 2:
+            c = (240, 240, 255)
+    return c
+
+
+# Wallpapers (key -> generator). Keys match CfgPhone.hpp; "dark" is the
+# default and the background apps always use.
+WALLPAPERS = {
+    "dark": app_background,
+    "dusk": home_wallpaper,
+    "sunset": sunset_wallpaper,
+    "ocean": ocean_wallpaper,
+    "forest": forest_wallpaper,
+    "aurora": aurora_wallpaper,
+}
+
+
 def render(wallpaper):
     rows = []
     sx0, sy0, sx1, sy1 = SL, ST, W - 1 - SL, H - 1 - ST
@@ -132,7 +211,8 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     png_dir = os.path.join(os.path.dirname(__file__), "png")
     os.makedirs(png_dir, exist_ok=True)
-    for name, wall in (("phone_home_ca", home_wallpaper), ("phone_app_ca", app_background)):
+    for key, wall in WALLPAPERS.items():
+        name = f"phone_{key}_ca"
         png = os.path.join(png_dir, name + ".png")
         write_png(png, render(wall), W, H)
         print("drew", png)

@@ -50,7 +50,7 @@ bg, fg = [], []
 # wallpaper for the dark app background when an app is open.
 bg.append(ctrl("Body", "ALife_RscPicture",
                '            idc = 5001;\n            style = 48; // stretch to fill\n'
-               '            text = "ui\\phone\\phone_home_ca.paa";\n', 0.745, 0.26, 0.205, 0.71))
+               '            text = "ui\\phone\\phone_dark_ca.paa";\n', 0.745, 0.26, 0.205, 0.71))
 
 # Structured text in these controls is sized in whole screen pixels by
 # fn_phone.sqf (<t size='N'> on a 1-pixel base) so it renders sharp.
@@ -108,10 +108,11 @@ for n in range(3):
                    f'            idc = {5215 + n};\n            font = "RobotoCondensedBold";\n            sizeEx = 0.024;\n'
                    '            colorText[] = { 0.62, 0.66, 0.72, 1 };\n', 0.757, 0.38, 0.181, 0.025))
 fg.append(ctrl("Info", "ALife_RscStructuredText", '            idc = 5210;\n' + PX_TEXT, 0.757, 0.38, 0.181, 0.1))
-fg.append(ctrl("Combo", "ALife_RscCombo",
-               '            idc = 5240;\n            sizeEx = 0.03;\n'
-               '            onLBSelChanged = "[\'select\', 5240, _this select 1] call ALife_fnc_phone";\n',
-               0.757, 0.42, 0.181, 0.035))
+for n in range(2):  # drop-downs (Settings: view distance, wallpaper)
+    fg.append(ctrl(f"Combo{n}", "ALife_RscCombo",
+                   f'            idc = {5240 + n};\n            sizeEx = 0.03;\n'
+                   f'            onLBSelChanged = "[\'select\', {5240 + n}, _this select 1] call ALife_fnc_phone";\n',
+                   0.757, 0.42, 0.181, 0.035))
 fg.append(ctrl("List", "ALife_RscListNBox",
                '            idc = 5211;\n' + LIST_STYLE + '            columns[] = { 0.04, 0.72 };\n'
                '            onLBSelChanged = "[\'select\', 5211, _this select 1] call ALife_fnc_phone";\n',

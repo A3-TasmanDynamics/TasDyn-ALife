@@ -63,7 +63,8 @@ Flow: `ALife_fnc_revive` (medic) → `ALife_fnc_requestRevive` (server) → `ALi
 
 A Galaxy-style phone (`ui/phone.hpp`, `ALife_fnc_phone`): a clock and a 3 x 3 grid of app icons
 (`ui/icons/*.paa`). The icons and the layout are generated — edit and re-run
-`tools/phone_icons/make_icons.py` (needs Arma 3 Tools' ImageToPAA) or `make_layout.py`.
+`tools/phone_icons/make_icons.py` (needs Arma 3 Tools' ImageToPAA), `make_frame.py` (the curved phone
+and its wallpapers) or `make_layout.py`.
 
 | App | What it does |
 |---|---|
@@ -71,7 +72,7 @@ A Galaxy-style phone (`ui/phone.hpp`, `ALife_fnc_phone`): a clock and a 3 x 3 gr
 | Bank | Bank and cash balance; send money from your bank to any online player |
 | Inventory | Your virtual items for the faction you're playing; give to a player within 5 m, or discard |
 | Player ID | Your name, faction, police/EMS level, staff rank and licences (`config/CfgLicences.hpp` names them) |
-| Settings | View distance, grass on/off (saved in your Arma profile) |
+| Settings | View distance, grass on/off, wallpaper (Dark by default, plus Dusk, Sunset, Ocean, Forest, Aurora; `config/CfgPhone.hpp`) — saved in your Arma profile |
 | Perks, Gang, Keys, Admin | "Coming soon" (Perks will be a talent tree) |
 
 Everything that changes something is checked by the server (`ALife_fnc_giveItem`,

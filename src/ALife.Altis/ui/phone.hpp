@@ -20,7 +20,7 @@ class ALife_Phone
         {
             idc = 5001;
             style = 48; // stretch to fill
-            text = "ui\phone\phone_home_ca.paa";
+            text = "ui\phone\phone_dark_ca.paa";
             x = "safezoneX + safezoneW * 0.745";
             y = "safezoneY + safezoneH * 0.26";
             w = "safezoneW * 0.205";
@@ -498,11 +498,21 @@ class ALife_Phone
             w = "safezoneW * 0.181";
             h = "safezoneH * 0.1";
         };
-        class Combo: ALife_RscCombo
+        class Combo0: ALife_RscCombo
         {
             idc = 5240;
             sizeEx = 0.03;
             onLBSelChanged = "['select', 5240, _this select 1] call ALife_fnc_phone";
+            x = "safezoneX + safezoneW * 0.757";
+            y = "safezoneY + safezoneH * 0.42";
+            w = "safezoneW * 0.181";
+            h = "safezoneH * 0.035";
+        };
+        class Combo1: ALife_RscCombo
+        {
+            idc = 5241;
+            sizeEx = 0.03;
+            onLBSelChanged = "['select', 5241, _this select 1] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.757";
             y = "safezoneY + safezoneH * 0.42";
             w = "safezoneW * 0.181";
