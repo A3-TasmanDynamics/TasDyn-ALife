@@ -78,9 +78,49 @@ and its wallpapers) or `make_layout.py`.
 Everything that changes something is checked by the server (`ALife_fnc_giveItem`,
 `ALife_fnc_bankTransfer`, `ALife_fnc_sendMessage`), which answers with fresh phone data.
 
+## Notifications
+
+Our own notifications replace Arma's hint box (`ALife_fnc_toast`; the server sends them with
+`ALife_fnc_notify`): cards stacking in the top-right with a coloured stripe — green done, amber
+heads-up, red error, blue info, purple messages — fading after 5 s, drawn above any open menu.
+
+## Inventory screen (Windows key)
+
+One screen (`ui/transfer.hpp`, `ALife_fnc_transfer`) for dropped bags and vehicle trunks — the
+bag/trunk on the left, you on the right, with weights.
+
+- **Windows key** (`ALife_fnc_interact`): looking at a dropped bag (within 4 m) or a vehicle (within
+  8 m) opens it; looking at nothing opens your inventory next to the **ground**, so you can drop
+  things. Dropping leaves a bag at your feet (`CfgALife >> bagClass`, a placeholder backpack model —
+  a simple object, so Arma's own inventory can't touch it). Bags vanish when emptied or after
+  `bagLifetime` (15 min); they aren't saved over restarts.
+- **Moving things:** select rows (Ctrl/Shift for several), enter a quantity, **Take** / **Store**
+  (**Drop** on the ground); **Take all** / **Store all**; double-click a row to move all of it.
+- **Dropping only cash** leaves a stack of money (`CfgALife >> cashClass`, `Land_Money_F`) instead of a
+  bag. Windows on a stack that's only cash picks it straight up (no menu).
+- **Cash** is a row like any item (also in the phone's Inventory, where you can give it to someone
+  within 5 m or drop it): physical money you carry (`<faction>_cash`), moved with the same
+  idempotent delta save as purchases.
+- **Limits:** what you carry is capped at `carryWeight` (24), trunks by vehicle type
+  (`CfgALife >> Trunks`), using each item's `weight`.
+- The server does all the moving (`ALife_fnc_containerTransfer`, run with `remoteExecCall` so two
+  players can't race each other) and checks distance, what each side has, and space.
+  Trunks live on the server only (vehicles aren't saved yet).
+
+## ATMs (Windows key)
+
+Every ATM on the map works — no markers: `ALife_fnc_isAtm` recognises them by model or class
+(`CfgALife >> atmModels` / `atmClasses`). Look at one and press **Windows** for the bank menu
+(`ui/atm.hpp`, `ALife_fnc_atm`): balances for the faction you're playing, an amount with quick
+buttons ($100 / $500 / $1,000 / $5,000), **Deposit**, **Withdraw**, **Deposit all cash**,
+**Withdraw all**, and **Send** to an online player. Deposit/withdraw go through
+`ALife_fnc_atmAction`, which checks you're really at an ATM, then the extension's `bank`
+`deposit` / `withdraw` (cash and bank change in one transaction, logged in `bank_transactions`).
+
 ## Shops and items
 
-- Items: `config/CfgItems.hpp` (just **Medkit** so far). Saved per faction in
+- Items: `config/CfgItems.hpp` (just **Medkit** so far). Icons in `ui/items/`, drawn by
+  `tools/phone_icons/make_items.py`. Saved per faction in
   `players.<faction>_items`.
 - Shops: `config/CfgShops.hpp`. **Medical Supplies** (medics only) at the three hospital spawn
   markers: Medkit $250, paid by cash or bank. Use **Open shop** in the scroll menu there.
@@ -143,6 +183,6 @@ in-game; Athira, Pyrgos and Sofia are town centres — move them onto the statio
 ## Not built yet
 
 - Phone apps Gang, Keys (needs vehicles) and Admin.
-- Paychecks / ATMs (staff add money on the website for now).
+- Paychecks (staff add money on the website for now; withdraw it at an ATM).
 - Medic whitelisting (all Medic slots are open).
 - Gear/loadouts (slot weapons are removed on spawn; uniforms stay).

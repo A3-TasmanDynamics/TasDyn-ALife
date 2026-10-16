@@ -573,3 +573,143 @@ bool Database::BankTx(const std::string& op, const std::string& uid, const std::
     outStatus = committed ? "OK" : "ERROR";
     return true;
 }
+
+bool Database::BankCash(const std::string& op, const std::string& uid, const std::string& faction,
+                        const std::string& amount, const std::string& token, std::string& outStatus,
+                        std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+
+    const bool deposit = (op == "deposit");
+    const char* bankFaction = BankFaction(faction);
+    // Fixed column names, picked by the validated faction -- never built from input.
+    const char* cashColumn = faction == "civ" ? "civ_cash" : faction == "cop" ? "cop_cash" : faction == "medic" ? "medic_cash" : nullptr;
+    if ((!deposit && op != "withdraw") || !bankFaction || !cashColumn) {
+        outStatus = "ERROR";
+        outError = "bad bank operation";
+        return true;
+    }
+
+    auto exec = [&](const std::string& sql, int n, const char* const* params) {
+        return PQexecParams(conn_, sql.c_str(), n, nullptr, params, nullptr, nullptr, 0);
+    };
+    auto fail = [&](PGresult* res, const char* status) {
+        if (res) {
+            outError = PQerrorMessage(conn_);
+            PQclear(res);
+        }
+        PQclear(PQexec(conn_, "ROLLBACK"));
+        outStatus = status;
+        return true;
+    };
+
+    PQclear(PQexec(conn_, "BEGIN"));
+
+    const char* idParams[2] = {uid.c_str(), bankFaction};
+    PQclear(exec("INSERT INTO bank_accounts (player_id, faction, balance) "
+                 "SELECT id, $2, 0 FROM players WHERE uid = $1 ON CONFLICT (player_id, faction) DO NOTHING",
+                 2, idParams));
+    PGresult* idRes = exec("SELECT b.id, p.id FROM bank_accounts b JOIN players p ON p.id = b.player_id "
+                           "WHERE p.uid = $1 AND b.faction = $2 FOR UPDATE OF b, p",
+                           2, idParams);
+    if (PQresultStatus(idRes) != PGRES_TUPLES_OK) return fail(idRes, "ERROR");
+    if (PQntuples(idRes) == 0) {
+        PQclear(idRes);
+        return fail(nullptr, "NO_ACCOUNT");
+    }
+    std::string accountId = PQgetvalue(idRes, 0, 0);
+    std::string playerId = PQgetvalue(idRes, 0, 1);
+    PQclear(idRes);
+
+    const std::string cash = cashColumn;
+    const char* cashParams[2] = {playerId.c_str(), amount.c_str()};
+    const char* txParams[4] = {accountId.c_str(), amount.c_str(), token.c_str(), playerId.c_str()};
+
+    if (deposit) {
+        // Cash out of the pocket (only if it's there), then into the account.
+        PGresult* cashRes = exec("UPDATE players SET " + cash + " = " + cash + " - $2::bigint, updated_at = now() "
+                                 "WHERE id = $1::bigint AND " + cash + " >= $2::bigint",
+                                 2, cashParams);
+        if (PQresultStatus(cashRes) != PGRES_COMMAND_OK) return fail(cashRes, "ERROR");
+        bool had = std::strcmp(PQcmdTuples(cashRes), "0") != 0;
+        PQclear(cashRes);
+        if (!had) return fail(nullptr, "INSUFFICIENT");
+
+        PGresult* txRes = exec("INSERT INTO bank_transactions (account_id, type, amount, balance_after, memo, request_token, created_by) "
+                               "SELECT id, 'deposit', $2::bigint, balance + $2::bigint, 'ATM deposit', $3, $4::bigint "
+                               "FROM bank_accounts WHERE id = $1::bigint",
+                               4, txParams);
+        if (PQresultStatus(txRes) != PGRES_COMMAND_OK) {
+            bool duplicate = IsUniqueViolation(txRes);
+            return fail(txRes, duplicate ? "DUPLICATE" : "ERROR");
+        }
+        PQclear(txRes);
+    } else {
+        // Out of the account (only if the balance covers it), then into the pocket.
+        PGresult* txRes = exec("INSERT INTO bank_transactions (account_id, type, amount, balance_after, memo, request_token, created_by) "
+                               "SELECT id, 'withdrawal', -$2::bigint, balance - $2::bigint, 'ATM withdrawal', $3, $4::bigint "
+                               "FROM bank_accounts WHERE id = $1::bigint AND balance >= $2::bigint RETURNING id",
+                               4, txParams);
+        if (PQresultStatus(txRes) != PGRES_TUPLES_OK) {
+            bool duplicate = IsUniqueViolation(txRes);
+            return fail(txRes, duplicate ? "DUPLICATE" : "ERROR");
+        }
+        bool covered = PQntuples(txRes) > 0;
+        PQclear(txRes);
+        if (!covered) return fail(nullptr, "INSUFFICIENT");
+
+        PGresult* cashRes = exec("UPDATE players SET " + cash + " = " + cash + " + $2::bigint, updated_at = now() WHERE id = $1::bigint",
+                                 2, cashParams);
+        if (PQresultStatus(cashRes) != PGRES_COMMAND_OK) return fail(cashRes, "ERROR");
+        PQclear(cashRes);
+    }
+
+    PGresult* commitRes = PQexec(conn_, "COMMIT");
+    bool committed = PQresultStatus(commitRes) == PGRES_COMMAND_OK;
+    if (!committed) outError = PQerrorMessage(conn_);
+    PQclear(commitRes);
+    outStatus = committed ? "OK" : "ERROR";
+    return true;
+}
+
+bool Database::RecordSession(const std::string& op, const std::string& uid, std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+
+    PGresult* res = nullptr;
+    const char* params[1] = {uid.c_str()};
+    if (op == "start") {
+        // Close anything left open for this player (a crash, a missed
+        // disconnect), then open the new session -- one statement.
+        res = PQexecParams(conn_,
+            "WITH p AS (SELECT id FROM players WHERE uid = $1), "
+            "closed AS (UPDATE player_sessions SET disconnected_at = now() "
+            "           WHERE disconnected_at IS NULL AND player_id = (SELECT id FROM p)) "
+            "INSERT INTO player_sessions (player_id) SELECT id FROM p",
+            1, nullptr, params, nullptr, nullptr, 0);
+    } else if (op == "end") {
+        res = PQexecParams(conn_,
+            "UPDATE player_sessions SET disconnected_at = now() "
+            "WHERE disconnected_at IS NULL AND player_id = (SELECT id FROM players WHERE uid = $1)",
+            1, nullptr, params, nullptr, nullptr, 0);
+    } else if (op == "reset") {
+        // Server start: nobody is connected yet, so close every open session.
+        res = PQexec(conn_, "UPDATE player_sessions SET disconnected_at = now() WHERE disconnected_at IS NULL");
+    } else {
+        outError = "unknown session op";
+        return false;
+    }
+
+    bool ok = PQresultStatus(res) == PGRES_COMMAND_OK;
+    if (!ok) outError = PQerrorMessage(conn_);
+    PQclear(res);
+    return ok;
+}

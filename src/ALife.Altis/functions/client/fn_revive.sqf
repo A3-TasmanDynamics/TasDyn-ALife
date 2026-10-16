@@ -20,7 +20,7 @@ private _medkits = 0;
     if ((_x select 0) == "medkit") then { _medkits = _x select 1; };
 } forEach ((missionNamespace getVariable ["ALife_phone", createHashMap]) getOrDefault ["items", []]);
 if (_medkits < 1) exitWith {
-    hint "You need a medkit. Buy them at the hospital (Medical Supplies).";
+    ["You need a medkit. Buy them at the hospital (Medical Supplies).", "warning"] call ALife_fnc_toast;
 };
 
 ALife_reviving = true;
@@ -59,5 +59,5 @@ ALife_reviving = nil;
 if (_done) then {
     [player, _body] remoteExec ["ALife_fnc_requestRevive", 2];
 } else {
-    hint "Revive cancelled.";
+    ["Revive cancelled.", "warning"] call ALife_fnc_toast;
 };

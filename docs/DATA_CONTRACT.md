@@ -147,6 +147,8 @@ Args: `[op, uid, faction, amount, requestToken, otherUid, otherFaction, memo]`.
 |---|---|
 | `purchase` | Debits `uid`'s `faction` account by `amount` (`bank_transactions.type = 'purchase'`). `otherUid`/`otherFaction` are `""`. |
 | `transfer` | Moves `amount` from `uid`'s `faction` account to `otherUid`'s `otherFaction` account (`transfer_out` + `transfer_in`). |
+| `deposit` | ATM: moves `amount` from `players.<faction>_cash` into `uid`'s `faction` account (`deposit`), only if the cash is there. |
+| `withdraw` | ATM: moves `amount` from `uid`'s `faction` account into `players.<faction>_cash` (`withdrawal`), only if the balance covers it. |
 
 `faction` is `civ`/`cop`/`medic` (mapped to `bank_accounts.faction` civilian/police/medic).
 `amount` is a positive whole number. Both accounts are locked (in id order, like the website's
@@ -161,6 +163,13 @@ Args: `[uid, faction, killer, weapon, distance, secondsIncapacitated]` (`killer`
 are `""` when nobody else was involved). Writes, in one statement, an `anti_cheat_flags` row
 (`combat_log`, high) and a `staff_log` row (`player.combat_log`, source `game`), both with the
 details as JSON. Response: `OK` or `ERROR:reason`.
+
+## `session` — who's online
+
+Args: `[op, uid]`. `start` opens a `player_sessions` row for `uid` (closing any left open first),
+`end` closes it, `reset` (no uid) closes every open row — the server calls it at start, when nobody
+is connected yet. The website's online counts, player status and `players.last_seen` (trigger)
+read these rows. Response: `OK` or `ERROR:reason`.
 
 ## Escaping
 

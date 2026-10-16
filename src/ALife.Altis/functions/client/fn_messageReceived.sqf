@@ -24,7 +24,6 @@ private _to = switch (_channel) do {
 ALife_inbox = ([[_sender + _to, _text, _time]] + ALife_inbox) select [0, 50];
 ALife_unread = (missionNamespace getVariable ["ALife_unread", 0]) + 1;
 
-hint parseText format ["<t size='1.1' font='RobotoCondensedBold'>New message</t><br/><t color='#c0c7d1'>%1</t><br/>%2",
-    (_sender + _to) splitString "<>" joinString "", (_text select [0, 80]) splitString "<>" joinString ""];
+[(_text select [0, 140]) splitString "<>" joinString "", "message", "Message from " + ((_sender + _to) splitString "<>" joinString "")] call ALife_fnc_toast;
 
 if (!isNull (findDisplay 5000)) then { ["refresh"] call ALife_fnc_phone; };

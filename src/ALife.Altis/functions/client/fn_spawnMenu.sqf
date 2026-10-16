@@ -108,7 +108,7 @@ switch (_mode) do {
         if (isNull _display) exitWith {};
         private _list = _display displayCtrl IDC_LIST;
         private _row = lnbCurSelRow _list;
-        if (_row < 0) exitWith { hint "Pick a spawn point first."; };
+        if (_row < 0) exitWith { ["Pick a spawn point first.", "warning"] call ALife_fnc_toast; };
         private _key = _list lnbData [_row, 0];
 
         closeDialog 0;
@@ -123,7 +123,7 @@ switch (_mode) do {
             waitUntil { sleep 0.2; !ALife_spawnPending || { diag_tickTime > _deadline } };
             if (ALife_spawnPending) then {
                 ALife_spawnPending = false;
-                hint "The server didn't answer. Try again.";
+                ["The server didn't answer. Try again.", "warning"] call ALife_fnc_toast;
                 ["open"] call ALife_fnc_spawnMenu;
             };
         };

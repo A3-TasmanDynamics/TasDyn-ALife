@@ -52,6 +52,8 @@ corpseRemovalMaxTime = 900;
 #include "ui\deathScreen.hpp"
 #include "ui\phone.hpp"
 #include "ui\shop.hpp"
+#include "ui\transfer.hpp"
+#include "ui\atm.hpp"
 
 class RscTitles
 {

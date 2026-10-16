@@ -54,6 +54,19 @@ public:
                 const std::string& otherFaction, const std::string& memo, std::string& outStatus,
                 std::string& outError);
 
+    // ATM: op "deposit" moves amount from players.<faction>_cash into the
+    // faction bank account; op "withdraw" the other way. One transaction,
+    // both rows locked, never below zero, a bank_transactions row each time
+    // (idempotent by request token). outStatus as BankTx.
+    bool BankCash(const std::string& op, const std::string& uid, const std::string& faction,
+                  const std::string& amount, const std::string& token, std::string& outStatus,
+                  std::string& outError);
+
+    // Who's online (player_sessions, read by the website): op "start" opens
+    // a session for uid (closing any left open), "end" closes it, "reset"
+    // closes every open session (server start).
+    bool RecordSession(const std::string& op, const std::string& uid, std::string& outError);
+
     bool RecordCombatLog(const std::string& uid, const std::string& faction, const std::string& killer,
                          const std::string& weapon, const std::string& distance,
                          const std::string& secondsIncapacitated, std::string& outError);
