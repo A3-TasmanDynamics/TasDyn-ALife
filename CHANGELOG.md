@@ -1,6 +1,14 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- **Mission rebuilt from scratch** (`src/ALife.Altis`): join → database load → spawn menu → play,
+  with alive/position kept in sync (spawn, 60 s autosave, death, disconnect). Adds the respawn and
+  "no AI in empty slots" settings the old mission was missing, 48 slots across Police (BLUFOR),
+  Medic (Independent) and Civilian, 10 spawn points, "Last position" when you logged off alive,
+  and loading-screen messages for every failure (including a missing database extension). See
+  `src/ALife.Altis/README.md`.
+
 ### Added
 - Initial project scaffold: README, directory structure, `.gitignore`, `config.ini.example`.
 - Org-standard branding and repo structure: banner (`docs/assets/banner.svg`), `CONTRIBUTING.md`,
