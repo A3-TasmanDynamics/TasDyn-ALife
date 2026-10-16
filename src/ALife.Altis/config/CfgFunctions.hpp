@@ -25,6 +25,12 @@ class CfgFunctions
             class sendMessage {};    // client -> server: phone message
             class requestRevive {};  // medic's client -> server: revive finished
             class completeRevive {}; // revived player's client -> server: put me back
+            class containerGet {};   // the container (bag / vehicle trunk) behind an object
+            class containerCreateBag {}; // drop a bag at a player's feet
+            class containerSend {};  // send a player a container's contents
+            class containerOpen {};  // client -> server: open a bag / trunk
+            class containerTransfer {}; // client -> server: take / store items and cash
+            class atmAction {};      // client -> server: ATM deposit / withdraw
         };
 
         class Client
@@ -46,6 +52,10 @@ class CfgFunctions
             class revive {};          // medic: the Revive action
             class revived {};         // server -> downed client: a medic revived you
             class reviveApplied {};   // server -> client: back up where you fell
+            class interact {};        // the Windows key
+            class transfer {};        // the inventory screen (bags, trunks, dropping)
+            class containerData {};   // server -> client: what's in the open bag / trunk
+            class atm {};             // the ATM / bank menu
         };
 
         class Common
@@ -54,6 +64,8 @@ class CfgFunctions
             class sideToFaction {};   // west/independent/civilian -> "cop"/"medic"/"civ"
             class parsePosition {};   // stored DB position -> [x,y,z]
             class killInfo {};        // killer name, weapon, distance
+            class itemsWeight {};     // weight of a list of items
+            class isAtm {};           // is this object an ATM (any on the map)
         };
     };
 };

@@ -291,7 +291,7 @@ class ALife_RscMap
     {
         color[] = { 0.45, 0.64, 0.33, 0.4 };
         icon = "\A3\ui_f\data\map\mapcontrol\bush_ca.paa";
-        size = "14/2";
+        size = 7;
         importance = "0.2 * 14 * 0.05 * 0.05";
         coefMin = 0.25;
         coefMax = 4;
@@ -624,6 +624,10 @@ class ALife_RscListNBox
     autoScrollRewind = 0;
     class ListScrollBar: ALife_RscScrollBar {};
     class ScrollBar: ALife_RscScrollBar {};
+    // Read by the renderer even when unused ("No entry" warnings otherwise).
+    drawSideArrows = 0;
+    idcLeft = -1;
+    idcRight = -1;
     x = 0; y = 0; w = 0.26; h = 0.55;
 };
 
