@@ -1,9 +1,14 @@
 // Death screen. Driven by ALife_fnc_deathScreen; control IDs match the
 // #defines at the top of functions\client\fn_deathScreen.sqf.
 //
-// Layout: "YOU ARE DEAD" across the top, a panel in the lower middle with
-// the killer, nearest medic, the countdown bar and the Respawn button --
-// the world (your body) stays visible behind it.
+// A slim bar low in the middle of the screen, so the bird's-eye view of
+// the body fills the rest:
+//
+//   YOU ARE DEAD                              Nearest medic 450 m
+//   Killed by Name  |  Weapon  |  143 m
+//   Respawn in 1:43 (86%)                         [ RESPAWN ]
+//   ===================-----------
+//                                                  Leave server
 
 class ALife_DeathScreen
 {
@@ -14,29 +19,21 @@ class ALife_DeathScreen
 
     class controlsBackground
     {
-        class Shade: ALife_RscBackground
-        {
-            colorBackground[] = { 0.25, 0, 0, 0.18 };
-            x = "safezoneX";
-            y = "safezoneY";
-            w = "safezoneW";
-            h = "safezoneH";
-        };
         class Panel: ALife_RscBackground
         {
-            colorBackground[] = { 0.06, 0.07, 0.09, 0.9 };
-            x = "safezoneX + safezoneW * 0.32";
-            y = "safezoneY + safezoneH * 0.55";
-            w = "safezoneW * 0.36";
-            h = "safezoneH * 0.38";
+            colorBackground[] = { 0.06, 0.07, 0.09, 0.88 };
+            x = "safezoneX + safezoneW * 0.30";
+            y = "safezoneY + safezoneH * 0.78";
+            w = "safezoneW * 0.40";
+            h = "safezoneH * 0.125";
         };
-        class PanelAccent: ALife_RscBackground
+        class Accent: ALife_RscBackground
         {
             colorBackground[] = { 0.85, 0.2, 0.2, 1 };
-            x = "safezoneX + safezoneW * 0.32";
-            y = "safezoneY + safezoneH * 0.55";
-            w = "safezoneW * 0.36";
-            h = "safezoneH * 0.004";
+            x = "safezoneX + safezoneW * 0.30";
+            y = "safezoneY + safezoneH * 0.78";
+            w = "safezoneW * 0.0025";
+            h = "safezoneH * 0.125";
         };
     };
 
@@ -44,59 +41,56 @@ class ALife_DeathScreen
     {
         class Title: ALife_RscText
         {
-            style = 2;
             text = "YOU ARE DEAD";
             font = "RobotoCondensedBold";
-            sizeEx = 0.09;
-            colorText[] = { 0.95, 0.3, 0.3, 1 };
-            shadow = 2;
-            x = "safezoneX";
-            y = "safezoneY + safezoneH * 0.12";
-            w = "safezoneW";
-            h = "safezoneH * 0.1";
-        };
-
-        class Killer: ALife_RscStructuredText
-        {
-            idc = 4910;
-            size = 0.03;
-            x = "safezoneX + safezoneW * 0.33";
-            y = "safezoneY + safezoneH * 0.57";
-            w = "safezoneW * 0.34";
-            h = "safezoneH * 0.12";
+            sizeEx = 0.034;
+            colorText[] = { 0.95, 0.32, 0.32, 1 };
+            x = "safezoneX + safezoneW * 0.31";
+            y = "safezoneY + safezoneH * 0.788";
+            w = "safezoneW * 0.18";
+            h = "safezoneH * 0.032";
         };
 
         class Medic: ALife_RscStructuredText
         {
             idc = 4920;
-            size = 0.03;
-            colorBackground[] = { 0.11, 0.12, 0.15, 1 };
-            x = "safezoneX + safezoneW * 0.33";
-            y = "safezoneY + safezoneH * 0.70";
-            w = "safezoneW * 0.34";
-            h = "safezoneH * 0.04";
+            size = 0.026;
+            x = "safezoneX + safezoneW * 0.49";
+            y = "safezoneY + safezoneH * 0.792";
+            w = "safezoneW * 0.20";
+            h = "safezoneH * 0.028";
+        };
+
+        class Killer: ALife_RscStructuredText
+        {
+            idc = 4910;
+            size = 0.027;
+            x = "safezoneX + safezoneW * 0.31";
+            y = "safezoneY + safezoneH * 0.822";
+            w = "safezoneW * 0.38";
+            h = "safezoneH * 0.028";
         };
 
         class Timer: ALife_RscStructuredText
         {
             idc = 4930;
-            size = 0.03;
-            x = "safezoneX + safezoneW * 0.33";
-            y = "safezoneY + safezoneH * 0.755";
-            w = "safezoneW * 0.34";
-            h = "safezoneH * 0.04";
+            size = 0.025;
+            x = "safezoneX + safezoneW * 0.31";
+            y = "safezoneY + safezoneH * 0.856";
+            w = "safezoneW * 0.27";
+            h = "safezoneH * 0.026";
         };
 
         class Bar: ALife_RscProgress
         {
             idc = 4931;
             colorBar[] = { 0.85, 0.2, 0.2, 1 };
-            colorBackground[] = { 0.15, 0.16, 0.19, 1 };
+            colorBackground[] = { 0.17, 0.18, 0.21, 1 };
             colorFrame[] = { 0, 0, 0, 0 };
-            x = "safezoneX + safezoneW * 0.33";
-            y = "safezoneY + safezoneH * 0.80";
-            w = "safezoneW * 0.34";
-            h = "safezoneH * 0.018";
+            x = "safezoneX + safezoneW * 0.31";
+            y = "safezoneY + safezoneH * 0.886";
+            w = "safezoneW * 0.27";
+            h = "safezoneH * 0.007";
         };
 
         class Respawn: ALife_RscButton
@@ -104,30 +98,34 @@ class ALife_DeathScreen
             idc = 4940;
             text = "RESPAWN";
             font = "RobotoCondensedBold";
-            sizeEx = 0.04;
+            sizeEx = 0.03;
             colorBackground[] = { 0.96, 0.62, 0.04, 1 };
             colorBackgroundActive[] = { 1, 0.72, 0.2, 1 };
             colorFocused[] = { 1, 0.72, 0.2, 1 };
-            colorBackgroundDisabled[] = { 0.2, 0.21, 0.24, 1 };
-            colorDisabled[] = { 0.5, 0.52, 0.56, 1 };
+            colorBackgroundDisabled[] = { 0.17, 0.18, 0.21, 1 };
+            colorDisabled[] = { 0.45, 0.47, 0.52, 1 };
             colorText[] = { 0.05, 0.05, 0.05, 1 };
             action = "['respawn'] call ALife_fnc_deathScreen";
-            x = "safezoneX + safezoneW * 0.33";
-            y = "safezoneY + safezoneH * 0.835";
-            w = "safezoneW * 0.34";
-            h = "safezoneH * 0.055";
+            x = "safezoneX + safezoneW * 0.595";
+            y = "safezoneY + safezoneH * 0.854";
+            w = "safezoneW * 0.095";
+            h = "safezoneH * 0.04";
         };
 
         class Leave: ALife_RscButton
         {
             text = "Leave server";
-            colorBackground[] = { 0.06, 0.07, 0.09, 0 };
-            colorText[] = { 0.6, 0.64, 0.7, 1 };
+            style = 1; // right-aligned
+            sizeEx = 0.022;
+            colorBackground[] = { 0, 0, 0, 0 };
+            colorBackgroundActive[] = { 0, 0, 0, 0 };
+            colorFocused[] = { 0, 0, 0, 0 };
+            colorText[] = { 0.6, 0.64, 0.7, 0.8 };
             action = "['leave'] call ALife_fnc_deathScreen";
-            x = "safezoneX + safezoneW * 0.33";
-            y = "safezoneY + safezoneH * 0.895";
-            w = "safezoneW * 0.34";
-            h = "safezoneH * 0.03";
+            x = "safezoneX + safezoneW * 0.60";
+            y = "safezoneY + safezoneH * 0.908";
+            w = "safezoneW * 0.10";
+            h = "safezoneH * 0.022";
         };
     };
 };
