@@ -10,8 +10,7 @@
 
     Returns:
         STRING - the DLL's answer, or "ERROR:<why>" if the DLL couldn't be
-        called at all (missing, or blocked -- BattlEye blocks extension DLLs
-        it hasn't whitelisted, so with BattlEye on this is what you'll see).
+        called at all (e.g. the DLL isn't next to arma3server_x64.exe).
 */
 
 params ["_command", ["_args", []]];
@@ -24,10 +23,10 @@ private _result = "tasdyn_alife" callExtension [_command, _args];
 _result params [["_answer", ""], ["_returnCode", 0], ["_errorCode", 0]];
 
 if (_errorCode != 0) exitWith {
-    format ["ERROR:database extension could not be called (error %1) -- is the DLL deployed, and is BattlEye off?", _errorCode]
+    format ["ERROR:database extension could not be called (error %1) -- is tasdyn_alife_x64.dll deployed next to the server?", _errorCode]
 };
 if (_answer == "") exitWith {
-    "ERROR:no answer from the database extension -- is the DLL deployed, and is BattlEye off?"
+    "ERROR:no answer from the database extension -- is tasdyn_alife_x64.dll deployed next to the server?"
 };
 
 _answer

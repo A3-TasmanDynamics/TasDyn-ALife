@@ -76,9 +76,6 @@ in-game; Athira, Pyrgos and Sofia are town centres — move them onto the statio
 
 ## Server requirements
 
-- **BattlEye must be off** (Server Manager → BattlEye toggle) while the extension is unsigned.
-  BattlEye blocks extension DLLs it hasn't whitelisted; with it on, the loading screen will say
-  the database extension can't be called.
 - `tasdyn_alife_x64.dll` and its `config.ini` next to `arma3server_x64.exe` (Server Manager
   deploys both when it starts the server).
 
