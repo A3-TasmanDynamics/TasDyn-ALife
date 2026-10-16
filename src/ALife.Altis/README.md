@@ -27,8 +27,20 @@ other system (shops, jobs, gear, whitelisting, ...) builds on top of this.
    checks it's one of your faction's points, finds a clear spot nearby, saves you as alive there,
    and tells your client to move in (`ALife_fnc_spawnApproved`).
 
-Dying sets `<faction>_alive = false`. After the respawn timer you go back through the spawn menu
-(`onPlayerRespawn.sqf`).
+## Dying
+
+Dying sets `<faction>_alive = false` and opens the **death screen** (`ALife_fnc_deathScreen`,
+`ui/deathScreen.hpp`):
+
+- **Killed by** — the killer's name, weapon (or vehicle, for a roadkill) and distance in metres
+  (`ALife_fnc_killInfo`; also written to the server log). Falls and drowning just say "You died."
+- **Nearest medic** — live distance to the closest spawned-in medic, or "No medics on duty".
+- **Respawn timer** — a bar from 100% to 0% over `CfgALife >> respawnTime` (120 s, in
+  `config/CfgALife.hpp`). Respawn is locked until 0%; after that you can respawn or keep waiting
+  for a medic. The game's own automatic respawn is held off the whole time.
+
+Respawning takes you back through the spawn menu (`onPlayerRespawn.sqf`). Medics can't revive
+yet — that's the next step for the medic side.
 
 ## What's saved, and when
 
@@ -55,16 +67,19 @@ config/
   CfgFunctions.hpp       function list
   CfgRemoteExec.hpp      the only functions callable over the network
   CfgSpawnPoints.hpp     spawn points per faction
+  CfgALife.hpp           gameplay settings (respawn timer)
 ui/
   base.hpp               shared control classes (kept from the previous mission: each one
                          was fixed against a real in-game error, the map especially)
   loading.hpp            the black loading overlay
   spawnMenu.hpp          the spawn picker
+  deathScreen.hpp        the death screen
 functions/
   server/                extension, serverInit, loadRecord, requestSession, spawnOptions,
                          requestSpawn, savePlayer, syncLoop
-  client/                startSession, loading, sessionReceived, spawnMenu, spawnApproved
-  common/                sideToFaction, parsePosition
+  client/                startSession, loading, sessionReceived, spawnMenu, spawnApproved,
+                         deathScreen
+  common/                sideToFaction, parsePosition, killInfo
 ```
 
 ## Spawn points

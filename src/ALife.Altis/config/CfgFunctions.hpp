@@ -27,6 +27,7 @@ class CfgFunctions
             class sessionReceived {}; // server -> client: record loaded (or refused)
             class spawnMenu {};       // the spawn point picker
             class spawnApproved {};   // server -> client: go here
+            class deathScreen {};     // death screen: killer, medic distance, respawn timer
         };
 
         class Common
@@ -34,6 +35,7 @@ class CfgFunctions
             file = "functions\common";
             class sideToFaction {};   // west/independent/civilian -> "cop"/"medic"/"civ"
             class parsePosition {};   // stored DB position -> [x,y,z]
+            class killInfo {};        // killer name, weapon, distance
         };
     };
 };

@@ -25,6 +25,15 @@ removeAllWeapons player;
 player setPosATL _pos;
 player enableSimulation true;
 
+// Death screen when this body dies (once per unit -- a new unit after
+// every respawn).
+if (isNil { player getVariable "alife_killedEH" }) then {
+    player setVariable ["alife_killedEH", player addEventHandler ["Killed", {
+        params ["_unit", "_killer", "_instigator"];
+        ["start", _unit, _killer, _instigator] call ALife_fnc_deathScreen;
+    }]];
+};
+
 ["hide"] call ALife_fnc_loading;
 titleText [format ["<t size='1.6' font='RobotoCondensedBold'>%1</t>", _name], "PLAIN DOWN", 1.5, true, true];
 

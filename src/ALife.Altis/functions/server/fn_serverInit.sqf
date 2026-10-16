@@ -37,7 +37,7 @@ addMissionEventHandler ["HandleDisconnect", {
 }];
 
 addMissionEventHandler ["EntityKilled", {
-    params ["_unit"];
+    params ["_unit", "_killer", "_instigator"];
     private _faction = _unit getVariable ["alife_faction", ""];
     private _uid = _unit getVariable ["alife_uid", ""];
     if (_faction == "" || { _uid == "" }) exitWith {};
@@ -45,7 +45,9 @@ addMissionEventHandler ["EntityKilled", {
     // Dead: next join starts from the spawn menu, not "last position".
     _unit setVariable ["alife_faction", nil];
     private _result = ["save", [_uid, _faction + "_alive", "false", "-"]] call ALife_fnc_extension;
-    diag_log format ["[ALife] %1 died as %2 -- saved: %3", _uid, _faction, _result];
+    ([_unit, _killer, _instigator] call ALife_fnc_killInfo) params ["_by", "_weapon", "_distance"];
+    diag_log format ["[ALife] %1 (%2) died as %3 -- killed by %4 with %5 at %6 m -- saved: %7",
+        name _unit, _uid, _faction, ["nobody", _by] select (_by != ""), _weapon, _distance, _result];
 
     private _record = ALife_sessions getOrDefault [_uid, createHashMap];
     _record set [_faction + "_alive", false];
