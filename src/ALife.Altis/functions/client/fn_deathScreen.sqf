@@ -1,7 +1,8 @@
 /*
     ALife_fnc_deathScreen (client)
 
-    The death screen (ui\deathScreen.hpp). Shows who killed you, with what
+    The death screen (ui\deathScreen.hpp). The view switches to a camera 5 m
+    above your body looking straight down. Shows who killed you, with what
     and from how far, the distance to the nearest on-duty medic, and a bar
     counting down from 100% to 0% over CfgALife >> respawnTime (2 minutes).
     Respawn unlocks at 0%; until you press it you keep waiting (for a
@@ -11,6 +12,7 @@
         ["start", unit, killer, instigator] - from the player's Killed event
         ["open"] / ["onLoad", display]      - show the dialog
         ["tick"]                            - refresh timer, bar and medic distance
+        ["camera"] / ["cameraOff"]          - bird's-eye view of the body / back to normal
         ["respawn"]                         - Respawn button
         ["leave"]                           - Leave button
         ["keyDown", ...]                    - swallow Esc
@@ -44,6 +46,7 @@ switch (_mode) do {
         ALife_deathInfo = [_unit, _killer, _instigator] call ALife_fnc_killInfo;
 
         closeDialog 0;
+        ["camera"] call ALife_fnc_deathScreen;
         ["open"] call ALife_fnc_deathScreen;
 
         [] spawn {
@@ -53,8 +56,10 @@ switch (_mode) do {
                 if (!ALife_respawnRequested && { playerRespawnTime < 1e5 }) then { setPlayerRespawnTime 1e6; };
                 if (!ALife_respawnRequested && { isNull (findDisplay IDD_DEATH) }) then { ["open"] call ALife_fnc_deathScreen; };
                 ["tick"] call ALife_fnc_deathScreen;
+                ["camera"] call ALife_fnc_deathScreen;
                 sleep 0.25;
             };
+            ["cameraOff"] call ALife_fnc_deathScreen;
             if (!isNull (findDisplay IDD_DEATH)) then { (findDisplay IDD_DEATH) closeDisplay 2; };
         };
     };
@@ -116,6 +121,37 @@ switch (_mode) do {
         (_display displayCtrl IDC_MEDIC) ctrlSetStructuredText parseText _medicText;
     };
 
+    case "camera": {
+        // Follows the body (it may still be sliding or ragdolling).
+        private _body = missionNamespace getVariable ["ALife_deathBody", objNull];
+        if (isNull _body) exitWith {};
+        // A hair off vertical so "straight down" has a defined up direction.
+        private _above = (ASLToAGL (getPosASL _body)) vectorAdd [0, -0.05, 5];
+        private _cam = missionNamespace getVariable ["ALife_deathCam", objNull];
+        if (isNull _cam) then {
+            _cam = "camera" camCreate _above;
+            _cam cameraEffect ["Internal", "Back"];
+            showCinemaBorder false;
+            _cam camSetFov 0.75;
+            ALife_deathCam = _cam;
+            _cam camSetPos _above;
+            _cam camSetTarget _body;
+            _cam camCommit 0;
+        } else {
+            _cam camSetPos _above;
+            _cam camSetTarget _body;
+            _cam camCommit 0.25;
+        };
+    };
+
+    case "cameraOff": {
+        private _cam = missionNamespace getVariable ["ALife_deathCam", objNull];
+        if (isNull _cam) exitWith {};
+        _cam cameraEffect ["Terminate", "Back"];
+        camDestroy _cam;
+        ALife_deathCam = objNull;
+    };
+
     case "respawn": {
         private _left = (call _fnc_total) - (diag_tickTime - (missionNamespace getVariable ["ALife_deathAt", diag_tickTime]));
         if (_left > 0 || { alive player }) exitWith {};
@@ -126,6 +162,7 @@ switch (_mode) do {
     };
 
     case "leave": {
+        ["cameraOff"] call ALife_fnc_deathScreen;
         closeDialog 0;
         ["end1", false] call BIS_fnc_endMission;
     };
