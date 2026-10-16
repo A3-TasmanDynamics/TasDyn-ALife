@@ -10,6 +10,7 @@ func TestCategory(t *testing.T) {
 		"faction_rank_names:ems":    "Permissions",
 		"player.ban":                "Moderation",
 		"player.compensate":         "Economy",
+		"bank.manual_adjustment":    "Economy",
 		"anticheat.dismiss":         "Moderation",
 		"ticket.close":              "Tickets",
 		"database.query":            "Database",
