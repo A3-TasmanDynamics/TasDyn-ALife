@@ -11,7 +11,7 @@ import { main } from '../wailsjs/go/models';
 import { EventsOn } from '../wailsjs/runtime/runtime';
 import { renderServicesPanel, refreshServices, applyServicesSummary } from './services';
 import { escapeHtml, formatUptime, setMsg } from './util';
-import alifeMark from './assets/alife-a.svg'; // the ALife brush A (tools/branding/make_brush_a.py)
+import alifeWordmark from './assets/alife-wordmark.svg'; // the brushed ALife wordmark (tools/branding/make_wordmark.py)
 
 // -----------------------------------------------------------------------
 // Layout
@@ -37,9 +37,8 @@ document.querySelector('#app')!.innerHTML = `
   <div class="shell">
     <aside class="sidebar">
       <div class="brand">
-        <img class="brand-mark" src="${alifeMark}" alt="" />
         <div class="brand-text">
-          <div class="brand-title"><span class="wordmark-a">A</span>Life</div>
+          <img class="brand-wordmark" src="${alifeWordmark}" alt="ALife" />
           <div class="brand-subtitle">SERVER MANAGER</div>
         </div>
       </div>

@@ -61,23 +61,12 @@ a { color: var(--amber-bright); }
   color: var(--text);
 }
 
-/* The brush A (static/brand/alife-a.svg) beside the name in the wordmark face. */
-.brand-mark {
+/* The brushed ALife wordmark (static/brand/alife-wordmark.svg): the A in
+   amber, "Life" in white, both hand-lettered (tools/branding/make_wordmark.py). */
+.brand-wordmark {
   width: auto;
-  height: 29px;
+  height: 34px;
   display: block;
-}
-
-/* The wordmark: the A in the logo's amber, "Life" in white (text). */
-.wordmark-a { color: var(--amber-bright); }
-
-.brand-text {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 23px;
-  line-height: 1;
-  letter-spacing: -0.2px;
-  color: var(--text);
 }
 
 .site-nav-main {

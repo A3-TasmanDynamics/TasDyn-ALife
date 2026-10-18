@@ -14,7 +14,6 @@ Writes, beside this script:
     alife-a-tile.svg     the app icon: navy tile, amber A with a soft glow
     alife_bot_avatar.png the Discord avatar (512 px, square; Discord crops it round)
     alife-icon-32.png    the website favicon; alife-icon-180.png the Apple touch icon
-    alife_loadscreen.png the mission's loading picture (1024x512; -> ui/brand/*.paa)
     brush_compare.png    (--compare) screenshot | redraw | overlap
 """
 import math
@@ -259,8 +258,6 @@ if __name__ == "__main__":
     for size in (32, 180):  # favicon, Apple touch icon
         write_png(os.path.join(HERE, "alife-icon-%d.png" % size), size, size, avatar(size))
         print("wrote alife-icon-%d.png" % size)
-    write_png(os.path.join(HERE, "alife_loadscreen.png"), 1024, 512, avatar(1024, 512, fill=0.6))  # Arma loadScreen, 2:1
-    print("wrote alife_loadscreen.png")
     if "--compare" in sys.argv:
         shot = sys.argv[sys.argv.index("--compare") + 1]
         compare(shot, os.path.join(HERE, "brush_compare.png"))

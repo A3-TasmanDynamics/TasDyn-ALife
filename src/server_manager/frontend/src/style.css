@@ -93,29 +93,19 @@ html, body {
   border-bottom: 1px solid var(--border-soft);
 }
 
-/* The ALife brush A (assets/alife-a.svg), with the brand's soft amber halo. */
-.brand-mark {
-  height: 34px;
-  width: auto;
-  flex-shrink: 0;
-  filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.35));
-}
-
 .brand-text {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 6px;
   min-width: 0;
 }
 
-/* The wordmark: the A in the logo's amber, "Life" in white (text). */
-.wordmark-a { color: var(--amber-bright); }
-
-.brand-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: 0.2px;
+/* The brushed ALife wordmark (assets/alife-wordmark.svg), with the A's soft amber halo. */
+.brand-wordmark {
+  height: 36px;
+  width: auto;
+  align-self: flex-start;
+  filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.25));
 }
 
 .brand-subtitle {
