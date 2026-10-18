@@ -58,16 +58,17 @@ class CfgALife
         interval = 0.5;                 // seconds between updates
         needGps = 1;                    // 1: you and they both need a GPS; 0: always shown
         spawnGps = 1;                   // 1: every spawn / respawn gets a GPS
-        type = "mil_triangle";          // marker icon (CfgMarkers), pointing the way they face
+        type = "mil_dot";               // marker icon (CfgMarkers)
         size = 0.6;
         // Per faction: on (0 = no markers), colour (CfgMarkerColors), and
         // the factions they see ("cop", "medic"). Add "medic" to cop's
         // sees[] for police to see EMS too.
         class cop   { on = 1; colour = "ColorBLUFOR"; sees[] = { "cop" }; };
-        class medic { on = 1; colour = "ColorRed";    sees[] = { "medic" }; };
+        class medic { on = 1; colour = "ColorGUER";   sees[] = { "medic" }; }; // independent green
         // Civilians see members of their own gang (website gangs).
-        class gang  { on = 1; colour = "ColorOrange"; };
-        // You, for everyone (with a GPS when needGps = 1).
-        class self  { on = 1; colour = "ColorYellow"; type = "mil_arrow2"; size = 0.8; text = "You"; };
+        class gang  { on = 1; colour = "ColorCIV"; };    // civilian purple
+        // You, for everyone (with a GPS when needGps = 1). colour "" = your
+        // faction's colour above (police blue, EMS green, civilian purple).
+        class self  { on = 1; colour = ""; type = "mil_dot"; size = 0.8; text = "You"; };
     };
 };
