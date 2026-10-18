@@ -92,7 +92,16 @@ func ts3Query(cmds ...string) ([]map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", cfg.TS3QueryPort), 3*time.Second)
+	return ts3QueryAt(fmt.Sprintf("127.0.0.1:%d", cfg.TS3QueryPort), cfg.TS3QueryPassword, cmds...)
+}
+
+// ts3QueryAt is ts3Query against a given address and password (tests).
+//
+// TeamSpeak ends lines with "\n\r", not "\r\n": reading up to each '\n'
+// leaves a '\r' at the *start* of the next line, so lines are trimmed on
+// both sides before "error id=..." is looked for.
+func ts3QueryAt(addr, password string, cmds ...string) ([]map[string]string, error) {
+	conn, err := net.DialTimeout("tcp", addr, 3*time.Second)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +124,7 @@ func ts3Query(cmds ...string) ([]map[string]string, error) {
 			if err != nil {
 				return nil, err
 			}
-			line = strings.TrimRight(line, "\r\n")
+			line = strings.TrimSpace(line)
 			if strings.HasPrefix(line, "error ") {
 				kv := ts3Parse(line)
 				if kv["id"] != "0" {
@@ -128,7 +137,7 @@ func ts3Query(cmds ...string) ([]map[string]string, error) {
 			}
 		}
 	}
-	if _, err := run("login serveradmin " + ts3Escape(cfg.TS3QueryPassword)); err != nil {
+	if _, err := run("login serveradmin " + ts3Escape(password)); err != nil {
 		return nil, err
 	}
 	if _, err := run("use sid=1"); err != nil {

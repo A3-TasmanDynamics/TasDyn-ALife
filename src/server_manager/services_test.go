@@ -1,6 +1,9 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
+	"net"
 	"os/exec"
 	"strings"
 	"testing"
@@ -140,5 +143,60 @@ func TestTS3Escaping(t *testing.T) {
 	kv := ts3Parse(`virtualserver_name=TasDyn\sALife virtualserver_clientsonline=3`)
 	if kv["virtualserver_name"] != "TasDyn ALife" || kv["virtualserver_clientsonline"] != "3" {
 		t.Fatalf("parse: %v", kv)
+	}
+}
+
+// A fake ServerQuery that ends lines the way TeamSpeak does ("\n\r"), which
+// once left a '\r' in front of every "error id=" line so every query timed
+// out. Also checks the password is escaped and a wrong one is refused.
+func TestTS3QueryLineEndings(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+	go func() {
+		for {
+			conn, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			go func(conn net.Conn) {
+				defer conn.Close()
+				fmt.Fprint(conn, "TS3\n\rWelcome to the TeamSpeak 3 ServerQuery interface.\n\r")
+				r := bufio.NewReader(conn)
+				for {
+					line, err := r.ReadString('\n')
+					if err != nil {
+						return
+					}
+					line = strings.TrimSpace(line)
+					switch {
+					case line == `login serveradmin pa\sss`:
+						fmt.Fprint(conn, "error id=0 msg=ok\n\r")
+					case strings.HasPrefix(line, "login"):
+						fmt.Fprint(conn, "error id=520 msg=invalid\\sloginname\\sor\\spassword\n\r")
+					case line == "serverinfo":
+						fmt.Fprint(conn, "virtualserver_name=TasDyn\\sALife virtualserver_clientsonline=3\n\rerror id=0 msg=ok\n\r")
+					case line == "quit":
+						fmt.Fprint(conn, "error id=0 msg=ok\n\r")
+						return
+					default:
+						fmt.Fprint(conn, "error id=0 msg=ok\n\r")
+					}
+				}
+			}(conn)
+		}
+	}()
+
+	res, err := ts3QueryAt(ln.Addr().String(), "pa ss", "serverinfo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res) != 1 || res[0]["virtualserver_name"] != "TasDyn ALife" || res[0]["virtualserver_clientsonline"] != "3" {
+		t.Fatalf("serverinfo: %v", res)
+	}
+	if _, err := ts3QueryAt(ln.Addr().String(), "wrong", "serverinfo"); err == nil || !strings.Contains(err.Error(), "invalid loginname") {
+		t.Fatalf("wrong password: %v", err)
 	}
 }
