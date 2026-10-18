@@ -37,7 +37,9 @@ class CfgALife
         waterPerMinute = 2;             // ~50 minutes
         emptyDamagePerMinute = 0.08;    // health lost per minute for each one at 0
         warnAt = 20;                    // a notice when one drops to this
-        hud = 1;                        // 1: health / food / water bars, bottom right
+        hud = 1;                        // 1: health / food / water HUD, bottom right
+        hudStyle = "minimal";           // default style: "minimal" (icons + numbers), "rings" or "off";
+                                        // each player can switch it in the phone's Settings
     };
 
     // ---- Inventory and dropped items ---------------------------------------

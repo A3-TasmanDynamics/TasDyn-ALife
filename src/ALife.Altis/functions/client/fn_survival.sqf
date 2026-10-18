@@ -11,7 +11,8 @@
         gets low;
       - the values are copied to your unit for the server
         (alife_food / alife_water), which saves them with your gear;
-      - the HUD shows health, food and water in the bottom-right corner.
+      - the HUD shows health, food and water in the bottom-right corner,
+        as icons + numbers or rings (phone Settings; ui\hud.hpp).
 
     Started once from initPlayerLocal.sqf; runs for the whole session. A
     spawn sets the starting values (ALife_fnc_spawnApproved).
@@ -72,19 +73,43 @@ while { true } do {
         };
     };
 
-    // The HUD: on while you're spawned.
+    // The HUD: on while you're spawned, in the player's style (phone
+    // Settings): "minimal" icons + numbers, "rings", or "off".
+    private _style = (["get"] call ALife_fnc_phoneSettings) param [3, "minimal"];
     private _hud = uiNamespace getVariable ["ALife_Hud", displayNull];
-    if (_showHud && { _active }) then {
+    if (_showHud && { _active } && { _style != "off" }) then {
         if (isNull _hud) then {
             "ALife_hud" cutRsc ["ALife_Hud", "PLAIN", 0, false];
             _hud = uiNamespace getVariable ["ALife_Hud", displayNull];
         };
         if (!isNull _hud) then {
+            private _rings = _style == "rings";
             {
-                _x params ["_row", "_value"];
-                (_hud displayCtrl (9302 + _row * 10)) progressSetPosition (_value / 100);
-                (_hud displayCtrl (9303 + _row * 10)) ctrlSetText str round _value;
-            } forEach [[1, (1 - damage player) * 100], [2, ALife_food], [3, ALife_water]];
+                _x params ["_row", "_value", "_colour", "_low"];
+                _value = (round _value max 0) min 100;
+                // Numbers go amber when low and red when very low.
+                private _alert = [1, 1, 1, 1];
+                if (_value <= _low) then { _alert = [0.984, 0.749, 0.141, 1]; };
+                if (_value <= _low / 2) then { _alert = [0.97, 0.44, 0.41, 1]; };
+                private _base = 9300 + _row * 10;
+                { (_hud displayCtrl (_base + _x)) ctrlShow !_rings; } forEach [1, 3];
+                { (_hud displayCtrl (_base + _x)) ctrlShow _rings; } forEach [4, 5, 6];
+                if (_rings) then {
+                    private _arc = _hud displayCtrl (_base + 5);
+                    _arc ctrlSetText format ["ui\hud\ring_%1_ca.paa", [str round (_value / 5), "0" + str round (_value / 5)] select (round (_value / 5) < 10)];
+                    _arc ctrlSetTextColor ([_colour, _alert] select (_value <= _low));
+                    (_hud displayCtrl (_base + 6)) ctrlSetTextColor ([[1, 1, 1, 1], _alert] select (_value <= _low));
+                } else {
+                    (_hud displayCtrl (_base + 1)) ctrlSetTextColor _colour;
+                    private _text = _hud displayCtrl (_base + 3);
+                    _text ctrlSetText str _value;
+                    _text ctrlSetTextColor _alert;
+                };
+            } forEach [
+                [1, (1 - damage player) * 100, [0.29, 0.81, 0.59, 1], 30],
+                [2, ALife_food, [0.984, 0.749, 0.141, 1], _warnAt],
+                [3, ALife_water, [0.34, 0.62, 1, 1], _warnAt]
+            ];
         };
     } else {
         if (!isNull _hud) then { "ALife_hud" cutText ["", "PLAIN"]; };
