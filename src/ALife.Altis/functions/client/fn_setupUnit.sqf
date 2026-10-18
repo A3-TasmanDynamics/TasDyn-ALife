@@ -32,28 +32,21 @@ if (_faction == "medic") then {
     ];
 };
 
-// Shops for this faction: [class, position, radius, name] for each marker.
-ALife_shopSpots = [];
+// Shops for this faction: one "Open <shop>" action each, shown near any of
+// its markers. Only shops with an Items list for now (Gear / Vehicles
+// can't be bought yet -- see CfgShops.hpp).
 {
     private _shop = _x;
-    if (getText (_shop >> "faction") == _faction) then {
-        {
-            ALife_shopSpots pushBack [configName _shop, getMarkerPos _x, getNumber (_shop >> "radius"), getText (_shop >> "displayName")];
-        } forEach getArray (_shop >> "markers");
+    if (getText (_shop >> "faction") == _faction && { isClass (_shop >> "Items") }) then {
+        private _spots = getArray (_shop >> "markers") apply { getMarkerPos _x };
+        player addAction [
+            format ["<t color='#f5a524'>Open %1</t>", getText (_shop >> "displayName")],
+            { ["open", _this select 3] call ALife_fnc_shop; },
+            configName _shop, 5, true, true, "",
+            format ["alive player && { vehicle player == player } && { (%1 findIf { player distance2D _x <= %2 }) >= 0 }", _spots, getNumber (_shop >> "radius")]
+        ];
     };
 } forEach ("true" configClasses (missionConfigFile >> "CfgShops"));
-
-if (ALife_shopSpots isNotEqualTo []) then {
-    player addAction [
-        "<t color='#f5a524'>Open shop</t>",
-        {
-            private _spot = ALife_shopSpots select (ALife_shopSpots findIf { player distance2D (_x select 1) <= (_x select 2) });
-            ["open", _spot select 0] call ALife_fnc_shop;
-        },
-        nil, 5, true, true, "",
-        "alive player && { vehicle player == player } && { (ALife_shopSpots findIf { player distance2D (_x select 1) <= (_x select 2) }) >= 0 }"
-    ];
-};
 
 ["apply"] call ALife_fnc_phoneSettings;
 [player] remoteExec ["ALife_fnc_requestPhoneData", 2];
