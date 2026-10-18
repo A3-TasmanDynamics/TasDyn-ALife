@@ -34,6 +34,12 @@ class CfgALife
     carryWeight = 24;                   // how much a player can carry
     bagClass = "B_AssaultPack_khk";     // what dropped items look like (placeholder)
     bagLifetime = 900;                  // seconds before a dropped bag disappears
+    // ATMs: every ATM on the map works -- recognised by its model or class,
+    // so nothing needs placing or marking. Windows key while looking at one.
+    atmModels[] = { "atm_01_f.p3d", "atm_02_f.p3d" }; // structures_f_epc: Civ\Accessories\Atm_0x_F.p3d
+    atmClasses[] = { "Land_Atm_01_F", "Land_Atm_02_F" };
+    atmRange = 3;                       // metres from the ATM
+
     class Trunks                        // vehicle storage by type
     {
         car = 50;

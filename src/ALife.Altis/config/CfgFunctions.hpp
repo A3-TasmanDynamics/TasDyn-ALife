@@ -30,6 +30,7 @@ class CfgFunctions
             class containerSend {};  // send a player a container's contents
             class containerOpen {};  // client -> server: open a bag / trunk
             class containerTransfer {}; // client -> server: take / store items and cash
+            class atmAction {};      // client -> server: ATM deposit / withdraw
         };
 
         class Client
@@ -54,6 +55,7 @@ class CfgFunctions
             class interact {};        // the Windows key
             class transfer {};        // the inventory screen (bags, trunks, dropping)
             class containerData {};   // server -> client: what's in the open bag / trunk
+            class atm {};             // the ATM / bank menu
         };
 
         class Common
@@ -63,6 +65,7 @@ class CfgFunctions
             class parsePosition {};   // stored DB position -> [x,y,z]
             class killInfo {};        // killer name, weapon, distance
             class itemsWeight {};     // weight of a list of items
+            class isAtm {};           // is this object an ATM (any on the map)
         };
     };
 };
