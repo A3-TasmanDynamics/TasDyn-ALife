@@ -47,10 +47,10 @@ func (b *Bot) PostWelcome(ctx context.Context) (string, error) {
 		if err == nil {
 			return b.messageLink(ch, oldMsg), nil
 		}
-		if !isNotFound(err) {
+		if !cantEditStored(err) {
 			return "", err
 		}
-		slog.Info("discord bot: welcome message was deleted, posting a new one")
+		slog.Info("discord bot: welcome message is gone or isn't ours, posting a new one", "error", err)
 	}
 	m, err := b.session.ChannelMessageSendComplex(ch, &discordgo.MessageSend{
 		Content: content, Components: comps, AllowedMentions: noMentions,

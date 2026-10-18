@@ -138,10 +138,10 @@ func (b *Bot) updateLiveStatus(ctx context.Context, ch string, snap status.Snaps
 		if err == nil {
 			return nil
 		}
-		if !isNotFound(err) {
+		if !cantEditStored(err) {
 			return err // transient: try the edit again next minute rather than repost
 		}
-		slog.Info("discord bot: live status message was deleted, posting a new one")
+		slog.Info("discord bot: live status message is gone or isn't ours, posting a new one", "error", err)
 	}
 	m, err := b.session.ChannelMessageSendComplex(ch, &discordgo.MessageSend{Embeds: embeds, AllowedMentions: noMentions}, discordgo.WithContext(ctx))
 	if err != nil {

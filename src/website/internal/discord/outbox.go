@@ -83,6 +83,18 @@ func isNotFound(err error) bool {
 	return errors.As(err, &rest) && rest.Response != nil && rest.Response.StatusCode == http.StatusNotFound
 }
 
+// cantEditStored: a message we keep editing (live status, welcome) can't
+// be any more -- deleted, or posted by another bot (after moving to a new
+// Discord app; Discord answers 50005 "Cannot edit a message authored by
+// another user"). Either way, post a new one.
+func cantEditStored(err error) bool {
+	if isNotFound(err) {
+		return true
+	}
+	var rest *discordgo.RESTError
+	return errors.As(err, &rest) && rest.Message != nil && rest.Message.Code == discordgo.ErrCodeCannotEditFromAnotherUser
+}
+
 // Sender is the part of a discordgo session the worker needs -- an
 // interface so the worker can be tested without Discord.
 type Sender interface {

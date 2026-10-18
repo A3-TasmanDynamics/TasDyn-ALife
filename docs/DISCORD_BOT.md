@@ -251,6 +251,42 @@ enabled, Ban Members and Moderate Members.
 **Role position:** the bot's role must be above every mapped role. `/bot health` and the settings
 page both warn if it isn't.
 
+### Setting up the ALife Discord app
+
+ALife has its own Discord application, not a shared Tasman Dynamics one. The same app is both
+the bot and the website's "Log in with Discord". To set it up, or move to a new one:
+
+1. **Create the app.** Go to [discord.com/developers/applications](https://discord.com/developers/applications)
+   → **New Application**, and give it the bot's name. On **General Information**, set the App Icon
+   (`tools/branding/alife_bot_avatar.png`, made by `tools/branding/make_bot_avatar.py`) and copy the
+   **Application ID**.
+2. **Bot tab.** Set the same icon. Turn **Public Bot** off, so only you can add it to servers.
+   Under Privileged Gateway Intents, turn on **Server Members Intent**. Presence and Message
+   Content aren't needed yet; Message Content will be when ticket threads land (§6). Then
+   **Reset Token** and copy it.
+3. **OAuth2 tab.** Copy the **Client Secret**. Under Redirects, add
+   `SITE_BASE_URL + /auth/discord/callback` (e.g. `http://localhost:8082/auth/discord/callback`;
+   add the public address too once the site has one).
+4. **Invite it** (replace `APP_ID`):
+   `https://discord.com/oauth2/authorize?client_id=APP_ID&scope=bot%20applications.commands&permissions=268455044`.
+   That number is exactly what the bot uses today (`requiredPermissions` in
+   `internal/discord/cmd_admin.go`): View Channels, Send Messages, Embed Links, Manage Roles,
+   View Audit Log and Ban Members. In **Server Settings → Roles**, drag the bot's new role above
+   every role it syncs.
+5. **`src/website/.env`.** Set `DISCORD_BOT_TOKEN` to the token, and set
+   `DISCORD_OAUTH_CLIENT_ID` / `DISCORD_OAUTH_CLIENT_SECRET` to the Application ID and Client
+   Secret. `DISCORD_GUILD_ID` stays the same if it's the same server.
+6. **Restart the Website and the Discord Bot** in the Server Manager. On `/admin/discord`, check
+   that the bot name and server are right and nothing shows as missing.
+7. **Retire the old app** if it was in the server. In **Server Settings → Integrations**, remove
+   it. That removes its bot *and* its slash commands; just kicking the bot leaves its commands
+   behind as duplicates of the new ones. Everything stored on our side carries over: channel
+   settings, role mappings and linked accounts are keyed by Discord server and user IDs, not by
+   app.
+8. **Old posts.** A bot can't edit another bot's messages, so the new bot posts a fresh live
+   #server-status message within a minute, and **Post or update welcome message** on `/admin/discord` posts
+   a fresh #welcome. Delete the old app's two messages by hand.
+
 ## 10. Security
 
 - **Caller identity comes from Discord's interaction payload**, never from command arguments (the
