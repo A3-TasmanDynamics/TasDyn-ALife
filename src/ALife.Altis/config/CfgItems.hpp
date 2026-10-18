@@ -9,7 +9,8 @@
 //   weight      -- counts towards carry weight (CfgALife >> carryWeight) and
 //                  vehicle trunk space
 //   use         -- what the Use button does (ALife_fnc_useItem), one used up:
-//                    "consume"  eat / drink: heal (0-1 health back), energy = 1 resets stamina
+//                    "consume"  eat / drink: `food` / `water` back (of 100, CfgALife >>
+//                               Survival), energy = 1 resets stamina, heal = health (0-1)
 //                    "heal"     heal yourself by `heal`
 //                    "repair"   fully repair the vehicle you're next to
 //                    "refuel"   add `fuel` (0-1 of a tank) to the vehicle you're next to
@@ -30,7 +31,7 @@ class CfgItems
         description = "Bottled water.";
         icon = "ui\items\water_ca.paa";
         weight = 1;
-        use = "consume"; useTime = 2; heal = 0.05;
+        use = "consume"; useTime = 2; water = 45;
     };
     class coffee
     {
@@ -38,7 +39,7 @@ class CfgItems
         description = "A takeaway coffee.";
         icon = "ui\items\coffee_ca.paa";
         weight = 1;
-        use = "consume"; useTime = 2; heal = 0.05; energy = 1;
+        use = "consume"; useTime = 2; water = 20; energy = 1;
     };
     class donut
     {
@@ -46,7 +47,7 @@ class CfgItems
         description = "Glazed. A police favourite.";
         icon = "ui\items\donut_ca.paa";
         weight = 1;
-        use = "consume"; useTime = 2; heal = 0.1;
+        use = "consume"; useTime = 2; food = 20;
     };
     class apple
     {
@@ -54,7 +55,7 @@ class CfgItems
         description = "Fresh from an Altis orchard.";
         icon = "ui\items\apple_ca.paa";
         weight = 1;
-        use = "consume"; useTime = 2; heal = 0.05;
+        use = "consume"; useTime = 2; food = 15; water = 5;
     };
     class tbacon
     {
@@ -62,7 +63,7 @@ class CfgItems
         description = "Bacon in a can. Keeps forever.";
         icon = "ui\items\tbacon_ca.paa";
         weight = 1;
-        use = "consume"; useTime = 3; heal = 0.15;
+        use = "consume"; useTime = 3; food = 40;
     };
     class redgull
     {
@@ -70,7 +71,7 @@ class CfgItems
         description = "Energy drink. Pricey.";
         icon = "ui\items\redgull_ca.paa";
         weight = 1;
-        use = "consume"; useTime = 2; heal = 0.05; energy = 1;
+        use = "consume"; useTime = 2; water = 30; energy = 1;
     };
 
     // ---- Tools ----

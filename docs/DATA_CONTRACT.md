@@ -202,9 +202,10 @@ returned before anything reaches the database.
 
 ## Gear
 
-`<faction>_gear` is saved by the game server's autosave while the player is alive, as one pair:
-`[["loadout", <getUnitLoadout>]]`. Spawning puts it back on (`setUnitLoadout`); respawning after
-death saves `[]`, so the gear stays with the body (a revive keeps it).
+`<faction>_gear` is saved by the game server's autosave while the player is alive, as pairs:
+`[["loadout", <getUnitLoadout>], ["food", 0-100], ["water", 0-100]]`. Spawning puts the loadout
+back on (`setUnitLoadout`) and restores food and water (missing = 100, full); respawning after
+death saves `[]`, so the gear stays with the body (a revive keeps it) and the new life starts full.
 
 ## Escaping
 

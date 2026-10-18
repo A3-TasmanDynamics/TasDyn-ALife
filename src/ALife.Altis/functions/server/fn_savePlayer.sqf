@@ -2,7 +2,8 @@
     ALife_fnc_savePlayer (server)
 
     Saves a spawned player's alive state, position and, while alive, what
-    they're wearing and carrying (<faction>_gear, [["loadout", ...]]) for
+    they're wearing and carrying, and their food and water
+    (<faction>_gear, [["loadout", ...], ["food", n], ["water", n]]) for
     the faction they're playing. Does nothing for a player still in the
     spawn menu.
 
@@ -31,8 +32,13 @@ private _posResult = ["save", [_uid, _faction + "_position", _position, "-"]] ca
 
 private _gearResult = "OK";
 if (alive _unit) then {
-    // Stored as pairs ([["loadout", getUnitLoadout]]), like the other JSONB fields.
-    private _gear = [["loadout", getUnitLoadout _unit]];
+    // Stored as pairs, like the other JSONB fields: the outfit, and food /
+    // water (0-100, sent by the player's ALife_fnc_survival).
+    private _gear = [
+        ["loadout", getUnitLoadout _unit],
+        ["food", round (_unit getVariable ["alife_food", 100])],
+        ["water", round (_unit getVariable ["alife_water", 100])]
+    ];
     _gearResult = ["save", [_uid, _faction + "_gear", str _gear, "-"]] call ALife_fnc_extension;
     if (_gearResult == "OK") then {
         (ALife_sessions getOrDefault [_uid, createHashMap]) set [_faction + "_gear", _gear];

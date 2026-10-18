@@ -69,5 +69,14 @@ if (_gear isEqualType []) then {
     private _i = _gear findIf { _x isEqualType [] && { (_x param [0, ""]) isEqualTo "loadout" } };
     if (_i >= 0) then { _loadout = (_gear select _i) param [1, []]; };
 };
+// Food and water (0-100, saved with the gear); a new life starts full.
+private _fnc_stat = {
+    private _i = if (_gear isEqualType []) then { _gear findIf { _x isEqualTypeParams ["", 0] && { (_x select 0) == _this } } } else { -1 };
+    if (_i < 0) exitWith { 100 };
+    (((_gear select _i) select 1) max 0) min 100
+};
+private _survival = ["food" call _fnc_stat, "water" call _fnc_stat];
+_unit setVariable ["alife_food", _survival select 0];
+_unit setVariable ["alife_water", _survival select 1];
 
-[_target, _name, "", _loadout] remoteExecCall ["ALife_fnc_spawnApproved", _owner];
+[_target, _name, "", _loadout, _survival] remoteExecCall ["ALife_fnc_spawnApproved", _owner];

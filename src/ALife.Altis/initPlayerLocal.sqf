@@ -6,6 +6,7 @@ if (!hasInterface) exitWith {};
 waitUntil { !isNil "ALife_fnc_startSession" };
 [] spawn ALife_fnc_startSession;
 [] spawn ALife_fnc_groupMarkers; // your police / EMS / gang on the map and GPS
+[] spawn ALife_fnc_survival;     // food, water and the health / food / water HUD
 
 // Phone key (CfgALife >> phoneKey, Y by default), the interaction key
 // (CfgALife >> interactKeys, Windows): open a bag / trunk you're looking at,
