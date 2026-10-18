@@ -3,8 +3,9 @@
 // shows one and hides the other. A title layer, inside RscTitles in
 // description.ext. Icons: ui\hud (tools/phone_icons/make_hud.py).
 //
-//   minimal: icon 93x1 + number 93x3, one row each
-//   rings:   track 93x4, filled arc 93x5 (ring_00 .. ring_20), icon 93x6
+//   minimal: backing disc 93x2, icon 93x1, number 93x3, one row each
+//   rings:   backing disc 93x7, track 93x4, filled arc 93x5 (ring_00 ..
+//            ring_20), icon 93x6 -- along the bottom edge
 //   (x = 1 health, 2 food, 3 water)
 
 class ALife_Hud
@@ -20,80 +21,116 @@ class ALife_Hud
     class controls
     {
         // Minimal: Health
+        class MiniDisc1: ALife_RscPicture
+        {
+            idc = 9312;
+            text = "ui\hud\disc_ca.paa";
+            colorText[] = { 0.043, 0.071, 0.125, 0.7 };
+            x = "safezoneX + safezoneW * 0.936";
+            y = "safezoneY + safezoneH * 0.835";
+            w = "safezoneW * 0.023";
+            h = "safezoneH * 0.041";
+        };
         class MiniIcon1: ALife_RscPicture
         {
             idc = 9311;
             text = "ui\hud\health_ca.paa";
-            x = "safezoneX + safezoneW * 0.953";
-            y = "safezoneY + safezoneH * 0.856";
-            w = "safezoneW * 0.012";
-            h = "safezoneH * 0.022";
+            x = "safezoneX + safezoneW * 0.9405";
+            y = "safezoneY + safezoneH * 0.843";
+            w = "safezoneW * 0.014";
+            h = "safezoneH * 0.025";
         };
         class MiniValue1: ALife_RscText
         {
             idc = 9313;
             shadow = 2;
-            sizeEx = 0.034;
+            sizeEx = 0.045;
             font = "RobotoCondensedBold";
-            x = "safezoneX + safezoneW * 0.966";
-            y = "safezoneY + safezoneH * 0.853";
-            w = "safezoneW * 0.03";
-            h = "safezoneH * 0.028";
+            x = "safezoneX + safezoneW * 0.961";
+            y = "safezoneY + safezoneH * 0.837";
+            w = "safezoneW * 0.036";
+            h = "safezoneH * 0.037";
         };
         // Minimal: Food
+        class MiniDisc2: ALife_RscPicture
+        {
+            idc = 9322;
+            text = "ui\hud\disc_ca.paa";
+            colorText[] = { 0.043, 0.071, 0.125, 0.7 };
+            x = "safezoneX + safezoneW * 0.936";
+            y = "safezoneY + safezoneH * 0.881";
+            w = "safezoneW * 0.023";
+            h = "safezoneH * 0.041";
+        };
         class MiniIcon2: ALife_RscPicture
         {
             idc = 9321;
             text = "ui\hud\food_ca.paa";
-            x = "safezoneX + safezoneW * 0.953";
-            y = "safezoneY + safezoneH * 0.886";
-            w = "safezoneW * 0.012";
-            h = "safezoneH * 0.022";
+            x = "safezoneX + safezoneW * 0.9405";
+            y = "safezoneY + safezoneH * 0.889";
+            w = "safezoneW * 0.014";
+            h = "safezoneH * 0.025";
         };
         class MiniValue2: ALife_RscText
         {
             idc = 9323;
             shadow = 2;
-            sizeEx = 0.034;
+            sizeEx = 0.045;
             font = "RobotoCondensedBold";
-            x = "safezoneX + safezoneW * 0.966";
+            x = "safezoneX + safezoneW * 0.961";
             y = "safezoneY + safezoneH * 0.883";
-            w = "safezoneW * 0.03";
-            h = "safezoneH * 0.028";
+            w = "safezoneW * 0.036";
+            h = "safezoneH * 0.037";
         };
         // Minimal: Water
+        class MiniDisc3: ALife_RscPicture
+        {
+            idc = 9332;
+            text = "ui\hud\disc_ca.paa";
+            colorText[] = { 0.043, 0.071, 0.125, 0.7 };
+            x = "safezoneX + safezoneW * 0.936";
+            y = "safezoneY + safezoneH * 0.927";
+            w = "safezoneW * 0.023";
+            h = "safezoneH * 0.041";
+        };
         class MiniIcon3: ALife_RscPicture
         {
             idc = 9331;
             text = "ui\hud\water_ca.paa";
-            x = "safezoneX + safezoneW * 0.953";
-            y = "safezoneY + safezoneH * 0.916";
-            w = "safezoneW * 0.012";
-            h = "safezoneH * 0.022";
+            x = "safezoneX + safezoneW * 0.9405";
+            y = "safezoneY + safezoneH * 0.935";
+            w = "safezoneW * 0.014";
+            h = "safezoneH * 0.025";
         };
         class MiniValue3: ALife_RscText
         {
             idc = 9333;
             shadow = 2;
-            sizeEx = 0.034;
+            sizeEx = 0.045;
             font = "RobotoCondensedBold";
-            x = "safezoneX + safezoneW * 0.966";
-            y = "safezoneY + safezoneH * 0.913";
-            w = "safezoneW * 0.03";
-            h = "safezoneH * 0.028";
+            x = "safezoneX + safezoneW * 0.961";
+            y = "safezoneY + safezoneH * 0.929";
+            w = "safezoneW * 0.036";
+            h = "safezoneH * 0.037";
         };
         // Rings: Health
-        class RingTrack1: ALife_RscPicture
+        class RingDisc1: ALife_RscPicture
+        {
+            idc = 9317;
+            text = "ui\hud\disc_ca.paa";
+            colorText[] = { 0.043, 0.071, 0.125, 0.7 };
+            x = "safezoneX + safezoneW * 0.866";
+            y = "safezoneY + safezoneH * 0.925";
+            w = "safezoneW * 0.037";
+            h = "safezoneH * 0.066";
+        };
+        class RingTrack1: RingDisc1
         {
             idc = 9314;
             text = "ui\hud\ring_bg_ca.paa";
-            colorText[] = { 1, 1, 1, 0.22 };
-            x = "safezoneX + safezoneW * 0.896";
-            y = "safezoneY + safezoneH * 0.892";
-            w = "safezoneW * 0.028";
-            h = "safezoneH * 0.05";
+            colorText[] = { 1, 1, 1, 0.3 };
         };
-        class RingArc1: RingTrack1
+        class RingArc1: RingDisc1
         {
             idc = 9315;
             text = "ui\hud\ring_20_ca.paa";
@@ -103,23 +140,29 @@ class ALife_Hud
         {
             idc = 9316;
             text = "ui\hud\health_ca.paa";
-            x = "safezoneX + safezoneW * 0.9045";
-            y = "safezoneY + safezoneH * 0.907";
-            w = "safezoneW * 0.011";
-            h = "safezoneH * 0.02";
+            x = "safezoneX + safezoneW * 0.8770";
+            y = "safezoneY + safezoneH * 0.945";
+            w = "safezoneW * 0.015";
+            h = "safezoneH * 0.026";
         };
         // Rings: Food
-        class RingTrack2: ALife_RscPicture
+        class RingDisc2: ALife_RscPicture
+        {
+            idc = 9327;
+            text = "ui\hud\disc_ca.paa";
+            colorText[] = { 0.043, 0.071, 0.125, 0.7 };
+            x = "safezoneX + safezoneW * 0.908";
+            y = "safezoneY + safezoneH * 0.925";
+            w = "safezoneW * 0.037";
+            h = "safezoneH * 0.066";
+        };
+        class RingTrack2: RingDisc2
         {
             idc = 9324;
             text = "ui\hud\ring_bg_ca.paa";
-            colorText[] = { 1, 1, 1, 0.22 };
-            x = "safezoneX + safezoneW * 0.927";
-            y = "safezoneY + safezoneH * 0.892";
-            w = "safezoneW * 0.028";
-            h = "safezoneH * 0.05";
+            colorText[] = { 1, 1, 1, 0.3 };
         };
-        class RingArc2: RingTrack2
+        class RingArc2: RingDisc2
         {
             idc = 9325;
             text = "ui\hud\ring_20_ca.paa";
@@ -129,23 +172,29 @@ class ALife_Hud
         {
             idc = 9326;
             text = "ui\hud\food_ca.paa";
-            x = "safezoneX + safezoneW * 0.9355";
-            y = "safezoneY + safezoneH * 0.907";
-            w = "safezoneW * 0.011";
-            h = "safezoneH * 0.02";
+            x = "safezoneX + safezoneW * 0.9190";
+            y = "safezoneY + safezoneH * 0.945";
+            w = "safezoneW * 0.015";
+            h = "safezoneH * 0.026";
         };
         // Rings: Water
-        class RingTrack3: ALife_RscPicture
+        class RingDisc3: ALife_RscPicture
+        {
+            idc = 9337;
+            text = "ui\hud\disc_ca.paa";
+            colorText[] = { 0.043, 0.071, 0.125, 0.7 };
+            x = "safezoneX + safezoneW * 0.950";
+            y = "safezoneY + safezoneH * 0.925";
+            w = "safezoneW * 0.037";
+            h = "safezoneH * 0.066";
+        };
+        class RingTrack3: RingDisc3
         {
             idc = 9334;
             text = "ui\hud\ring_bg_ca.paa";
-            colorText[] = { 1, 1, 1, 0.22 };
-            x = "safezoneX + safezoneW * 0.958";
-            y = "safezoneY + safezoneH * 0.892";
-            w = "safezoneW * 0.028";
-            h = "safezoneH * 0.05";
+            colorText[] = { 1, 1, 1, 0.3 };
         };
-        class RingArc3: RingTrack3
+        class RingArc3: RingDisc3
         {
             idc = 9335;
             text = "ui\hud\ring_20_ca.paa";
@@ -155,10 +204,10 @@ class ALife_Hud
         {
             idc = 9336;
             text = "ui\hud\water_ca.paa";
-            x = "safezoneX + safezoneW * 0.9665";
-            y = "safezoneY + safezoneH * 0.907";
-            w = "safezoneW * 0.011";
-            h = "safezoneH * 0.02";
+            x = "safezoneX + safezoneW * 0.9610";
+            y = "safezoneY + safezoneH * 0.945";
+            w = "safezoneW * 0.015";
+            h = "safezoneH * 0.026";
         };
     };
 };
