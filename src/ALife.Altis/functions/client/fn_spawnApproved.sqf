@@ -9,7 +9,7 @@
         1: STRING - spawn point name
         2: STRING - error message when refused
         3: ARRAY  - saved loadout to put on ([] = none: the slot's kit
-                    without weapons)
+                    without weapons); a GPS is added either way
 */
 
 params [["_pos", []], ["_name", ""], ["_error", ""], ["_loadout", []]];
@@ -27,6 +27,9 @@ if (_loadout isNotEqualTo []) then {
     // Weapons from the slot's default kit aren't part of Altis Life loadouts.
     removeAllWeapons player;
 };
+// Everyone spawns with a GPS (it shows your police / EMS / gang:
+// ALife_fnc_groupMarkers).
+if !("ItemGPS" in assignedItems player) then { player linkItem "ItemGPS"; };
 
 player setPosATL _pos;
 player enableSimulation true;
