@@ -1,23 +1,36 @@
-"""Redraws the ALife brush "A" logo as SVG. The original artwork was lost;
-only a 63x73 screenshot of the app icon survived, so the three brush
-strokes were measured from it (centre line + width at each point) and are
-rebuilt here as smooth tapered shapes. Writes alife-a.svg (the letter) and
-alife-a-tile.svg (the app icon: #1a1a1a tile, soft glow), plus a
-comparison image against the screenshot.
+"""Draws the ALife logo: the brush "A".
 
-    python tools/branding/make_brush_a.py <screenshot.png> <out_dir>
+The original artwork was lost; only a 63x73 screenshot of the old (blue) app
+icon survived. Its three brush strokes were measured from that screenshot
+(a centre line and a width at each point, in the screenshot's pixels, below)
+and are rebuilt here as smooth tapered shapes, in the brand's amber.
+
+    python tools/branding/make_brush_a.py                      # write the files below
+    python tools/branding/make_brush_a.py --compare shot.png   # also check the fit
+
+Writes, beside this script:
+    alife-a.svg          the A in amber-bright, for dark grounds
+    alife-a-ink.svg      the A in navy (bg), for light grounds
+    alife-a-tile.svg     the app icon: navy tile, amber A with a soft glow
+    alife_bot_avatar.png the Discord avatar (512 px, square; Discord crops it round)
+    brush_compare.png    (--compare) screenshot | redraw | overlap
 """
 import math
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
 from pngio import read_png, write_png  # noqa: E402  (pngio.py, beside this file)
 
-src, out = sys.argv[1], sys.argv[2]
-W, H, px = read_png(src)
+# Brand colours (the ALife brand system: amber-bright, amber, bg, night-glow).
+AMBER_BRIGHT = (0xfb, 0xbf, 0x24)
+AMBER = (0xf5, 0x9e, 0x0b)
+NAVY = (0x0b, 0x12, 0x20)
+NIGHT_GLOW = (0x1d, 0x2b, 0x48)
+hexc = lambda c: "#%02x%02x%02x" % c
 
-# (x, y, width) along each stroke, in original pixels; width is across the stroke.
+# (x, y, width) along each stroke, in the screenshot's pixels; width is across the stroke.
 LEFT = [(8.4, 56.2, 0), (9.6, 54.6, 2.8), (12.3, 50.2, 4.6), (16.3, 44.2, 5.0), (19.6, 40.0, 4.9),
         (23.1, 35.8, 4.6), (26.2, 32.0, 4.2), (29.2, 28.0, 4.0), (31.6, 25.0, 3.9), (34.3, 21.8, 3.7),
         (37.0, 17.8, 3.0), (39.4, 14.2, 1.9), (40.6, 12.0, 0)]
@@ -64,11 +77,16 @@ def outline(stroke):
 
 
 OUTLINES = [outline(s) for s in STROKES]
+MINX = min(p[0] for o in OUTLINES for p in o)
+MAXX = max(p[0] for o in OUTLINES for p in o)
+MINY = min(p[1] for o in OUTLINES for p in o)
+MAXY = max(p[1] for o in OUTLINES for p in o)
+CX, CY = (MINX + MAXX) / 2, (MINY + MAXY) / 2
 
 
-def svg_path(poly, scale, ox=0, oy=0):
+def svg_path(poly, scale, ox, oy):
     """Closed Catmull-Rom path through the outline points, as cubic Beziers."""
-    pts = poly[::2]  # every other sample is plenty once smoothed
+    pts = poly[::2]
     n = len(pts)
     f = lambda p: ((p[0] - ox) * scale, (p[1] - oy) * scale)
     d = "M%.1f,%.1f" % f(pts[0])
@@ -80,81 +98,167 @@ def svg_path(poly, scale, ox=0, oy=0):
     return d + "Z"
 
 
-# ---- render for comparison (nonzero: strokes overlap) ----
-def inside_poly(poly, x, y):
-    c = False
-    n = len(poly)
+def letter_svg(title, colour):
+    K, pad = 10, 2
+    paths = "\n".join('    <path d="%s"/>' % svg_path(o, K, MINX - pad, MINY - pad) for o in OUTLINES)
+    vw, vh = (MAXX - MINX + 2 * pad) * K, (MAXY - MINY + 2 * pad) * K
+    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %.0f %.0f" width="%.0f" height="%.0f">\n'
+            '  <title>%s</title>\n  <g fill="%s">\n%s\n  </g>\n</svg>\n') % (vw, vh, vw, vh, title, colour, paths)
+
+
+def tile_svg():
+    T, scale = 640, 9.0  # the A ~425 tall on a 640 tile, like the old icon
+    paths = "\n".join('    <path d="%s"/>' % svg_path(o, scale, CX - T / 2 / scale, CY - T / 2 / scale) for o in OUTLINES)
+    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {T} {T}" width="{T}" height="{T}">\n'
+            '  <title>ALife icon</title>\n'
+            '  <defs>\n'
+            '    <radialGradient id="alife-night" cx="50%" cy="45%" r="70%">\n'
+            '      <stop offset="0" stop-color="{glow}"/><stop offset="1" stop-color="{navy}"/>\n'
+            '    </radialGradient>\n'
+            '    <filter id="alife-halo" x="-30%" y="-30%" width="160%" height="160%">\n'
+            '      <feGaussianBlur in="SourceGraphic" stdDeviation="16" result="blur"/>\n'
+            '      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.55 0" result="soft"/>\n'
+            '      <feMerge><feMergeNode in="soft"/><feMergeNode in="SourceGraphic"/></feMerge>\n'
+            '    </filter>\n'
+            '  </defs>\n'
+            '  <rect width="{T}" height="{T}" rx="72" fill="url(#alife-night)"/>\n'
+            '  <g fill="{amber}" filter="url(#alife-halo)">\n{paths}\n  </g>\n</svg>\n').format(
+        T=T, glow=hexc(NIGHT_GLOW), navy=hexc(NAVY), amber=hexc(AMBER_BRIGHT), paths=paths)
+
+
+# ---- raster (scanline fill with supersampling) for the avatar ----
+def flatten(poly, scale, ox, oy):
+    """The smoothed outline as a dense polygon in output pixels."""
+    pts = poly[::2]
+    n = len(pts)
+    outp = []
     for i in range(n):
-        x1, y1 = poly[i]
-        x2, y2 = poly[(i + 1) % n]
-        if (y1 > y) != (y2 > y) and x < (x2 - x1) * (y - y1) / (y2 - y1) + x1:
-            c = not c
-    return c
+        p0, p1, p2, p3 = pts[(i - 1) % n], pts[i], pts[(i + 1) % n], pts[(i + 2) % n]
+        c1 = (p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6)
+        c2 = (p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6)
+        for s in range(6):
+            t = s / 6
+            mt = 1 - t
+            x = mt ** 3 * p1[0] + 3 * mt * mt * t * c1[0] + 3 * mt * t * t * c2[0] + t ** 3 * p2[0]
+            y = mt ** 3 * p1[1] + 3 * mt * mt * t * c1[1] + 3 * mt * t * t * c2[1] + t ** 3 * p2[1]
+            outp.append(((x - ox) * scale, (y - oy) * scale))
+    return outp
 
 
-def ink(p):
-    return max(0.0, min(1.0, (p[2] - p[0] - 40) / 170.0))
+def coverage(polys, size, ss=4):
+    """0..1 coverage of the union of polygons (each even-odd) on a size x size grid."""
+    cov = [[0.0] * size for _ in range(size)]
+    for row in range(size * ss):
+        y = (row + 0.5) / ss
+        spans = []
+        for poly in polys:
+            xs = []
+            n = len(poly)
+            for i in range(n):
+                x1, y1 = poly[i]
+                x2, y2 = poly[(i + 1) % n]
+                if (y1 > y) != (y2 > y):
+                    xs.append(x1 + (y - y1) * (x2 - x1) / (y2 - y1))
+            xs.sort()
+            spans += [(xs[k], xs[k + 1]) for k in range(0, len(xs) - 1, 2)]
+        spans.sort()
+        merged = []
+        for a, b in spans:
+            if merged and a <= merged[-1][1]:
+                merged[-1] = (merged[-1][0], max(merged[-1][1], b))
+            else:
+                merged.append((a, b))
+        line = cov[row // ss]
+        for a, b in merged:
+            a, b = max(a, 0), min(b, size)
+            for px in range(int(a), min(int(math.ceil(b)), size)):
+                line[px] += (min(b, px + 1) - max(a, px)) / ss
+    return cov
 
 
-S = 8
-SS = 1
-img = []
-for Y in range(H * S):
-    row = []
-    for X in range(W * 3 * S):
-        if X < W * S:
-            row.append(px[Y // S][X // S])
-            continue
-        mode = 1 if X < W * 2 * S else 2
-        X0 = X - W * S * mode
-        cover = 0
-        for sy in range(SS):
-            for sx in range(SS):
-                x = (X0 + (sx + 0.5) / SS) / S
-                y = (Y + (sy + 0.5) / SS) / S
-                if any(inside_poly(o, x, y) for o in OUTLINES):
-                    cover += 1
-        a = cover / (SS * SS)
-        if mode == 1:  # clean render on the tile colour
-            row.append(tuple(int(26 * (1 - a) + c * a) for c in (13, 127, 234)))
-        else:  # overlap: blue both, amber only mine, red only original
-            orig = ink(px[Y // S][X0 // S]) >= 0.5
-            mine = a >= 0.5
-            row.append((13, 127, 234) if mine and orig else (250, 190, 40) if mine else (230, 70, 70) if orig else (26, 26, 26))
-    img.append(row)
-write_png(os.path.join(out, "brush_compare.png"), W * 3 * S, H * S, img)
+def blur(field, r, passes=3):
+    """Box blur, separable, `passes` times (close to a Gaussian)."""
+    n = len(field)
+    f = [row[:] for row in field]
+    for _ in range(passes):
+        for horiz in (True, False):
+            g = [[0.0] * n for _ in range(n)]
+            for i in range(n):
+                acc = 0.0
+                line = f[i] if horiz else [f[j][i] for j in range(n)]
+                pre = [0.0]
+                for v in line:
+                    acc += v
+                    pre.append(acc)
+                for j in range(n):
+                    lo, hi = max(0, j - r), min(n, j + r + 1)
+                    v = (pre[hi] - pre[lo]) / (2 * r + 1)
+                    if horiz:
+                        g[i][j] = v
+                    else:
+                        g[j][i] = v
+            f = g
+    return f
 
-# ---- SVGs: the letter alone, and the app tile ----
-minx = min(p[0] for o in OUTLINES for p in o)
-maxx = max(p[0] for o in OUTLINES for p in o)
-miny = min(p[1] for o in OUTLINES for p in o)
-maxy = max(p[1] for o in OUTLINES for p in o)
-print("ink bbox: x %.1f-%.1f y %.1f-%.1f" % (minx, maxx, miny, maxy))
 
-K = 10  # 10 units per original pixel
-pad = 2
-paths = [svg_path(o, K, minx - pad, miny - pad) for o in OUTLINES]
-vw, vh = (maxx - minx + 2 * pad) * K, (maxy - miny + 2 * pad) * K
-letter = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %.0f %.0f" width="%.0f" height="%.0f">\n'
-          '  <title>ALife A</title>\n  <g fill="#0d7fea">\n%s\n  </g>\n</svg>\n') % (
-    vw, vh, vw, vh, "\n".join('    <path d="%s"/>' % d for d in paths))
-open(os.path.join(out, "alife-a.svg"), "w").write(letter)
+def avatar(size=512):
+    scale = size * 0.68 / (MAXY - MINY)  # the A fills 68% of the height
+    ox, oy = CX - size / 2 / scale, CY - size / 2 / scale
+    polys = [flatten(o, scale, ox, oy) for o in OUTLINES]
+    cov = coverage(polys, size)
+    halo = blur(cov, max(4, size // 40))
+    px = []
+    for y in range(size):
+        row = []
+        for x in range(size):
+            t = min(1.0, math.hypot(x - size / 2, y - size * 0.45) / (size * 0.7))
+            bg = [NIGHT_GLOW[i] + (NAVY[i] - NIGHT_GLOW[i]) * t for i in range(3)]
+            h = min(1.0, halo[y][x] * 0.55)
+            c = [bg[i] * (1 - h) + AMBER[i] * h for i in range(3)]
+            a = min(1.0, cov[y][x])
+            c = [c[i] * (1 - a) + AMBER_BRIGHT[i] * a for i in range(3)]
+            row.append(tuple(int(round(v)) for v in c))
+        px.append(row)
+    return px
 
-# Tile: the original is 63 wide with ~7px corners; centre the letter on a square tile.
-T = 640
-scale = 9.0  # letter height ~ 47px * 9 = 425 on a 640 tile
-cx, cy = (minx + maxx) / 2, (miny + maxy) / 2
-tile_paths = [svg_path(o, scale, cx - T / 2 / scale, cy - T / 2 / scale) for o in OUTLINES]
-tile = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d" width="%d" height="%d">\n'
-        '  <title>ALife icon</title>\n'
-        '  <defs>\n'
-        '    <filter id="alife-glow" x="-30%%" y="-30%%" width="160%%" height="160%%">\n'
-        '      <feGaussianBlur in="SourceGraphic" stdDeviation="14" result="blur"/>\n'
-        '      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>\n'
-        '    </filter>\n'
-        '  </defs>\n'
-        '  <rect width="%d" height="%d" rx="72" fill="#1a1a1a"/>\n'
-        '  <g fill="#0d7fea" filter="url(#alife-glow)">\n%s\n  </g>\n</svg>\n') % (
-    T, T, T, T, T, T, "\n".join('    <path d="%s"/>' % d for d in tile_paths))
-open(os.path.join(out, "alife-a-tile.svg"), "w").write(tile)
-print("wrote alife-a.svg, alife-a-tile.svg, brush_compare.png")
+
+def compare(shot, path):
+    """screenshot | redraw | overlap (blue both, amber redraw only, red screenshot only)."""
+    W, H, px = read_png(shot)
+    S = 8
+    polys = [flatten(o, S, 0, 0) for o in OUTLINES]
+    cov = coverage(polys, max(W, H) * S, ss=2)
+    ink = lambda p: max(0.0, min(1.0, (p[2] - p[0] - 40) / 170.0))
+    img = []
+    for Y in range(H * S):
+        row = []
+        for X in range(W * 3 * S):
+            panel, X0 = divmod(X, W * S)
+            a = cov[Y][X0] if X0 < len(cov) else 0
+            if panel == 0:
+                row.append(px[Y // S][X0 // S])
+            elif panel == 1:
+                row.append(tuple(int(26 * (1 - a) + c * a) for c in AMBER_BRIGHT))
+            else:
+                orig, mine = ink(px[Y // S][X0 // S]) >= 0.5, a >= 0.5
+                row.append((13, 127, 234) if mine and orig else (250, 190, 40) if mine else (230, 70, 70) if orig else (26, 26, 26))
+        img.append(row)
+    write_png(path, W * 3 * S, H * S, img)
+
+
+if __name__ == "__main__":
+    files = {
+        "alife-a.svg": letter_svg("ALife", hexc(AMBER_BRIGHT)),
+        "alife-a-ink.svg": letter_svg("ALife", hexc(NAVY)),
+        "alife-a-tile.svg": tile_svg(),
+    }
+    for name, text in files.items():
+        with open(os.path.join(HERE, name), "w", newline="\n") as f:
+            f.write(text)
+        print("wrote", name)
+    write_png(os.path.join(HERE, "alife_bot_avatar.png"), 512, 512, avatar(512))
+    print("wrote alife_bot_avatar.png")
+    if "--compare" in sys.argv:
+        shot = sys.argv[sys.argv.index("--compare") + 1]
+        compare(shot, os.path.join(HERE, "brush_compare.png"))
+        print("wrote brush_compare.png")
