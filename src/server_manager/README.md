@@ -1,6 +1,8 @@
 # src/server_manager/
 
-A desktop app for actually running the dedicated server day to day — configure the server name,
+**The all-in-one manager** for everything this machine runs for TasDyn ALife: the Arma 3 server,
+the website, the Discord bot and a TeamSpeak 3 server (the **Services** tab, below). It started
+as a desktop app for actually running the dedicated server day to day — configure the server name,
 join/admin passwords, and slot count; launch and stop `arma3server_x64.exe` (deploying the mission
 and, best-effort, the C++ extension first — see "Launch actually deploys things now" below); watch
 its live log; view staff/anti-cheat/kick logs; and see live CPU, memory, network, and server FPS
@@ -48,11 +50,47 @@ calls fail once a player actually joins. Warnings are returned directly from `La
 pushed as `server:log` console events — those get wiped by the frontend's `clearConsole()` call
 right after a successful launch, which would silently lose anything emitted before `cmd.Start()`.
 
+## Services
+
+The Services tab (the app's home) shows four services, each with Start / Stop / Restart, a live
+health line, its log, and two toggles:
+
+| Service | What runs | Health | Log |
+|---|---|---|---|
+| Arma 3 Server | `arma3server_x64.exe`, after the mission deploy (the Arma 3 tab) | server FPS | its RPT |
+| Website | `src/website`, rebuilt, run as `-mode web` | HTTP check on `LISTEN_ADDR` | `logs\website.log` |
+| Discord Bot | the same source, run as `-mode bot` | its `BOT_HEALTH_ADDR` endpoint | `logsot.log` |
+| TeamSpeak 3 | `ts3server.exe` from the folder you set | ServerQuery `serverinfo` (online count) | `logs	eamspeak.log` |
+
+- **Start when the manager opens** (website, bot and TeamSpeak on by default; Arma off).
+- **Restart if it crashes**: after 5s, then 10s; three crashes inside five minutes is a *crash
+  loop* and it stops trying until you start it yourself.
+- **Closing the manager** asks: *Leave running* or *Stop everything*. Left running, the next
+  session **re-attaches** instead of starting duplicates: PIDs are kept in `state.json` (checked
+  against the program's path, so a reused PID is never mistaken for a service), and a service
+  running without a record (started some other way) is found by its program path.
+- **Website and bot** are rebuilt from source on every start (`go build`, into
+  `%AppData%\TasDyn-ALife-ServerManagerin\website-web.exe` / `website-bot.exe`), so a source
+  change goes live on the next restart. If the build fails, the previous build runs with a
+  warning. Both read `src/website/.env`; the bot won't start without `DISCORD_BOT_TOKEN`.
+- **TeamSpeak**: download the TS3 server zip from teamspeak.com yourself, unzip it, pick its folder
+  and tick the licence box. Every start sets the `serveradmin` ServerQuery password (generated,
+  kept in `services.json`, never shown) so the manager can log in. The one-time admin privilege
+  key a new server prints is shown on the tab, and **New key** makes another. ServerQuery stays on
+  127.0.0.1.
+
+These settings live in `%AppData%\TasDyn-ALife-ServerManager\services.json` (separate from
+`settings.json`), with the service logs in `logs\` next to it (the previous run's log is kept as
+`.log.1`). `ALIFE_MANAGER_DIR` points all of it somewhere else (the tests use this).
+
 ## What's here
 
 ```text
 src/server_manager/
-├── app.go               # App struct -- every exported method is callable from the frontend
+├── app.go               # App struct -- every exported method is callable from the frontend; the four services
+├── services.go           # The service supervisor: start/stop, crash restarts, re-attach, services.json/state.json
+├── svc_website.go        # Website + Discord bot services (build, -mode web / -mode bot, health)
+├── svc_teamspeak.go      # TeamSpeak 3 service and a minimal ServerQuery client
 ├── settings.go           # Arma 3 Server path + Postgres connection, persisted to %AppData%
 ├── serverconfig.go        # server.cfg fields (name/passwords/slots) + the actual .cfg renderer
 ├── serverprocess.go        # Launch/stop arma3server_x64.exe, live RPT log tail + performance sampling
@@ -60,9 +98,12 @@ src/server_manager/
 ├── deploy_test.go            # Integration test against a real local Arma 3 Server install
 ├── logs.go                    # The Postgres queries behind the Logs tab (staff/anti-cheat/kick)
 ├── logs_test.go                 # Integration test against a real local DB -- see below
+├── services_test.go             # Supervisor tests with throwaway processes (no real services touched)
 └── frontend/
     └── src/
-        ├── main.ts            # All five tabs: Launch, Console, Logs, Performance, Settings
+        ├── main.ts            # Arma 3 (was Launch), Console, Logs, Performance, Settings tabs
+        ├── services.ts         # The Services tab
+        ├── util.ts              # Shared helpers
         └── style.css           # Dark navy/amber theme, matching the org's brand palette
 ```
 

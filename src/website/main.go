@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"flag"
+	"fmt"
 	"io"
 	"log"
 	"log/slog"
@@ -72,7 +74,23 @@ func main() {
 	}
 }
 
+// -mode picks what this process runs (the Server Manager runs "web" and
+// "bot" as two processes, so either can restart without the other):
+//
+//	all  the website and the Discord bot together (the default)
+//	web  the website; Discord admin pages use the bot's REST API only, and
+//	     the gateway, outbox, role-sync loop, live status message and
+//	     #staff-log posting are left to a "bot" process
+//	bot  just the Discord bot: no HTTP site, no status checks, Steam
+//	     refresh or LOA sweep; serves its health on BOT_HEALTH_ADDR
 func run() error {
+	mode := flag.String("mode", "all", "what to run: all, web or bot")
+	flag.Parse()
+	if *mode != "all" && *mode != "web" && *mode != "bot" {
+		return fmt.Errorf("unknown -mode %q (want all, web or bot)", *mode)
+	}
+	runWeb, runBot := *mode != "bot", *mode != "web"
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -87,6 +105,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	if *mode == "bot" && cfg.DiscordBotToken == "" {
+		return errors.New("-mode bot needs DISCORD_BOT_TOKEN")
+	}
+	slog.Info("website: starting", "mode", *mode)
 
 	pool, err := db.NewPool(ctx, cfg.DatabaseURL)
 	if err != nil {
@@ -143,7 +165,21 @@ func run() error {
 		bot, err := discord.NewBot(cfg.DiscordBotToken, pool, cfg.DiscordGuildID, botDeps)
 		if err != nil {
 			slog.Error("discord bot: failed to initialize, continuing without it", "error", err)
+		} else if !runBot {
+			// -mode web: the bot process owns the gateway and the loops;
+			// this side only needs REST for the admin pages.
+			if err := bot.StartREST(); err != nil {
+				slog.Error("discord bot: REST client failed, Discord admin pages disabled", "error", err)
+			} else {
+				d.Bot = bot
+				d.RoleSyncEngine = &rolesync.Engine{Pool: pool, Adapters: []rolesync.Adapter{discord.RoleSyncAdapter{Bot: bot}}}
+				bot.SetRoleSync(d.RoleSyncEngine)
+			}
+			discordHealth = discord.RemoteHealth(cfg.BotHealthAddr)
 		} else if err := bot.Start(ctx); err != nil {
+			if *mode == "bot" {
+				return err // nothing else to do: exit, and the Server Manager restarts it
+			}
 			slog.Error("discord bot: failed to start, continuing without it", "error", err)
 		} else {
 			defer bot.Stop()
@@ -159,6 +195,9 @@ func run() error {
 			go d.RoleSyncEngine.Run(ctx)
 			// Live #server-status message, up/down posts and presence (§7).
 			go bot.RunStatus(ctx)
+			if *mode == "bot" {
+				go bot.ServeHealth(ctx, cfg.BotHealthAddr)
+			}
 		}
 	} else {
 		slog.Info("discord bot: DISCORD_BOT_TOKEN not set, /link command disabled")
@@ -171,31 +210,43 @@ func run() error {
 		GameQueryAddr: cfg.GameQueryAddr,
 		DiscordHealth: discordHealth,
 	})
-	go d.StatusMonitor.Run(ctx)
-
-	// Steam profile/ban cache + BattlEye GUID backfill (internal/steam).
 	d.Steam = &steam.Refresher{Pool: pool, Client: steam.NewClient(cfg.SteamWebAPIKey)}
-	go d.Steam.Run(ctx)
+	if runWeb {
+		go d.StatusMonitor.Run(ctx)
 
-	// Return staff whose LOA end date has passed to active.
-	go staff.RunLOASweep(ctx, pool, func(n int64, err error) {
-		if err != nil {
-			slog.Error("staff: LOA sweep failed", "error", err)
-		} else if n > 0 {
-			slog.Info("staff: LOAs ended", "count", n)
-		}
-	})
+		// Steam profile/ban cache + BattlEye GUID backfill (internal/steam).
+		go d.Steam.Run(ctx)
+
+		// Return staff whose LOA end date has passed to active.
+		go staff.RunLOASweep(ctx, pool, func(n int64, err error) {
+			if err != nil {
+				slog.Error("staff: LOA sweep failed", "error", err)
+			} else if n > 0 {
+				slog.Info("staff: LOAs ended", "count", n)
+			}
+		})
+	}
 
 	// Every staff_log row (from any source) -> #staff-log (internal/audit).
 	// Posts through the bot when a #staff-log channel is set on
-	// /admin/discord, otherwise through DISCORD_STAFF_LOG_WEBHOOK.
-	poster := &audit.Poster{Pool: pool, WebhookURL: cfg.DiscordStaffLogWebhook}
-	if d.Bot != nil {
-		poster.Via = d.Bot.StaffLogPoster
+	// /admin/discord, otherwise through DISCORD_STAFF_LOG_WEBHOOK. One
+	// process posts: the bot's, unless there's no bot at all. Rows wait in
+	// staff_log until it's running (marked posted only once Discord has them).
+	if runBot || cfg.DiscordBotToken == "" {
+		poster := &audit.Poster{Pool: pool, WebhookURL: cfg.DiscordStaffLogWebhook}
+		if d.Bot != nil && runBot {
+			poster.Via = d.Bot.StaffLogPoster
+		}
+		go poster.Run(ctx)
 	}
-	go poster.Run(ctx)
-	if cfg.GameQueryAddr == "" {
+	if cfg.GameQueryAddr == "" && runWeb {
 		slog.Info("status: GAME_QUERY_ADDR not set, game server shown as not monitored")
+	}
+
+	if !runWeb {
+		<-ctx.Done()
+		slog.Info("discord bot: shutting down")
+		return nil
 	}
 
 	r := chi.NewRouter()

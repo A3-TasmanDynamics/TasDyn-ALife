@@ -72,6 +72,10 @@ type Config struct {
 	// game server shows as "not monitored" instead of a guessed status.
 	GameQueryAddr string
 
+	// BotHealthAddr is where a separate bot process (`-mode bot`) serves its
+	// health, and where the website (`-mode web`) reads it. Loopback only.
+	BotHealthAddr string
+
 	// SteamWebAPIKey (steamcommunity.com/dev/apikey) lets internal/steam
 	// cache persona names, avatars, account age and VAC/game-ban status.
 	// Empty = those stay unset; login and everything else still work.
@@ -91,6 +95,7 @@ func Load() (Config, error) {
 		DiscordGuildID:          os.Getenv("DISCORD_GUILD_ID"),
 		DiscordTicketCategoryID: os.Getenv("DISCORD_TICKET_CATEGORY_ID"),
 		GameQueryAddr:           os.Getenv("GAME_QUERY_ADDR"),
+		BotHealthAddr:           getenv("BOT_HEALTH_ADDR", "127.0.0.1:8096"),
 		DatabaseReadonlyURL:     os.Getenv("DATABASE_READONLY_URL"),
 		ServerManagerURL:        os.Getenv("SERVER_MANAGER_URL"),
 		ServerManagerToken:      os.Getenv("SERVER_MANAGER_TOKEN"),

@@ -53,3 +53,6 @@ Profiles/
 .DS_Store
 Thumbs.db
 
+
+# TeamSpeak 3 server (downloaded from teamspeak.com; holds its database and keys once run)
+src/teamspeak3/

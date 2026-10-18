@@ -5,10 +5,12 @@ import {
     GetSettings, SaveSettings, BrowseForArmaServerPath, TestDatabaseConnection,
     GetServerConfig, SaveServerConfig,
     LaunchServer, StopServer, GetServerStatus,
-    GetStaffLog, GetAntiCheatLog, GetKickLog,
+    GetStaffLog, GetAntiCheatLog, GetKickLog, GetServices,
 } from '../wailsjs/go/main/App';
 import { main } from '../wailsjs/go/models';
 import { EventsOn } from '../wailsjs/runtime/runtime';
+import { renderServicesPanel, refreshServices, applyServicesSummary } from './services';
+import { escapeHtml, formatUptime, setMsg } from './util';
 
 // -----------------------------------------------------------------------
 // Layout
@@ -22,6 +24,7 @@ import { EventsOn } from '../wailsjs/runtime/runtime';
 // -----------------------------------------------------------------------
 
 const ICONS = {
+    services: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="7" rx="2"/><rect x="2" y="14" width="20" height="7" rx="2"/><line x1="6" y1="6.5" x2="6.01" y2="6.5"/><line x1="6" y1="17.5" x2="6.01" y2="17.5"/></svg>',
     launch: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>',
     console: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>',
     logs: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
@@ -40,7 +43,8 @@ document.querySelector('#app')!.innerHTML = `
         </div>
       </div>
       <nav>
-        <button data-tab="launch" class="nav-item active">${ICONS.launch}<span>Launch</span></button>
+        <button data-tab="services" class="nav-item active">${ICONS.services}<span>Services</span></button>
+        <button data-tab="launch" class="nav-item">${ICONS.launch}<span>Arma 3</span></button>
         <button data-tab="console" class="nav-item">${ICONS.console}<span>Console</span></button>
         <button data-tab="logs" class="nav-item">${ICONS.logs}<span>Logs</span></button>
         <button data-tab="performance" class="nav-item">${ICONS.performance}<span>Performance</span></button>
@@ -56,7 +60,8 @@ document.querySelector('#app')!.innerHTML = `
     </aside>
     <div class="content-area">
       <main>
-        <section id="panel-launch" class="panel active"></section>
+        <section id="panel-services" class="panel active"></section>
+        <section id="panel-launch" class="panel"></section>
         <section id="panel-console" class="panel"></section>
         <section id="panel-logs" class="panel"></section>
         <section id="panel-performance" class="panel"></section>
@@ -74,26 +79,24 @@ document.querySelectorAll('.nav-item').forEach((btn) => {
         document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
         document.getElementById(`panel-${tab}`)!.classList.add('active');
         if (tab === 'logs') loadSelectedLog();
+        if (tab === 'services') refreshServices();
         if (tab === 'performance') renderPerformancePanel();
     });
 });
 
 // -----------------------------------------------------------------------
-// Sidebar status -- a persistent indicator of whether the dedicated server
-// process is running, visible regardless of which tab is open (previously
-// this only showed inside the Launch tab's own status card).
+// Sidebar status -- a summary of all four services ("3 / 4 services
+// running"), visible whichever tab is open. The Arma 3 tab still shows the
+// game server's own status card.
 // -----------------------------------------------------------------------
 
-function applySidebarStatus(status: main.ServerStatus) {
-    const dot = document.getElementById('sidebar-status-dot');
-    const text = document.getElementById('sidebar-status-text');
-    if (dot) dot.classList.toggle('running', status.running);
-    if (text) text.innerText = status.running ? `Running · PID ${status.pid}` : 'Stopped';
+function applySidebarStatus(_status?: main.ServerStatus) {
+    refreshSidebarStatus();
 }
 
 async function refreshSidebarStatus() {
     try {
-        applySidebarStatus(await GetServerStatus());
+        applyServicesSummary(await GetServices());
     } catch (e) {
         console.error(e);
     }
@@ -120,8 +123,8 @@ async function renderLaunchPanel() {
 
     panel.innerHTML = `
       <div class="page-header">
-        <h1>Launch</h1>
-        <p>Configure and start your Arma 3 dedicated server.</p>
+        <h1>Arma 3 Server</h1>
+        <p>Configure and start your Arma 3 dedicated server. It's also on the Services tab.</p>
       </div>
 
       <div class="card">
@@ -657,14 +660,6 @@ EventsOn('server:performance', (sample: PerformanceEvent) => {
     }
 });
 
-function formatUptime(totalSeconds: number): string {
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    const s = totalSeconds % 60;
-    if (h > 0) return `${h}h ${m}m`;
-    if (m > 0) return `${m}m ${s}s`;
-    return `${s}s`;
-}
 
 // -----------------------------------------------------------------------
 // Settings tab
@@ -780,20 +775,13 @@ function readSettingsForm(): main.Settings {
 // Small helpers
 // -----------------------------------------------------------------------
 
-function setMsg(id: string, text: string) {
-    const el = document.getElementById(id);
-    if (el) el.innerText = text;
-}
 
-function escapeHtml(s: string | undefined): string {
-    if (!s) return '';
-    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
 
 // -----------------------------------------------------------------------
 // Boot
 // -----------------------------------------------------------------------
 
+renderServicesPanel();
 renderLaunchPanel();
 renderConsolePanel();
 renderLogsPanel();
