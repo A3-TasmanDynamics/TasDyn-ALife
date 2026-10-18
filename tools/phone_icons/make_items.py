@@ -84,7 +84,7 @@ ITEMS = {
         (capsule(58, 64, 108, 64, 4), (170, 175, 185)),                               # shaft
         (union(rrect(98, 72, 6, 14, 1), rrect(86, 70, 6, 10, 1)), (170, 175, 185)),   # teeth
     ],
-    "repairkit": [
+    "toolkit": [
         (minus(ring(64, 40, 18, 11), lambda x, y: y > 42), (40, 60, 120)),            # handle
         (rrect(64, 78, 96, 60, 10), (60, 100, 200)),                                  # box
         (rrect(64, 66, 96, 6, 0), (40, 70, 150)),                                     # lid line

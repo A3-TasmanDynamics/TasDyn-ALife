@@ -1,7 +1,7 @@
 // Virtual items: things you carry that aren't Arma gear. Stored per faction
 // in players.<faction>_items as [[class,count],...]. Every change goes
-// through the server (ALife_fnc_itemsChange). Sold in shops' Items lists
-// (CfgShops.hpp).
+// through the server (ALife_fnc_itemsChange). Prices are in CfgMarket;
+// which shops sell them is in CfgShops (items[]).
 //
 //   displayName -- shown in the phone's Inventory app and shops
 //   description -- one line, shown when selected
@@ -77,11 +77,11 @@ class CfgItems
         icon = "ui\items\lockpick_ca.paa";
         weight = 1;
     };
-    class repairkit
+    class toolkit
     {
-        displayName = "Repair Kit";
-        description = "Patches up a damaged vehicle.";
-        icon = "ui\items\repairkit_ca.paa";
+        displayName = "Toolkit";
+        description = "Repairs a damaged vehicle.";
+        icon = "ui\items\toolkit_ca.paa";
         weight = 4;
     };
     class zipties
