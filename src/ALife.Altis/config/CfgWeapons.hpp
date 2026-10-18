@@ -161,7 +161,6 @@ class WeaponShops
             {"ItemGPS"        , "", 100, 50, "", 0},
             {"Binocular"      , "", 150, 75, "", 0},
             {"FirstAidKit"    , "", 50, 25, "", 0},
-            {"Medikit"        , "", 500, 250, "", 0},
             {"Chemlight_green", "", 30, 15, "", 0},
             {"NVGoggles"      , "", 1200, 600, "", 1}
         };
