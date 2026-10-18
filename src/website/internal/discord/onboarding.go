@@ -33,11 +33,12 @@ func (b *Bot) welcomeMessage() (string, []discordgo.MessageComponent) {
 }
 
 // PostWelcome posts the welcome message to #welcome, or edits it in place
-// if it was already posted there. Returns a link to the message.
-func (b *Bot) PostWelcome(ctx context.Context) (string, error) {
+// if it was already posted there, and pins it. Returns a link to the
+// message, and pinErr if it posted but couldn't be pinned.
+func (b *Bot) PostWelcome(ctx context.Context) (link string, pinErr error, err error) {
 	ch := b.Settings.Get(ctx, ChannelWelcome)
 	if ch == "" {
-		return "", ErrNoChannel
+		return "", nil, ErrNoChannel
 	}
 	content, comps := b.welcomeMessage()
 	if oldCh, oldMsg := b.Settings.state(ctx, stateWelcomeMessage); oldCh == ch && oldMsg != "" {
@@ -45,10 +46,10 @@ func (b *Bot) PostWelcome(ctx context.Context) (string, error) {
 			Channel: ch, ID: oldMsg, Content: &content, Components: &comps, AllowedMentions: noMentions,
 		}, discordgo.WithContext(ctx))
 		if err == nil {
-			return b.messageLink(ch, oldMsg), nil
+			return b.messageLink(ch, oldMsg), b.pinMessage(ctx, ch, oldMsg), nil
 		}
 		if !cantEditStored(err) {
-			return "", err
+			return "", nil, err
 		}
 		slog.Info("discord bot: welcome message is gone or isn't ours, posting a new one", "error", err)
 	}
@@ -56,12 +57,12 @@ func (b *Bot) PostWelcome(ctx context.Context) (string, error) {
 		Content: content, Components: comps, AllowedMentions: noMentions,
 	}, discordgo.WithContext(ctx))
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	if err := b.Settings.setState(ctx, stateWelcomeMessage, ch, m.ID); err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return b.messageLink(ch, m.ID), nil
+	return b.messageLink(ch, m.ID), b.pinMessage(ctx, ch, m.ID), nil
 }
 
 func (b *Bot) messageLink(channelID, messageID string) string {

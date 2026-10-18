@@ -23,11 +23,12 @@ var requiredPermissions = []permission{
 	{discordgo.PermissionManageRoles, "Manage Roles"},     // role sync
 	{discordgo.PermissionViewAuditLogs, "View Audit Log"}, // logging moderation done in Discord
 	{discordgo.PermissionBanMembers, "Ban Members"},       // game bans mirrored to Discord (moderation.go)
+	{permissionPinMessages, "Pin Messages"},               // pins #welcome and the live status message (pins.go)
 }
 
 // All of the above as one number, for the bot's invite link
-// (docs/DISCORD_BOT.md, "Setting up the ALife Discord app"): 268455044.
-// Update both when this list changes.
+// (docs/DISCORD_BOT.md, "Setting up the ALife Discord app"):
+// 2251800082140292. Update both when this list changes.
 
 // MissingPermissions is the list /bot health shows, for the settings page.
 func (b *Bot) MissingPermissions() ([]string, error) { return b.missingPermissions() }

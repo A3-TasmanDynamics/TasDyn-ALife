@@ -135,10 +135,13 @@ func (d *Deps) DiscordPostWelcome(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, back+"?error="+errMsg("The Discord bot isn't running."), http.StatusSeeOther)
 		return
 	}
-	link, err := d.Bot.PostWelcome(r.Context())
+	link, pinErr, err := d.Bot.PostWelcome(r.Context())
 	switch {
+	case err == nil && pinErr == nil:
+		http.Redirect(w, r, back+"?notice="+errMsg("Welcome message posted and pinned: "+link), http.StatusSeeOther)
 	case err == nil:
-		http.Redirect(w, r, back+"?notice="+errMsg("Welcome message posted: "+link+". Pin it in Discord so new members see it first."), http.StatusSeeOther)
+		slog.Warn("discord settings: welcome message posted but not pinned", "error", pinErr)
+		http.Redirect(w, r, back+"?notice="+errMsg("Welcome message posted: "+link+", but it couldn't be pinned ("+pinErr.Error()+"). Give the bot's role Pin Messages in that channel and post it again."), http.StatusSeeOther)
 	case errors.Is(err, discord.ErrNoChannel):
 		http.Redirect(w, r, back+"?error="+errMsg("Choose a #welcome channel and save first."), http.StatusSeeOther)
 	default:
