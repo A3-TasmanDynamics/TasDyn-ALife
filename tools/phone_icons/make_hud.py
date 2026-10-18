@@ -8,6 +8,7 @@ ImageToPAA:
 
     health_ca / food_ca / water_ca  - the glyphs
     ring_bg_ca                      - the full ring (the empty track)
+    disc_ca                         - a filled circle, the dark backing behind each one
     ring_00_ca .. ring_20_ca        - the filled arc, 0% .. 100% in 5% steps,
                                       clockwise from the top
 """
@@ -43,7 +44,7 @@ GLYPHS = {
 }
 
 
-def arc(fraction, r_out=60, r_in=49):
+def arc(fraction, r_out=62, r_in=44):
     """The ring from 12 o'clock clockwise, `fraction` of the way round."""
     band = ring(64, 64, r_out, r_in)
 
@@ -62,7 +63,8 @@ def main():
     os.makedirs(png_dir, exist_ok=True)
 
     images = {name: [(shape, WHITE)] for name, shape in GLYPHS.items()}
-    images["ring_bg"] = [(ring(64, 64, 60, 49), WHITE)]
+    images["ring_bg"] = [(ring(64, 64, 62, 44), WHITE)]
+    images["disc"] = [(circle(64, 64, 63), WHITE)]
     for step in range(21):
         images["ring_%02d" % step] = [(arc(step / 20), WHITE)] if step else []
 

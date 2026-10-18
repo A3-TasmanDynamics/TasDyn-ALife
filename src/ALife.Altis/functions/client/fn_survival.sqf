@@ -92,8 +92,8 @@ while { true } do {
                 if (_value <= _low) then { _alert = [0.984, 0.749, 0.141, 1]; };
                 if (_value <= _low / 2) then { _alert = [0.97, 0.44, 0.41, 1]; };
                 private _base = 9300 + _row * 10;
-                { (_hud displayCtrl (_base + _x)) ctrlShow !_rings; } forEach [1, 3];
-                { (_hud displayCtrl (_base + _x)) ctrlShow _rings; } forEach [4, 5, 6];
+                { (_hud displayCtrl (_base + _x)) ctrlShow !_rings; } forEach [1, 2, 3];
+                { (_hud displayCtrl (_base + _x)) ctrlShow _rings; } forEach [4, 5, 6, 7];
                 if (_rings) then {
                     private _arc = _hud displayCtrl (_base + 5);
                     _arc ctrlSetText format ["ui\hud\ring_%1_ca.paa", [str round (_value / 5), "0" + str round (_value / 5)] select (round (_value / 5) < 10)];
