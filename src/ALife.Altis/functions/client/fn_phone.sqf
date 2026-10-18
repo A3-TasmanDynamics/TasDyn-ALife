@@ -275,8 +275,9 @@ switch (_mode) do {
             case "settings": {
                 [0, "VIEW DISTANCE", 0] call _fnc_label;
                 private _combo = [IDC_COMBO, 0.05, 0.07] call _fnc_place;
-                [1, "GRASS", 0.16] call _fnc_label;
-                [1, "", 0.21, 0.075] call _fnc_button;
+                [1, "GRASS  /  HUD", 0.16] call _fnc_label;
+                [1, "", 0.21, 0.075, 0, 0.49] call _fnc_button;
+                [2, "", 0.21, 0.075, 0.51, 0.49] call _fnc_button;
                 [2, "WALLPAPER", 0.32] call _fnc_label;
                 private _combo2 = [IDC_COMBO2, 0.37, 0.07] call _fnc_place;
                 [IDC_INFO, 0.48, 0.2] call _fnc_place;
@@ -417,10 +418,11 @@ switch (_mode) do {
             };
 
             case "settings": {
-                (["get"] call ALife_fnc_phoneSettings) params ["_distance", "_grass"];
+                (["get"] call ALife_fnc_phoneSettings) params ["_distance", "_grass", "", "_hudStyle"];
                 _info ctrlSetStructuredText parseText format [
                     "<t size='%2' color='#8b98b3'>Your view distance is %1 m. Lower it if the game runs slowly.<br/><br/>The wallpaper shows on the home screen; apps keep the dark background.</t>", _distance, 24 call _fnc_px];
                 (_display displayCtrl (IDC_BUTTON + 1)) ctrlSetText (["Grass: Off", "Grass: On"] select _grass);
+                (_display displayCtrl (IDC_BUTTON + 2)) ctrlSetText ("HUD: " + (switch (_hudStyle) do { case "rings": { "Rings" }; case "off": { "Off" }; default { "Minimal" }; }));
             };
         };
     };
@@ -504,10 +506,9 @@ switch (_mode) do {
             };
 
             case "settings": {
-                if (_n == 1) then {
-                    ["toggleGrass"] call ALife_fnc_phoneSettings;
-                    ["refresh"] call ALife_fnc_phone;
-                };
+                if (_n == 1) then { ["toggleGrass"] call ALife_fnc_phoneSettings; };
+                if (_n == 2) then { ["cycleHud"] call ALife_fnc_phoneSettings; };
+                ["refresh"] call ALife_fnc_phone;
             };
         };
     };

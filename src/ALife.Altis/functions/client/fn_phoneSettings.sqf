@@ -1,16 +1,17 @@
 /*
     ALife_fnc_phoneSettings (client)
 
-    The phone's Settings: view distance, grass and wallpaper, saved in your
+    The phone's Settings: view distance, grass, HUD style and wallpaper, saved in your
     Arma profile so they stick between sessions.
 
     Modes:
         ["apply"]              - apply the saved settings (on every spawn)
         ["viewDistance", m]    - set and save the view distance
         ["toggleGrass"]        - grass on/off
+        ["cycleHud"]           - HUD style: minimal -> rings -> off (ALife_fnc_survival)
         ["wallpaper", key]     - set and save the wallpaper (CfgPhone >> Wallpapers)
         ["wallpaperTexture"]   - returns the saved wallpaper's texture
-        ["get"]                - returns [viewDistance, grassOn, wallpaperKey]
+        ["get"]                - returns [viewDistance, grassOn, wallpaperKey, hudStyle]
 */
 
 params ["_mode", ["_value", 0]];
@@ -19,6 +20,9 @@ private _viewDistance = profileNamespace getVariable ["ALife_viewDistance", 2500
 private _grass = profileNamespace getVariable ["ALife_grass", true];
 private _wallpapers = missionConfigFile >> "CfgPhone" >> "Wallpapers";
 private _wallpaper = profileNamespace getVariable ["ALife_wallpaper", getText (missionConfigFile >> "CfgPhone" >> "defaultWallpaper")];
+private _hudStyles = ["minimal", "rings", "off"];
+private _hudStyle = profileNamespace getVariable ["ALife_hudStyle", getText (missionConfigFile >> "CfgALife" >> "Survival" >> "hudStyle")];
+if !(_hudStyle in _hudStyles) then { _hudStyle = "minimal"; };
 if (!isClass (_wallpapers >> _wallpaper)) then { _wallpaper = getText (missionConfigFile >> "CfgPhone" >> "defaultWallpaper"); };
 
 private _fnc_apply = {
@@ -41,6 +45,12 @@ switch (_mode) do {
         saveProfileNamespace;
         call _fnc_apply;
     };
+    case "cycleHud": {
+        _hudStyle = _hudStyles select (((_hudStyles find _hudStyle) + 1) mod count _hudStyles);
+        profileNamespace setVariable ["ALife_hudStyle", _hudStyle];
+        saveProfileNamespace;
+        _hudStyle
+    };
     case "wallpaper": {
         if (_value isEqualType "" && { isClass (_wallpapers >> _value) }) then {
             profileNamespace setVariable ["ALife_wallpaper", _value];
@@ -48,5 +58,5 @@ switch (_mode) do {
         };
     };
     case "wallpaperTexture": { getText (_wallpapers >> _wallpaper >> "texture") };
-    case "get": { [_viewDistance, _grass, _wallpaper] };
+    case "get": { [_viewDistance, _grass, _wallpaper, _hudStyle] };
 };
