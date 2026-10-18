@@ -5,8 +5,9 @@
     in the top-right corner, with a coloured stripe for the kind of notice.
     Up to 4 at once; the newest goes on top. They only go away when their
     time is up: opening, closing or switching menus doesn't touch them --
-    each card is drawn on whatever is on top (one of our menus, the map,
-    or the game screen) and moved across when that changes.
+    each card is drawn on whatever is on top (one of our menus, Arma's
+    inventory, the open map, or the game screen) and moved across when that
+    changes.
 
     Arguments:
         0: STRING - text (may use <br/>)
@@ -59,9 +60,14 @@ ALife_toastLoop = [] spawn {
     private _ours = [5600, 5500, 5400, 5300, 5100, 5000, 4900, 4800];
 
     while { ALife_toasts isNotEqualTo [] } do {
-        // The screen on top: one of our menus, else the map, else the game.
+        // The screen on top: one of our menus, else Arma's inventory, else
+        // the map (only while it's open -- Arma keeps the map display loaded
+        // when it's closed, so a notice drawn there would be hidden), else
+        // the game screen.
         private _display = displayNull;
-        { private _d = findDisplay _x; if (!isNull _d) exitWith { _display = _d; }; } forEach (_ours + [12, 46]);
+        { private _d = findDisplay _x; if (!isNull _d) exitWith { _display = _d; }; } forEach (_ours + [602]);
+        if (isNull _display && { visibleMap }) then { _display = findDisplay 12; };
+        if (isNull _display) then { _display = findDisplay 46; };
 
         private _now = diag_tickTime;
         // Time's up: fade out and remove.
