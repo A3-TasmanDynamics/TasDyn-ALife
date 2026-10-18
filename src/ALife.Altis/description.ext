@@ -37,7 +37,7 @@ respawnTemplates[] = {};
 
 // Unused slots stay empty instead of being filled with AI.
 disabledAI = 1;
-joinUnassigned = 0;
+joinUnassigned = 1;          // players pick their own slot in the lobby (no auto-assign)
 
 enableDebugConsole = 1;      // logged-in admins only
 allowFunctionsRecompile = 0;
