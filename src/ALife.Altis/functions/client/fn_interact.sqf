@@ -1,10 +1,18 @@
 /*
     ALife_fnc_interact (client, the Windows key)
 
-    Looking at an ATM (any on the map): the bank menu. Looking at a dropped
-    bag or a vehicle close by: opens it in the inventory screen (the server
-    checks it). Looking at nothing: opens your own inventory with the ground
-    beside it, so you can drop things.
+    Everything you do with things around you goes through here (there are
+    no scroll-wheel actions):
+
+      - an ATM (any on the map): the bank menu;
+      - a vehicle within 8 m: its radial menu (ALife_fnc_vehicleMenu);
+      - a dropped bag: opens it in the inventory screen;
+      - medics, a downed player within 3.5 m: a radial menu with Revive;
+      - anything else: your own inventory with the ground beside it, to
+        drop things -- or, at one of your faction's shops (CfgShops), a
+        radial menu with the shop(s) and Inventory.
+
+    The server checks everything again.
 
     Returns:
         BOOL - true if the key press was used
@@ -13,21 +21,56 @@
 if (!alive player || { !(missionNamespace getVariable ["ALife_spawned", false]) } || { dialog }) exitWith { false };
 
 private _target = cursorObject;
-diag_log format ["[ALife] interact: looking at %1 (%2, model %3) %4 m away", _target, typeOf _target,
-    if (isNull _target) then { "-" } else { (getModelInfo _target) select 0 }, round (player distance _target)];
+private _faction = missionNamespace getVariable ["ALife_faction", "civ"];
 
 if ([_target] call ALife_fnc_isAtm && { player distance _target <= getNumber (missionConfigFile >> "CfgALife" >> "atmRange") + 1 }) exitWith {
     ["open"] call ALife_fnc_atm;
     true
 };
 
-private _isBag = !isNull _target && { _target in (missionNamespace getVariable ["ALife_groundBags", []]) };
 private _isVehicle = !isNull _target && { alive _target } && { _target isKindOf "LandVehicle" || { _target isKindOf "Air" } || { _target isKindOf "Ship" } };
-
-if ((_isBag && { player distance _target < 4 }) || { _isVehicle && { player distance _target < 8 } }) then {
-    if (_isBag) then { player playActionNow "PutDown"; }; // reach down to it
-    [player, _target] remoteExecCall ["ALife_fnc_containerOpen", 2];
-} else {
-    ["openGround"] call ALife_fnc_transfer;
+if (_isVehicle && { player distance _target < 8 } && { vehicle player == player }) exitWith {
+    ["open", _target] call ALife_fnc_vehicleMenu;
+    true
 };
+
+if (!isNull _target && { _target in (missionNamespace getVariable ["ALife_groundBags", []]) } && { player distance _target < 4 }) exitWith {
+    player playActionNow "PutDown"; // reach down to it
+    [player, _target] remoteExecCall ["ALife_fnc_containerOpen", 2];
+    true
+};
+
+if (_faction == "medic" && { !isNull _target } && { _target getVariable ["alife_downed", false] } && { player distance _target < 3.5 } && { isNil "ALife_reviving" }) exitWith {
+    ["open", _target getVariable ["alife_name", "Patient"], [
+        ["Revive", { ["start", _this] spawn ALife_fnc_revive; }, _target]
+    ]] call ALife_fnc_radial;
+    true
+};
+
+// Your faction's shops you're standing at (CfgShops markers + radius).
+private _shops = [];
+{
+    private _info = [configName _x] call ALife_fnc_shopInfo;
+    if (_info isNotEqualTo []) then {
+        _info params ["_type", "_place", "_shop"];
+        private _radius = getNumber (_place >> "radius");
+        if (_type in ["market", "clothing", "vehicles"] && { getText (_shop >> "side") == _faction }
+            && { (getArray (_place >> "markers") findIf { player distance2D getMarkerPos _x <= _radius }) >= 0 }) then {
+            _shops pushBack [getText (_shop >> "name"), {
+                switch (getText (missionConfigFile >> "CfgShops" >> _this >> "type")) do {
+                    case "clothing": { ["open", _this] call ALife_fnc_clothingShop; };
+                    case "vehicles": { ["open", _this] call ALife_fnc_vehicleShop; };
+                    default { ["open", _this] call ALife_fnc_shop; };
+                };
+            }, configName _place];
+        };
+    };
+} forEach ("true" configClasses (missionConfigFile >> "CfgShops"));
+
+if (_shops isNotEqualTo []) exitWith {
+    ["open", "Shop", (_shops select [0, 7]) + [["Inventory", { ["openGround"] call ALife_fnc_transfer; }, []]]] call ALife_fnc_radial;
+    true
+};
+
+["openGround"] call ALife_fnc_transfer;
 true

@@ -19,6 +19,11 @@ private _id = [_object] call ALife_fnc_containerGet;
 if (_id == "") exitWith { ["That has no storage.", "warning"] remoteExecCall ["ALife_fnc_notify", owner _unit]; };
 
 private _range = [4, 8] select ((_id select [0, 4]) == "veh_"); // vehicles are bigger
+// A locked trunk opens only for the owner and key holders.
+private _uid = getPlayerUID _unit;
+if ((_id select [0, 4]) == "veh_" && { locked _object >= 2 } && { (_object getVariable ["alife_owner", ""]) != _uid } && { !(_uid in (_object getVariable ["alife_keys", []])) }) exitWith {
+    ["It's locked.", "warning"] remoteExecCall ["ALife_fnc_notify", owner _unit];
+};
 if (_unit distance _object > _range) exitWith { ["Get closer.", "warning"] remoteExecCall ["ALife_fnc_notify", owner _unit]; };
 
 // Just cash on the ground (a money stack): pick it straight up, no menu.

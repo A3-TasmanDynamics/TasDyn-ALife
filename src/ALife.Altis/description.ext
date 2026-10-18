@@ -68,6 +68,7 @@ corpseRemovalMaxTime = 900;
 #include "ui\clothingShop.hpp"
 #include "ui\transfer.hpp"
 #include "ui\atm.hpp"
+#include "ui\radial.hpp"
 
 class RscTitles
 {

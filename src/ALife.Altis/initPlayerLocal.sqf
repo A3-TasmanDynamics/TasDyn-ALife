@@ -22,8 +22,10 @@ waitUntil { !isNil "ALife_fnc_startSession" };
             if (!alive player || { dialog }) exitWith { false };
             private _uid = getPlayerUID player;
             private _veh = [cursorObject, vehicle player] select (vehicle player != player);
-            if (isNull _veh || { (_veh getVariable ["alife_owner", ""]) != _uid } || { player distance _veh > 10 }) then {
-                private _mine = (nearestObjects [player, ["LandVehicle", "Air", "Ship"], 10]) select { (_x getVariable ["alife_owner", ""]) == _uid };
+            // Yours, or one you were given a key to.
+            private _keyed = { (_this getVariable ["alife_owner", ""]) == _uid || { _uid in (_this getVariable ["alife_keys", []]) } };
+            if (isNull _veh || { !(_veh call _keyed) } || { player distance _veh > 10 }) then {
+                private _mine = (nearestObjects [player, ["LandVehicle", "Air", "Ship"], 10]) select { _x call _keyed };
                 _veh = _mine param [0, objNull];
             };
             if (isNull _veh) exitWith { false };
