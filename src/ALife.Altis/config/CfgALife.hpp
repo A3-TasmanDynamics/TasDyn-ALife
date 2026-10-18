@@ -55,7 +55,7 @@ class CfgALife
     // ---- Map / GPS markers for your own people (ALife_fnc_groupMarkers) ---
     class GroupMarkers
     {
-        interval = 1;                   // seconds between updates
+        interval = 0.5;                 // seconds between updates
         needGps = 1;                    // 1: you and they both need a GPS; 0: always shown
         spawnGps = 1;                   // 1: every spawn / respawn gets a GPS
         type = "mil_triangle";          // marker icon (CfgMarkers), pointing the way they face
@@ -67,5 +67,7 @@ class CfgALife
         class medic { on = 1; colour = "ColorRed";    sees[] = { "medic" }; };
         // Civilians see members of their own gang (website gangs).
         class gang  { on = 1; colour = "ColorOrange"; };
+        // You, for everyone (with a GPS when needGps = 1).
+        class self  { on = 1; colour = "ColorYellow"; type = "mil_arrow2"; size = 0.8; text = "You"; };
     };
 };

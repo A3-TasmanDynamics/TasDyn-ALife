@@ -18,6 +18,7 @@
         ["open"] / ["onLoad", display] / ["refresh"]
         ["move", side, all]     - side "container" (take) or "player" (store)
         ["moveRow", side, row]  - double-click: all of one row
+        ["use"]                 - use one of the item selected on your side (ALife_fnc_useItem)
 */
 
 #define IDD_TRANSFER   5300
@@ -136,6 +137,16 @@ switch (_mode) do {
         };
         if (_side == "container" && { _id == "" }) exitWith {};
         [player, _id, ["store", "take"] select (_side == "container"), _entries, _money] remoteExecCall ["ALife_fnc_containerTransfer", 2];
+    };
+
+    // Use: one of the first item selected in your inventory.
+    case "use": {
+        if (isNull _display) exitWith {};
+        private _list = _display displayCtrl IDC_P_LIST;
+        private _rows = lbSelection _list;
+        private _class = if (_rows isEqualTo []) then { "" } else { _list lbData (_rows select 0) };
+        if (_class == "") exitWith { ["Select an item in your inventory first.", "warning"] call ALife_fnc_toast; };
+        [_class] spawn ALife_fnc_useItem;
     };
 
     // Double-click: all of that one row.

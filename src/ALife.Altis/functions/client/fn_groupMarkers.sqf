@@ -1,7 +1,7 @@
 /*
     ALife_fnc_groupMarkers (client)
 
-    Your own people on the map and the GPS panel, as set in
+    You and your own people on the map and the GPS panel, as set in
     CfgALife >> GroupMarkers: by default police see police, EMS see EMS,
     and a civilian in a gang sees the rest of their gang, when both you and
     they have a GPS (ItemGPS linked). Local markers, updated every
@@ -54,6 +54,22 @@ while { true } do {
                 _wanted set [_name, true];
             };
         } forEach allPlayers;
+    };
+
+    // You: always (when the map has no own-position marker of its own).
+    private _self = _cfg >> "self";
+    if (getNumber (_self >> "on") == 1 && { missionNamespace getVariable ["ALife_spawned", false] } && { alive player } && { player call _hasGps }) then {
+        private _name = "alife_gps_self";
+        if (getMarkerType _name == "") then {
+            createMarkerLocal [_name, getPosWorld player];
+            _name setMarkerTypeLocal getText (_self >> "type");
+            _name setMarkerSizeLocal [getNumber (_self >> "size"), getNumber (_self >> "size")];
+            _name setMarkerColorLocal getText (_self >> "colour");
+            _name setMarkerTextLocal getText (_self >> "text");
+        };
+        _name setMarkerPosLocal getPosWorld (vehicle player);
+        _name setMarkerDirLocal getDir (vehicle player);
+        _wanted set [_name, true];
     };
 
     // Take off anyone who isn't shown any more.

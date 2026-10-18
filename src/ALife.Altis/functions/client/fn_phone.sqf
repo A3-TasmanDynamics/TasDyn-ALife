@@ -263,7 +263,8 @@ switch (_mode) do {
                 [2, "QTY", 0.72, 0, 0.25] call _fnc_label;
                 ([IDC_EDIT, 0.77, 0.075, 0, 0.25] call _fnc_place) ctrlSetText "1";
                 [0, "Give", 0.77, 0.075, 0.28, 0.72, true] call _fnc_button;
-                [1, "Drop", 0.87, 0.07] call _fnc_button;
+                [2, "Use", 0.87, 0.07, 0, 0.49] call _fnc_button;
+                [1, "Drop", 0.87, 0.07, 0.51, 0.49] call _fnc_button;
             };
             case "playerid": {
                 [0, 0, 0.36, [0.08, 0.63, 0.59, 0.16]] call _fnc_card;
@@ -458,6 +459,8 @@ switch (_mode) do {
                 private _class = if (_row < 0) then { "" } else { _list lnbData [_row, 0] };
                 private _qty = floor parseNumber ctrlText (_display displayCtrl IDC_EDIT);
                 if (_class == "") exitWith { ["Pick an item first.", "warning"] call ALife_fnc_toast; };
+                // Use: one of it (eat, heal, repair, ...), as its CfgItems `use` says.
+                if (_n == 2) exitWith { [_class] spawn ALife_fnc_useItem; };
                 if (_qty < 1) exitWith { [["Enter how many.", "Enter an amount ($)."] select (_class == "cash"), "warning"] call ALife_fnc_toast; };
                 if (_n == 0) then {
                     private _target = call _fnc_target;

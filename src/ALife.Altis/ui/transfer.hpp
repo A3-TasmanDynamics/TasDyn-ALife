@@ -220,9 +220,25 @@ class ALife_Transfer
             text = "Ctrl/Shift-click to pick several. Double-click a row to move all of it.";
             sizeEx = 0.026;
             colorText[] = { 0.545, 0.596, 0.702, 1 };
-            x = "safezoneX + safezoneW * 0.36";
+            x = "safezoneX + safezoneW * 0.352";
             y = "safezoneY + safezoneH * 0.677";
-            w = "safezoneW * 0.365";
+            w = "safezoneW * 0.285";
+            h = "safezoneH * 0.035";
+        };
+        class Use: ALife_RscButton
+        {
+            idc = 5325;
+            text = "Use";
+            sizeEx = 0.032;
+            colorBackground[] = { 0.96, 0.62, 0.04, 1 };
+            colorBackgroundActive[] = { 0.98, 0.75, 0.14, 1 };
+            colorFocused[] = { 0.96, 0.62, 0.04, 1 };
+            colorText[] = { 0.118, 0.071, 0, 1 };
+            colorShadow[] = { 0, 0, 0, 0 };
+            action = "['use'] call ALife_fnc_transfer";
+            x = "safezoneX + safezoneW * 0.641";
+            y = "safezoneY + safezoneH * 0.677";
+            w = "safezoneW * 0.082";
             h = "safezoneH * 0.035";
         };
         class Close: ALife_RscButton
