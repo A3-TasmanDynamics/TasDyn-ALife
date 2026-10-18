@@ -42,7 +42,7 @@ class CfgALife
     atmClasses[] = { "Land_Atm_01_F", "Land_Atm_02_F" };
     atmRange = 3;                       // metres from the ATM
 
-    class Trunks                        // vehicle storage by type
+    class Trunks                        // vehicle storage by type, for vehicles CfgVehicles doesn't list (its `trunk` wins)
     {
         car = 50;
         truck = 150;

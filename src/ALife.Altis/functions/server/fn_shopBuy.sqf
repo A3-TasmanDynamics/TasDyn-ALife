@@ -1,10 +1,11 @@
 /*
     ALife_fnc_shopBuy (server, called by the client)
 
-    Buys items from a shop. Everything is checked here: the player's
-    faction, that they're standing at the shop, the licence / rank the shop
-    and item need, the item and its price (from CfgShops), and that they
-    can pay. Paid by cash or bank.
+    Buys virtual items from a shop. Everything is checked here: the
+    player's faction, that they're standing at the shop, that the shop sells
+    it (CfgShops items[]), the licence / rank the shop and the item need
+    (CfgMarket), the current market price, and that they can pay. Paid by
+    cash or bank; the purchase then moves the market (ALife_fnc_market).
 
     Arguments:
         0: OBJECT - the player's unit
@@ -26,10 +27,10 @@ private _uid = getPlayerUID _unit;
 private _record = ALife_sessions getOrDefault [_uid, createHashMap];
 private _faction = _unit getVariable ["alife_faction", ""];
 private _shopCfg = missionConfigFile >> "CfgShops" >> _shop;
-private _itemCfg = _shopCfg >> "Items" >> _class;
+private _itemCfg = missionConfigFile >> "CfgMarket" >> _class;
 
 if ((_record getOrDefault ["status", ""]) != "OK" || { !alive _unit } || { _faction == "" }) exitWith {};
-if (!isClass _shopCfg || { !isClass _itemCfg } || { getText (_shopCfg >> "faction") != _faction }) exitWith {
+if (!isClass _shopCfg || { !isClass _itemCfg } || { !(_class in getArray (_shopCfg >> "items")) } || { getText (_shopCfg >> "faction") != _faction }) exitWith {
     "You can't buy that here." call _fnc_reply;
 };
 private _radius = getNumber (_shopCfg >> "radius");
@@ -46,7 +47,7 @@ if (_missing != "") exitWith {
 _qty = round _qty;
 if (_qty < 1 || { _qty > 20 } || { !(_method in ["cash", "bank"]) }) exitWith {};
 
-private _total = getNumber (_itemCfg >> "price") * _qty;
+private _total = ([_class] call ALife_fnc_marketPrice) * _qty;
 private _name = getText (missionConfigFile >> "CfgItems" >> _class >> "displayName");
 private _token = format ["shop-%1-%2-%3", _uid, round (diag_tickTime * 1000), floor random 1e6];
 private _amount = _total toFixed 0;
@@ -75,5 +76,6 @@ if (!([_uid, _faction, _class, _qty] call ALife_fnc_itemsChange)) exitWith {
 };
 
 diag_log format ["[ALife] %1 bought %2 x%3 for $%4 (%5) at %6", _uid, _class, _qty, _total, _method, _shop];
+["trade", [_class, _qty]] call ALife_fnc_market;
 [format ["Bought %1 x%2 for $%3.", _name, _qty, [_total] call BIS_fnc_numberText], "success"] call _fnc_reply;
 [_unit] call ALife_fnc_requestPhoneData;

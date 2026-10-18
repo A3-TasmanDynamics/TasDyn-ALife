@@ -19,6 +19,7 @@ class CfgFunctions
             class syncLoop {};       // periodic ping + autosave
             class itemsChange {};    // add/remove virtual items (saved)
             class requestPhoneData {}; // send a player their phone data
+            class market {};         // the dynamic market: prices, trades, recovery (CfgMarket)
             class shopBuy {};        // client -> server: buy from a shop
             class giveItem {};       // client -> server: give/discard items
             class bankTransfer {};   // client -> server: send money to a player
@@ -68,6 +69,7 @@ class CfgFunctions
             class itemsWeight {};     // weight of a list of items
             class isAtm {};           // is this object an ATM (any on the map)
             class shopAccess {};      // licence / rank a shop or shop entry needs
+            class marketPrice {};     // what a market item costs right now
         };
     };
 };

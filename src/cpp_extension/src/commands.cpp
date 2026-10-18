@@ -2,6 +2,8 @@
 
 #include "db.h"
 
+#include <cctype>
+
 namespace {
 
 std::string HandlePing(Database& db) {
@@ -98,6 +100,52 @@ std::string HandleSession(Database& db, const std::vector<std::string>& args) {
     return "OK";
 }
 
+// A config class name: what market items are keyed by.
+bool IsItemName(const std::string& s) {
+    if (s.empty() || s.size() > 64) return false;
+    for (char c : s) {
+        if (!(std::isalnum(static_cast<unsigned char>(c)) || c == '_')) return false;
+    }
+    return true;
+}
+
+// A positive price with at most two decimals, e.g. "12" or "12.40".
+bool IsPrice(const std::string& s) {
+    if (s.empty() || s.size() > 14) return false;
+    size_t dot = s.find('.');
+    std::string whole = s.substr(0, dot);
+    std::string frac = dot == std::string::npos ? "" : s.substr(dot + 1);
+    if (whole.empty() || frac.size() > 2 || (dot != std::string::npos && frac.empty())) return false;
+    for (char c : whole + frac) {
+        if (!std::isdigit(static_cast<unsigned char>(c))) return false;
+    }
+    return std::stod(s) > 0;
+}
+
+// args = [op, item, price]: "load" (no more args) / "set" item price / "reset"
+std::string HandleMarket(Database& db, const std::vector<std::string>& args) {
+    if (args.empty()) return "ERROR:expected [op, ...]";
+    const std::string& op = args[0];
+    std::string error;
+    if (op == "load") {
+        std::string response;
+        if (!db.MarketLoad(response, error)) return "ERROR:" + error;
+        return response;
+    }
+    if (op == "set") {
+        if (args.size() < 3) return "ERROR:expected [set, item, price]";
+        if (!IsItemName(args[1])) return "ERROR:invalid item";
+        if (!IsPrice(args[2])) return "ERROR:invalid price";
+        if (!db.MarketSet(args[1], args[2], error)) return "ERROR:" + error;
+        return "OK";
+    }
+    if (op == "reset") {
+        if (!db.MarketReset(error)) return "ERROR:" + error;
+        return "OK";
+    }
+    return "ERROR:unknown market op";
+}
+
 }  // namespace
 
 std::string UnwrapArmaString(const std::string& arg) {
@@ -131,6 +179,7 @@ std::string DispatchCommand(Database& db, const std::string& command,
     if (command == "combatlog") return HandleCombatLog(db, args);
     if (command == "bank") return HandleBank(db, args);
     if (command == "session") return HandleSession(db, args);
+    if (command == "market") return HandleMarket(db, args);
 
     return "ERROR:unknown command";
 }

@@ -100,6 +100,8 @@ addMissionEventHandler ["EntityRespawned", {
             diag_log format ["[ALife] database connected (attempt %1) -- server ready", _attempt];
             // Nobody is connected yet: close sessions left open by the last run (e.g. a crash).
             ["session", ["reset"]] call ALife_fnc_extension;
+            // Current market prices (saved across restarts) before anyone can shop.
+            ["init"] call ALife_fnc_market;
         };
         ALife_serverStatus = format ["Waiting for the database: %1", _ping select [6]];
         publicVariable "ALife_serverStatus";

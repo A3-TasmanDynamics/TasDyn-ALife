@@ -1,8 +1,9 @@
 /*
     ALife_fnc_shop (client)
 
-    A shop window (ui\shop.hpp) for one CfgShops entry. Shows each item's
-    price and how many you have; Pay cash / Pay bank ask the server to buy
+    A shop window (ui\shop.hpp) for one CfgShops entry. Shows each item it
+    sells (items[]) at its current market price (ALife_fnc_marketPrice,
+    re-read on every refresh, e.g. after a purchase) and how many you have; Pay cash / Pay bank ask the server to buy
     (ALife_fnc_shopBuy), which checks everything again and answers with a
     notice and fresh phone data (refreshing this window).
 
@@ -50,12 +51,12 @@ switch (_mode) do {
         private _list = _display displayCtrl IDC_LIST;
         lnbClear _list;
         {
-            private _class = configName _x;
-            private _row = _list lnbAddRow [getText (missionConfigFile >> "CfgItems" >> _class >> "displayName"), getNumber (_x >> "price") call _fnc_money, ""];
+            private _class = _x;
+            private _row = _list lnbAddRow [getText (missionConfigFile >> "CfgItems" >> _class >> "displayName"), ([_class] call ALife_fnc_marketPrice) call _fnc_money, ""];
             _list lnbSetData [[_row, 0], _class];
             _list lnbSetPicture [[_row, 0], getText (missionConfigFile >> "CfgItems" >> _class >> "icon")];
-            if ((_x call _fnc_missing) != "") then { _list lnbSetColor [[_row, 0], [1, 1, 1, 0.4]]; };
-        } forEach ("true" configClasses (_cfg >> "Items"));
+            if (((missionConfigFile >> "CfgMarket" >> _class) call _fnc_missing) != "") then { _list lnbSetColor [[_row, 0], [1, 1, 1, 0.4]]; };
+        } forEach (getArray (_cfg >> "items") select { isClass (missionConfigFile >> "CfgMarket" >> _x) });
         if ((lnbSize _list) select 0 > 0) then { _list lnbSetCurSelRow 0; };
         [] spawn { ["refresh"] call ALife_fnc_shop; }; // after the dialog has finished opening
     };
@@ -69,7 +70,9 @@ switch (_mode) do {
         private _owned = createHashMapFromArray ((_data getOrDefault ["items", []]) select { _x isEqualTypeParams ["", 0] });
         private _list = _display displayCtrl IDC_LIST;
         for "_row" from 0 to ((lnbSize _list) select 0) - 1 do {
-            _list lnbSetText [[_row, 2], format ["x%1", _owned getOrDefault [_list lnbData [_row, 0], 0]]];
+            private _class = _list lnbData [_row, 0];
+            _list lnbSetText [[_row, 1], ([_class] call ALife_fnc_marketPrice) call _fnc_money]; // prices move
+            _list lnbSetText [[_row, 2], format ["x%1", _owned getOrDefault [_class, 0]]];
         };
         ["select"] call ALife_fnc_shop;
     };
@@ -80,7 +83,7 @@ switch (_mode) do {
         private _row = lnbCurSelRow _list;
         if (_row < 0) exitWith {};
         private _class = _list lnbData [_row, 0];
-        private _missing = (_cfg >> "Items" >> _class) call _fnc_missing;
+        private _missing = (missionConfigFile >> "CfgMarket" >> _class) call _fnc_missing;
         (_display displayCtrl IDC_DESC) ctrlSetStructuredText parseText format [
             "<t size='0.95' color='#8b98b3'>%1</t>%2", getText (missionConfigFile >> "CfgItems" >> _class >> "description"),
             ["", format ["<br/><t size='0.95' color='#fbbf24'>%1 needed.</t>", _missing]] select (_missing != "")];

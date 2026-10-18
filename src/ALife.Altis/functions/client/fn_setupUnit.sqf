@@ -33,11 +33,11 @@ if (_faction == "medic") then {
 };
 
 // Shops for this faction: one "Open <shop>" action each, shown near any of
-// its markers. Only shops with an Items list for now (Gear / Vehicles
-// can't be bought yet -- see CfgShops.hpp).
+// its markers. Only shops that sell virtual items (items[]) for now:
+// vehicles, weapons and clothing can't be bought yet (see CfgShops.hpp).
 {
     private _shop = _x;
-    if (getText (_shop >> "faction") == _faction && { isClass (_shop >> "Items") }) then {
+    if (getText (_shop >> "faction") == _faction && { getArray (_shop >> "items") isNotEqualTo [] }) then {
         private _spots = getArray (_shop >> "markers") apply { getMarkerPos _x };
         player addAction [
             format ["<t color='#fbbf24'>Open %1</t>", getText (_shop >> "displayName")],

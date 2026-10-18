@@ -171,6 +171,22 @@ Args: `[op, uid]`. `start` opens a `player_sessions` row for `uid` (closing any 
 is connected yet. The website's online counts, player status and `players.last_seen` (trigger)
 read these rows. Response: `OK` or `ERROR:reason`.
 
+## `market` — dynamic market prices
+
+The current price of each virtual item, in `market_prices` (one row per item; an item with no row
+is at its `CfgMarket` base price). The game server keeps live prices in memory
+(`ALife_fnc_market`) and writes each change through this command.
+
+- `["load"]` returns every saved price as an SQF array, `[["redgull",1500.00],["water",11.00]]`,
+  or `[]`.
+- `["set", item, price]` upserts one price. `item` must be a config class name
+  (`[A-Za-z0-9_]{1,64}`) and `price` a positive decimal with at most two places, or the answer is
+  `ERROR:invalid item` / `ERROR:invalid price` before anything reaches the database.
+- `["reset"]` deletes every row: all items go back to their base price on the next server start.
+  This is the wipe or economy reset.
+
+Response: the array for `load`, otherwise `OK` or `ERROR:reason`.
+
 ## Escaping
 
 `name` is the only genuinely free-text field. Any characters that would break `parseSimpleArray`'s

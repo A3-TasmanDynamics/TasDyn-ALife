@@ -1,7 +1,7 @@
 // Virtual items: things you carry that aren't Arma gear. Stored per faction
 // in players.<faction>_items as [[class,count],...]. Every change goes
-// through the server (ALife_fnc_itemsChange). Sold in shops' Items lists
-// (CfgShops.hpp).
+// through the server (ALife_fnc_itemsChange). Prices are in CfgMarket;
+// which shops sell them is in CfgShops (items[]).
 //
 //   displayName -- shown in the phone's Inventory app and shops
 //   description -- one line, shown when selected

@@ -1810,3 +1810,14 @@ DROP TRIGGER IF EXISTS trg_bank_accounts_manual_edit ON bank_accounts;
 CREATE TRIGGER trg_bank_accounts_manual_edit
     AFTER UPDATE OF balance ON bank_accounts
     FOR EACH ROW EXECUTE FUNCTION bank_manual_account_edit();
+
+-- ---------------------------------------------------------------------------
+-- Dynamic market: the current price of each virtual item (the game server's
+-- "market" extension command). No row = the item's CfgMarket base price, so
+-- a wipe or economy reset empties this table.
+-- ---------------------------------------------------------------------------
+CREATE TABLE market_prices (
+    item        TEXT PRIMARY KEY CHECK (item ~ '^[A-Za-z0-9_]{1,64}$'),  -- CfgMarket class
+    price       NUMERIC(12, 2) NOT NULL CHECK (price > 0),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);

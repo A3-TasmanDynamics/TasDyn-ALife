@@ -713,3 +713,68 @@ bool Database::RecordSession(const std::string& op, const std::string& uid, std:
     PQclear(res);
     return ok;
 }
+
+// Dynamic market (market_prices): the current price of each virtual item.
+// Items with no row are at their CfgMarket base price (a wipe or economy
+// reset empties the table).
+bool Database::MarketLoad(std::string& outResponse, std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    PGresult* res = PQexec(conn_, "SELECT item, price::text FROM market_prices ORDER BY item");
+    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+        outError = PQerrorMessage(conn_);
+        PQclear(res);
+        return false;
+    }
+    // [["water","12.40"],...] -- item names are config class names
+    // (checked on the way in), prices plain decimals: nothing to escape.
+    std::string out = "[";
+    for (int i = 0; i < PQntuples(res); ++i) {
+        if (i) out += ",";
+        out += "[\"";
+        out += PQgetvalue(res, i, 0);
+        out += "\",";
+        out += PQgetvalue(res, i, 1);
+        out += "]";
+    }
+    out += "]";
+    PQclear(res);
+    outResponse = out;
+    return true;
+}
+
+bool Database::MarketSet(const std::string& item, const std::string& price, std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    const char* params[2] = {item.c_str(), price.c_str()};
+    PGresult* res = PQexecParams(conn_,
+        "INSERT INTO market_prices (item, price) VALUES ($1, $2::numeric) "
+        "ON CONFLICT (item) DO UPDATE SET price = EXCLUDED.price, updated_at = now()",
+        2, nullptr, params, nullptr, nullptr, 0);
+    bool ok = PQresultStatus(res) == PGRES_COMMAND_OK;
+    if (!ok) outError = PQerrorMessage(conn_);
+    PQclear(res);
+    return ok;
+}
+
+bool Database::MarketReset(std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    PGresult* res = PQexec(conn_, "DELETE FROM market_prices");
+    bool ok = PQresultStatus(res) == PGRES_COMMAND_OK;
+    if (!ok) outError = PQerrorMessage(conn_);
+    PQclear(res);
+    return ok;
+}

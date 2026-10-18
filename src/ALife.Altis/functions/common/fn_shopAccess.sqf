@@ -2,11 +2,12 @@
     ALife_fnc_shopAccess (common)
 
     Whether a player may use a shop, or buy one of its entries: checks the
-    config's `licence` and `level` (CfgShops.hpp). Used by the shop window
+    config's `licence` and `level`. Used by the shop window
     to grey things out and by the server to refuse them.
 
     Arguments:
-        0: CONFIG - a CfgShops shop, or an entry in its Items / Gear / Vehicles
+        0: CONFIG - a CfgShops shop, a CfgMarket item, or a faction block
+                    (class civ / cop / medic) in CfgVehicles / CfgWeapons / CfgClothing
         1: ARRAY  - the player's licences (CfgLicences keys)
         2: NUMBER - the player's rank (cop_level / medic_level; 0 for civs)
 

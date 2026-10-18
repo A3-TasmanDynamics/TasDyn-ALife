@@ -67,6 +67,13 @@ public:
     // closes every open session (server start).
     bool RecordSession(const std::string& op, const std::string& uid, std::string& outError);
 
+    // Dynamic market (docs/DATA_CONTRACT.md "market"): MarketLoad returns
+    // every saved price as [["item","price"],...]; MarketSet upserts one;
+    // MarketReset clears them all (back to the CfgMarket base prices).
+    bool MarketLoad(std::string& outResponse, std::string& outError);
+    bool MarketSet(const std::string& item, const std::string& price, std::string& outError);
+    bool MarketReset(std::string& outError);
+
     bool RecordCombatLog(const std::string& uid, const std::string& faction, const std::string& killer,
                          const std::string& weapon, const std::string& distance,
                          const std::string& secondsIncapacitated, std::string& outError);
