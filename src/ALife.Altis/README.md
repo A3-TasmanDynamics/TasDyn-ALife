@@ -78,6 +78,26 @@ and its wallpapers) or `make_layout.py`.
 Everything that changes something is checked by the server (`ALife_fnc_giveItem`,
 `ALife_fnc_bankTransfer`, `ALife_fnc_sendMessage`), which answers with fresh phone data.
 
+## Inventory screen (Windows key)
+
+One screen (`ui/transfer.hpp`, `ALife_fnc_transfer`) for dropped bags and vehicle trunks — the
+bag/trunk on the left, you on the right, with weights.
+
+- **Windows key** (`ALife_fnc_interact`): looking at a dropped bag (within 4 m) or a vehicle (within
+  8 m) opens it; looking at nothing opens your inventory next to the **ground**, so you can drop
+  things. Dropping leaves a bag at your feet (`CfgALife >> bagClass`, a placeholder backpack model —
+  a simple object, so Arma's own inventory can't touch it). Bags vanish when emptied or after
+  `bagLifetime` (15 min); they aren't saved over restarts.
+- **Moving things:** select rows (Ctrl/Shift for several), enter a quantity, **Take** / **Store**
+  (**Drop** on the ground); **Take all** / **Store all**; double-click a row to move all of it.
+- **Cash** is a row like any item: physical money you carry (`<faction>_cash`), moved with the same
+  idempotent delta save as purchases.
+- **Limits:** what you carry is capped at `carryWeight` (24), trunks by vehicle type
+  (`CfgALife >> Trunks`), using each item's `weight`.
+- The server does all the moving (`ALife_fnc_containerTransfer`, run with `remoteExecCall` so two
+  players can't race each other) and checks distance, what each side has, and space.
+  Trunks live on the server only (vehicles aren't saved yet).
+
 ## Shops and items
 
 - Items: `config/CfgItems.hpp` (just **Medkit** so far). Saved per faction in

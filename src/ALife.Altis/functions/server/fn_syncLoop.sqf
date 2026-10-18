@@ -25,6 +25,25 @@ while { true } do {
         _wasConnected = _connected;
     };
 
+    if (!isNil "ALife_containers") then {
+        private _lifetime = getNumber (missionConfigFile >> "CfgALife" >> "bagLifetime");
+        private _expired = [];
+        {
+            private _object = _y get "object";
+            if (isNull _object || { (_y get "kind") == "ground" && { time - (_y get "created") > _lifetime } }) then { _expired pushBack _x; };
+        } forEach ALife_containers;
+        {
+            private _object = (ALife_containers get _x) get "object";
+            ALife_groundBags = (missionNamespace getVariable ["ALife_groundBags", []]) - [_object];
+            if (!isNull _object && { (_x select [0, 4]) == "bag_" }) then { deleteVehicle _object; };
+            ALife_containers deleteAt _x;
+        } forEach _expired;
+        if (_expired isNotEqualTo []) then {
+            publicVariable "ALife_groundBags";
+            diag_log format ["[ALife] removed %1 old bag(s)/trunk(s)", count _expired];
+        };
+    };
+
     if (_connected) then {
         private _saved = 0;
         {
