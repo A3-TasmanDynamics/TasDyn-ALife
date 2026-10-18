@@ -2,8 +2,9 @@
     ALife_fnc_shopBuy (server, called by the client)
 
     Buys items from a shop. Everything is checked here: the player's
-    faction, that they're standing at the shop, the item and its price
-    (from CfgShops), and that they can pay. Paid by cash or bank.
+    faction, that they're standing at the shop, the licence / rank the shop
+    and item need, the item and its price (from CfgShops), and that they
+    can pay. Paid by cash or bank.
 
     Arguments:
         0: OBJECT - the player's unit
@@ -34,6 +35,13 @@ if (!isClass _shopCfg || { !isClass _itemCfg } || { getText (_shopCfg >> "factio
 private _radius = getNumber (_shopCfg >> "radius");
 if ((getArray (_shopCfg >> "markers") findIf { _unit distance2D getMarkerPos _x <= _radius }) < 0) exitWith {
     "You're too far from the shop." call _fnc_reply;
+};
+private _licences = (_record getOrDefault [_faction + "_licence", []]) select { _x isEqualType "" };
+private _level = _record getOrDefault [_faction + "_level", 0];
+private _missing = [_shopCfg, _licences, _level] call ALife_fnc_shopAccess;
+if (_missing == "") then { _missing = [_itemCfg, _licences, _level] call ALife_fnc_shopAccess; };
+if (_missing != "") exitWith {
+    format ["%1 needed.", _missing] call _fnc_reply;
 };
 _qty = round _qty;
 if (_qty < 1 || { _qty > 20 } || { !(_method in ["cash", "bank"]) }) exitWith {};

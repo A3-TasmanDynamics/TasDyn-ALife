@@ -28,10 +28,17 @@ private _shop = missionNamespace getVariable ["ALife_shopClass", ""];
 private _cfg = missionConfigFile >> "CfgShops" >> _shop;
 private _data = missionNamespace getVariable ["ALife_phone", createHashMap];
 private _fnc_money = { "$" + ([_this] call BIS_fnc_numberText) };
+// What this player lacks for a shop / entry config ("" = nothing).
+private _fnc_missing = {
+    private _level = _data getOrDefault [(_data getOrDefault ["faction", "civ"]) + "Level", 0]; // copLevel / medicLevel; civs have none
+    [_this, _data getOrDefault ["licences", []], _level] call ALife_fnc_shopAccess
+};
 
 switch (_mode) do {
     case "open": {
         if (!isNull _display || { !isClass (missionConfigFile >> "CfgShops" >> _arg) }) exitWith {};
+        private _missing = (missionConfigFile >> "CfgShops" >> _arg) call _fnc_missing;
+        if (_missing != "") exitWith { [format ["%1 needed to use this shop.", _missing], "warning"] call ALife_fnc_toast; };
         ALife_shopClass = _arg;
         createDialog "ALife_Shop";
         [player] remoteExec ["ALife_fnc_requestPhoneData", 2];
@@ -47,6 +54,7 @@ switch (_mode) do {
             private _row = _list lnbAddRow [getText (missionConfigFile >> "CfgItems" >> _class >> "displayName"), getNumber (_x >> "price") call _fnc_money, ""];
             _list lnbSetData [[_row, 0], _class];
             _list lnbSetPicture [[_row, 0], getText (missionConfigFile >> "CfgItems" >> _class >> "icon")];
+            if ((_x call _fnc_missing) != "") then { _list lnbSetColor [[_row, 0], [1, 1, 1, 0.4]]; };
         } forEach ("true" configClasses (_cfg >> "Items"));
         if ((lnbSize _list) select 0 > 0) then { _list lnbSetCurSelRow 0; };
         [] spawn { ["refresh"] call ALife_fnc_shop; }; // after the dialog has finished opening
@@ -71,8 +79,11 @@ switch (_mode) do {
         private _list = _display displayCtrl IDC_LIST;
         private _row = lnbCurSelRow _list;
         if (_row < 0) exitWith {};
+        private _class = _list lnbData [_row, 0];
+        private _missing = (_cfg >> "Items" >> _class) call _fnc_missing;
         (_display displayCtrl IDC_DESC) ctrlSetStructuredText parseText format [
-            "<t size='0.95' color='#c0c7d1'>%1</t>", getText (missionConfigFile >> "CfgItems" >> (_list lnbData [_row, 0]) >> "description")];
+            "<t size='0.95' color='#c0c7d1'>%1</t>%2", getText (missionConfigFile >> "CfgItems" >> _class >> "description"),
+            ["", format ["<br/><t size='0.95' color='#f5a524'>%1 needed.</t>", _missing]] select (_missing != "")];
     };
 
     case "buy": {

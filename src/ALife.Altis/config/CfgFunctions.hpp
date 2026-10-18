@@ -67,6 +67,7 @@ class CfgFunctions
             class killInfo {};        // killer name, weapon, distance
             class itemsWeight {};     // weight of a list of items
             class isAtm {};           // is this object an ATM (any on the map)
+            class shopAccess {};      // licence / rank a shop or shop entry needs
         };
     };
 };
