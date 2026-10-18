@@ -14,21 +14,21 @@ import (
 // project already had; this is the same shape made editable instead of
 // hardcoded, for actually running a real server, not just smoke-testing.
 type ServerConfig struct {
-	Hostname        string `json:"hostname"`
-	Password        string `json:"password"`
-	PasswordAdmin   string `json:"passwordAdmin"`
-	MaxPlayers      int    `json:"maxPlayers"`
-	MissionTemplate string `json:"missionTemplate"` // e.g. "ALife.Altis"
-	BattlEye        bool   `json:"battlEye"`
-	VerifySignatures bool  `json:"verifySignatures"`
+	Hostname         string `json:"hostname"`
+	Password         string `json:"password"`
+	PasswordAdmin    string `json:"passwordAdmin"`
+	MaxPlayers       int    `json:"maxPlayers"`
+	MissionTemplate  string `json:"missionTemplate"` // e.g. "ALife.Altis"
+	BattlEye         bool   `json:"battlEye"`
+	VerifySignatures bool   `json:"verifySignatures"`
 }
 
 func defaultServerConfig() ServerConfig {
 	return ServerConfig{
-		Hostname:        "TasDyn-ALife",
-		MaxPlayers:      32,
-		MissionTemplate: "ALife.Altis",
-		BattlEye:        true,  // matches docs/ANTI_CHEAT.md Layer 0 -- on by default, not off
+		Hostname:         "TasDyn-ALife",
+		MaxPlayers:       32,
+		MissionTemplate:  "ALife.Altis",
+		BattlEye:         true, // matches docs/ANTI_CHEAT.md Layer 0 -- on by default, not off
 		VerifySignatures: true,
 	}
 }
@@ -140,3 +140,52 @@ func escapeCfgString(s string) string {
 	}
 	return string(out)
 }
+
+// serverProfile is the server's Arma3Profile, written into the profile
+// folder before each launch. server.cfg picks difficulty = "Custom", and
+// Arma reads Custom's options from this profile -- without it (every launch
+// starts with a fresh, empty profile folder) Custom falls back to Arma's
+// built-in values, which turn third person off.
+//
+// Altis Life settings: third person, crosshair and stance / weapon info
+// on; name tags, group indicators, mine markers, map markers, kill feed,
+// scoreboard and auto-reporting off; normal damage.
+const serverProfile = `version=1;
+class DifficultyPresets
+{
+	defaultPreset="Custom";
+	class CustomDifficulty
+	{
+		class Options
+		{
+			reducedDamage=0;
+			groupIndicators=0;
+			friendlyTags=0;
+			enemyTags=0;
+			detectedMines=0;
+			commands=0;
+			waypoints=1;
+			tacticalPing=0;
+			weaponInfo=1;
+			stanceIndicator=1;
+			staminaBar=1;
+			weaponCrosshair=1;
+			visionAid=0;
+			thirdPersonView=1;
+			cameraShake=1;
+			scoreTable=0;
+			deathMessages=0;
+			vonID=1;
+			mapContent=0;
+			autoReport=0;
+			multipleSaves=0;
+		};
+		aiLevelPreset=3;
+	};
+	class CustomAILevel
+	{
+		skillAI=0.5;
+		precisionAI=0.5;
+	};
+};
+`

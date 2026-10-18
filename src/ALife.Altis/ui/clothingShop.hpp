@@ -81,16 +81,16 @@ class ALife_ClothingShop
             x = "safezoneX + safezoneW * 0.03";
             y = "safezoneY + safezoneH * 0.24";
             w = "safezoneW * 0.24";
-            h = "safezoneH * 0.46";
+            h = "safezoneH * 0.33";
         };
         class Description: ALife_RscStructuredText
         {
             idc = 5503;
             size = 0.029;
             x = "safezoneX + safezoneW * 0.03";
-            y = "safezoneY + safezoneH * 0.71";
+            y = "safezoneY + safezoneH * 0.58";
             w = "safezoneW * 0.24";
-            h = "safezoneH * 0.06";
+            h = "safezoneH * 0.19";
         };
         class TurnLeft: ALife_RscButton
         {
