@@ -10,9 +10,10 @@
         2: STRING - error message when refused
         3: ARRAY  - saved loadout to put on ([] = none: the slot's kit
                     without weapons); a GPS is added (GroupMarkers spawnGps)
+        4: ARRAY  - [food, water] (0-100) to start with (ALife_fnc_survival)
 */
 
-params [["_pos", []], ["_name", ""], ["_error", ""], ["_loadout", []]];
+params [["_pos", []], ["_name", ""], ["_error", ""], ["_loadout", []], ["_survival", [100, 100]]];
 
 ALife_spawnPending = false;
 
@@ -34,6 +35,8 @@ if (getNumber (missionConfigFile >> "CfgALife" >> "GroupMarkers" >> "spawnGps") 
 };
 
 player setPosATL _pos;
+ALife_food = _survival param [0, 100];
+ALife_water = _survival param [1, 100];
 player enableSimulation true;
 
 // Death screen, revive/shop actions, settings (once per unit).

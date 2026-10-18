@@ -73,4 +73,5 @@ class RscTitles
 {
 #include "ui\loading.hpp"
 #include "ui\progress.hpp"
+#include "ui\hud.hpp"
 };

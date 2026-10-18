@@ -53,7 +53,7 @@ private _message = "";
 switch (_use) do {
     case "consume";
     case "heal": {
-        ["heal", _unit, getNumber (_cfg >> "heal"), getNumber (_cfg >> "energy") == 1] remoteExecCall ["ALife_fnc_itemUsed", _owner];
+        ["heal", _unit, getNumber (_cfg >> "heal"), getNumber (_cfg >> "energy") == 1, getNumber (_cfg >> "food"), getNumber (_cfg >> "water")] remoteExecCall ["ALife_fnc_itemUsed", _owner];
         _message = ["You feel better.", format ["You had the %1.", _name]] select (_use == "consume");
     };
     case "repair": {

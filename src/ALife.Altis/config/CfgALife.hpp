@@ -27,6 +27,19 @@ class CfgALife
     messageCooldown = 3;                // seconds between messages
     messageMaxLength = 300;             // characters per message
 
+    // ---- Food, water and the HUD (ALife_fnc_survival) ---------------------
+    // Both run 0-100 and drop over time; eating / drinking (CfgItems `food` /
+    // `water`) brings them back. At 0 you lose health until you eat or
+    // drink. Saved with your gear; a new life starts full.
+    class Survival
+    {
+        foodPerMinute = 1.5;            // ~65 minutes from full to empty
+        waterPerMinute = 2;             // ~50 minutes
+        emptyDamagePerMinute = 0.08;    // health lost per minute for each one at 0
+        warnAt = 20;                    // a notice when one drops to this
+        hud = 1;                        // 1: health / food / water bars, bottom right
+    };
+
     // ---- Inventory and dropped items ---------------------------------------
     carryWeight = 24;                   // how much a player can carry (item `weight`s)
     bagClass = "B_AssaultPack_khk";     // what dropped items look like (placeholder)
