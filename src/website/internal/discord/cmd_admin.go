@@ -85,6 +85,8 @@ func (b *Bot) Identity() (botName, guildName string) {
 	}
 	if g, err := b.session.State.Guild(b.guildID); err == nil {
 		guildName = g.Name
+	} else if g, err := b.session.Guild(b.guildID); err == nil { // REST-only: no gateway cache
+		guildName = g.Name
 	}
 	return
 }

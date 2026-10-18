@@ -15,9 +15,11 @@ import (
 	"website/internal/status"
 )
 
-// Bot is the Discord bot (docs/DISCORD_BOT.md). It runs inside the website
-// process and calls the same code the website does; commands live in
-// cmd_*.go, events in events.go, and both are wired through registry.go.
+// Bot is the Discord bot (docs/DISCORD_BOT.md). It's built from the website
+// code and calls the same code the website does -- either inside the
+// website process (`-mode all`) or as its own process (`-mode bot`, see
+// main.go); commands live in cmd_*.go, events in events.go, and both are
+// wired through registry.go.
 //
 // Ticket thread sync (DISCORD_BOT.md §6) is not built yet -- do not assume
 // it's live just because the bot process is running.
@@ -106,6 +108,22 @@ func (b *Bot) Start(ctx context.Context) error {
 		}
 	}
 	slog.Info("discord bot: connected", "guild_id", b.guildID, "commands", strings.Join(names, " "))
+	return nil
+}
+
+// StartREST readies the bot for the website half of a split deployment
+// (`website -mode web`, with `website -mode bot` running the gateway in
+// another process): no gateway connection, no commands or events -- just
+// the REST calls the admin pages make (channel and role lists, bans, the
+// welcome post, role sync). State.User is filled in from the API, since no
+// Ready event will ever set it.
+func (b *Bot) StartREST() error {
+	u, err := b.session.User("@me")
+	if err != nil {
+		return fmt.Errorf("discord: checking the bot token: %w", err)
+	}
+	b.session.State.User = u
+	slog.Info("discord bot: REST only (gateway runs in the bot process)", "bot", u.Username, "guild_id", b.guildID)
 	return nil
 }
 

@@ -14,10 +14,12 @@ everything from B3 on (tickets, discipline, applications, factions).
 
 ## 1. Principles
 
-1. **One bot, inside the website.** It keeps running as a goroutine in the website binary
-   ([WEBSITE.md §9](WEBSITE.md#9-discord-integration)), so it shares the database pool, the
-   permission checks and the business logic. It never reimplements a rule the website already
-   enforces.
+1. **One bot, built from the website.** It's the website binary, either as a goroutine inside
+   it (`-mode all`) or as its own process (`-mode bot`, which is how the Server Manager runs it,
+   next to a `-mode web` website; see src/website/README.md). Either way it shares the database,
+   the permission checks and the business logic
+   ([WEBSITE.md §9](WEBSITE.md#9-discord-integration)), and never reimplements a rule the
+   website already enforces.
 2. **The bot is another way into the website, not a second system.** `/ban` calls the same Go
    function as the website's Ban button, with the same checks, the same `staff_log` row and the
    same Discord/TeamSpeak sync. If a rule changes, it changes in one place.

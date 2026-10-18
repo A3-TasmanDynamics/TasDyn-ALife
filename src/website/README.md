@@ -59,6 +59,19 @@ Discord OAuth login/connect and the `/link` bot command are both optional at run
 and the website-generated link code still work; the bot-side half of linking just won't be
 available). See `.env.example` for what each variable is for and where to get it.
 
+### Website and bot as separate processes
+
+`-mode` picks what one process runs:
+
+| Mode | Runs |
+|---|---|
+| `all` (default) | the website and the Discord bot together, as before |
+| `web` | the website only. Discord admin pages (channels, role sync, bans, the welcome post) use the bot's REST API, but there's no gateway connection |
+| `bot` | the Discord bot only: gateway, slash commands, events, the outbox, the role-sync loop, the live #server-status message and #staff-log posting. Serves its health on `BOT_HEALTH_ADDR` (`127.0.0.1:8096`), which the `web` process's status page reads |
+
+The Server Manager (`src/server_manager`) runs `web` and `bot` as two processes, so either can
+restart without the other. A plain `go run .` is still `all`.
+
 ## Tests
 
 ```bash

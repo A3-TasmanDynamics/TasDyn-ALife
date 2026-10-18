@@ -31,12 +31,12 @@ type ServerStatus struct {
 // so it doesn't belong in database/schema.sql alongside the things that
 // actually need to survive a restart.
 type PerformanceSample struct {
-	Timestamp        string  `json:"timestamp"` // RFC3339
-	CPUPercent       float64 `json:"cpuPercent"`
-	MemoryMB         float64 `json:"memoryMB"`
-	UptimeSeconds    int64   `json:"uptimeSeconds"`
-	NetworkSentKBps  float64 `json:"networkSentKBps"`
-	NetworkRecvKBps  float64 `json:"networkRecvKBps"`
+	Timestamp       string  `json:"timestamp"` // RFC3339
+	CPUPercent      float64 `json:"cpuPercent"`
+	MemoryMB        float64 `json:"memoryMB"`
+	UptimeSeconds   int64   `json:"uptimeSeconds"`
+	NetworkSentKBps float64 `json:"networkSentKBps"`
+	NetworkRecvKBps float64 `json:"networkRecvKBps"`
 	// ServerFPS is -1 until the first "[ALife][FPS]" line has been read
 	// from the RPT log (initServer.sqf logs one every 2s, but the first
 	// one lags a few seconds behind server startup) -- distinguishes "no
@@ -45,12 +45,12 @@ type PerformanceSample struct {
 	ServerFPS float64 `json:"serverFPS"`
 }
 
-// serverProcessManager owns the running arma3server_x64.exe child process
-// (if any) and the goroutine tailing its RPT log. One dedicated server at
+// serverProcessManager holds the Arma service's per-run extras: the
+// goroutine tailing its RPT log and the performance sampler (the process
+// itself is run by the supervisor, services.go). One dedicated server at
 // a time -- this app manages a single local install, not a fleet.
 type serverProcessManager struct {
 	mu         sync.Mutex
-	cmd        *exec.Cmd
 	startedAt  time.Time
 	profileDir string
 	stopTail   chan struct{}
@@ -82,33 +82,27 @@ type LaunchResult struct {
 	Warnings []string `json:"warnings"`
 }
 
-// LaunchServer deploys the mission (and, best-effort, the C++ extension),
-// writes server.cfg, and starts arma3server_x64.exe. Persists the current
-// ServerConfig first, so what actually launches always matches what's saved.
-func (a *App) LaunchServer() (LaunchResult, error) {
-	procMgr.mu.Lock()
-	defer procMgr.mu.Unlock()
-
-	if procMgr.cmd != nil {
-		return LaunchResult{}, fmt.Errorf("server already running (PID %d)", procMgr.cmd.Process.Pid)
-	}
-
+// armaStart deploys the mission (and, best-effort, the C++ extension),
+// writes server.cfg and builds the arma3server_x64.exe command -- the Arma
+// service's start function (services.go). Persists nothing itself: the
+// Launch tab saves the ServerConfig first, so what launches matches it.
+func armaStart() (launchSpec, error) {
 	settings, err := loadSettings()
 	if err != nil {
-		return LaunchResult{}, fmt.Errorf("load settings: %w", err)
+		return launchSpec{}, fmt.Errorf("load settings: %w", err)
 	}
 	if settings.ArmaServerPath == "" {
-		return LaunchResult{}, fmt.Errorf("Arma 3 Server path not set -- configure it in Settings first")
+		return launchSpec{}, fmt.Errorf("Arma 3 Server path not set -- configure it in Settings first")
 	}
 
 	exePath := filepath.Join(settings.ArmaServerPath, "arma3server_x64.exe")
 	if _, err := os.Stat(exePath); err != nil {
-		return LaunchResult{}, fmt.Errorf("arma3server_x64.exe not found at %s", exePath)
+		return launchSpec{}, fmt.Errorf("arma3server_x64.exe not found at %s", exePath)
 	}
 
 	cfg, err := loadServerConfig()
 	if err != nil {
-		return LaunchResult{}, fmt.Errorf("load server config: %w", err)
+		return launchSpec{}, fmt.Errorf("load server config: %w", err)
 	}
 
 	// Deploy the mission + (best-effort) the C++ extension before writing
@@ -118,21 +112,21 @@ func (a *App) LaunchServer() (LaunchResult, error) {
 	// for its own smoke test, now wired into the real launch path too.
 	repoRoot, err := findRepoRoot()
 	if err != nil {
-		return LaunchResult{}, fmt.Errorf("locate mission source: %w", err)
+		return launchSpec{}, fmt.Errorf("locate mission source: %w", err)
 	}
 	if err := deployMission(repoRoot, settings.ArmaServerPath, cfg.MissionTemplate); err != nil {
-		return LaunchResult{}, fmt.Errorf("deploy mission: %w", err)
+		return launchSpec{}, fmt.Errorf("deploy mission: %w", err)
 	}
-	result := LaunchResult{Warnings: deployExtension(repoRoot, settings.ArmaServerPath)}
+	warnings := deployExtension(repoRoot, settings.ArmaServerPath)
 
 	cfgPath := filepath.Join(settings.ArmaServerPath, "server.cfg")
 	if err := os.WriteFile(cfgPath, []byte(renderServerCfg(cfg)), 0o644); err != nil {
-		return LaunchResult{}, fmt.Errorf("write server.cfg: %w", err)
+		return launchSpec{}, fmt.Errorf("write server.cfg: %w", err)
 	}
 
 	profileDir := filepath.Join(os.TempDir(), fmt.Sprintf("alife_server_profile_%d", time.Now().Unix()))
 	if err := os.MkdirAll(profileDir, 0o755); err != nil {
-		return LaunchResult{}, fmt.Errorf("create profile dir: %w", err)
+		return launchSpec{}, fmt.Errorf("create profile dir: %w", err)
 	}
 
 	cmd := exec.Command(exePath,
@@ -149,71 +143,65 @@ func (a *App) LaunchServer() (LaunchResult, error) {
 		"-autoInit",
 	)
 	cmd.Dir = settings.ArmaServerPath
+	return launchSpec{Cmd: cmd, Warnings: warnings, Extra: profileDir}, nil
+}
 
-	if err := cmd.Start(); err != nil {
-		return LaunchResult{}, fmt.Errorf("start server: %w", err)
-	}
-
-	procMgr.cmd = cmd
+// armaStarted / armaExited are the Arma service's hooks: the live console
+// (RPT tail) and performance sampling run while it's up -- including after
+// re-attaching to a server left running by a previous manager session.
+func armaStarted(pid int, profileDir string, adopted bool) {
+	procMgr.mu.Lock()
+	defer procMgr.mu.Unlock()
 	procMgr.startedAt = time.Now()
+	if st := svcArma.Status(); st.StartedAt != "" {
+		if t, err := time.Parse(time.RFC3339, st.StartedAt); err == nil {
+			procMgr.startedAt = t
+		}
+	}
 	procMgr.profileDir = profileDir
 	procMgr.stopTail = make(chan struct{})
 	procMgr.fpsMu.Lock()
 	procMgr.lastFPS = -1 // no "[ALife][FPS]" line read yet this run
 	procMgr.fpsMu.Unlock()
+	if profileDir != "" {
+		go procMgr.tailLog(theApp.ctx, profileDir, procMgr.stopTail)
+	}
+	go procMgr.samplePerformance(theApp.ctx, pid, procMgr.startedAt, procMgr.stopTail)
+}
 
-	go procMgr.tailLog(a.ctx, profileDir, procMgr.stopTail)
-	go procMgr.samplePerformance(a.ctx, cmd.Process.Pid, procMgr.startedAt, procMgr.stopTail)
-
-	go func() {
-		_ = cmd.Wait() // reap the process; also means Running flips to false if the server exits/crashes on its own
-		procMgr.mu.Lock()
-		procMgr.cmd = nil
+func armaExited() {
+	procMgr.mu.Lock()
+	if procMgr.stopTail != nil {
 		select {
 		case <-procMgr.stopTail:
-			// already closed by StopServer
 		default:
 			close(procMgr.stopTail)
 		}
-		procMgr.mu.Unlock()
-		runtime.EventsEmit(a.ctx, "server:stopped")
-	}()
-
-	return result, nil
+	}
+	procMgr.mu.Unlock()
+	emit("server:stopped")
 }
 
-// StopServer terminates the running server, if any. Config files this app
-// wrote (server.cfg) are left in place -- StopServer isn't a cleanup tool
-// like tools/test_local_server.ps1, it's for a real, intentionally-running
+// LaunchServer starts the Arma service (Launch tab, control API).
+func (a *App) LaunchServer() (LaunchResult, error) {
+	warnings, err := svcArma.Start()
+	return LaunchResult{Warnings: warnings}, err
+}
+
+// StopServer stops the Arma service. Config files this app wrote
+// (server.cfg) are left in place -- StopServer isn't a cleanup tool like
+// tools/test_local_server.ps1, it's for a real, intentionally-running
 // server, and touching config on every stop would be surprising.
 func (a *App) StopServer() error {
-	procMgr.mu.Lock()
-	defer procMgr.mu.Unlock()
-
-	if procMgr.cmd == nil {
-		return fmt.Errorf("server is not running")
-	}
-
-	if err := procMgr.cmd.Process.Kill(); err != nil {
-		return fmt.Errorf("stop server: %w", err)
-	}
-
-	return nil
+	return svcArma.Stop()
 }
 
 func (a *App) GetServerStatus() ServerStatus {
-	procMgr.mu.Lock()
-	defer procMgr.mu.Unlock()
-
-	if procMgr.cmd == nil {
+	st := svcArma.Status()
+	if st.PID == 0 {
 		return ServerStatus{Running: false}
 	}
-
-	return ServerStatus{
-		Running:   true,
-		PID:       procMgr.cmd.Process.Pid,
-		StartedAt: procMgr.startedAt.Format(time.RFC3339),
-	}
+	return ServerStatus{Running: true, PID: st.PID, StartedAt: st.StartedAt}
 }
 
 // tailLog streams new RPT log lines to the frontend as "server:log" events
@@ -356,6 +344,17 @@ func (m *serverProcessManager) samplePerformance(ctx context.Context, pid int, s
 			runtime.EventsEmit(ctx, "server:performance", sample)
 		}
 	}
+}
+
+// latestArmaProfile is the newest profile folder armaStart made -- where a
+// server found running (not started by this manager session) logs to.
+func latestArmaProfile() string {
+	matches, _ := filepath.Glob(filepath.Join(os.TempDir(), "alife_server_profile_*"))
+	sort.Strings(matches) // the suffix is a Unix time, so this is oldest -> newest
+	if len(matches) == 0 {
+		return ""
+	}
+	return matches[len(matches)-1]
 }
 
 func findLatestRpt(profileDir string) string {
