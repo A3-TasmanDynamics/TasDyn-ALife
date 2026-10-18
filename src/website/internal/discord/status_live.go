@@ -147,5 +147,8 @@ func (b *Bot) updateLiveStatus(ctx context.Context, ch string, snap status.Snaps
 	if err != nil {
 		return err
 	}
+	if err := b.pinMessage(ctx, ch, m.ID); err != nil {
+		slog.Warn("discord bot: live status message posted but not pinned", "error", err)
+	}
 	return b.Settings.setState(ctx, stateStatusMessage, ch, m.ID)
 }

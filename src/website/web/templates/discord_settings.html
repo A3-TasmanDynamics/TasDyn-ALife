@@ -58,7 +58,7 @@
 
     <div class="card sync-form">
       <h2 class="admin-section-title">Welcome message</h2>
-      <p class="hint">Posts the onboarding message to #welcome with a <strong>Link account</strong> button (to this website's Dashboard) and an <strong>Update my roles</strong> button. Posting again edits the existing message instead of adding another. Pin it afterwards so new members see it first.</p>
+      <p class="hint">Posts the onboarding message to #welcome with a <strong>Link account</strong> button (to this website's Dashboard) and an <strong>Update my roles</strong> button. Posting again edits the existing message instead of adding another. The bot pins it (it needs <strong>Pin Messages</strong> in that channel), as it does the live server-status message.</p>
       <form method="post" action="/admin/discord/welcome" class="welcome-form">
         <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
         <button class="btn" type="submit" {{if not .WelcomeSet}}disabled title="Choose and save a #welcome channel first"{{end}}>Post or update welcome message</button>

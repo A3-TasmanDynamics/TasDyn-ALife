@@ -268,10 +268,11 @@ the bot and the website's "Log in with Discord". To set it up, or move to a new 
    `SITE_BASE_URL + /auth/discord/callback` (e.g. `http://localhost:8082/auth/discord/callback`;
    add the public address too once the site has one).
 4. **Invite it** (replace `APP_ID`):
-   `https://discord.com/oauth2/authorize?client_id=APP_ID&scope=bot%20applications.commands&permissions=268455044`.
+   `https://discord.com/oauth2/authorize?client_id=APP_ID&scope=bot%20applications.commands&permissions=2251800082140292`.
    That number is exactly what the bot uses today (`requiredPermissions` in
    `internal/discord/cmd_admin.go`): View Channels, Send Messages, Embed Links, Manage Roles,
-   View Audit Log and Ban Members. In **Server Settings → Roles**, drag the bot's new role above
+   View Audit Log, Ban Members and Pin Messages (the bot pins #welcome and the live status
+   message). A private channel also needs the bot's role allowed in it. In **Server Settings → Roles**, drag the bot's new role above
    every role it syncs.
 5. **`src/website/.env`.** Set `DISCORD_BOT_TOKEN` to the token, and set
    `DISCORD_OAUTH_CLIENT_ID` / `DISCORD_OAUTH_CLIENT_SECRET` to the Application ID and Client
