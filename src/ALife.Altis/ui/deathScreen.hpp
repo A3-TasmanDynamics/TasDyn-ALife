@@ -116,7 +116,7 @@ class ALife_DeathScreen
             colorFocused[] = { 1, 0.72, 0.2, 1 };
             colorBackgroundDisabled[] = { 1, 1, 1, 0.08 };
             colorDisabled[] = { 1, 1, 1, 0.35 };
-            colorText[] = { 0.05, 0.05, 0.05, 1 };
+            colorText[] = { 0.118, 0.071, 0, 1 };
             action = "['respawn'] call ALife_fnc_deathScreen";
             x = "safezoneX + safezoneW * 0.592";
             y = "safezoneY + safezoneH * 0.852";

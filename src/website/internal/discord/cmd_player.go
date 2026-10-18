@@ -20,7 +20,7 @@ func linkCommand() *Command {
 	return &Command{
 		Def: &discordgo.ApplicationCommand{
 			Name:        "link",
-			Description: "Link your Discord account to your TasDyn-ALife player account",
+			Description: "Link your Discord account to your ALife player account",
 			Options: []*discordgo.ApplicationCommandOption{{
 				Type:        discordgo.ApplicationCommandOptionString,
 				Name:        "code",
@@ -217,7 +217,7 @@ func statusCommand() *Command {
 	return &Command{
 		Def: &discordgo.ApplicationCommand{
 			Name:        "status",
-			Description: "Show the TasDyn-ALife server and service status",
+			Description: "Show the ALife server and service status",
 		},
 		Handler: func(ctx context.Context, c *Call) {
 			if c.Bot.deps.Status == nil {

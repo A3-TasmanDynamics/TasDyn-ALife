@@ -77,7 +77,7 @@ switch (_mode) do {
         private _text = if (_name == "") then {
             "<t color='#ffffff'>You died.</t>"
         } else {
-            format ["<t color='#c0c7d1'>Killed by </t><t color='#ffffff' font='RobotoCondensedBold'>%1</t><t color='#c0c7d1'>   |   </t><t color='#ffffff'>%2</t><t color='#c0c7d1'>   |   </t><t color='#ffffff'>%3 m</t>",
+            format ["<t color='#8b98b3'>Killed by </t><t color='#ffffff' font='RobotoCondensedBold'>%1</t><t color='#8b98b3'>   |   </t><t color='#ffffff'>%2</t><t color='#8b98b3'>   |   </t><t color='#ffffff'>%3 m</t>",
                 (_name splitString "<>") joinString "", (_weapon splitString "<>") joinString "", _distance]
         };
         (_display displayCtrl IDC_KILLER) ctrlSetStructuredText parseText _text;
@@ -98,10 +98,10 @@ switch (_mode) do {
             private _secs = ceil _left;
             private _ss = _secs % 60;
             private _clock = format ["%1:%2%3", floor (_secs / 60), ["", "0"] select (_ss < 10), _ss];
-            format ["<t color='#c0c7d1'>Respawn in </t><t color='#ffffff' font='RobotoCondensedBold'>%1</t><t color='#c0c7d1'>  (%2)</t>",
+            format ["<t color='#8b98b3'>Respawn in </t><t color='#ffffff' font='RobotoCondensedBold'>%1</t><t color='#8b98b3'>  (%2)</t>",
                 _clock, (str round (_fraction * 100)) + "%"]
         } else {
-            "<t color='#8ff0a4' font='RobotoCondensedBold'>Respawn ready</t><t color='#c0c7d1'>, or wait for a medic</t>"
+            "<t color='#22c55e' font='RobotoCondensedBold'>Respawn ready</t><t color='#8b98b3'>, or wait for a medic</t>"
         };
         (_display displayCtrl IDC_TIMER) ctrlSetStructuredText parseText _timer;
         (_display displayCtrl IDC_RESPAWN) ctrlEnable (_left <= 0);
@@ -112,10 +112,10 @@ switch (_mode) do {
             side group _x == independent && { alive _x } && { _x != player } && { !isObjectHidden _x }
         };
         private _medicText = if (_medics isEqualTo []) then {
-            "<t align='right' color='#ff8f88'>No medics on duty</t>"
+            "<t align='right' color='#fca5a5'>No medics on duty</t>"
         } else {
             private _nearest = selectMin (_medics apply { _x distance _body });
-            format ["<t align='right'><t color='#c0c7d1'>Nearest medic </t><t color='#ffffff' font='RobotoCondensedBold'>%1</t></t>",
+            format ["<t align='right'><t color='#8b98b3'>Nearest medic </t><t color='#ffffff' font='RobotoCondensedBold'>%1</t></t>",
                 if (_nearest >= 1000) then { ((_nearest / 1000) toFixed 1) + " km" } else { (str round _nearest) + " m" }]
         };
         (_display displayCtrl IDC_MEDIC) ctrlSetStructuredText parseText _medicText;

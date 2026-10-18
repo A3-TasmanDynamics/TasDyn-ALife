@@ -464,6 +464,7 @@ func (s *service) findRunning() bool {
 // crashed (restart, or give up after too many).
 func (s *service) wait(waitFn func() error) {
 	err := waitFn()
+	log.Printf("services: %s (PID %d) exited: %v", s.Title, s.pid, err)
 	if s.onExited != nil {
 		s.onExited()
 	}
@@ -534,6 +535,7 @@ func (s *service) Stop() error {
 	s.stopping = true
 	proc := s.proc
 	s.setState(StateStopping)
+	log.Printf("services: stopping %s (PID %d)", s.Title, s.pid)
 	s.mu.Unlock()
 
 	if err := proc.Kill(); err != nil && s.Running() {
@@ -555,6 +557,28 @@ func (s *service) Restart() ([]string, error) {
 		}
 	}
 	return s.Start()
+}
+
+// startManagerLog sends the manager's own log (service starts, stops,
+// crashes, re-attaches, control API) to logs\manager.log, keeping the
+// previous session's as manager.log.1.
+func startManagerLog() {
+	dir, err := appDataDir()
+	if err != nil {
+		return
+	}
+	_ = os.MkdirAll(filepath.Join(dir, "logs"), 0o755)
+	path := filepath.Join(dir, "logs", "manager.log")
+	_ = os.Remove(path + ".1")
+	_ = os.Rename(path, path+".1")
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	if err != nil {
+		return
+	}
+	// File only: a desktop app has no console, and io.MultiWriter stops at
+	// the first writer that fails (stderr), so the file would get nothing.
+	log.SetOutput(f)
+	log.Printf("manager: started (PID %d)", os.Getpid())
 }
 
 // tailFile returns the last n lines of a text file.

@@ -34,7 +34,7 @@ switch (_mode) do {
     };
     case "error": {
         private _display = call _fnc_display;
-        (_display displayCtrl 9102) ctrlSetStructuredText parseText format ["<t align='center' size='1.2' color='#ff7b72'>%1</t>", _text];
+        (_display displayCtrl 9102) ctrlSetStructuredText parseText format ["<t align='center' size='1.2' color='#fca5a5'>%1</t>", _text];
         (_display displayCtrl 9103) ctrlSetText "Press Esc and choose Abort to leave.";
     };
     case "hide": {

@@ -39,9 +39,9 @@ LIST_STYLE = ('            sizeEx = 0.028;\n            rowHeight = 0.042;\n'
               '            colorBackground[] = { 1, 1, 1, 0.035 };\n'
               '            colorSelectBackground[] = { 0.96, 0.62, 0.04, 0.9 };\n'
               '            colorSelectBackground2[] = { 0.96, 0.62, 0.04, 0.9 };\n'
-              '            colorSelect[] = { 0.05, 0.05, 0.05, 1 };\n'
-              '            colorSelect2[] = { 0.05, 0.05, 0.05, 1 };\n'
-              '            colorPictureSelected[] = { 0.05, 0.05, 0.05, 1 };\n')
+              '            colorSelect[] = { 0.118, 0.071, 0, 1 };\n'
+              '            colorSelect2[] = { 0.118, 0.071, 0, 1 };\n'
+              '            colorPictureSelected[] = { 0.118, 0.071, 0, 1 };\n')
 
 bg, fg = [], []
 
@@ -75,7 +75,7 @@ for i, (label, icon) in enumerate(APPS):
                    cx - 0.022, y, 0.044, 0.078))
     fg.append(ctrl(f"TileLabel{i}", "ALife_RscText",
                    f'            idc = {5120 + i};\n            style = 2;\n            sizeEx = 0.026;\n'
-                   '            colorText[] = { 0.9, 0.92, 0.95, 1 };\n'
+                   '            colorText[] = { 0.945, 0.961, 0.976, 1 };\n'
                    f'            text = "{label}";\n',
                    cx - col_w / 2, y + 0.082, col_w, 0.028))
     fg.append(ctrl(f"Tile{i}", "ALife_RscButton",
@@ -106,7 +106,7 @@ for n in range(2):
 for n in range(3):
     fg.append(ctrl(f"Label{n}", "ALife_RscText",
                    f'            idc = {5215 + n};\n            font = "RobotoCondensedBold";\n            sizeEx = 0.024;\n'
-                   '            colorText[] = { 0.62, 0.66, 0.72, 1 };\n', 0.757, 0.38, 0.181, 0.025))
+                   '            colorText[] = { 0.545, 0.596, 0.702, 1 };\n', 0.757, 0.38, 0.181, 0.025))
 fg.append(ctrl("Info", "ALife_RscStructuredText", '            idc = 5210;\n' + PX_TEXT, 0.757, 0.38, 0.181, 0.1))
 for n in range(2):  # drop-downs (Settings: view distance, wallpaper)
     fg.append(ctrl(f"Combo{n}", "ALife_RscCombo",

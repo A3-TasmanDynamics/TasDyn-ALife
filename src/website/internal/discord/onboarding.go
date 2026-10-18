@@ -20,7 +20,7 @@ import (
 var ErrNoChannel = errors.New("channel not set")
 
 func (b *Bot) welcomeMessage() (string, []discordgo.MessageComponent) {
-	content := "## Welcome to TasDyn-ALife\n" +
+	content := "## Welcome to ALife\n" +
 		"Link your Steam account to get access to the rest of the server:\n" +
 		"1. Press **Link account** and sign in to the website with Steam.\n" +
 		"2. On your Dashboard, press **Connect Discord** (or get a code and use `/link <code>` here).\n" +

@@ -25,7 +25,7 @@ player addEventHandler ["Killed", {
 
 if (_faction == "medic") then {
     player addAction [
-        "<t color='#8ff0a4'>Revive</t>",
+        "<t color='#22c55e'>Revive</t>",
         { ["start", cursorObject] spawn ALife_fnc_revive; },
         nil, 10, true, true, "",
         "alive player && { vehicle player == player } && { isNil 'ALife_reviving' } && { !isNull cursorObject } && { cursorObject getVariable ['alife_downed', false] } && { player distance cursorObject < 3.5 }"
@@ -40,7 +40,7 @@ if (_faction == "medic") then {
     if (getText (_shop >> "faction") == _faction && { isClass (_shop >> "Items") }) then {
         private _spots = getArray (_shop >> "markers") apply { getMarkerPos _x };
         player addAction [
-            format ["<t color='#f5a524'>Open %1</t>", getText (_shop >> "displayName")],
+            format ["<t color='#fbbf24'>Open %1</t>", getText (_shop >> "displayName")],
             { ["open", _this select 3] call ALife_fnc_shop; },
             configName _shop, 5, true, true, "",
             format ["alive player && { vehicle player == player } && { (%1 findIf { player distance2D _x <= %2 }) >= 0 }", _spots, getNumber (_shop >> "radius")]

@@ -76,6 +76,7 @@ func serviceByKey(key string) (*service, error) {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	startManagerLog()
 	go a.startControlAPI(ctx)
 	go startServices()
 }

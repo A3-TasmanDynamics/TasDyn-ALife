@@ -18,7 +18,7 @@ class ALife_Shop
     {
         class Panel: ALife_RscBackground
         {
-            colorBackground[] = { 0.06, 0.07, 0.09, 0.96 };
+            colorBackground[] = { 0.059, 0.09, 0.165, 0.96 };
             x = "safezoneX + safezoneW * 0.33";
             y = "safezoneY + safezoneH * 0.28";
             w = "safezoneW * 0.34";
@@ -120,7 +120,7 @@ class ALife_Shop
             colorBackground[] = { 0.96, 0.62, 0.04, 1 };
             colorBackgroundActive[] = { 1, 0.72, 0.2, 1 };
             colorFocused[] = { 1, 0.72, 0.2, 1 };
-            colorText[] = { 0.05, 0.05, 0.05, 1 };
+            colorText[] = { 0.118, 0.071, 0, 1 };
             action = "['buy', 'bank'] call ALife_fnc_shop";
             x = "safezoneX + safezoneW * 0.485";
             y = "safezoneY + safezoneH * 0.655";

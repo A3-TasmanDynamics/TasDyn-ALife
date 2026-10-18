@@ -5,8 +5,12 @@
 // spawn point -> you're in. See README.md.
 
 author = "Tasman Dynamics";
-onLoadName = "TasDyn-ALife";
-onLoadMission = "Altis Life roleplay";
+onLoadName = "ALife";
+onLoadMission = "Altis Life on Arma 3, built properly.";
+// The brand's loading picture: the brush A on navy (tools/branding/make_brush_a.py).
+loadScreen = "ui\brand\alife_load_co.paa";
+overviewPicture = "ui\brand\alife_load_co.paa";
+overviewText = "Altis Life on Arma 3, built properly. By Tasman Dynamics.";
 
 class Header
 {

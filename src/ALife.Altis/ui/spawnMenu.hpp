@@ -25,7 +25,7 @@ class ALife_SpawnMenu
         };
         class HeaderBar: ALife_RscBackground
         {
-            colorBackground[] = { 0.11, 0.12, 0.15, 1 };
+            colorBackground[] = { 0.075, 0.106, 0.18, 1 };
             x = "safezoneX + safezoneW * 0.08";
             y = "safezoneY + safezoneH * 0.08";
             w = "safezoneW * 0.84";
@@ -70,7 +70,7 @@ class ALife_SpawnMenu
         {
             idc = 4830;
             size = 0.03;
-            colorBackground[] = { 0.11, 0.12, 0.15, 1 };
+            colorBackground[] = { 0.075, 0.106, 0.18, 1 };
             x = "safezoneX + safezoneW * 0.09";
             y = "safezoneY + safezoneH * 0.635";
             w = "safezoneW * 0.25";
@@ -86,7 +86,7 @@ class ALife_SpawnMenu
             colorBackground[] = { 0.96, 0.62, 0.04, 1 };
             colorBackgroundActive[] = { 1, 0.72, 0.2, 1 };
             colorFocused[] = { 1, 0.72, 0.2, 1 };
-            colorText[] = { 0.05, 0.05, 0.05, 1 };
+            colorText[] = { 0.118, 0.071, 0, 1 };
             action = "['confirm'] call ALife_fnc_spawnMenu";
             x = "safezoneX + safezoneW * 0.09";
             y = "safezoneY + safezoneH * 0.795";
@@ -97,7 +97,7 @@ class ALife_SpawnMenu
         class Leave: ALife_RscButton
         {
             text = "Leave server";
-            colorBackground[] = { 0.11, 0.12, 0.15, 1 };
+            colorBackground[] = { 0.075, 0.106, 0.18, 1 };
             colorText[] = { 0.6, 0.64, 0.7, 1 };
             action = "['leave'] call ALife_fnc_spawnMenu";
             x = "safezoneX + safezoneW * 0.09";

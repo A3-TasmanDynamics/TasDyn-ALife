@@ -46,7 +46,7 @@ export async function renderServicesPanel() {
       <div class="page-header page-header-row">
         <div>
           <h1>Services</h1>
-          <p>Everything this machine runs for TasDyn ALife, in one place.</p>
+          <p>Everything this machine runs for ALife, in one place.</p>
         </div>
         <div class="button-row">
           <button class="action secondary" id="svc-stop-all">Stop all</button>

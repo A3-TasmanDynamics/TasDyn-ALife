@@ -63,7 +63,7 @@ switch (_mode) do {
     case "refresh": {
         if (isNull _display) exitWith {};
         (_display displayCtrl IDC_BALANCE) ctrlSetStructuredText parseText format [
-            "<t align='right'><t color='#c0c7d1'>Bank </t><t font='RobotoCondensedBold'>%1</t><t color='#c0c7d1'>   Cash </t><t font='RobotoCondensedBold'>%2</t></t>",
+            "<t align='right'><t color='#8b98b3'>Bank </t><t font='RobotoCondensedBold'>%1</t><t color='#8b98b3'>   Cash </t><t font='RobotoCondensedBold'>%2</t></t>",
             (_data getOrDefault ["bank", 0]) call _fnc_money, (_data getOrDefault ["cash", 0]) call _fnc_money];
 
         private _owned = createHashMapFromArray ((_data getOrDefault ["items", []]) select { _x isEqualTypeParams ["", 0] });
@@ -82,8 +82,8 @@ switch (_mode) do {
         private _class = _list lnbData [_row, 0];
         private _missing = (_cfg >> "Items" >> _class) call _fnc_missing;
         (_display displayCtrl IDC_DESC) ctrlSetStructuredText parseText format [
-            "<t size='0.95' color='#c0c7d1'>%1</t>%2", getText (missionConfigFile >> "CfgItems" >> _class >> "description"),
-            ["", format ["<br/><t size='0.95' color='#f5a524'>%1 needed.</t>", _missing]] select (_missing != "")];
+            "<t size='0.95' color='#8b98b3'>%1</t>%2", getText (missionConfigFile >> "CfgItems" >> _class >> "description"),
+            ["", format ["<br/><t size='0.95' color='#fbbf24'>%1 needed.</t>", _missing]] select (_missing != "")];
     };
 
     case "buy": {
