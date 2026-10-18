@@ -19,7 +19,11 @@ class CfgFunctions
             class syncLoop {};       // periodic ping + autosave
             class itemsChange {};    // add/remove virtual items (saved)
             class requestPhoneData {}; // send a player their phone data
-            class market {};         // the dynamic market: prices, trades, recovery (CfgMarket)
+            class market {};
+            class shopCharge {};      // take a shop payment (cash or bank)
+            class shopBuyClothing {}; // client -> server: buy the clothing being tried on
+            class shopBuyVehicle {};  // client -> server: buy a vehicle (spawned, owned, recorded)
+            class vehicleLock {};     // client -> server: U on your own vehicle         // the dynamic market: prices, trades, recovery (CfgMarket)
             class shopBuy {};        // client -> server: buy from a shop
             class giveItem {};       // client -> server: give/discard items
             class bankTransfer {};   // client -> server: send money to a player
@@ -50,7 +54,10 @@ class CfgFunctions
             class phoneData {};       // server -> client: items, money, levels
             class phoneSettings {};   // view distance / grass
             class messageReceived {}; // server -> client: phone message
-            class shop {};            // shop window
+            class shop {};
+            class clothingShop {};    // clothing shop: 3D try-on
+            class vehicleShop {};     // vehicle shop: 3D showroom, colours
+            class vehicleLockApply {}; // set a lock where the vehicle is local            // shop window
             class revive {};          // medic: the Revive action
             class revived {};         // server -> downed client: a medic revived you
             class reviveApplied {};   // server -> client: back up where you fell

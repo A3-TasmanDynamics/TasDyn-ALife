@@ -778,3 +778,68 @@ bool Database::MarketReset(std::string& outError) {
     PQclear(res);
     return ok;
 }
+
+// A bought vehicle: a vehicles row (owner, class, faction, a unique plate,
+// status 'spawned') and its 'purchase' vehicle_logs row, in one statement.
+// The plate is drawn in SQL (letters and digits, no I/O/0/1) and redrawn if
+// it's taken.
+bool Database::VehicleAdd(const std::string& uid, const std::string& faction, const std::string& classname,
+                          const std::string& price, std::string& outId, std::string& outPlate,
+                          std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    const char* scope = faction == "cop" ? "police" : faction == "medic" ? "medic" : "civilian";
+    const char* params[4] = {uid.c_str(), scope, classname.c_str(), price.c_str()};
+    for (int attempt = 0; attempt < 5; ++attempt) {
+        PGresult* res = PQexecParams(conn_,
+            "WITH p AS (SELECT id FROM players WHERE uid = $1), "
+            "v AS (INSERT INTO vehicles (owner_player_id, classname, faction_scope, status, plate) "
+            "      SELECT id, $3, $2, 'spawned', "
+            "             (SELECT string_agg(substr('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', (floor(random() * 32) + 1)::int, 1), '') "
+            "              FROM generate_series(1, 6)) "
+            "      FROM p RETURNING id, plate, owner_player_id), "
+            "l AS (INSERT INTO vehicle_logs (vehicle_id, player_id, action, amount) "
+            "      SELECT id, owner_player_id, 'purchase', $4::bigint FROM v) "
+            "SELECT id::text, plate FROM v",
+            4, nullptr, params, nullptr, nullptr, 0);
+        ExecStatusType st = PQresultStatus(res);
+        if (st == PGRES_TUPLES_OK) {
+            if (PQntuples(res) == 0) {
+                PQclear(res);
+                outError = "no such player";
+                return false;
+            }
+            outId = PQgetvalue(res, 0, 0);
+            outPlate = PQgetvalue(res, 0, 1);
+            PQclear(res);
+            return true;
+        }
+        const char* state = PQresultErrorField(res, PG_DIAG_SQLSTATE);
+        bool plateTaken = state && std::string(state) == "23505";  // unique_violation: draw another plate
+        outError = PQerrorMessage(conn_);
+        PQclear(res);
+        if (!plateTaken) return false;
+    }
+    return false;
+}
+
+bool Database::VehicleStatus(const std::string& id, const std::string& status, std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    const char* params[2] = {id.c_str(), status.c_str()};
+    PGresult* res = PQexecParams(conn_,
+        "UPDATE vehicles SET status = $2 WHERE id = $1::bigint", 2, nullptr, params, nullptr, nullptr, 0);
+    bool ok = PQresultStatus(res) == PGRES_COMMAND_OK;
+    if (!ok) outError = PQerrorMessage(conn_);
+    else if (std::string(PQcmdTuples(res)) == "0") { ok = false; outError = "no such vehicle"; }
+    PQclear(res);
+    return ok;
+}

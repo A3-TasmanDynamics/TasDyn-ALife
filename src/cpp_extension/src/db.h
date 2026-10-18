@@ -74,6 +74,13 @@ public:
     bool MarketSet(const std::string& item, const std::string& price, std::string& outError);
     bool MarketReset(std::string& outError);
 
+    // Vehicles (docs/DATA_CONTRACT.md "vehicle"): VehicleAdd records a bought
+    // vehicle and its purchase log, returning its id and new plate;
+    // VehicleStatus sets spawned / garaged / impounded / destroyed.
+    bool VehicleAdd(const std::string& uid, const std::string& faction, const std::string& classname,
+                    const std::string& price, std::string& outId, std::string& outPlate, std::string& outError);
+    bool VehicleStatus(const std::string& id, const std::string& status, std::string& outError);
+
     bool RecordCombatLog(const std::string& uid, const std::string& faction, const std::string& killer,
                          const std::string& weapon, const std::string& distance,
                          const std::string& secondsIncapacitated, std::string& outError);

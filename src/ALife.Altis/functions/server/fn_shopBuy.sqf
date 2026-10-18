@@ -51,14 +51,7 @@ if (_qty < 1 || { _qty > 20 } || { !(_method in ["cash", "bank"]) }) exitWith {}
 
 private _total = ([_class] call ALife_fnc_marketPrice) * _qty;
 private _name = getText (missionConfigFile >> "CfgItems" >> _class >> "displayName");
-private _token = format ["shop-%1-%2-%3", _uid, round (diag_tickTime * 1000), floor random 1e6];
-private _amount = _total toFixed 0;
-
-private _paid = if (_method == "bank") then {
-    ["bank", ["purchase", _uid, _faction, _amount, _token, "", "", format ["%1 x%2", _name, _qty]]] call ALife_fnc_extension
-} else {
-    ["save", [_uid, _faction + "_cash", "-" + _amount, _token]] call ALife_fnc_extension
-};
+private _paid = [_uid, _faction, _record, _total, _method, format ["%1 x%2", _name, _qty]] call ALife_fnc_shopCharge;
 
 if (_paid != "OK") exitWith {
     diag_log format ["[ALife] %1 shop %2: %3 x%4 by %5 refused: %6", _uid, _shop, _class, _qty, _method, _paid];
@@ -68,9 +61,6 @@ if (_paid != "OK") exitWith {
         "The purchase didn't go through. Try again."
     }) call _fnc_reply;
 };
-
-private _moneyKey = _faction + "_" + _method;
-_record set [_moneyKey, (_record getOrDefault [_moneyKey, 0]) - _total];
 
 if (!([_uid, _faction, _class, _qty] call ALife_fnc_itemsChange)) exitWith {
     diag_log format ["[ALife] %1 paid %2 for %3 x%4 but the items didn't save -- needs a refund", _uid, _total, _class, _qty];

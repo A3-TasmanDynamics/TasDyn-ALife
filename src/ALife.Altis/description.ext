@@ -23,6 +23,11 @@ class Header
 // the spawn menu instead (onPlayerRespawn.sqf opens it again after death).
 // The death screen holds respawn until you press its Respawn button
 // (CfgALife >> respawnTime); respawnDelay is only the fallback.
+// The vehicle shop's 3D preview is a local-only vehicle (createVehicleLocal),
+// which multiplayer allows only with this on. It only lets a client create
+// objects that exist on its own machine.
+unsafeCVL = 1;
+
 respawn = 3;
 respawnDelay = 10;
 respawnOnStart = -1;
@@ -60,6 +65,7 @@ corpseRemovalMaxTime = 900;
 #include "ui\deathScreen.hpp"
 #include "ui\phone.hpp"
 #include "ui\shop.hpp"
+#include "ui\clothingShop.hpp"
 #include "ui\transfer.hpp"
 #include "ui\atm.hpp"
 
