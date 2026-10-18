@@ -114,13 +114,14 @@ export async function renderServicesPanel() {
           <label for="ts3-licence">I've read and accept the TeamSpeak 3 Server licence (license.txt in the server folder)</label>
         </div>
         <div class="field">
-          <label>Admin privilege key</label>
+          <label>Admin privilege key (copy it from here into the TeamSpeak client)</label>
           <div class="input-with-button">
-            <input type="text" id="ts3-key" readonly value="${escapeHtml(ss.ts3PrivilegeKey)}" placeholder="Shown after TeamSpeak's first start"/>
+            <input type="text" id="ts3-key" readonly value="${escapeHtml(ss.ts3PrivilegeKey)}" placeholder="None yet: click New key (TeamSpeak must be running)"/>
             <button class="action secondary" id="ts3-copy">Copy</button>
             <button class="action secondary" id="ts3-newkey">New key</button>
           </div>
-          <p class="hint">In the TeamSpeak client: Permissions → Use Privilege Key, then paste it. Each key works once.</p>
+          <p class="hint">This box only shows a key; you don't type here. Copy it, then in the TeamSpeak client go to
+            <strong>Permissions → Use Privilege Key</strong> and paste it there. Each key works once, so click New key for another.</p>
         </div>
         <div class="button-row"><button class="action" id="ts3-save">Save TeamSpeak setup</button></div>
         <div id="ts3-msg" class="hint"></div>
