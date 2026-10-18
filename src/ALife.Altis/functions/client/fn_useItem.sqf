@@ -63,14 +63,14 @@ private _label = switch (_use) do {
 };
 private _duration = getNumber (_cfg >> "useTime") max 0.5;
 private _still = _use != "consume"; // eating and drinking you can do on the move
-private _anim = getText (_cfg >> "anim"); // CfgItems: played (looped) while using, "" = none
-private _fnc_play = { if (getNumber (_cfg >> "animSwitch") == 1) then { player switchMove _anim; } else { player playMoveNow _anim; }; };
+private _anim = getText (_cfg >> "anim"); // CfgItems: a looped kneeling move, "" = none
 private _start = getPosATL player;
 private _began = diag_tickTime;
 private _done = false;
+private _outSince = -1; // when they left the medic moves (-1: in them)
 
 "ALife_progress" cutRsc ["ALife_Progress", "PLAIN", 0, false];
-if (_anim != "") then { call _fnc_play; };
+if (_anim != "") then { player playMoveNow _anim; };
 
 while { true } do {
     private _elapsed = diag_tickTime - _began;
@@ -82,12 +82,24 @@ while { true } do {
     if (_elapsed >= _duration) exitWith { _done = true; };
     if (!alive player || { player getVariable ["alife_downed", false] }) exitWith {};
     if (_still && { player distance _start > 1.5 || { !isNull _target && { player distance _target > 8 } } }) exitWith {};
-    if (_anim != "" && { animationState player != toLower _anim }) then { call _fnc_play; };
+    // Started once (it loops); again only if something knocked them out of
+    // the kneeling medic moves for 2 s -- re-starting it while it's still
+    // blending in from standing makes it jitter.
+    if (_anim != "") then {
+        if ((animationState player) find "ainvpknlmstpsnonwnondnon_medic" == 0) then {
+            _outSince = -1;
+        } else {
+            if (_outSince < 0) then { _outSince = diag_tickTime; };
+            if (diag_tickTime - _outSince > 2) then { player playMoveNow _anim; _outSince = diag_tickTime; };
+        };
+    };
     sleep 0.1;
 };
 
 "ALife_progress" cutText ["", "PLAIN"];
-if (_anim != "" && { alive player }) then { player switchMove ""; };
+// Stand back up with the game's own end move (switchMove would only change it
+// on this machine and snap back).
+if (_anim != "" && { alive player }) then { player playMoveNow "AinvPknlMstpSnonWnonDnon_medicEnd"; };
 ALife_using = nil;
 
 if (_done) then {

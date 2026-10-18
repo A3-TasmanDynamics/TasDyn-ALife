@@ -17,10 +17,10 @@
 //                    "lockpick" unlock the locked vehicle you're next to, with `chance`
 //                  useTime: seconds with a progress bar (moving cancels). No `use`
 //                  = not usable from the inventory.
-//   anim        -- the move played (looped) while using it, "" = none (vanilla
-//                  Arma has no eating / drinking animation); animSwitch = 1 for
-//                  moves nothing blends into (cutscene "Acts_" ones): snapped to
-//                  instead of blended
+//   anim        -- the looped kneeling move played while using it (one the
+//                  game blends into, so everyone sees it smoothly: the
+//                  AinvPknlMstpSnonWnonDnon_medic0..5 loops), "" = none (vanilla
+//                  Arma has no eating / drinking animation)
 
 class CfgItems
 {
@@ -89,7 +89,7 @@ class CfgItems
         icon = "ui\items\fuelcan_ca.paa";
         weight = 5;
         use = "refuel"; useTime = 8; fuel = 0.25;   // a quarter tank
-        anim = "AinvPknlMstpSnonWnonDnon_medic_1";
+        anim = "AinvPknlMstpSnonWnonDnon_medic0";
     };
     class lockpick
     {
@@ -98,7 +98,7 @@ class CfgItems
         icon = "ui\items\lockpick_ca.paa";
         weight = 1;
         use = "lockpick"; useTime = 10; chance = 0.35; // used up either way
-        anim = "AinvPknlMstpSnonWnonDnon_medic4";
+        anim = "AinvPknlMstpSnonWnonDnon_medic1";
     };
     class toolkit
     {
@@ -107,7 +107,7 @@ class CfgItems
         icon = "ui\items\toolkit_ca.paa";
         weight = 4;
         use = "repair"; useTime = 12;
-        anim = "Acts_carFixingWheel"; animSwitch = 1; // working on the wheel
+        anim = "AinvPknlMstpSnonWnonDnon_medic4";
     };
     class zipties
     {
@@ -132,6 +132,6 @@ class CfgItems
         icon = "ui\items\medkit_ca.paa";
         weight = 2;
         use = "heal"; useTime = 6; heal = 1;         // yourself; medics also revive with it
-        anim = "AinvPknlMstpSlayWnonDnon_medic"; animSwitch = 1; // treating yourself
+        anim = "AinvPknlMstpSnonWnonDnon_medic2";
     };
 };
