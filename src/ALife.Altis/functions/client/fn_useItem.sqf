@@ -63,13 +63,14 @@ private _label = switch (_use) do {
 };
 private _duration = getNumber (_cfg >> "useTime") max 0.5;
 private _still = _use != "consume"; // eating and drinking you can do on the move
-private _anim = "AinvPknlMstpSnonWnonDnon_medic_1";
+private _anim = getText (_cfg >> "anim"); // CfgItems: played (looped) while using, "" = none
+private _fnc_play = { if (getNumber (_cfg >> "animSwitch") == 1) then { player switchMove _anim; } else { player playMoveNow _anim; }; };
 private _start = getPosATL player;
 private _began = diag_tickTime;
 private _done = false;
 
 "ALife_progress" cutRsc ["ALife_Progress", "PLAIN", 0, false];
-if (_still) then { player playMoveNow _anim; };
+if (_anim != "") then { call _fnc_play; };
 
 while { true } do {
     private _elapsed = diag_tickTime - _began;
@@ -81,12 +82,12 @@ while { true } do {
     if (_elapsed >= _duration) exitWith { _done = true; };
     if (!alive player || { player getVariable ["alife_downed", false] }) exitWith {};
     if (_still && { player distance _start > 1.5 || { !isNull _target && { player distance _target > 8 } } }) exitWith {};
-    if (_still && { animationState player != toLower _anim }) then { player playMoveNow _anim; };
+    if (_anim != "" && { animationState player != toLower _anim }) then { call _fnc_play; };
     sleep 0.1;
 };
 
 "ALife_progress" cutText ["", "PLAIN"];
-if (_still && { alive player }) then { player switchMove ""; };
+if (_anim != "" && { alive player }) then { player switchMove ""; };
 ALife_using = nil;
 
 if (_done) then {

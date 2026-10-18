@@ -19,6 +19,8 @@
         ["move", side, all]     - side "container" (take) or "player" (store)
         ["moveRow", side, row]  - double-click: all of one row
         ["use"]                 - use one of the item selected on your side (ALife_fnc_useItem)
+
+    On the ground (dropping, picking up) the player reaches down (PutDown).
 */
 
 #define IDD_TRANSFER   5300
@@ -136,6 +138,7 @@ switch (_mode) do {
             [(if (_all) then { "There's nothing to move." } else { "Select something first (Ctrl or Shift to pick several), and enter how many." }), "warning"] call ALife_fnc_toast;
         };
         if (_side == "container" && { _id == "" }) exitWith {};
+        if (_kind == "ground") then { player playActionNow "PutDown"; }; // picking up / putting down
         [player, _id, ["store", "take"] select (_side == "container"), _entries, _money] remoteExecCall ["ALife_fnc_containerTransfer", 2];
     };
 
@@ -157,6 +160,7 @@ switch (_mode) do {
         private _data = _list lbData _b;
         private _available = _list lbValue _b;
         if (_data == "" || { _available <= 0 } || { _side == "container" && { _id == "" } }) exitWith {};
+        if (_kind == "ground") then { player playActionNow "PutDown"; };
         [player, _id, ["store", "take"] select (_side == "container"),
             [[[_data, _available]], []] select (_data == "cash"), [0, _available] select (_data == "cash")] remoteExecCall ["ALife_fnc_containerTransfer", 2];
     };

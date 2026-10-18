@@ -468,6 +468,7 @@ switch (_mode) do {
                     [player, _target, _class, _qty] remoteExec ["ALife_fnc_giveItem", 2];
                 } else {
                     // Drop: into a bag at your feet (cash: a money stack). Windows key to pick it up.
+                    player playActionNow "PutDown";
                     if (_class == "cash") then {
                         [player, "", "store", [], _qty] remoteExecCall ["ALife_fnc_containerTransfer", 2];
                     } else {
