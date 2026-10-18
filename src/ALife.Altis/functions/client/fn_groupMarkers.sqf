@@ -64,7 +64,9 @@ while { true } do {
             createMarkerLocal [_name, getPosWorld player];
             _name setMarkerTypeLocal getText (_self >> "type");
             _name setMarkerSizeLocal [getNumber (_self >> "size"), getNumber (_self >> "size")];
-            _name setMarkerColorLocal getText (_self >> "colour");
+            private _colour = getText (_self >> "colour");
+            if (_colour == "") then { _colour = getText (_cfg >> (["gang", _faction] select (_faction != "civ")) >> "colour"); };
+            _name setMarkerColorLocal _colour;
             _name setMarkerTextLocal getText (_self >> "text");
         };
         _name setMarkerPosLocal getPosWorld (vehicle player);
