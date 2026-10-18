@@ -39,7 +39,7 @@ document.querySelector('#app')!.innerHTML = `
       <div class="brand">
         <img class="brand-mark" src="${alifeMark}" alt="" />
         <div class="brand-text">
-          <div class="brand-title">ALife</div>
+          <div class="brand-title"><span class="wordmark-a">A</span>Life</div>
           <div class="brand-subtitle">SERVER MANAGER</div>
         </div>
       </div>
