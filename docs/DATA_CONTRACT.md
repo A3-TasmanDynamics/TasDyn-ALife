@@ -187,6 +187,25 @@ is at its `CfgMarket` base price). The game server keeps live prices in memory
 
 Response: the array for `load`, otherwise `OK` or `ERROR:reason`.
 
+## `vehicle` — bought vehicles
+
+- `["add", uid, faction, classname, price]` records a vehicle the player just bought, in one statement:
+  a `vehicles` row (owner, classname, `faction_scope` civilian / police / medic, status `spawned`,
+  a new unique six-character plate drawn from `A-Z2-9` without `I O 0 1`) and its `purchase`
+  `vehicle_logs` row with the price. Response: `OK:<id>:<plate>`. `price` is whole dollars;
+  `classname` must be a config class name.
+- `["status", id, status]` sets a vehicle's status: `spawned`, `garaged`, `impounded` or `destroyed`.
+  Response: `OK`, or `ERROR:no such vehicle`.
+
+Validation errors (`ERROR:invalid uid` / `faction` / `classname` / `price` / `id` / `status`) are
+returned before anything reaches the database.
+
+## Gear
+
+`<faction>_gear` is saved by the game server's autosave while the player is alive, as one pair:
+`[["loadout", <getUnitLoadout>]]`. Spawning puts it back on (`setUnitLoadout`); respawning after
+death saves `[]`, so the gear stays with the body (a revive keeps it).
+
 ## Escaping
 
 `name` is the only genuinely free-text field. Any characters that would break `parseSimpleArray`'s

@@ -146,6 +146,36 @@ std::string HandleMarket(Database& db, const std::vector<std::string>& args) {
     return "ERROR:unknown market op";
 }
 
+// args = ["add", uid, faction, classname, price] -> "OK:<id>:<plate>"
+//        ["status", id, status]                 -> "OK"
+std::string HandleVehicle(Database& db, const std::vector<std::string>& args) {
+    if (args.empty()) return "ERROR:expected [op, ...]";
+    const std::string& op = args[0];
+    std::string error;
+    if (op == "add") {
+        if (args.size() < 5) return "ERROR:expected [add, uid, faction, classname, price]";
+        if (!IsSteam64(args[1])) return "ERROR:invalid uid";
+        if (args[2] != "civ" && args[2] != "cop" && args[2] != "medic") return "ERROR:invalid faction";
+        if (!IsItemName(args[3])) return "ERROR:invalid classname";
+        if (!IsPrice(args[4]) || args[4].find('.') != std::string::npos) return "ERROR:invalid price";
+        std::string id, plate;
+        if (!db.VehicleAdd(args[1], args[2], args[3], args[4], id, plate, error)) return "ERROR:" + error;
+        return "OK:" + id + ":" + plate;
+    }
+    if (op == "status") {
+        if (args.size() < 3) return "ERROR:expected [status, id, status]";
+        if (args[1].empty() || args[1].size() > 18) return "ERROR:invalid id";
+        for (char c : args[1]) {
+            if (!std::isdigit(static_cast<unsigned char>(c))) return "ERROR:invalid id";
+        }
+        const std::string& st = args[2];
+        if (st != "spawned" && st != "garaged" && st != "impounded" && st != "destroyed") return "ERROR:invalid status";
+        if (!db.VehicleStatus(args[1], st, error)) return "ERROR:" + error;
+        return "OK";
+    }
+    return "ERROR:unknown vehicle op";
+}
+
 }  // namespace
 
 std::string UnwrapArmaString(const std::string& arg) {
@@ -180,6 +210,7 @@ std::string DispatchCommand(Database& db, const std::string& command,
     if (command == "bank") return HandleBank(db, args);
     if (command == "session") return HandleSession(db, args);
     if (command == "market") return HandleMarket(db, args);
+    if (command == "vehicle") return HandleVehicle(db, args);
 
     return "ERROR:unknown command";
 }

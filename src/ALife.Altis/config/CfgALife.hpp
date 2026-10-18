@@ -24,6 +24,7 @@ class CfgALife
     // players within giveDistance metres; messages are limited to one every
     // messageCooldown seconds and messageMaxLength characters.
     phoneKey = 21;
+    lockKey = 22;                       // U: lock / unlock your own vehicle
     giveDistance = 5;
     messageCooldown = 3;
     messageMaxLength = 300;

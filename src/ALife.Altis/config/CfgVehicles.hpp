@@ -162,6 +162,13 @@ class CarShops
     };
 };
 
+// Each vehicle's own skins, Tonic style: textures[] rows
+//   {"name", "side" ("" = anyone), {texture per hidden selection, ...}}
+// A buyer sees the rows for their side; with none, the vehicle's Arma
+// colours (TextureSources). Placeholder police / EMS skins are recoloured
+// vanilla (tools/textures/make_placeholders.py): drop the real PAAs in at
+// the same paths under textures\vehicles\.
+//
 // Each vehicle's trunk space (Tonic's vItemSpace), in CfgItems weight units.
 // A vehicle not listed falls back to CfgALife >> Trunks by type.
 // Read with missionConfigFile >> "CfgVehicles" (the mission's own list, not
@@ -175,10 +182,28 @@ class CfgVehicles
     class B_Heli_Light_01_stripped_F   { trunk = 75; };
     class C_Quadbike_01_F              { trunk = 25; };
     class C_Hatchback_01_F             { trunk = 40; };
-    class C_Offroad_01_F               { trunk = 65; };
+    class C_Offroad_01_F
+    {
+        trunk = 65;
+        textures[] = {
+            {"Police", "cop", { "textures\vehicles\police_offroad.paa", "textures\vehicles\police_offroad.paa" }},
+            {"EMS", "medic", { "textures\vehicles\ems_offroad.paa", "textures\vehicles\ems_offroad.paa" }}
+        };
+    };
     class C_Offroad_02_unarmed_F       { trunk = 60; };
-    class C_SUV_01_F                   { trunk = 50; };
-    class C_Hatchback_01_sport_F       { trunk = 40; };
+    class C_SUV_01_F
+    {
+        trunk = 50;
+        textures[] = {
+            {"Police", "cop", { "textures\vehicles\police_suv.paa" }},
+            {"EMS", "medic", { "textures\vehicles\ems_suv.paa" }}
+        };
+    };
+    class C_Hatchback_01_sport_F
+    {
+        trunk = 40;
+        textures[] = { {"Police", "cop", { "textures\vehicles\police_hatchback_sport.paa" }} };
+    };
     class C_Van_01_transport_F         { trunk = 100; };
     class C_Van_02_transport_F         { trunk = 110; };
     class C_Van_01_box_F               { trunk = 150; };
@@ -192,9 +217,21 @@ class CfgVehicles
     class B_Truck_01_box_F             { trunk = 450; };
     class O_Truck_03_device_F          { trunk = 300; };
     class C_Plane_Civil_01_F           { trunk = 50; };
-    class C_Heli_Light_01_civil_F      { trunk = 75; };
-    class B_Heli_Light_01_F            { trunk = 85; };
-    class O_Heli_Light_02_unarmed_F    { trunk = 110; };
+    class C_Heli_Light_01_civil_F
+    {
+        trunk = 75;
+        textures[] = { {"EMS", "medic", { "textures\vehicles\ems_m900.paa" }} };
+    };
+    class B_Heli_Light_01_F
+    {
+        trunk = 85;
+        textures[] = { {"Police", "cop", { "textures\vehicles\police_hummingbird.paa" }} };
+    };
+    class O_Heli_Light_02_unarmed_F
+    {
+        trunk = 110;
+        textures[] = { {"EMS", "medic", { "textures\vehicles\ems_orca.paa" }} };
+    };
     class I_Heli_Transport_02_F        { trunk = 150; };
     class C_Scooter_Transport_01_F     { trunk = 20; };
     class C_Rubberboat                 { trunk = 45; };

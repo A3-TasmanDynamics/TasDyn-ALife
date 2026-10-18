@@ -20,7 +20,10 @@ if (_pos isEqualTo []) exitWith {
     [] spawn ALife_fnc_startSession;
 };
 
-if (_loadout isNotEqualTo []) then { player setUnitLoadout _loadout; };
+if (_loadout isNotEqualTo []) then {
+    player setUnitLoadout _loadout;
+    [true] call ALife_fnc_applySkins;
+};
 player setPosATL _pos;
 player enableSimulation true;
 player setDamage (1 - (getNumber (missionConfigFile >> "CfgALife" >> "reviveHealth") max 0.05));

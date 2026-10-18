@@ -33,23 +33,45 @@ if (_faction == "medic") then {
 };
 
 // Shops for this faction: one "Open <shop>" action per placement (CfgShops),
-// shown near any of its markers. Markets only for now: weapons, clothing
-// and vehicles can't be bought yet.
+// shown near any of its markers. Markets, clothing and vehicle shops for
+// now; weapon shops come later.
 {
     private _info = [configName _x] call ALife_fnc_shopInfo;
     if (_info isNotEqualTo []) then {
         _info params ["_type", "_place", "_shop"];
-        if (_type == "market" && { getText (_shop >> "side") == _faction }) then {
+        if (_type in ["market", "clothing", "vehicles"] && { getText (_shop >> "side") == _faction }) then {
             private _spots = getArray (_place >> "markers") apply { getMarkerPos _x };
             player addAction [
                 format ["<t color='#fbbf24'>Open %1</t>", getText (_shop >> "name")],
-                { ["open", _this select 3] call ALife_fnc_shop; },
+                {
+                    private _place = _this select 3;
+                    switch (getText (missionConfigFile >> "CfgShops" >> _place >> "type")) do {
+                        case "clothing": { ["open", _place] call ALife_fnc_clothingShop; };
+                        case "vehicles": { ["open", _place] call ALife_fnc_vehicleShop; };
+                        default { ["open", _place] call ALife_fnc_shop; };
+                    };
+                },
                 configName _place, 5, true, true, "",
                 format ["alive player && { vehicle player == player } && { (%1 findIf { player distance2D _x <= %2 }) >= 0 }", _spots, getNumber (_place >> "radius")]
             ];
         };
     };
 } forEach ("true" configClasses (missionConfigFile >> "CfgShops"));
+
+// Group looks (uniform textures, hidden cop / medic backpacks): now,
+// whenever the inventory changes, and every few seconds in case the gear
+// changed some other way.
+{
+    player addEventHandler [_x, { [true] spawn ALife_fnc_applySkins; }];
+} forEach ["Take", "Put", "InventoryClosed"];
+[true] call ALife_fnc_applySkins;
+[] spawn {
+    private _unit = player;
+    while { alive _unit && { _unit == player } } do {
+        sleep 3;
+        [] call ALife_fnc_applySkins;
+    };
+};
 
 ["apply"] call ALife_fnc_phoneSettings;
 [player] remoteExec ["ALife_fnc_requestPhoneData", 2];

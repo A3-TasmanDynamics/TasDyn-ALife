@@ -52,6 +52,7 @@ _unit hideObjectGlobal false;
 _unit setVariable ["alife_uid", _uid];
 _unit setVariable ["alife_faction", _faction];
 _unit setVariable ["alife_name", name _unit, true]; // shown to medics reviving them
+_unit setVariable ["alife_gang", _record getOrDefault ["gang_tag", ""], true]; // gang uniform textures
 
 _record set [_faction + "_alive", true];
 // Save the destination itself: the unit's own position may not have
@@ -61,4 +62,12 @@ private _saved = ["save", [_uid, _faction + "_alive", "true", "-"]] call ALife_f
 
 diag_log format ["[ALife] %1 spawned as %2 at %3 %4 (alive saved: %5)", _uid, _faction, _key, _target, _saved];
 
-[_target, _name, ""] remoteExecCall ["ALife_fnc_spawnApproved", _owner];
+// The outfit they had (saved gear); none after dying and respawning.
+private _gear = _record getOrDefault [_faction + "_gear", []];
+private _loadout = [];
+if (_gear isEqualType []) then {
+    private _i = _gear findIf { _x isEqualType [] && { (_x param [0, ""]) isEqualTo "loadout" } };
+    if (_i >= 0) then { _loadout = (_gear select _i) param [1, []]; };
+};
+
+[_target, _name, "", _loadout] remoteExecCall ["ALife_fnc_spawnApproved", _owner];
