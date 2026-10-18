@@ -164,3 +164,36 @@ class ClothingShops
         };
     };
 };
+
+// Uniform textures by group, applied while the uniform is worn (its main
+// texture, hidden selection 0; ALife_fnc_applySkins). Placeholder cop and
+// medic textures are recoloured vanilla (tools/textures/make_placeholders.py):
+// drop the real PAAs in at the same paths under textures\uniforms\.
+//
+//   cop / medic: rows {uniform classname, texture}
+//   gang:        rows {gang tag ("" = any gang), uniform classname, texture},
+//                for civilians in a gang (the website's gangs); a row naming
+//                the player's own tag wins over a "" row
+
+class UniformTextures
+{
+    class cop
+    {
+        textures[] = {
+            {"U_Rangemaster", "textures\uniforms\cop_uniform.paa"}
+        };
+    };
+    class medic
+    {
+        textures[] = {
+            {"U_Rangemaster", "textures\uniforms\medic_uniform.paa"}
+        };
+    };
+    class gang
+    {
+        textures[] = {
+            // {"", "U_IG_Guerilla1_1", "textures\uniforms\gang_guerilla.paa"},   // every gang
+            // {"TDA", "U_IG_Guerilla1_1", "textures\uniforms\gang_tda.paa"}      // one gang, by tag
+        };
+    };
+};

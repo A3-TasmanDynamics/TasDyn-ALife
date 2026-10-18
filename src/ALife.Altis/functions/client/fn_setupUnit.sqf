@@ -58,5 +58,20 @@ if (_faction == "medic") then {
     };
 } forEach ("true" configClasses (missionConfigFile >> "CfgShops"));
 
+// Group looks (uniform textures, hidden cop / medic backpacks): now,
+// whenever the inventory changes, and every few seconds in case the gear
+// changed some other way.
+{
+    player addEventHandler [_x, { [true] spawn ALife_fnc_applySkins; }];
+} forEach ["Take", "Put", "InventoryClosed"];
+[true] call ALife_fnc_applySkins;
+[] spawn {
+    private _unit = player;
+    while { alive _unit && { _unit == player } } do {
+        sleep 3;
+        [] call ALife_fnc_applySkins;
+    };
+};
+
 ["apply"] call ALife_fnc_phoneSettings;
 [player] remoteExec ["ALife_fnc_requestPhoneData", 2];

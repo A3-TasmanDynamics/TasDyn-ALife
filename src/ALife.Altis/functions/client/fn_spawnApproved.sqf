@@ -33,6 +33,7 @@ player enableSimulation true;
 
 // Death screen, revive/shop actions, settings (once per unit).
 call ALife_fnc_setupUnit;
+[true] call ALife_fnc_applySkins; // the loadout was just (re)applied
 
 ["hide"] call ALife_fnc_loading;
 titleText [format ["<t size='1.6' font='RobotoCondensedBold'>%1</t>", _name], "PLAIN DOWN", 1.5, true, true];

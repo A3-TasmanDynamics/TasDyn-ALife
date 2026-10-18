@@ -4,7 +4,9 @@
     The vehicle shop (ui\clothingShop.hpp, ALife_VehicleShop) for a CfgShops
     placement of a CarShops shop. The selected vehicle is shown in 3D: a
     local copy (nobody else sees it) floating high above the player, slowly
-    turning, in the colour picked from the vehicle's own TextureSources.
+    turning, in the chosen skin: the vehicle's CfgVehicles textures[] for
+    the player's side if it has any (e.g. the police livery), otherwise its
+    own Arma colours (TextureSources).
     Pay cash / Pay bank asks the server (ALife_fnc_shopBuyVehicle), which
     spawns the real one at the shop's spawn point.
 
@@ -115,15 +117,20 @@ switch (_mode) do {
         _veh setDir 140;
         ALife_showroomVehicle = _veh;
 
-        // Colours: the vehicle's own texture sources.
+        // Skins: ours for this side (CfgVehicles textures[]) if there are
+        // any, otherwise the vehicle's own Arma colours. Data "tex:<row>" /
+        // "src:<TextureSources class>" / "" (as it comes).
         private _combo = _display displayCtrl IDC_COLOUR;
         lbClear _combo;
-        private _sources = "true" configClasses (configFile >> "CfgVehicles" >> _class >> "TextureSources");
-        if (_sources isEqualTo []) then {
-            _combo lbSetData [_combo lbAdd "Standard", ""];
-        } else {
-            { _combo lbSetData [_combo lbAdd getText (_x >> "displayName"), configName _x]; } forEach _sources;
+        private _side = _data getOrDefault ["faction", "civ"];
+        {
+            if ((_x select 1) in ["", _side]) then { _combo lbSetData [_combo lbAdd (_x select 0), format ["tex:%1", _forEachIndex]]; };
+        } forEach getArray (missionConfigFile >> "CfgVehicles" >> _class >> "textures");
+        if (lbSize _combo == 0) then {
+            private _sources = "true" configClasses (configFile >> "CfgVehicles" >> _class >> "TextureSources");
+            { _combo lbSetData [_combo lbAdd getText (_x >> "displayName"), "src:" + configName _x]; } forEach _sources;
         };
+        if (lbSize _combo == 0) then { _combo lbSetData [_combo lbAdd "Standard", ""]; };
         _combo lbSetCurSel 0; // paints it ("colour")
 
         // Frame it by its size.
@@ -148,9 +155,8 @@ switch (_mode) do {
         private _veh = missionNamespace getVariable ["ALife_showroomVehicle", objNull];
         if (isNull _veh) exitWith {};
         private _combo = _display displayCtrl IDC_COLOUR;
-        private _source = _combo lbData (lbCurSel _combo);
-        if (_source == "") exitWith {};
-        private _textures = getArray (configFile >> "CfgVehicles" >> typeOf _veh >> "TextureSources" >> _source >> "textures");
+        private _choice = _combo lbData (lbCurSel _combo);
+        private _textures = [typeOf _veh, _choice] call ALife_fnc_vehicleSkin;
         { _veh setObjectTexture [_forEachIndex, _x]; } forEach _textures;
     };
 

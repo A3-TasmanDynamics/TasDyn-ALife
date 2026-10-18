@@ -12,7 +12,8 @@
         0: OBJECT - the player's unit
         1: STRING - shop placement (CfgShops) of a vehicle shop
         2: STRING - classname
-        3: STRING - colour: a TextureSources class of the vehicle, "" = default
+        3: STRING - skin: "tex:<row>" (CfgVehicles textures[], for the
+                    buyer's side), "src:<TextureSources class>", or "" (as it comes)
         4: STRING - "cash" or "bank"
 */
 
@@ -48,11 +49,13 @@ private _missing = [_shop, _licences, _rank] call ALife_fnc_shopAccess;
 if (_missing == "") then { _missing = [[_licence, _level], _licences, _rank] call ALife_fnc_shopAccess; };
 if (_missing != "") exitWith { format ["%1 needed.", _missing] call _fnc_reply; };
 
-private _textures = [];
-if (_colour != "") then {
-    private _source = configFile >> "CfgVehicles" >> _class >> "TextureSources" >> _colour;
-    if (isClass _source) then { _textures = getArray (_source >> "textures"); };
+// The skin must be one this side can pick (ours for another side isn't).
+if (_colour select [0, 4] == "tex:") then {
+    private _rows = getArray (missionConfigFile >> "CfgVehicles" >> _class >> "textures");
+    private _i = parseNumber (_colour select [4]);
+    if (_i < 0 || { _i >= count _rows } || { !(((_rows select _i) select 1) in ["", _faction]) }) then { _colour = ""; };
 };
+private _textures = [_class, _colour] call ALife_fnc_vehicleSkin;
 if (_name == "") then { _name = getText (configFile >> "CfgVehicles" >> _class >> "displayName"); };
 
 // The shop's spawn point nearest the player, and it must be clear.

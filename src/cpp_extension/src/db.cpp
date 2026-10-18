@@ -263,8 +263,11 @@ bool Database::LoadPlayer(const std::string& uid, std::string& outResponse, std:
         "       p.civ_alive, p.cop_alive, p.medic_alive, "
         "       p.civ_position::text, p.cop_position::text, p.medic_position::text, "
         "       p.civ_bounty, "
-        "       p.civ_items::text, p.cop_items::text, p.medic_items::text "
+        "       p.civ_items::text, p.cop_items::text, p.medic_items::text, "
+        "       COALESCE(g.tag, ''), COALESCE(g.name, '') "
         "FROM players p LEFT JOIN staff_ranks sr ON sr.id = p.staff_rank_id "
+        "LEFT JOIN gang_members gm ON gm.player_id = p.id "
+        "LEFT JOIN gangs g ON g.id = gm.gang_id "
         "WHERE p.uid = $1",
         1, nullptr, selectParams, nullptr, nullptr, 0);
 
@@ -308,6 +311,10 @@ bool Database::LoadPlayer(const std::string& uid, std::string& outResponse, std:
     AppendRawKv(out, first, "civ_items", col(27));
     AppendRawKv(out, first, "cop_items", col(28));
     AppendRawKv(out, first, "medic_items", col(29));
+    // The player's gang (website-managed gangs / gang_members), "" if none:
+    // in-game it picks gang uniform textures (CfgClothing UniformTextures).
+    AppendStringKv(out, first, "gang_tag", col(30));
+    AppendStringKv(out, first, "gang_name", col(31));
     out += "]";
 
     PQclear(res);

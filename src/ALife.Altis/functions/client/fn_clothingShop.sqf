@@ -125,6 +125,7 @@ switch (_mode) do {
         } forEach getArray (_shop >> _key);
         // Back to what they came in wearing, then frame the right part of them.
         player setUnitLoadout ALife_clothingBase;
+        [true] call ALife_fnc_applySkins;
         call _fnc_camera;
         (_display displayCtrl IDC_DESC) ctrlSetStructuredText parseText "";
     };
@@ -145,6 +146,7 @@ switch (_mode) do {
         private _current = _loadout select _index;
         _loadout set [_index, if (_container) then { [_class, if (_current isEqualTo []) then { [] } else { _current select 1 }] } else { _class }];
         player setUnitLoadout _loadout;
+        [true] call ALife_fnc_applySkins; // the group's texture on what they're trying
 
         private _missing = [_licence, _level] call _fnc_missing;
         (_display displayCtrl IDC_DESC) ctrlSetStructuredText parseText format [
@@ -181,6 +183,9 @@ switch (_mode) do {
             camDestroy _cam;
         };
         ALife_shopCamera = objNull;
-        if (!isNil "ALife_clothingBase") then { player setUnitLoadout ALife_clothingBase; };
+        if (!isNil "ALife_clothingBase") then {
+            player setUnitLoadout ALife_clothingBase;
+            [true] call ALife_fnc_applySkins;
+        };
     };
 };

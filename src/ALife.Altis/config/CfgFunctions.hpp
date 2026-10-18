@@ -56,6 +56,7 @@ class CfgFunctions
             class messageReceived {}; // server -> client: phone message
             class shop {};
             class clothingShop {};    // clothing shop: 3D try-on
+            class applySkins {};      // uniform textures by group; hidden cop / medic backpacks
             class vehicleShop {};     // vehicle shop: 3D showroom, colours
             class vehicleLockApply {}; // set a lock where the vehicle is local            // shop window
             class revive {};          // medic: the Revive action
@@ -78,6 +79,7 @@ class CfgFunctions
             class shopAccess {};      // licence / rank a shop or shop entry needs
             class marketPrice {};     // what a market item costs right now
             class shopInfo {};        // a CfgShops placement -> its type and shop
+            class vehicleSkin {};     // a skin choice -> its textures
         };
     };
 };
