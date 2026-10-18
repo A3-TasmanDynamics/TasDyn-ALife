@@ -76,7 +76,7 @@ class ALife_Phone
             idc = 5120;
             style = 2;
             sizeEx = 0.026;
-            colorText[] = { 0.9, 0.92, 0.95, 1 };
+            colorText[] = { 0.945, 0.961, 0.976, 1 };
             text = "Messages";
             x = "safezoneX + safezoneW * 0.752";
             y = "safezoneY + safezoneH * 0.642";
@@ -112,7 +112,7 @@ class ALife_Phone
             idc = 5121;
             style = 2;
             sizeEx = 0.026;
-            colorText[] = { 0.9, 0.92, 0.95, 1 };
+            colorText[] = { 0.945, 0.961, 0.976, 1 };
             text = "Bank";
             x = "safezoneX + safezoneW * 0.8157";
             y = "safezoneY + safezoneH * 0.642";
@@ -148,7 +148,7 @@ class ALife_Phone
             idc = 5122;
             style = 2;
             sizeEx = 0.026;
-            colorText[] = { 0.9, 0.92, 0.95, 1 };
+            colorText[] = { 0.945, 0.961, 0.976, 1 };
             text = "Inventory";
             x = "safezoneX + safezoneW * 0.8793";
             y = "safezoneY + safezoneH * 0.642";
@@ -184,7 +184,7 @@ class ALife_Phone
             idc = 5123;
             style = 2;
             sizeEx = 0.026;
-            colorText[] = { 0.9, 0.92, 0.95, 1 };
+            colorText[] = { 0.945, 0.961, 0.976, 1 };
             text = "Player ID";
             x = "safezoneX + safezoneW * 0.752";
             y = "safezoneY + safezoneH * 0.767";
@@ -220,7 +220,7 @@ class ALife_Phone
             idc = 5124;
             style = 2;
             sizeEx = 0.026;
-            colorText[] = { 0.9, 0.92, 0.95, 1 };
+            colorText[] = { 0.945, 0.961, 0.976, 1 };
             text = "Perks";
             x = "safezoneX + safezoneW * 0.8157";
             y = "safezoneY + safezoneH * 0.767";
@@ -256,7 +256,7 @@ class ALife_Phone
             idc = 5125;
             style = 2;
             sizeEx = 0.026;
-            colorText[] = { 0.9, 0.92, 0.95, 1 };
+            colorText[] = { 0.945, 0.961, 0.976, 1 };
             text = "Gang";
             x = "safezoneX + safezoneW * 0.8793";
             y = "safezoneY + safezoneH * 0.767";
@@ -292,7 +292,7 @@ class ALife_Phone
             idc = 5126;
             style = 2;
             sizeEx = 0.026;
-            colorText[] = { 0.9, 0.92, 0.95, 1 };
+            colorText[] = { 0.945, 0.961, 0.976, 1 };
             text = "Keys";
             x = "safezoneX + safezoneW * 0.752";
             y = "safezoneY + safezoneH * 0.892";
@@ -328,7 +328,7 @@ class ALife_Phone
             idc = 5127;
             style = 2;
             sizeEx = 0.026;
-            colorText[] = { 0.9, 0.92, 0.95, 1 };
+            colorText[] = { 0.945, 0.961, 0.976, 1 };
             text = "Admin";
             x = "safezoneX + safezoneW * 0.8157";
             y = "safezoneY + safezoneH * 0.892";
@@ -364,7 +364,7 @@ class ALife_Phone
             idc = 5128;
             style = 2;
             sizeEx = 0.026;
-            colorText[] = { 0.9, 0.92, 0.95, 1 };
+            colorText[] = { 0.945, 0.961, 0.976, 1 };
             text = "Settings";
             x = "safezoneX + safezoneW * 0.8793";
             y = "safezoneY + safezoneH * 0.892";
@@ -454,7 +454,7 @@ class ALife_Phone
             idc = 5215;
             font = "RobotoCondensedBold";
             sizeEx = 0.024;
-            colorText[] = { 0.62, 0.66, 0.72, 1 };
+            colorText[] = { 0.545, 0.596, 0.702, 1 };
             x = "safezoneX + safezoneW * 0.757";
             y = "safezoneY + safezoneH * 0.38";
             w = "safezoneW * 0.181";
@@ -465,7 +465,7 @@ class ALife_Phone
             idc = 5216;
             font = "RobotoCondensedBold";
             sizeEx = 0.024;
-            colorText[] = { 0.62, 0.66, 0.72, 1 };
+            colorText[] = { 0.545, 0.596, 0.702, 1 };
             x = "safezoneX + safezoneW * 0.757";
             y = "safezoneY + safezoneH * 0.38";
             w = "safezoneW * 0.181";
@@ -476,7 +476,7 @@ class ALife_Phone
             idc = 5217;
             font = "RobotoCondensedBold";
             sizeEx = 0.024;
-            colorText[] = { 0.62, 0.66, 0.72, 1 };
+            colorText[] = { 0.545, 0.596, 0.702, 1 };
             x = "safezoneX + safezoneW * 0.757";
             y = "safezoneY + safezoneH * 0.38";
             w = "safezoneW * 0.181";
@@ -526,9 +526,9 @@ class ALife_Phone
             colorBackground[] = { 1, 1, 1, 0.035 };
             colorSelectBackground[] = { 0.96, 0.62, 0.04, 0.9 };
             colorSelectBackground2[] = { 0.96, 0.62, 0.04, 0.9 };
-            colorSelect[] = { 0.05, 0.05, 0.05, 1 };
-            colorSelect2[] = { 0.05, 0.05, 0.05, 1 };
-            colorPictureSelected[] = { 0.05, 0.05, 0.05, 1 };
+            colorSelect[] = { 0.118, 0.071, 0, 1 };
+            colorSelect2[] = { 0.118, 0.071, 0, 1 };
+            colorPictureSelected[] = { 0.118, 0.071, 0, 1 };
             columns[] = { 0.04, 0.72 };
             onLBSelChanged = "['select', 5211, _this select 1] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.757";
@@ -544,9 +544,9 @@ class ALife_Phone
             colorBackground[] = { 1, 1, 1, 0.035 };
             colorSelectBackground[] = { 0.96, 0.62, 0.04, 0.9 };
             colorSelectBackground2[] = { 0.96, 0.62, 0.04, 0.9 };
-            colorSelect[] = { 0.05, 0.05, 0.05, 1 };
-            colorSelect2[] = { 0.05, 0.05, 0.05, 1 };
-            colorPictureSelected[] = { 0.05, 0.05, 0.05, 1 };
+            colorSelect[] = { 0.118, 0.071, 0, 1 };
+            colorSelect2[] = { 0.118, 0.071, 0, 1 };
+            colorPictureSelected[] = { 0.118, 0.071, 0, 1 };
             columns[] = { 0.04 };
             onLBSelChanged = "['select', 5212, _this select 1] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.757";

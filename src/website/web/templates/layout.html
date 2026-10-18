@@ -4,15 +4,22 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{{if .Title}}{{.Title}} · {{end}}TasDyn-ALife</title>
+  <title>{{if .Title}}{{.Title}} · {{end}}ALife</title>
+  <link rel="icon" type="image/svg+xml" href="/static/brand/alife-a-tile.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/brand/alife-icon-32.png" />
+  <link rel="apple-touch-icon" href="/static/brand/alife-icon-180.png" />
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&display=swap" />
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body{{if .Panel}} class="panel-body"{{end}}>
   {{if not .Panel}}
   <header class="site-header">
     <a class="brand" href="/">
-      <span class="brand-mark">TD</span>
-      <span class="brand-text">TasDyn-<strong>ALife</strong></span>
+      <img class="brand-mark" src="/static/brand/alife-a.svg" alt="" width="22" height="29" />
+      <span class="brand-text">ALife</span>
     </a>
     <nav class="site-nav-main" aria-label="Main">
       <a class="nav-pill {{if hasPrefix .Path "/dashboard"}}active{{end}}" href="/dashboard" {{if hasPrefix .Path "/dashboard"}}aria-current="page"{{end}}>Dashboard</a>

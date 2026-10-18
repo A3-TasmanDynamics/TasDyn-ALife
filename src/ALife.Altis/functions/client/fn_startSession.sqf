@@ -16,7 +16,7 @@ player allowDamage false;
 player enableSimulation false;
 ALife_sessionReply = nil;
 
-["show", "Connecting to TasDyn-ALife..."] call ALife_fnc_loading;
+["show", "Connecting to ALife..."] call ALife_fnc_loading;
 
 // The server publishes these once its database is connected.
 waitUntil {

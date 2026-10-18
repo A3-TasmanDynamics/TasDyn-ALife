@@ -94,7 +94,7 @@ private _fnc_button = {
     private _ctrl = [IDC_BUTTON + _n, _top, _height, _left, _width] call _fnc_place;
     _ctrl ctrlSetText _text;
     _ctrl ctrlSetBackgroundColor ([[1, 1, 1, 0.09], [0.96, 0.62, 0.04, 1]] select _primary);
-    _ctrl ctrlSetTextColor ([[1, 1, 1, 1], [0.05, 0.05, 0.05, 1]] select _primary);
+    _ctrl ctrlSetTextColor ([[1, 1, 1, 1], [0.118, 0.071, 0, 1]] select _primary);
     _ctrl
 };
 private _fnc_card = {
@@ -108,7 +108,7 @@ private _fnc_time = {
 };
 private _fnc_status = {
     (_display displayCtrl IDC_STATUS) ctrlSetStructuredText parseText format [
-        "<t align='left' size='%3' font='RobotoCondensedBold'>%1</t><t align='right' size='%4' color='#c0c7d1'>%2</t>",
+        "<t align='left' size='%3' font='RobotoCondensedBold'>%1</t><t align='right' size='%4' color='#8b98b3'>%2</t>",
         call _fnc_time, _factionName, 24 call _fnc_px, 22 call _fnc_px];
 };
 // Players to pick from: everyone spawned in except you, optionally within range.
@@ -128,7 +128,7 @@ private _fnc_fillPlayers = {
     { _list lnbSetValue [[_list lnbAddRow [name _x call _fnc_safe], 0], _forEachIndex]; } forEach _players;
     if (_players isEqualTo []) then {
         _list lnbAddRow [_empty];
-        _list lnbSetColor [[0, 0], [0.62, 0.66, 0.72, 1]];
+        _list lnbSetColor [[0, 0], [0.545, 0.596, 0.702, 1]];
     } else {
         _list lnbSetCurSelRow ((_keep max 0) min (count _players - 1));
     };
@@ -143,7 +143,7 @@ private _fnc_comingSoon = {
     params ["_what"];
     [0, 0, 0.42] call _fnc_card;
     ([IDC_INFO, 0.03, 0.38, 0.05, 0.9] call _fnc_place) ctrlSetStructuredText parseText format [
-        "<t size='%2' color='#f5a524' font='RobotoCondensedBold'>COMING SOON</t><br/><br/><t size='%3' color='#d6dbe2'>%1</t>",
+        "<t size='%2' color='#fbbf24' font='RobotoCondensedBold'>COMING SOON</t><br/><br/><t size='%3' color='#d6dbe2'>%1</t>",
         _what, 22 call _fnc_px, 27 call _fnc_px];
 };
 
@@ -201,7 +201,7 @@ switch (_mode) do {
         private _hour = floor daytime;
         private _minute = floor ((daytime - _hour) * 60);
         (_display displayCtrl IDC_CLOCK) ctrlSetStructuredText parseText format [
-            "<t size='%4' font='RobotoCondensedLight'>%1</t><br/><t size='%4' font='RobotoCondensedLight'>%2</t><br/><t size='%5' color='#eef3f8'>%3</t>",
+            "<t size='%4' font='RobotoCondensedLight'>%1</t><br/><t size='%4' font='RobotoCondensedLight'>%2</t><br/><t size='%5' color='#f1f5f9'>%3</t>",
             _hour, (["", "0"] select (_minute < 10)) + str _minute,
             format ["%1, %2 %3", ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"] select _weekday, _day, _months select ((_month - 1) max 0)],
             64 call _fnc_px, 24 call _fnc_px];
@@ -323,8 +323,8 @@ switch (_mode) do {
                 } forEach _inbox;
                 if (_inbox isEqualTo []) then {
                     _list lnbAddRow ["No messages yet", ""];
-                    _list lnbSetColor [[0, 0], [0.62, 0.66, 0.72, 1]];
-                    _info ctrlSetStructuredText parseText format ["<t size='%1' color='#c0c7d1'>Messages you receive show up here.</t>", 26 call _fnc_px];
+                    _list lnbSetColor [[0, 0], [0.545, 0.596, 0.702, 1]];
+                    _info ctrlSetStructuredText parseText format ["<t size='%1' color='#8b98b3'>Messages you receive show up here.</t>", 26 call _fnc_px];
                 } else {
                     _list lnbSetCurSelRow ((_keep max 0) min (count _inbox - 1));
                     ["select", IDC_LIST, lnbCurSelRow _list] call ALife_fnc_phone;
@@ -335,7 +335,7 @@ switch (_mode) do {
                     private _button = _display displayCtrl (IDC_BUTTON + _n);
                     private _on = ALife_phoneChannel == _channel;
                     _button ctrlSetBackgroundColor ([[1, 1, 1, 0.09], [1, 1, 1, 0.85]] select _on);
-                    _button ctrlSetTextColor ([[1, 1, 1, 1], [0.05, 0.05, 0.05, 1]] select _on);
+                    _button ctrlSetTextColor ([[1, 1, 1, 1], [0.118, 0.071, 0, 1]] select _on);
                 } forEach [[0, "police"], [1, "ems"], [2, "player"]];
 
                 private _toPlayer = ALife_phoneChannel == "player";
@@ -376,7 +376,7 @@ switch (_mode) do {
                 } forEach _items;
                 if (_items isEqualTo []) then {
                     _list lnbAddRow ["No items", ""];
-                    _list lnbSetColor [[0, 0], [0.62, 0.66, 0.72, 1]];
+                    _list lnbSetColor [[0, 0], [0.545, 0.596, 0.702, 1]];
                 } else {
                     _list lnbSetCurSelRow ((_keep max 0) min (count _items - 1));
                 };
@@ -394,12 +394,12 @@ switch (_mode) do {
                     "<t size='%6' color='#5eead4' font='RobotoCondensedBold'>ALTIS IDENTITY CARD</t><br/>" +
                     "<t size='%7' font='RobotoCondensedBold'>%1</t><br/>" +
                     "<t size='%8' color='#d6dbe2'>%2</t><br/><br/>" +
-                    "<t size='%9' color='#c0c7d1'>Police  </t><t size='%9' font='RobotoCondensedBold'>%3</t><br/>" +
-                    "<t size='%9' color='#c0c7d1'>EMS  </t><t size='%9' font='RobotoCondensedBold'>%4</t>%5",
+                    "<t size='%9' color='#8b98b3'>Police  </t><t size='%9' font='RobotoCondensedBold'>%3</t><br/>" +
+                    "<t size='%9' color='#8b98b3'>EMS  </t><t size='%9' font='RobotoCondensedBold'>%4</t>%5",
                     name player call _fnc_safe, _factionName,
                     ["Not whitelisted", format ["Level %1", _cop]] select (_cop > 0),
                     ["Not whitelisted", format ["Level %1", _medic]] select (_medic > 0),
-                    ["", format ["<br/><t size='%2' color='#c0c7d1'>Staff  </t><t size='%2' font='RobotoCondensedBold'>%1</t>", _staffName call _fnc_safe, 25 call _fnc_px]] select (_staff != ""),
+                    ["", format ["<br/><t size='%2' color='#8b98b3'>Staff  </t><t size='%2' font='RobotoCondensedBold'>%1</t>", _staffName call _fnc_safe, 25 call _fnc_px]] select (_staff != ""),
                     22 call _fnc_px, 42 call _fnc_px, 26 call _fnc_px, 25 call _fnc_px];
 
                 private _list = _display displayCtrl IDC_LIST;
@@ -411,14 +411,14 @@ switch (_mode) do {
                 } forEach _licences;
                 if (_licences isEqualTo []) then {
                     _list lnbAddRow [format ["No %1 licences yet", toLower _factionName], ""];
-                    _list lnbSetColor [[0, 0], [0.62, 0.66, 0.72, 1]];
+                    _list lnbSetColor [[0, 0], [0.545, 0.596, 0.702, 1]];
                 };
             };
 
             case "settings": {
                 (["get"] call ALife_fnc_phoneSettings) params ["_distance", "_grass"];
                 _info ctrlSetStructuredText parseText format [
-                    "<t size='%2' color='#c0c7d1'>Your view distance is %1 m. Lower it if the game runs slowly.<br/><br/>The wallpaper shows on the home screen; apps keep the dark background.</t>", _distance, 24 call _fnc_px];
+                    "<t size='%2' color='#8b98b3'>Your view distance is %1 m. Lower it if the game runs slowly.<br/><br/>The wallpaper shows on the home screen; apps keep the dark background.</t>", _distance, 24 call _fnc_px];
                 (_display displayCtrl (IDC_BUTTON + 1)) ctrlSetText (["Grass: Off", "Grass: On"] select _grass);
             };
         };
@@ -441,7 +441,7 @@ switch (_mode) do {
             if (_row < count _inbox) then {
                 (_inbox select _row) params ["_from", "_text", "_time"];
                 (_display displayCtrl IDC_INFO) ctrlSetStructuredText parseText format [
-                    "<t size='%4' color='#c0c7d1'>%1  |  %2</t><br/><t size='%5'>%3</t>",
+                    "<t size='%4' color='#8b98b3'>%1  |  %2</t><br/><t size='%5'>%3</t>",
                     _from call _fnc_safe, _time, _text call _fnc_safe, 22 call _fnc_px, 27 call _fnc_px];
             };
         };

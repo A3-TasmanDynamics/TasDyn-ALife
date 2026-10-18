@@ -16,6 +16,9 @@
   --radius: 10px;
   --radius-sm: 6px;
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.22);
+  /* ALife brand: headlines and the wordmark in Roboto Condensed (the face
+     Arma's own UI uses), body text in the system UI face. */
+  --font-display: "Roboto Condensed", "Arial Narrow", "Segoe UI", sans-serif;
   color-scheme: dark;
 }
 
@@ -58,20 +61,21 @@ a { color: var(--amber-bright); }
   color: var(--text);
 }
 
+/* The brush A (static/brand/alife-a.svg) beside the name in the wordmark face. */
 .brand-mark {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--amber-bright), #ea580c);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 13px;
-  color: #1e1200;
+  width: auto;
+  height: 29px;
+  display: block;
 }
 
-.brand-text strong { color: var(--amber-bright); }
+.brand-text {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 23px;
+  line-height: 1;
+  letter-spacing: -0.2px;
+  color: var(--text);
+}
 
 .site-nav-main {
   display: flex;
@@ -469,7 +473,7 @@ a.stat-strip-cell:hover { background: #172036; }
 .admin-sidebar-search input { flex: 1; min-width: 0; background: transparent; border: 0; outline: none; color: var(--text); font-size: 12.5px; padding: 0; }
 .admin-sidebar-search input::placeholder { color: var(--text-dim); }
 .admin-sidebar-search label:focus-within { border-color: var(--amber); }
-.admin-sidebar-mark { width: 26px; height: 26px; border-radius: 7px; }
+.admin-sidebar-mark { width: auto; height: 25px; display: block; }
 .admin-nav-group {
   font-size: 11px;
   color: var(--text-dim);
@@ -2664,3 +2668,11 @@ textarea.dev-input { resize: vertical; min-height: 40px; }
 .dev-checklist .dev-item .dev-x { margin-right: 6px; }
 .dev-checklist .dev-reveal, .dev-checklist .dev-add-row { margin-left: 40px; }
 @media (max-width: 800px) { .dev-checklist .dev-reveal, .dev-checklist .dev-add-row { margin-left: 40px; } }
+
+/* ---------- ALife brand: display face for headlines ---------- */
+/* Headlines only: uppercase micro-labels (.card h2) stay in the body face. */
+h1, .section-title, .page-title, .status-headline,
+.devlog-card h2, .connect-band h2, .status-list-head h2, .modal-head h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+}

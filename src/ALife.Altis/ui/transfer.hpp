@@ -21,7 +21,7 @@ class ALife_Transfer
     {
         class Panel: ALife_RscBackground
         {
-            colorBackground[] = { 0.06, 0.07, 0.09, 0.95 };
+            colorBackground[] = { 0.059, 0.09, 0.165, 0.95 };
             x = "safezoneX + safezoneW * 0.27";
             y = "safezoneY + safezoneH * 0.27";
             w = "safezoneW * 0.46";
@@ -90,8 +90,8 @@ class ALife_Transfer
             colorBackground[] = { 1, 1, 1, 0.04 };
             colorSelectBackground[] = { 0.96, 0.62, 0.04, 0.9 };
             colorSelectBackground2[] = { 0.96, 0.62, 0.04, 0.9 };
-            colorSelect[] = { 0.05, 0.05, 0.05, 1 };
-            colorSelect2[] = { 0.05, 0.05, 0.05, 1 };
+            colorSelect[] = { 0.118, 0.071, 0, 1 };
+            colorSelect2[] = { 0.118, 0.071, 0, 1 };
             onLBDblClick = "['moveRow', 'container', _this select 1] call ALife_fnc_transfer";
             x = "safezoneX + safezoneW * 0.277";
             y = "safezoneY + safezoneH * 0.355";
@@ -118,7 +118,7 @@ class ALife_Transfer
             colorBackground[] = { 0.96, 0.62, 0.04, 1 };
             colorBackgroundActive[] = { 1, 0.72, 0.2, 1 };
             colorFocused[] = { 1, 0.72, 0.2, 1 };
-            colorText[] = { 0.05, 0.05, 0.05, 1 };
+            colorText[] = { 0.118, 0.071, 0, 1 };
             colorShadow[] = { 0, 0, 0, 0 };
             action = "['move', 'container', false] call ALife_fnc_transfer";
             x = "safezoneX + safezoneW * 0.331";
@@ -162,8 +162,8 @@ class ALife_Transfer
             colorBackground[] = { 1, 1, 1, 0.04 };
             colorSelectBackground[] = { 0.96, 0.62, 0.04, 0.9 };
             colorSelectBackground2[] = { 0.96, 0.62, 0.04, 0.9 };
-            colorSelect[] = { 0.05, 0.05, 0.05, 1 };
-            colorSelect2[] = { 0.05, 0.05, 0.05, 1 };
+            colorSelect[] = { 0.118, 0.071, 0, 1 };
+            colorSelect2[] = { 0.118, 0.071, 0, 1 };
             onLBDblClick = "['moveRow', 'player', _this select 1] call ALife_fnc_transfer";
             x = "safezoneX + safezoneW * 0.503";
             y = "safezoneY + safezoneH * 0.355";
@@ -191,7 +191,7 @@ class ALife_Transfer
             colorBackground[] = { 0.96, 0.62, 0.04, 1 };
             colorBackgroundActive[] = { 1, 0.72, 0.2, 1 };
             colorFocused[] = { 1, 0.72, 0.2, 1 };
-            colorText[] = { 0.05, 0.05, 0.05, 1 };
+            colorText[] = { 0.118, 0.071, 0, 1 };
             colorShadow[] = { 0, 0, 0, 0 };
             action = "['move', 'player', false] call ALife_fnc_transfer";
             x = "safezoneX + safezoneW * 0.557";
@@ -219,7 +219,7 @@ class ALife_Transfer
         {
             text = "Ctrl/Shift-click to pick several. Double-click a row to move all of it.";
             sizeEx = 0.026;
-            colorText[] = { 0.62, 0.66, 0.72, 1 };
+            colorText[] = { 0.545, 0.596, 0.702, 1 };
             x = "safezoneX + safezoneW * 0.36";
             y = "safezoneY + safezoneH * 0.677";
             w = "safezoneW * 0.365";

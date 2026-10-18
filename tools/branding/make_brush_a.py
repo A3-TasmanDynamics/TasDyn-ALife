@@ -13,6 +13,8 @@ Writes, beside this script:
     alife-a-ink.svg      the A in navy (bg), for light grounds
     alife-a-tile.svg     the app icon: navy tile, amber A with a soft glow
     alife_bot_avatar.png the Discord avatar (512 px, square; Discord crops it round)
+    alife-icon-32.png    the website favicon; alife-icon-180.png the Apple touch icon
+    alife_loadscreen.png the mission's loading picture (1024x512; -> ui/brand/*.paa)
     brush_compare.png    (--compare) screenshot | redraw | overlap
 """
 import math
@@ -145,10 +147,11 @@ def flatten(poly, scale, ox, oy):
     return outp
 
 
-def coverage(polys, size, ss=4):
-    """0..1 coverage of the union of polygons (each even-odd) on a size x size grid."""
-    cov = [[0.0] * size for _ in range(size)]
-    for row in range(size * ss):
+def coverage(polys, size, ss=4, height=None):
+    """0..1 coverage of the union of polygons (each even-odd) on a size-wide grid."""
+    height = height or size
+    cov = [[0.0] * size for _ in range(height)]
+    for row in range(height * ss):
         y = (row + 0.5) / ss
         spans = []
         for poly in polys:
@@ -178,40 +181,35 @@ def coverage(polys, size, ss=4):
 
 def blur(field, r, passes=3):
     """Box blur, separable, `passes` times (close to a Gaussian)."""
-    n = len(field)
+    h, w = len(field), len(field[0])
     f = [row[:] for row in field]
+
+    def box(line):
+        pre = [0.0]
+        for v in line:
+            pre.append(pre[-1] + v)
+        n = len(line)
+        return [(pre[min(n, j + r + 1)] - pre[max(0, j - r)]) / (2 * r + 1) for j in range(n)]
     for _ in range(passes):
-        for horiz in (True, False):
-            g = [[0.0] * n for _ in range(n)]
-            for i in range(n):
-                acc = 0.0
-                line = f[i] if horiz else [f[j][i] for j in range(n)]
-                pre = [0.0]
-                for v in line:
-                    acc += v
-                    pre.append(acc)
-                for j in range(n):
-                    lo, hi = max(0, j - r), min(n, j + r + 1)
-                    v = (pre[hi] - pre[lo]) / (2 * r + 1)
-                    if horiz:
-                        g[i][j] = v
-                    else:
-                        g[j][i] = v
-            f = g
+        f = [box(row) for row in f]
+        cols = [box([f[y][x] for y in range(h)]) for x in range(w)]
+        f = [[cols[x][y] for x in range(w)] for y in range(h)]
     return f
 
 
-def avatar(size=512):
-    scale = size * 0.68 / (MAXY - MINY)  # the A fills 68% of the height
-    ox, oy = CX - size / 2 / scale, CY - size / 2 / scale
+def avatar(size=512, height=None, fill=0.68):
+    """The A on the night gradient with its amber halo; `fill` = the A's share of the height."""
+    height = height or size
+    scale = height * fill / (MAXY - MINY)
+    ox, oy = CX - size / 2 / scale, CY - height / 2 / scale
     polys = [flatten(o, scale, ox, oy) for o in OUTLINES]
-    cov = coverage(polys, size)
-    halo = blur(cov, max(4, size // 40))
+    cov = coverage(polys, size, height=height)
+    halo = blur(cov, max(4, height // 40))
     px = []
-    for y in range(size):
+    for y in range(height):
         row = []
         for x in range(size):
-            t = min(1.0, math.hypot(x - size / 2, y - size * 0.45) / (size * 0.7))
+            t = min(1.0, math.hypot(x - size / 2, y - height * 0.45) / (max(size, height) * 0.7))
             bg = [NIGHT_GLOW[i] + (NAVY[i] - NIGHT_GLOW[i]) * t for i in range(3)]
             h = min(1.0, halo[y][x] * 0.55)
             c = [bg[i] * (1 - h) + AMBER[i] * h for i in range(3)]
@@ -258,6 +256,11 @@ if __name__ == "__main__":
         print("wrote", name)
     write_png(os.path.join(HERE, "alife_bot_avatar.png"), 512, 512, avatar(512))
     print("wrote alife_bot_avatar.png")
+    for size in (32, 180):  # favicon, Apple touch icon
+        write_png(os.path.join(HERE, "alife-icon-%d.png" % size), size, size, avatar(size))
+        print("wrote alife-icon-%d.png" % size)
+    write_png(os.path.join(HERE, "alife_loadscreen.png"), 1024, 512, avatar(1024, 512, fill=0.6))  # Arma loadScreen, 2:1
+    print("wrote alife_loadscreen.png")
     if "--compare" in sys.argv:
         shot = sys.argv[sys.argv.index("--compare") + 1]
         compare(shot, os.path.join(HERE, "brush_compare.png"))

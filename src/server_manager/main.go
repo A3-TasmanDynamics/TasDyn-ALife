@@ -17,7 +17,7 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "TasDyn ALife Server Manager",
+		Title:  "ALife Server Manager",
 		Width:  1180,
 		Height: 820,
 		AssetServer: &assetserver.Options{

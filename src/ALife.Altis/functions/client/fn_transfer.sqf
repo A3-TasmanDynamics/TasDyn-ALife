@@ -64,7 +64,7 @@ private _fnc_fill = {
     } forEach _items;
     if (lbSize _list == 0) then {
         _list lbAdd _empty;
-        _list lbSetColor [0, [0.62, 0.66, 0.72, 1]];
+        _list lbSetColor [0, [0.545, 0.596, 0.702, 1]];
     } else {
         { if (_x < lbSize _list) then { _list lbSetSelected [_x, true]; }; } forEach _keep;
     };

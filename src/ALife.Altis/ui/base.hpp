@@ -52,7 +52,7 @@ class ALife_RscBackground
     type = ALIFE_CT_STATIC;
     idc = -1;
     style = 0;
-    colorBackground[] = { 0, 0, 0, 0.85 };
+    colorBackground[] = { 0.043, 0.071, 0.125, 0.85 };
     colorText[] = { 1, 1, 1, 1 };
     font = "RobotoCondensed";
     sizeEx = 0.02;
@@ -77,7 +77,7 @@ class ALife_RscTitle: ALife_RscText
 {
     style = 2; // ST_CENTER
     sizeEx = 0.035;
-    colorBackground[] = { 0.1, 0.1, 0.1, 1 };
+    colorBackground[] = { 0.075, 0.106, 0.18, 1 };
 };
 
 class ALife_RscStructuredText
@@ -108,12 +108,12 @@ class ALife_RscButton
     type = ALIFE_CT_BUTTON;
     idc = -1;
     style = 2; // ST_CENTER
-    colorBackground[] = { 0.15, 0.15, 0.15, 1 };
-    colorBackgroundActive[] = { 0.25, 0.25, 0.25, 1 };
-    colorBackgroundDisabled[] = { 0.1, 0.1, 0.1, 1 };
+    colorBackground[] = { 0.137, 0.184, 0.278, 1 };
+    colorBackgroundActive[] = { 0.2, 0.27, 0.4, 1 };
+    colorBackgroundDisabled[] = { 0.075, 0.106, 0.18, 1 };
     colorBorder[] = { 0, 0, 0, 1 };
     colorDisabled[] = { 0.5, 0.5, 0.5, 1 };
-    colorFocused[] = { 0.25, 0.25, 0.25, 1 };
+    colorFocused[] = { 0.2, 0.27, 0.4, 1 };
     colorShadow[] = { 0, 0, 0, 1 };
     colorText[] = { 1, 1, 1, 1 };
     font = "RobotoCondensed";
@@ -141,11 +141,11 @@ class ALife_RscListBox
     font = "RobotoCondensed";
     sizeEx = 0.025;
     rowHeight = 0.04;
-    colorBackground[] = { 0.1, 0.1, 0.1, 0.9 };
-    colorSelect[] = { 1, 1, 1, 1 };
-    colorSelect2[] = { 1, 1, 1, 1 };
-    colorSelectBackground[] = { 0.2, 0.4, 0.6, 1 };
-    colorSelectBackground2[] = { 0.2, 0.4, 0.6, 1 };
+    colorBackground[] = { 0.075, 0.106, 0.18, 0.9 };
+    colorSelect[] = { 0.118, 0.071, 0, 1 };
+    colorSelect2[] = { 0.118, 0.071, 0, 1 };
+    colorSelectBackground[] = { 0.96, 0.62, 0.04, 1 };
+    colorSelectBackground2[] = { 0.96, 0.62, 0.04, 1 };
     colorText[] = { 1, 1, 1, 1 };
     colorDisabled[] = { 0.5, 0.5, 0.5, 1 };
     colorScrollbar[] = { 1, 1, 1, 1 };
@@ -188,7 +188,7 @@ class ALife_RscMap
     idc = -1;
     style = 48; // ST_PICTURE
     text = "";
-    colorBackground[] = { 0.1, 0.1, 0.1, 1 };
+    colorBackground[] = { 0.075, 0.106, 0.18, 1 };
     colorOutside[] = { 0, 0, 0, 1 };
     colorText[] = { 0, 0, 0, 1 };
     font = "TahomaB";
@@ -202,9 +202,9 @@ class ALife_RscMap
     colorMainCountlinesWater[] = { 0.491, 0.577, 0.702, 0.6 };
     colorForestBorder[] = { 0, 0, 0, 0 };
     colorRocksBorder[] = { 0, 0, 0, 0 };
-    colorPowerLines[] = { 0.1, 0.1, 0.1, 1 };
+    colorPowerLines[] = { 0.075, 0.106, 0.18, 1 };
     colorRailWay[] = { 0.8, 0.2, 0, 1 };
-    colorNames[] = { 0.1, 0.1, 0.1, 0.9 };
+    colorNames[] = { 0.075, 0.106, 0.18, 0.9 };
     colorInactive[] = { 1, 1, 1, 0.5 };
     colorLevels[] = { 0.286, 0.177, 0.094, 0.5 };
     colorTracks[] = { 0.84, 0.76, 0.65, 0.15 };
@@ -213,8 +213,8 @@ class ALife_RscMap
     colorTracksFill[] = { 0.84, 0.76, 0.65, 1 };
     colorRoadsFill[] = { 1, 1, 1, 1 };
     colorMainRoadsFill[] = { 1, 0.6, 0.4, 1 };
-    colorGrid[] = { 0.1, 0.1, 0.1, 0.6 };
-    colorGridMap[] = { 0.1, 0.1, 0.1, 0.6 };
+    colorGrid[] = { 0.075, 0.106, 0.18, 0.6 };
+    colorGridMap[] = { 0.075, 0.106, 0.18, 0.6 };
     stickX[] = { 0.2, { "Gamma", 1, 1.5 } };
     stickY[] = { 0.2, { "Gamma", 1, 1.5 } };
     widthRailWay = 4;
@@ -325,7 +325,7 @@ class ALife_RscMap
     };
     class Rock
     {
-        color[] = { 0.1, 0.1, 0.1, 0.8 };
+        color[] = { 0.075, 0.106, 0.18, 0.8 };
         icon = "\A3\ui_f\data\map\mapcontrol\rock_ca.paa";
         size = 12;
         importance = "0.5 * 12 * 0.05";
@@ -606,12 +606,12 @@ class ALife_RscListNBox
     colorText[] = { 1, 1, 1, 1 };
     colorDisabled[] = { 1, 1, 1, 0.25 };
     colorScrollbar[] = { 1, 1, 1, 1 };
-    colorSelect[] = { 0.04, 0.047, 0.055, 1 };
-    colorSelect2[] = { 0.04, 0.047, 0.055, 1 };
+    colorSelect[] = { 0.043, 0.071, 0.125, 1 };
+    colorSelect2[] = { 0.043, 0.071, 0.125, 1 };
     colorSelectBackground[] = { 0.231, 0.886, 0.702, 1 };
     colorSelectBackground2[] = { 0.231, 0.886, 0.702, 0.6 };
     colorPicture[] = { 1, 1, 1, 1 };
-    colorPictureSelected[] = { 0.04, 0.047, 0.055, 1 };
+    colorPictureSelected[] = { 0.043, 0.071, 0.125, 1 };
     colorPictureDisabled[] = { 1, 1, 1, 0.5 };
     colorBackground[] = { 0.082, 0.09, 0.102, 0.75 };
     soundSelect[] = { "", 0.1, 1 };
@@ -683,7 +683,7 @@ class ALife_RscCombo
     colorBackground[] = { 0.1, 0.11, 0.14, 1 };
     colorText[] = { 1, 1, 1, 1 };
     colorDisabled[] = { 1, 1, 1, 0.25 };
-    colorSelect[] = { 0.05, 0.05, 0.05, 1 };
+    colorSelect[] = { 0.118, 0.071, 0, 1 };
     colorSelectBackground[] = { 0.96, 0.62, 0.04, 1 };
     colorScrollbar[] = { 1, 1, 1, 1 };
     colorActive[] = { 0.96, 0.62, 0.04, 1 };
@@ -694,8 +694,8 @@ class ALife_RscCombo
     colorPictureRightSelected[] = { 1, 1, 1, 1 };
     colorPictureRightDisabled[] = { 1, 1, 1, 0.25 };
     colorTextRight[] = { 1, 1, 1, 1 };
-    colorSelectRight[] = { 0.05, 0.05, 0.05, 1 };
-    colorSelect2Right[] = { 0.05, 0.05, 0.05, 1 };
+    colorSelectRight[] = { 0.118, 0.071, 0, 1 };
+    colorSelect2Right[] = { 0.118, 0.071, 0, 1 };
     tooltipColorText[] = { 1, 1, 1, 1 };
     tooltipColorBox[] = { 1, 1, 1, 1 };
     tooltipColorShade[] = { 0, 0, 0, 0.65 };

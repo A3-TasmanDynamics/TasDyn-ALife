@@ -52,7 +52,7 @@ switch (_mode) do {
             case "cop": { "Police" }; case "medic": { "EMS" }; default { "Civilian" };
         }];
         (_display displayCtrl IDC_BALANCE) ctrlSetStructuredText parseText format [
-            "<t size='2' font='RobotoCondensedBold'>%1</t><t size='0.9' color='#c0c7d1'>  bank</t><br/><t size='1' color='#d6dbe2'>Cash on hand  </t><t size='1' font='RobotoCondensedBold'>%2</t>",
+            "<t size='2' font='RobotoCondensedBold'>%1</t><t size='0.9' color='#8b98b3'>  bank</t><br/><t size='1' color='#d6dbe2'>Cash on hand  </t><t size='1' font='RobotoCondensedBold'>%2</t>",
             _bank call _fnc_money, _cash call _fnc_money];
 
         // Everyone else who's spawned in.
@@ -63,7 +63,7 @@ switch (_mode) do {
         { _list lnbSetValue [[_list lnbAddRow [(name _x splitString "<>&") joinString ""], 0], _forEachIndex]; } forEach ALife_atmTargets;
         if (ALife_atmTargets isEqualTo []) then {
             _list lnbAddRow ["Nobody else is online"];
-            _list lnbSetColor [[0, 0], [0.62, 0.66, 0.72, 1]];
+            _list lnbSetColor [[0, 0], [0.545, 0.596, 0.702, 1]];
         } else {
             _list lnbSetCurSelRow ((_keep max 0) min (count ALife_atmTargets - 1));
         };

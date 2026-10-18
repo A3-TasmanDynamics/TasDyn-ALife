@@ -52,9 +52,9 @@ if (isNull _display) exitWith {};
 
 // [hex for the title text, RGBA for the stripe]
 (switch (_type) do {
-    case "success": { ["#4bce97", [0.29, 0.81, 0.59, 1]] };
-    case "warning": { ["#f5a524", [0.96, 0.65, 0.14, 1]] };
-    case "error": { ["#f87168", [0.97, 0.44, 0.41, 1]] };
+    case "success": { ["#22c55e", [0.29, 0.81, 0.59, 1]] };
+    case "warning": { ["#fbbf24", [0.96, 0.65, 0.14, 1]] };
+    case "error": { ["#fca5a5", [0.97, 0.44, 0.41, 1]] };
     case "message": { ["#9f8fef", [0.62, 0.56, 0.94, 1]] };
     default { ["#579dff", [0.34, 0.62, 1, 1]] };
 }) params ["_colour", "_rgba"];
@@ -79,7 +79,7 @@ _bar ctrlSetBackgroundColor _rgba;
 _body ctrlSetPosition [_x0 + safezoneW * 0.008, _top, _w - safezoneW * 0.014, safezoneH * 0.1];
 _body ctrlCommit 0;
 _body ctrlSetStructuredText parseText format [
-    "<t size='0.95' font='RobotoCondensedBold' color='%1'>%2</t><br/><t size='1' color='#eef2f6'>%3</t>",
+    "<t size='0.95' font='RobotoCondensedBold' color='%1'>%2</t><br/><t size='1' color='#f1f5f9'>%3</t>",
     _colour, (_title splitString "<>&") joinString "", _text];
 private _textH = ctrlTextHeight _body;
 private _h = _textH + safezoneH * 0.012;

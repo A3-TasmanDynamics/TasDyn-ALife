@@ -44,12 +44,12 @@ func (a RoleSyncAdapter) CurrentGroups(ctx context.Context, identity string) ([]
 
 func (a RoleSyncAdapter) AddGroup(ctx context.Context, identity, group string) error {
 	return a.Bot.session.GuildMemberRoleAdd(a.Bot.guildID, identity, group,
-		discordgo.WithContext(ctx), discordgo.WithAuditLogReason("TasDyn-ALife role sync"))
+		discordgo.WithContext(ctx), discordgo.WithAuditLogReason("ALife role sync"))
 }
 
 func (a RoleSyncAdapter) RemoveGroup(ctx context.Context, identity, group string) error {
 	return a.Bot.session.GuildMemberRoleRemove(a.Bot.guildID, identity, group,
-		discordgo.WithContext(ctx), discordgo.WithAuditLogReason("TasDyn-ALife role sync"))
+		discordgo.WithContext(ctx), discordgo.WithAuditLogReason("ALife role sync"))
 }
 
 // GuildRole is a role offered in the role-sync mapping UI.

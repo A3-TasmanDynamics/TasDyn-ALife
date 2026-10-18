@@ -117,7 +117,7 @@ func (b *Bot) statusEmbed(snap status.Snapshot) *discordgo.MessageEmbed {
 		color = 0x8b98b3
 	}
 	return &discordgo.MessageEmbed{
-		Title:       "TasDyn-ALife status",
+		Title:       "ALife status",
 		URL:         b.siteURL("/status"),
 		Description: "**" + snap.Headline + "**\n\n" + strings.Join(statusLines(snap), "\n"),
 		Color:       color,
