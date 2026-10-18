@@ -19,7 +19,7 @@ if (!isServer || { isNull _medic } || { isNull _body }) exitWith {};
 if (isRemoteExecuted && { remoteExecutedOwner != owner _medic }) exitWith {};
 
 private _owner = owner _medic;
-private _fnc_reply = { [_this] remoteExecCall ["ALife_fnc_notify", _owner]; };
+private _fnc_reply = { (if (_this isEqualType []) then { _this } else { [_this, "warning"] }) remoteExecCall ["ALife_fnc_notify", _owner]; };
 private _medicUid = getPlayerUID _medic;
 
 if ((_medic getVariable ["alife_faction", ""]) != "medic" || { !alive _medic }) exitWith {};
@@ -44,5 +44,5 @@ ALife_revives set [_uid, [getPosATL _body, getUnitLoadout _body, _body, name _me
 
 diag_log format ["[ALife] %1 (%2) revived %3 with a medkit", name _medic, _medicUid, _uid];
 [name _medic] remoteExecCall ["ALife_fnc_revived", _patientClient];
-(format ["You revived %1.", _body getVariable ["alife_name", "them"]]) call _fnc_reply;
+[format ["You revived %1.", _body getVariable ["alife_name", "them"]], "success"] call _fnc_reply;
 [_medic] call ALife_fnc_requestPhoneData;

@@ -50,7 +50,7 @@ private _fnc_fill = {
         private _row = _list lbAdd format ["%1  Cash", _cash call _fnc_money];
         _list lbSetData [_row, "cash"];
         _list lbSetValue [_row, _cash];
-        _list lbSetPicture [_row, "ui\icons\bank_ca.paa"];
+        _list lbSetPicture [_row, getText (missionConfigFile >> "CfgALife" >> "cashIcon")];
     };
     {
         _x params ["_class", "_count"];
@@ -132,7 +132,7 @@ switch (_mode) do {
         } forEach _rows;
 
         if (_entries isEqualTo [] && { _money <= 0 }) exitWith {
-            hint (if (_all) then { "There's nothing to move." } else { "Select something first (Ctrl or Shift to pick several), and enter how many." });
+            [(if (_all) then { "There's nothing to move." } else { "Select something first (Ctrl or Shift to pick several), and enter how many." }), "warning"] call ALife_fnc_toast;
         };
         if (_side == "container" && { _id == "" }) exitWith {};
         [player, _id, ["store", "take"] select (_side == "container"), _entries, _money] remoteExecCall ["ALife_fnc_containerTransfer", 2];

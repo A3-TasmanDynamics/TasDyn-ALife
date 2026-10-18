@@ -78,6 +78,13 @@ if ((_record getOrDefault ["name", ""]) != _name) then {
 
 ALife_sessions set [_uid, _record];
 
+// They're online (player_sessions -- the website's online list). Once per
+// connection, not on every respawn.
+if (!(_uid in ALife_online)) then {
+    private _result = ["session", ["start", _uid]] call ALife_fnc_extension;
+    if (_result == "OK") then { ALife_online set [_uid, true]; } else { diag_log format ["[ALife] session start for %1 failed: %2", _uid, _result]; };
+};
+
 private _options = [_record, _faction] call ALife_fnc_spawnOptions;
 private _info = [_name, _record getOrDefault [_faction + "_cash", 0], _record getOrDefault [_faction + "_bank", 0]];
 

@@ -15,6 +15,7 @@ if (!isServer) exitWith {};
 
 ALife_sessions = createHashMap; // uid -> loaded record (server only, never broadcast)
 ALife_revives = createHashMap;  // uid -> pending revive [position, loadout, body, medic name]
+ALife_online = createHashMap;   // uid -> true while connected (player_sessions row open)
 
 ALife_serverReady = false;
 publicVariable "ALife_serverReady";
@@ -32,6 +33,11 @@ publicVariable "ALife_serverStatus";
 addMissionEventHandler ["HandleDisconnect", {
     params ["_unit", "_id", "_uid", "_name"];
     diag_log format ["[ALife] %1 (%2) disconnected", _name, _uid];
+    // Close their session (the website's online list / last seen).
+    if (_uid in ALife_online) then {
+        ["session", ["end", _uid]] call ALife_fnc_extension;
+        ALife_online deleteAt _uid;
+    };
     _unit setVariable ["alife_downed", false, true]; // a body nobody's coming back to
     ALife_revives deleteAt _uid;
     // Leaving while incapacitated (on the death screen) is combat logging --
@@ -92,6 +98,8 @@ addMissionEventHandler ["EntityRespawned", {
             ALife_serverReady = true;
             publicVariable "ALife_serverReady";
             diag_log format ["[ALife] database connected (attempt %1) -- server ready", _attempt];
+            // Nobody is connected yet: close sessions left open by the last run (e.g. a crash).
+            ["session", ["reset"]] call ALife_fnc_extension;
         };
         ALife_serverStatus = format ["Waiting for the database: %1", _ping select [6]];
         publicVariable "ALife_serverStatus";

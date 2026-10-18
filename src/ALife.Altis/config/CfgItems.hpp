@@ -14,7 +14,7 @@ class CfgItems
     {
         displayName = "Medkit";
         description = "Medics use one to revive an incapacitated player.";
-        icon = "\A3\ui_f\data\igui\cfg\actions\heal_ca.paa";
+        icon = "ui\items\medkit_ca.paa"; // tools/phone_icons/make_items.py
         weight = 2;
     };
 };

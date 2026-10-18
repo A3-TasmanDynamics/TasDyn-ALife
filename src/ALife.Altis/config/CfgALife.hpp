@@ -34,6 +34,8 @@ class CfgALife
     carryWeight = 24;                   // how much a player can carry
     bagClass = "B_AssaultPack_khk";     // what dropped items look like (placeholder)
     bagLifetime = 900;                  // seconds before a dropped bag disappears
+    cashClass = "Land_Money_F";         // dropping only cash leaves a money stack instead
+    cashIcon = "ui\items\cash_ca.paa";  // cash in inventory lists
     // ATMs: every ATM on the map works -- recognised by its model or class,
     // so nothing needs placing or marking. Windows key while looking at one.
     atmModels[] = { "atm_01_f.p3d", "atm_02_f.p3d" }; // structures_f_epc: Civ\Accessories\Atm_0x_F.p3d

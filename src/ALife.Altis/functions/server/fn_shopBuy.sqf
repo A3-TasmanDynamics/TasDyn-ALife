@@ -19,7 +19,7 @@ if (!isServer || { isNull _unit }) exitWith {};
 if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith {};
 
 private _owner = owner _unit;
-private _fnc_reply = { [_this] remoteExecCall ["ALife_fnc_notify", _owner]; };
+private _fnc_reply = { (if (_this isEqualType []) then { _this } else { [_this, "warning"] }) remoteExecCall ["ALife_fnc_notify", _owner]; };
 
 private _uid = getPlayerUID _unit;
 private _record = ALife_sessions getOrDefault [_uid, createHashMap];
@@ -67,5 +67,5 @@ if (!([_uid, _faction, _class, _qty] call ALife_fnc_itemsChange)) exitWith {
 };
 
 diag_log format ["[ALife] %1 bought %2 x%3 for $%4 (%5) at %6", _uid, _class, _qty, _total, _method, _shop];
-(format ["Bought %1 x%2 for $%3.", _name, _qty, [_total] call BIS_fnc_numberText]) call _fnc_reply;
+[format ["Bought %1 x%2 for $%3.", _name, _qty, [_total] call BIS_fnc_numberText], "success"] call _fnc_reply;
 [_unit] call ALife_fnc_requestPhoneData;

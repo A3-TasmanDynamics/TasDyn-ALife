@@ -24,7 +24,7 @@ if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith {};
 if (!(_direction in ["take", "store"])) exitWith {};
 
 private _owner = owner _unit;
-private _fnc_reply = { [_this] remoteExecCall ["ALife_fnc_notify", _owner]; };
+private _fnc_reply = { (if (_this isEqualType []) then { _this } else { [_this, "warning"] }) remoteExecCall ["ALife_fnc_notify", _owner]; };
 private _uid = getPlayerUID _unit;
 private _faction = _unit getVariable ["alife_faction", ""];
 private _record = ALife_sessions getOrDefault [_uid, createHashMap];
@@ -39,7 +39,8 @@ private _cashKey = _faction + "_cash";
 private _have = createHashMapFromArray ((_record getOrDefault [_itemsKey, []]) select { _x isEqualTypeParams ["", 0] });
 private _haveSomething = ((values _have) findIf { _x > 0 }) >= 0 || { (_record getOrDefault [_cashKey, 0]) > 0 };
 if (_id == "" && { !_haveSomething }) exitWith {};
-if (_id == "") then { _id = [_unit] call ALife_fnc_containerCreateBag; };
+// Cash on its own lands as a money stack; anything with items, a bag.
+if (_id == "") then { _id = [_unit, _entries isEqualTo []] call ALife_fnc_containerCreateBag; };
 
 private _container = ALife_containers getOrDefault [_id, createHashMap];
 if (count _container == 0 || { isNull (_container get "object") }) exitWith {

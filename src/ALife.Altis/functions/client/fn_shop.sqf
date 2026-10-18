@@ -80,8 +80,8 @@ switch (_mode) do {
         private _list = _display displayCtrl IDC_LIST;
         private _row = lnbCurSelRow _list;
         private _qty = floor parseNumber ctrlText (_display displayCtrl IDC_QTY);
-        if (_row < 0) exitWith { hint "Pick an item first."; };
-        if (_qty < 1 || { _qty > 20 }) exitWith { hint "Buy between 1 and 20 at a time."; };
+        if (_row < 0) exitWith { ["Pick an item first.", "warning"] call ALife_fnc_toast; };
+        if (_qty < 1 || { _qty > 20 }) exitWith { ["Buy between 1 and 20 at a time.", "warning"] call ALife_fnc_toast; };
         [player, _shop, _list lnbData [_row, 0], _qty, _arg] remoteExec ["ALife_fnc_shopBuy", 2];
     };
 };
