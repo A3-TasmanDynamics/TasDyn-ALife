@@ -258,7 +258,7 @@ the bot and the website's "Log in with Discord". To set it up, or move to a new 
 
 1. **Create the app.** Go to [discord.com/developers/applications](https://discord.com/developers/applications)
    → **New Application**, and give it the bot's name. On **General Information**, set the App Icon
-   (`tools/branding/alife_bot_avatar.png`, made by `tools/branding/make_bot_avatar.py`) and copy the
+   (`tools/branding/alife_bot_avatar.png`, the brush A, made by `tools/branding/make_brush_a.py`) and copy the
    **Application ID**.
 2. **Bot tab.** Set the same icon. Turn **Public Bot** off, so only you can add it to servers.
    Under Privileged Gateway Intents, turn on **Server Members Intent**. Presence and Message
