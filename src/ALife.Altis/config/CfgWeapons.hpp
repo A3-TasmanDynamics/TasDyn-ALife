@@ -1,5 +1,3 @@
-// Weapon shops, in Tonic's row format (Config_Weapons) with our licence /
-// rank fields instead of condition strings. Each shop:
 //
 //   name     -- shown in the shop window
 //   side     -- "civ" / "cop" / "medic": who can use it
@@ -114,7 +112,6 @@ class WeaponShops
             {"Binocular"  , "", 150, 75, "", 0},
             {"Rangefinder", "", 500, 250, "", 2},
             {"FirstAidKit", "", 150, 75, "", 0},
-            {"ToolKit"    , "", 250, 125, "", 0},
             {"NVGoggles"  , "", 1200, 600, "", 1}
         };
     };
@@ -165,7 +162,6 @@ class WeaponShops
             {"Binocular"      , "", 150, 75, "", 0},
             {"FirstAidKit"    , "", 50, 25, "", 0},
             {"Medikit"        , "", 500, 250, "", 0},
-            {"ToolKit"        , "", 250, 125, "", 0},
             {"Chemlight_green", "", 30, 15, "", 0},
             {"NVGoggles"      , "", 1200, 600, "", 1}
         };

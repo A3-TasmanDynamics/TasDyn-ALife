@@ -77,11 +77,11 @@ class CfgItems
         icon = "ui\items\lockpick_ca.paa";
         weight = 1;
     };
-    class repairkit
+    class toolkit
     {
-        displayName = "Repair Kit";
-        description = "Patches up a damaged vehicle.";
-        icon = "ui\items\repairkit_ca.paa";
+        displayName = "Toolkit";
+        description = "Repairs a damaged vehicle.";
+        icon = "ui\items\toolkit_ca.paa";
         weight = 4;
     };
     class zipties

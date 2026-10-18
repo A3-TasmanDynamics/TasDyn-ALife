@@ -24,7 +24,7 @@ class VirtualShops
         side = "civ";
         licence = "";
         level = 0;
-        items[] = { "water", "coffee", "apple", "tbacon", "redgull", "pickaxe", "fuelcan", "lockpick", "repairkit" };
+        items[] = { "water", "coffee", "apple", "tbacon", "redgull", "pickaxe", "fuelcan", "lockpick", "toolkit" };
     };
 
     class rebel
@@ -33,7 +33,7 @@ class VirtualShops
         side = "civ";
         licence = "rebel";
         level = 0;
-        items[] = { "water", "tbacon", "lockpick", "zipties", "repairkit", "fuelcan" };
+        items[] = { "water", "tbacon", "lockpick", "zipties", "toolkit", "fuelcan" };
     };
 
     class cop
@@ -42,7 +42,7 @@ class VirtualShops
         side = "cop";
         licence = "";
         level = 0;
-        items[] = { "water", "coffee", "donut", "repairkit", "fuelcan", "spikestrip" };
+        items[] = { "water", "coffee", "donut", "toolkit", "fuelcan", "spikestrip" };
     };
 
     class medic
@@ -51,7 +51,7 @@ class VirtualShops
         side = "medic";
         licence = "";
         level = 0;
-        items[] = { "medkit", "water", "coffee", "repairkit", "fuelcan" };
+        items[] = { "medkit", "water", "coffee", "toolkit", "fuelcan" };
     };
 };
 
@@ -72,7 +72,7 @@ class CfgMarket
     class pickaxe    { buyPrice = 750; sellPrice = 375; min = 375; max = 2250; };
     class fuelcan    { buyPrice = 850; sellPrice = 425; min = 425; max = 2550; };
     class lockpick   { buyPrice = 150; sellPrice = 75; min = 75; max = 450; };
-    class repairkit  { buyPrice = 350; sellPrice = 175; min = 175; max = 1050; };
+    class toolkit    { buyPrice = 350; sellPrice = 175; min = 175; max = 1050; };
     class zipties    { buyPrice = 500; sellPrice = 250; min = 250; max = 1500; };
     class donut      { buyPrice = 25; sellPrice = 12; min = 12; max = 75; };
     class spikestrip { buyPrice = 2500; sellPrice = 1250; min = 1250; max = 7500; level = 1; };
