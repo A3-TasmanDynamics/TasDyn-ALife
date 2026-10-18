@@ -9,7 +9,7 @@
 
     Arguments:
         0: OBJECT - the player's unit
-        1: STRING - shop class (CfgShops)
+        1: STRING - shop placement (CfgShops) of a market
         2: STRING - item class
         3: NUMBER - quantity (1-20)
         4: STRING - "cash" or "bank"
@@ -26,15 +26,17 @@ private _fnc_reply = { (if (_this isEqualType []) then { _this } else { [_this, 
 private _uid = getPlayerUID _unit;
 private _record = ALife_sessions getOrDefault [_uid, createHashMap];
 private _faction = _unit getVariable ["alife_faction", ""];
-private _shopCfg = missionConfigFile >> "CfgShops" >> _shop;
+private _info = [_shop] call ALife_fnc_shopInfo;
+private _placeCfg = _info param [1, configNull];
+private _shopCfg = _info param [2, configNull]; // the VirtualShops shop
 private _itemCfg = missionConfigFile >> "CfgMarket" >> _class;
 
 if ((_record getOrDefault ["status", ""]) != "OK" || { !alive _unit } || { _faction == "" }) exitWith {};
-if (!isClass _shopCfg || { !isClass _itemCfg } || { !(_class in getArray (_shopCfg >> "items")) } || { getText (_shopCfg >> "faction") != _faction }) exitWith {
+if (_info isEqualTo [] || { (_info select 0) != "market" } || { !isClass _itemCfg } || { !(_class in getArray (_shopCfg >> "items")) } || { getText (_shopCfg >> "side") != _faction }) exitWith {
     "You can't buy that here." call _fnc_reply;
 };
-private _radius = getNumber (_shopCfg >> "radius");
-if ((getArray (_shopCfg >> "markers") findIf { _unit distance2D getMarkerPos _x <= _radius }) < 0) exitWith {
+private _radius = getNumber (_placeCfg >> "radius");
+if ((getArray (_placeCfg >> "markers") findIf { _unit distance2D getMarkerPos _x <= _radius }) < 0) exitWith {
     "You're too far from the shop." call _fnc_reply;
 };
 private _licences = (_record getOrDefault [_faction + "_licence", []]) select { _x isEqualType "" };

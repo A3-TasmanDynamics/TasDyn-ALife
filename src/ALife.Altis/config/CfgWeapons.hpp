@@ -1,366 +1,173 @@
-// Weapons, magazines, attachments and kit (map, GPS, binoculars, NVGs,
-// first aid, toolkit) sold in shops: one class per Arma classname, with what
-// it costs and who may buy it, per faction. Read with missionConfigFile >>
-// "CfgWeapons" -- the mission's own list, not Arma's configFile.
+// Weapon shops, in Tonic's row format (Config_Weapons) with our licence /
+// rank fields instead of condition strings. Each shop:
 //
-//   type          -- "weapon", "magazine", "attachment" or "item" (shop tabs)
-//   magazines[]   -- weapons: the magazines sold for it
-//   attachments[] -- weapons: the attachments sold that fit it
-//   class civ / cop / medic -- that faction can buy it:
-//     price, licence, level -- as in CfgVehicles
+//   name     -- shown in the shop window
+//   side     -- "civ" / "cop" / "medic": who can use it
+//   licence  -- needed to use the shop at all (CfgLicences key, "" = none)
+//   level    -- minimum cop_level / medic_level to use it (0 = any)
+//   items[]  -- weapons and kit (map, GPS, binoculars, NVGs, first aid...)
+//   mags[]   -- magazines
+//   accs[]   -- attachments
 //
-// Which shop sells what is in CfgShops (weapons[]).
+// Each row: {classname, "name" ("" = Arma's own), buy price, sell price,
+//            "licence" ("" = none), level (0 = any)}
+//
+// Where each shop is: CfgShops. Everything is vanilla Arma 3 or official
+// DLC (marked "DLC: <name>"); players without a DLC can still buy its gear.
 
-class CfgWeapons
+class WeaponShops
 {
-    class hgun_P07_F
+    class genstore
     {
-        type = "weapon";
-        magazines[] = { "16Rnd_9x21_Mag" };
-        attachments[] = { "optic_Yorris", "optic_MRD", "acc_flashlight_pistol", "muzzle_snds_L" };
-        class civ   { price = 1500; };
-        class cop   { price = 1500; };
+        name = "General Store";
+        side = "civ";
+        licence = "";
+        level = 0;
+        items[] = {
+            {"ItemMap"        , "", 50, 25, "", 0},
+            {"ItemCompass"    , "", 50, 25, "", 0},
+            {"ItemWatch"      , "", 50, 25, "", 0},
+            {"ItemRadio"      , "", 100, 50, "", 0},
+            {"ItemGPS"        , "", 100, 50, "", 0},
+            {"Binocular"      , "", 150, 75, "", 0},
+            {"FirstAidKit"    , "", 150, 75, "", 0},
+            {"Chemlight_green", "", 30, 15, "", 0},
+            {"NVGoggles"      , "", 2000, 1000, "", 0}
+        };
     };
-    class hgun_Rook40_F
+
+    class gun
     {
-        type = "weapon";
-        magazines[] = { "16Rnd_9x21_Mag" };
-        attachments[] = { "optic_Yorris", "optic_MRD", "acc_flashlight_pistol", "muzzle_snds_L" };
-        class civ   { price = 2000; };
+        name = "Gun Store";
+        side = "civ";
+        licence = "gun";
+        level = 0;
+        items[] = {
+            {"hgun_P07_F"            , "", 1500, 750, "", 0},
+            {"hgun_Rook40_F"         , "", 2000, 1000, "", 0},
+            {"hgun_ACPC2_F"          , "", 3500, 1750, "", 0},
+            {"hgun_Pistol_heavy_02_F", "", 4500, 2250, "", 0},  // Zubr
+            {"hgun_Pistol_heavy_01_F", "", 6000, 3000, "", 0},  // 4-five
+            {"hgun_PDW2000_F"        , "", 15000, 7500, "", 0}
+        };
+        mags[] = {
+            {"16Rnd_9x21_Mag"     , "", 25, 12, "", 0},
+            {"9Rnd_45ACP_Mag"     , "", 45, 22, "", 0},
+            {"6Rnd_45ACP_Cylinder", "", 50, 25, "", 0},
+            {"11Rnd_45ACP_Mag"    , "", 60, 30, "", 0},
+            {"30Rnd_9x21_Mag"     , "", 75, 37, "", 0}
+        };
+        accs[] = {
+            {"optic_Yorris"         , "", 1000, 500, "", 0},
+            {"optic_MRD"            , "", 1000, 500, "", 0},
+            {"optic_ACO_grn_smg"    , "", 1500, 750, "", 0},
+            {"acc_flashlight_pistol", "", 500, 250, "", 0}
+        };
     };
-    class hgun_ACPC2_F
+
+    class rebel
     {
-        type = "weapon";
-        magazines[] = { "9Rnd_45ACP_Mag" };
-        attachments[] = { "optic_Yorris", "optic_MRD", "acc_flashlight_pistol", "muzzle_snds_L" };
-        class civ   { price = 3500; };
+        name = "Rebel Armoury";
+        side = "civ";
+        licence = "rebel";
+        level = 0;
+        items[] = {
+            {"arifle_AKS_F"   , "", 22000, 11000, "", 0},  // DLC: Apex
+            {"arifle_TRG20_F" , "", 25000, 12500, "", 0},
+            {"arifle_TRG21_F" , "", 30000, 15000, "", 0},
+            {"arifle_Mk20_F"  , "", 30000, 15000, "", 0},
+            {"arifle_Katiba_F", "", 35000, 17500, "", 0},
+            {"arifle_AKM_F"   , "", 40000, 20000, "", 0},  // DLC: Apex
+            {"srifle_DMR_01_F", "", 50000, 25000, "", 0},  // Rahim
+            {"srifle_EBR_F"   , "", 60000, 30000, "", 0}   // Mk18 ABR
+        };
+        mags[] = {
+            {"30Rnd_545x39_Mag_F"        , "", 150, 75, "", 0},
+            {"30Rnd_556x45_Stanag"       , "", 125, 62, "", 0},
+            {"30Rnd_65x39_caseless_green", "", 275, 137, "", 0},
+            {"30Rnd_762x39_Mag_F"        , "", 300, 150, "", 0},
+            {"10Rnd_762x54_Mag"          , "", 500, 250, "", 0},
+            {"20Rnd_762x51_Mag"          , "", 500, 250, "", 0}
+        };
+        accs[] = {
+            {"optic_ACO_grn"  , "", 3500, 1750, "", 0},
+            {"optic_Holosight", "", 3600, 1800, "", 0},
+            {"optic_MRCO"     , "", 7500, 3750, "", 0},
+            {"optic_Arco"     , "", 8000, 4000, "", 0},
+            {"optic_Hamr"     , "", 8500, 4250, "", 0},
+            {"acc_flashlight" , "", 1000, 500, "", 0}
+        };
     };
-    class hgun_Pistol_heavy_02_F  // Zubr
+
+    class cop_kit
     {
-        type = "weapon";
-        magazines[] = { "6Rnd_45ACP_Cylinder" };
-        attachments[] = { "optic_Yorris", "optic_MRD", "acc_flashlight_pistol", "muzzle_snds_L" };
-        class civ   { price = 4500; };
+        name = "Police Supplies";
+        side = "cop";
+        licence = "";
+        level = 0;
+        items[] = {
+            {"ItemMap"    , "", 50, 25, "", 0},
+            {"ItemCompass", "", 50, 25, "", 0},
+            {"ItemWatch"  , "", 50, 25, "", 0},
+            {"ItemRadio"  , "", 100, 50, "", 0},
+            {"ItemGPS"    , "", 100, 50, "", 0},
+            {"Binocular"  , "", 150, 75, "", 0},
+            {"Rangefinder", "", 500, 250, "", 2},
+            {"FirstAidKit", "", 150, 75, "", 0},
+            {"ToolKit"    , "", 250, 125, "", 0},
+            {"NVGoggles"  , "", 1200, 600, "", 1}
+        };
     };
-    class hgun_Pistol_heavy_01_F  // 4-five
+
+    class cop
     {
-        type = "weapon";
-        magazines[] = { "11Rnd_45ACP_Mag" };
-        attachments[] = { "optic_Yorris", "optic_MRD", "acc_flashlight_pistol", "muzzle_snds_L" };
-        class civ   { price = 6000; };
+        name = "Police Armoury";
+        side = "cop";
+        licence = "";
+        level = 0;
+        items[] = {
+            {"hgun_P07_snds_F", "Taser", 2000, 1000, "", 0},
+            {"hgun_P07_F"     , "", 1500, 750, "", 0},
+            {"SMG_05_F"       , "", 12000, 6000, "", 1},  // DLC: Apex (Protector)
+            {"SMG_02_F"       , "", 15000, 7500, "", 2},  // Sting
+            {"arifle_MXC_F"   , "", 30000, 15000, "", 3},
+            {"arifle_MX_F"    , "", 35000, 17500, "", 4},
+            {"arifle_MXM_F"   , "", 45000, 22500, "", 5}
+        };
+        mags[] = {
+            {"16Rnd_9x21_Mag"          , "", 25, 12, "", 0},
+            {"30Rnd_9x21_Mag_SMG_02"   , "", 75, 37, "", 1},
+            {"30Rnd_65x39_caseless_mag", "", 130, 65, "", 3}
+        };
+        accs[] = {
+            {"muzzle_snds_L"        , "", 650, 325, "", 0},
+            {"acc_flashlight"       , "", 750, 375, "", 1},
+            {"acc_flashlight_pistol", "", 500, 250, "", 0},
+            {"optic_Holosight_blk_F", "", 1200, 600, "", 1},
+            {"optic_MRCO"           , "", 2500, 1250, "", 3},
+            {"optic_Arco"           , "", 2500, 1250, "", 3},
+            {"optic_Hamr"           , "", 3500, 1750, "", 4}
+        };
     };
-    class hgun_PDW2000_F
+
+    class medic_kit
     {
-        type = "weapon";
-        magazines[] = { "30Rnd_9x21_Mag" };
-        attachments[] = { "optic_Yorris", "optic_MRD", "acc_flashlight_pistol", "muzzle_snds_L" };
-        class civ   { price = 15000; };
-    };
-    class arifle_AKS_F
-    {
-        type = "weapon";
-        magazines[] = { "30Rnd_545x39_Mag_F" };
-        attachments[] = { "optic_ACO_grn", "optic_Holosight", "optic_Holosight_blk_F", "optic_MRCO", "optic_Arco", "optic_Hamr", "acc_flashlight" };
-        class civ   { price = 22000; };
-    };
-    class arifle_TRG20_F
-    {
-        type = "weapon";
-        magazines[] = { "30Rnd_556x45_Stanag" };
-        attachments[] = { "optic_ACO_grn", "optic_Holosight", "optic_Holosight_blk_F", "optic_MRCO", "optic_Arco", "optic_Hamr", "acc_flashlight" };
-        class civ   { price = 25000; };
-    };
-    class arifle_TRG21_F
-    {
-        type = "weapon";
-        magazines[] = { "30Rnd_556x45_Stanag" };
-        attachments[] = { "optic_ACO_grn", "optic_Holosight", "optic_Holosight_blk_F", "optic_MRCO", "optic_Arco", "optic_Hamr", "acc_flashlight" };
-        class civ   { price = 30000; };
-    };
-    class arifle_Mk20_F
-    {
-        type = "weapon";
-        magazines[] = { "30Rnd_556x45_Stanag" };
-        attachments[] = { "optic_ACO_grn", "optic_Holosight", "optic_Holosight_blk_F", "optic_MRCO", "optic_Arco", "optic_Hamr", "acc_flashlight" };
-        class civ   { price = 30000; };
-    };
-    class arifle_Katiba_F
-    {
-        type = "weapon";
-        magazines[] = { "30Rnd_65x39_caseless_green" };
-        attachments[] = { "optic_ACO_grn", "optic_Holosight", "optic_Holosight_blk_F", "optic_MRCO", "optic_Arco", "optic_Hamr", "acc_flashlight" };
-        class civ   { price = 35000; };
-    };
-    class arifle_AKM_F  // DLC: Apex
-    {
-        type = "weapon";
-        magazines[] = { "30Rnd_762x39_Mag_F" };
-        attachments[] = { "optic_ACO_grn", "optic_Holosight", "optic_Holosight_blk_F", "optic_MRCO", "optic_Arco", "optic_Hamr", "acc_flashlight" };
-        class civ   { price = 40000; };
-    };
-    class srifle_DMR_01_F  // Rahim
-    {
-        type = "weapon";
-        magazines[] = { "10Rnd_762x54_Mag" };
-        attachments[] = { "optic_ACO_grn", "optic_Holosight", "optic_Holosight_blk_F", "optic_MRCO", "optic_Arco", "optic_Hamr", "acc_flashlight" };
-        class civ   { price = 50000; };
-    };
-    class srifle_EBR_F  // Mk18 ABR
-    {
-        type = "weapon";
-        magazines[] = { "20Rnd_762x51_Mag" };
-        attachments[] = { "optic_ACO_grn", "optic_Holosight", "optic_Holosight_blk_F", "optic_MRCO", "optic_Arco", "optic_Hamr", "acc_flashlight" };
-        class civ   { price = 60000; };
-    };
-    class hgun_P07_snds_F
-    {
-        type = "weapon";
-        magazines[] = { "16Rnd_9x21_Mag" };
-        attachments[] = { "optic_Yorris", "optic_MRD", "acc_flashlight_pistol", "muzzle_snds_L" };
-        class cop   { price = 2000; };
-    };
-    class SMG_05_F  // DLC: Apex (Protector)
-    {
-        type = "weapon";
-        magazines[] = { "30Rnd_9x21_Mag_SMG_02" };
-        attachments[] = { "optic_ACO_grn_smg", "optic_Holosight", "optic_Holosight_blk_F", "optic_ACO_grn", "acc_flashlight", "muzzle_snds_L" };
-        class cop   { price = 12000; level = 1; };
-    };
-    class SMG_02_F  // Sting
-    {
-        type = "weapon";
-        magazines[] = { "30Rnd_9x21_Mag_SMG_02" };
-        attachments[] = { "optic_ACO_grn_smg", "optic_Holosight", "optic_Holosight_blk_F", "optic_ACO_grn", "acc_flashlight", "muzzle_snds_L" };
-        class cop   { price = 15000; level = 2; };
-    };
-    class arifle_MXC_F
-    {
-        type = "weapon";
-        magazines[] = { "30Rnd_65x39_caseless_mag" };
-        attachments[] = { "optic_ACO_grn", "optic_Holosight", "optic_Holosight_blk_F", "optic_MRCO", "optic_Arco", "optic_Hamr", "acc_flashlight" };
-        class cop   { price = 30000; level = 3; };
-    };
-    class arifle_MX_F
-    {
-        type = "weapon";
-        magazines[] = { "30Rnd_65x39_caseless_mag" };
-        attachments[] = { "optic_ACO_grn", "optic_Holosight", "optic_Holosight_blk_F", "optic_MRCO", "optic_Arco", "optic_Hamr", "acc_flashlight" };
-        class cop   { price = 35000; level = 4; };
-    };
-    class arifle_MXM_F
-    {
-        type = "weapon";
-        magazines[] = { "30Rnd_65x39_caseless_mag" };
-        attachments[] = { "optic_ACO_grn", "optic_Holosight", "optic_Holosight_blk_F", "optic_MRCO", "optic_Arco", "optic_Hamr", "acc_flashlight" };
-        class cop   { price = 45000; level = 5; };
-    };
-    class 16Rnd_9x21_Mag
-    {
-        type = "magazine";
-        class civ   { price = 25; };
-        class cop   { price = 25; };
-    };
-    class 9Rnd_45ACP_Mag
-    {
-        type = "magazine";
-        class civ   { price = 45; };
-    };
-    class 6Rnd_45ACP_Cylinder
-    {
-        type = "magazine";
-        class civ   { price = 50; };
-    };
-    class 11Rnd_45ACP_Mag
-    {
-        type = "magazine";
-        class civ   { price = 60; };
-    };
-    class 30Rnd_9x21_Mag
-    {
-        type = "magazine";
-        class civ   { price = 75; };
-    };
-    class 30Rnd_545x39_Mag_F
-    {
-        type = "magazine";
-        class civ   { price = 150; };
-    };
-    class 30Rnd_556x45_Stanag
-    {
-        type = "magazine";
-        class civ   { price = 125; };
-    };
-    class 30Rnd_65x39_caseless_green
-    {
-        type = "magazine";
-        class civ   { price = 275; };
-    };
-    class 30Rnd_762x39_Mag_F
-    {
-        type = "magazine";
-        class civ   { price = 300; };
-    };
-    class 10Rnd_762x54_Mag
-    {
-        type = "magazine";
-        class civ   { price = 500; };
-    };
-    class 20Rnd_762x51_Mag
-    {
-        type = "magazine";
-        class civ   { price = 500; };
-    };
-    class 30Rnd_9x21_Mag_SMG_02
-    {
-        type = "magazine";
-        class cop   { price = 75; level = 1; };
-    };
-    class 30Rnd_65x39_caseless_mag
-    {
-        type = "magazine";
-        class cop   { price = 130; level = 3; };
-    };
-    class optic_Yorris
-    {
-        type = "attachment";
-        class civ   { price = 1000; };
-    };
-    class optic_MRD
-    {
-        type = "attachment";
-        class civ   { price = 1000; };
-    };
-    class optic_ACO_grn_smg
-    {
-        type = "attachment";
-        class civ   { price = 1500; };
-    };
-    class acc_flashlight_pistol
-    {
-        type = "attachment";
-        class civ   { price = 500; };
-        class cop   { price = 500; };
-    };
-    class optic_ACO_grn
-    {
-        type = "attachment";
-        class civ   { price = 3500; };
-    };
-    class optic_Holosight
-    {
-        type = "attachment";
-        class civ   { price = 3600; };
-    };
-    class optic_MRCO
-    {
-        type = "attachment";
-        class civ   { price = 7500; };
-        class cop   { price = 2500; level = 3; };
-    };
-    class optic_Arco
-    {
-        type = "attachment";
-        class civ   { price = 8000; };
-        class cop   { price = 2500; level = 3; };
-    };
-    class optic_Hamr
-    {
-        type = "attachment";
-        class civ   { price = 8500; };
-        class cop   { price = 3500; level = 4; };
-    };
-    class acc_flashlight  // Clothing
-    {
-        type = "attachment";
-        class civ   { price = 1000; };
-        class cop   { price = 750; level = 1; };
-    };
-    class muzzle_snds_L
-    {
-        type = "attachment";
-        class cop   { price = 650; };
-    };
-    class optic_Holosight_blk_F
-    {
-        type = "attachment";
-        class cop   { price = 1200; level = 1; };
-    };
-    class ItemMap
-    {
-        type = "item";
-        class civ   { price = 50; };
-        class cop   { price = 50; };
-        class medic { price = 50; };
-    };
-    class ItemCompass
-    {
-        type = "item";
-        class civ   { price = 50; };
-        class cop   { price = 50; };
-        class medic { price = 50; };
-    };
-    class ItemWatch
-    {
-        type = "item";
-        class civ   { price = 50; };
-        class cop   { price = 50; };
-        class medic { price = 50; };
-    };
-    class ItemRadio
-    {
-        type = "item";
-        class civ   { price = 100; };
-        class cop   { price = 100; };
-        class medic { price = 100; };
-    };
-    class ItemGPS
-    {
-        type = "item";
-        class civ   { price = 100; };
-        class cop   { price = 100; };
-        class medic { price = 100; };
-    };
-    class Binocular
-    {
-        type = "item";
-        class civ   { price = 150; };
-        class cop   { price = 150; };
-        class medic { price = 150; };
-    };
-    class Rangefinder
-    {
-        type = "item";
-        class cop   { price = 500; level = 2; };
-    };
-    class FirstAidKit
-    {
-        type = "item";
-        class civ   { price = 150; };
-        class cop   { price = 150; };
-        class medic { price = 50; };
-    };
-    class ToolKit
-    {
-        type = "item";
-        class cop   { price = 250; };
-        class medic { price = 250; };
-    };
-    class NVGoggles
-    {
-        type = "item";
-        class civ   { price = 2000; };
-        class cop   { price = 1200; level = 1; };
-        class medic { price = 1200; level = 1; };
-    };
-    class Medikit
-    {
-        type = "item";
-        class medic { price = 500; };
-    };
-    class Chemlight_green
-    {
-        type = "item";
-        class civ   { price = 30; };
-        class medic { price = 30; };
+        name = "EMS Equipment";
+        side = "medic";
+        licence = "";
+        level = 0;
+        items[] = {
+            {"ItemMap"        , "", 50, 25, "", 0},
+            {"ItemCompass"    , "", 50, 25, "", 0},
+            {"ItemWatch"      , "", 50, 25, "", 0},
+            {"ItemRadio"      , "", 100, 50, "", 0},
+            {"ItemGPS"        , "", 100, 50, "", 0},
+            {"Binocular"      , "", 150, 75, "", 0},
+            {"FirstAidKit"    , "", 50, 25, "", 0},
+            {"Medikit"        , "", 500, 250, "", 0},
+            {"ToolKit"        , "", 250, 125, "", 0},
+            {"Chemlight_green", "", 30, 15, "", 0},
+            {"NVGoggles"      , "", 1200, 600, "", 1}
+        };
     };
 };

@@ -1,372 +1,166 @@
-// Clothing sold in shops: uniforms, vests, headgear, glasses and
-// backpacks, one class per Arma classname, with what it costs and who may
-// buy it, per faction.
+// Clothing shops, in Tonic's row format (Config_Clothing) with our licence
+// / rank fields instead of condition strings. Each shop:
 //
-//   slot   -- "uniform", "vest", "headgear", "goggles" or "backpack"
-//   class civ / cop / medic -- that faction can buy it:
-//     price, licence, level -- as in CfgVehicles
+//   name     -- shown in the shop window
+//   side     -- "civ" / "cop" / "medic": who can use it
+//   licence  -- needed to use the shop at all (CfgLicences key, "" = none)
+//   level    -- minimum cop_level / medic_level to use it (0 = any)
+//   uniforms[], headgear[], goggles[], vests[], backpacks[]
 //
-// Which shop sells what is in CfgShops (clothing[]).
+// Each row: {classname, "name" ("" = Arma's own), price,
+//            "licence" ("" = none), level (0 = any)}
+//
+// Where each shop is: CfgShops.
 
-class CfgClothing
+class ClothingShops
 {
-    class U_IG_Guerilla1_1
-    {
-        slot = "uniform";
-        class civ   { price = 5000; };
-    };
-    class U_IG_Guerilla2_1
-    {
-        slot = "uniform";
-        class civ   { price = 5500; };
-    };
-    class U_IG_Guerilla3_1
-    {
-        slot = "uniform";
-        class civ   { price = 5500; };
-    };
-    class U_I_G_resistanceLeader_F
-    {
-        slot = "uniform";
-        class civ   { price = 11500; };
-    };
-    class U_I_G_Story_Protagonist_F
-    {
-        slot = "uniform";
-        class civ   { price = 7500; };
-    };
-    class U_O_SpecopsUniform_ocamo
-    {
-        slot = "uniform";
-        class civ   { price = 17500; };
-    };
-    class V_BandollierB_cbr
-    {
-        slot = "vest";
-        class civ   { price = 4500; };
-    };
-    class V_HarnessO_brn
-    {
-        slot = "vest";
-        class civ   { price = 7500; };
-    };
-    class V_TacVest_khk
-    {
-        slot = "vest";
-        class civ   { price = 12500; };
-    };
-    class V_PlateCarrierIA1_dgtl
-    {
-        slot = "vest";
-        class civ   { price = 25000; };
-    };
-    class H_Shemag_olive
-    {
-        slot = "headgear";
-        class civ   { price = 850; };
-    };
-    class H_ShemagOpen_khk
-    {
-        slot = "headgear";
-        class civ   { price = 800; };
-    };
-    class H_Bandanna_khk
-    {
-        slot = "headgear";
-        class civ   { price = 500; };
-    };
-    class H_Booniehat_khk
-    {
-        slot = "headgear";
-        class civ   { price = 650; };
-    };
-    class G_Balaclava_blk
-    {
-        slot = "goggles";
-        class civ   { price = 2000; };
-    };
-    class G_Bandanna_blk
-    {
-        slot = "goggles";
-        class civ   { price = 1500; };
-    };
-    class B_FieldPack_oli
-    {
-        slot = "backpack";
-        class civ   { price = 3000; };
-    };
-    class B_Kitbag_cbr
-    {
-        slot = "backpack";
-        class civ   { price = 4500; };
-    };
-    class B_Carryall_oli
-    {
-        slot = "backpack";
-        class civ   { price = 6500; };
-    };
-    class U_C_Poloshirt_blue
-    {
-        slot = "uniform";
-        class civ   { price = 250; };
-    };
-    class U_C_Poloshirt_burgundy
-    {
-        slot = "uniform";
-        class civ   { price = 275; };
-    };
-    class U_C_Poloshirt_redwhite
-    {
-        slot = "uniform";
-        class civ   { price = 150; };
-    };
-    class U_C_Poloshirt_salmon
-    {
-        slot = "uniform";
-        class civ   { price = 175; };
-    };
-    class U_C_Poloshirt_stripped
-    {
-        slot = "uniform";
-        class civ   { price = 125; };
-    };
-    class U_C_Poloshirt_tricolour
-    {
-        slot = "uniform";
-        class civ   { price = 350; };
-    };
-    class U_C_Commoner1_1
-    {
-        slot = "uniform";
-        class civ   { price = 200; };
-    };
-    class U_C_WorkerCoveralls
-    {
-        slot = "uniform";
-        class civ   { price = 450; };
-    };
-    class U_C_HunterBody_grn
-    {
-        slot = "uniform";
-        class civ   { price = 1500; };
-    };
-    class U_C_Journalist
-    {
-        slot = "uniform";
-        class civ   { price = 1200; };
-    };
-    class U_OrestesBody
-    {
-        slot = "uniform";
-        class civ   { price = 1100; };
-    };
-    class U_Rangemaster
-    {
-        slot = "uniform";
-        class civ   { price = 1250; };
-        class cop   { price = 25; };
-        class medic { price = 25; };
-    };
-    class U_C_Scientist
-    {
-        slot = "uniform";
-        class civ   { price = 900; };
-    };
-    class U_C_man_sport_1_F  // DLC: Apex
-    {
-        slot = "uniform";
-        class civ   { price = 500; };
-    };
-    class U_C_Man_casual_1_F  // DLC: Apex
-    {
-        slot = "uniform";
-        class civ   { price = 600; };
-    };
-    class U_C_Mechanic_01_F  // DLC: Laws of War
-    {
-        slot = "uniform";
-        class civ   { price = 700; };
-    };
-    class H_Cap_red
-    {
-        slot = "headgear";
-        class civ   { price = 100; };
-    };
-    class H_Cap_blu
-    {
-        slot = "headgear";
-        class civ   { price = 100; };
-    };
-    class H_Cap_grn
-    {
-        slot = "headgear";
-        class civ   { price = 100; };
-    };
-    class H_Cap_blk
-    {
-        slot = "headgear";
-        class civ   { price = 100; };
-        class medic { price = 25; };
-    };
-    class H_Bandanna_gry
-    {
-        slot = "headgear";
-        class civ   { price = 150; };
-    };
-    class H_Hat_brown
-    {
-        slot = "headgear";
-        class civ   { price = 250; };
-    };
-    class H_Hat_tan
-    {
-        slot = "headgear";
-        class civ   { price = 250; };
-    };
-    class H_StrawHat
-    {
-        slot = "headgear";
-        class civ   { price = 225; };
-    };
-    class H_Booniehat_tan  // Glasses
-    {
-        slot = "headgear";
-        class civ   { price = 300; };
-    };
-    class G_Shades_Black
-    {
-        slot = "goggles";
-        class civ   { price = 50; };
-        class cop   { price = 50; };
-    };
-    class G_Shades_Blue
-    {
-        slot = "goggles";
-        class civ   { price = 50; };
-    };
-    class G_Sport_Blackred
-    {
-        slot = "goggles";
-        class civ   { price = 75; };
-    };
-    class G_Squares
-    {
-        slot = "goggles";
-        class civ   { price = 50; };
-    };
-    class G_Aviator
-    {
-        slot = "goggles";
-        class civ   { price = 100; };
-        class cop   { price = 50; };
-        class medic { price = 50; };
-    };
-    class G_Spectacles  // Backpacks
-    {
-        slot = "goggles";
-        class civ   { price = 50; };
-    };
-    class B_AssaultPack_cbr
-    {
-        slot = "backpack";
-        class civ   { price = 2500; };
-    };
-    class B_AssaultPack_blk
-    {
-        slot = "backpack";
-        class civ   { price = 2500; };
-        class cop   { price = 500; };
-        class medic { price = 500; };
-    };
-    class B_FieldPack_cbr
-    {
-        slot = "backpack";
-        class civ   { price = 3000; };
-    };
-    class B_Carryall_cbr
-    {
-        slot = "backpack";
-        class civ   { price = 6500; };
-    };
-    class U_B_GEN_Soldier_F  // DLC: Apex (Gendarmerie)
-    {
-        slot = "uniform";
-        class cop   { price = 150; level = 1; };
-    };
-    class U_B_GEN_Commander_F  // DLC: Apex
-    {
-        slot = "uniform";
-        class cop   { price = 250; level = 3; };
-    };
-    class V_Rangemaster_belt
-    {
-        slot = "vest";
-        class cop   { price = 800; };
-    };
-    class V_TacVest_blk_POLICE
-    {
-        slot = "vest";
-        class cop   { price = 1500; level = 1; };
-    };
-    class V_TacVest_gen_F  // DLC: Apex
-    {
-        slot = "vest";
-        class cop   { price = 2000; level = 2; };
-    };
-    class V_PlateCarrier1_blk
-    {
-        slot = "vest";
-        class cop   { price = 3500; level = 4; };
-    };
-    class H_Cap_police
-    {
-        slot = "headgear";
-        class cop   { price = 25; };
-    };
-    class H_MilCap_gen_F  // DLC: Apex
-    {
-        slot = "headgear";
-        class cop   { price = 50; level = 1; };
-    };
-    class H_Beret_gen_F  // DLC: Apex
-    {
-        slot = "headgear";
-        class cop   { price = 75; level = 3; };
-    };
-    class B_FieldPack_blk
-    {
-        slot = "backpack";
-        class cop   { price = 1000; level = 1; };
-        class medic { price = 1000; level = 1; };
-    };
-    class B_Carryall_blk
-    {
-        slot = "backpack";
-        class cop   { price = 1500; level = 3; };
-    };
-    class U_C_Paramedic_01_F
-    {
-        slot = "uniform";
-        class medic { price = 25; };
-    };
-    class V_Safety_yellow_F  // DLC: Laws of War
-    {
-        slot = "vest";
-        class medic { price = 100; };
-    };
-    class V_Safety_orange_F  // DLC: Laws of War
-    {
-        slot = "vest";
-        class medic { price = 100; };
-    };
-    class H_Cap_marshal
-    {
-        slot = "headgear";
-        class medic { price = 25; level = 2; };
-    };
-    class B_Messenger_Gray_F  // DLC: Contact
-    {
-        slot = "backpack";
-        class medic { price = 750; };
+    class civ
+    {
+        name = "Clothing Store";
+        side = "civ";
+        licence = "";
+        level = 0;
+        uniforms[] = {
+            {"U_C_Poloshirt_blue"     , "", 250, "", 0},
+            {"U_C_Poloshirt_burgundy" , "", 275, "", 0},
+            {"U_C_Poloshirt_redwhite" , "", 150, "", 0},
+            {"U_C_Poloshirt_salmon"   , "", 175, "", 0},
+            {"U_C_Poloshirt_stripped" , "", 125, "", 0},
+            {"U_C_Poloshirt_tricolour", "", 350, "", 0},
+            {"U_C_Commoner1_1"        , "", 200, "", 0},
+            {"U_C_WorkerCoveralls"    , "", 450, "", 0},
+            {"U_C_HunterBody_grn"     , "", 1500, "", 0},
+            {"U_C_Journalist"         , "", 1200, "", 0},
+            {"U_OrestesBody"          , "", 1100, "", 0},
+            {"U_Rangemaster"          , "", 1250, "", 0},
+            {"U_C_Scientist"          , "", 900, "", 0},
+            {"U_C_man_sport_1_F"      , "", 500, "", 0},  // DLC: Apex
+            {"U_C_Man_casual_1_F"     , "", 600, "", 0},  // DLC: Apex
+            {"U_C_Mechanic_01_F"      , "", 700, "", 0}   // DLC: Laws of War
+        };
+        headgear[] = {
+            {"H_Cap_red"      , "", 100, "", 0},
+            {"H_Cap_blu"      , "", 100, "", 0},
+            {"H_Cap_grn"      , "", 100, "", 0},
+            {"H_Cap_blk"      , "", 100, "", 0},
+            {"H_Bandanna_gry" , "", 150, "", 0},
+            {"H_Hat_brown"    , "", 250, "", 0},
+            {"H_Hat_tan"      , "", 250, "", 0},
+            {"H_StrawHat"     , "", 225, "", 0},
+            {"H_Booniehat_tan", "", 300, "", 0}
+        };
+        goggles[] = {
+            {"G_Shades_Black"  , "", 50, "", 0},
+            {"G_Shades_Blue"   , "", 50, "", 0},
+            {"G_Sport_Blackred", "", 75, "", 0},
+            {"G_Squares"       , "", 50, "", 0},
+            {"G_Aviator"       , "", 100, "", 0},
+            {"G_Spectacles"    , "", 50, "", 0}
+        };
+        backpacks[] = {
+            {"B_AssaultPack_cbr", "", 2500, "", 0},
+            {"B_AssaultPack_blk", "", 2500, "", 0},
+            {"B_FieldPack_cbr"  , "", 3000, "", 0},
+            {"B_Kitbag_cbr"     , "", 4500, "", 0},
+            {"B_Carryall_cbr"   , "", 6500, "", 0}
+        };
+    };
+
+    class rebel
+    {
+        name = "Rebel Clothing";
+        side = "civ";
+        licence = "rebel";
+        level = 0;
+        uniforms[] = {
+            {"U_IG_Guerilla1_1"         , "", 5000, "", 0},
+            {"U_IG_Guerilla2_1"         , "", 5500, "", 0},
+            {"U_IG_Guerilla3_1"         , "", 5500, "", 0},
+            {"U_I_G_resistanceLeader_F" , "", 11500, "", 0},
+            {"U_I_G_Story_Protagonist_F", "", 7500, "", 0},
+            {"U_O_SpecopsUniform_ocamo" , "", 17500, "", 0}
+        };
+        headgear[] = {
+            {"H_Shemag_olive"  , "", 850, "", 0},
+            {"H_ShemagOpen_khk", "", 800, "", 0},
+            {"H_Bandanna_khk"  , "", 500, "", 0},
+            {"H_Booniehat_khk" , "", 650, "", 0}
+        };
+        goggles[] = {
+            {"G_Balaclava_blk", "", 2000, "", 0},
+            {"G_Bandanna_blk" , "", 1500, "", 0}
+        };
+        vests[] = {
+            {"V_BandollierB_cbr"     , "", 4500, "", 0},
+            {"V_HarnessO_brn"        , "", 7500, "", 0},
+            {"V_TacVest_khk"         , "", 12500, "", 0},
+            {"V_PlateCarrierIA1_dgtl", "", 25000, "", 0}
+        };
+        backpacks[] = {
+            {"B_FieldPack_oli", "", 3000, "", 0},
+            {"B_Kitbag_cbr"   , "", 4500, "", 0},
+            {"B_Carryall_oli" , "", 6500, "", 0}
+        };
+    };
+
+    class cop
+    {
+        name = "Police Uniforms";
+        side = "cop";
+        licence = "";
+        level = 0;
+        uniforms[] = {
+            {"U_Rangemaster"      , "", 25, "", 0},
+            {"U_B_GEN_Soldier_F"  , "", 150, "", 1},  // DLC: Apex (Gendarmerie)
+            {"U_B_GEN_Commander_F", "", 250, "", 3}   // DLC: Apex
+        };
+        headgear[] = {
+            {"H_Cap_police"  , "", 25, "", 0},
+            {"H_MilCap_gen_F", "", 50, "", 1},  // DLC: Apex
+            {"H_Beret_gen_F" , "", 75, "", 3}   // DLC: Apex
+        };
+        goggles[] = {
+            {"G_Aviator"     , "", 50, "", 0},
+            {"G_Shades_Black", "", 50, "", 0}
+        };
+        vests[] = {
+            {"V_Rangemaster_belt"  , "", 800, "", 0},
+            {"V_TacVest_blk_POLICE", "", 1500, "", 1},
+            {"V_TacVest_gen_F"     , "", 2000, "", 2},  // DLC: Apex
+            {"V_PlateCarrier1_blk" , "", 3500, "", 4}
+        };
+        backpacks[] = {
+            {"B_AssaultPack_blk", "", 500, "", 0},
+            {"B_FieldPack_blk"  , "", 1000, "", 1},
+            {"B_Carryall_blk"   , "", 1500, "", 3}
+        };
+    };
+
+    class medic
+    {
+        name = "EMS Uniforms";
+        side = "medic";
+        licence = "";
+        level = 0;
+        uniforms[] = {
+            {"U_C_Paramedic_01_F", "", 25, "", 0},  // DLC: Laws of War
+            {"U_Rangemaster"     , "", 25, "", 0}
+        };
+        headgear[] = {
+            {"H_Cap_blk"    , "", 25, "", 0},
+            {"H_Cap_marshal", "", 25, "", 2}
+        };
+        goggles[] = {
+            {"G_Aviator", "", 50, "", 0}
+        };
+        vests[] = {
+            {"V_Safety_yellow_F", "", 100, "", 0},  // DLC: Laws of War
+            {"V_Safety_orange_F", "", 100, "", 0}   // DLC: Laws of War
+        };
+        backpacks[] = {
+            {"B_AssaultPack_blk" , "", 500, "", 0},
+            {"B_Messenger_Gray_F", "", 750, "", 0},  // DLC: Contact
+            {"B_FieldPack_blk"   , "", 1000, "", 1}
+        };
     };
 };

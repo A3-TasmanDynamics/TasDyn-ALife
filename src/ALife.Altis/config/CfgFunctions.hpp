@@ -70,6 +70,7 @@ class CfgFunctions
             class isAtm {};           // is this object an ATM (any on the map)
             class shopAccess {};      // licence / rank a shop or shop entry needs
             class marketPrice {};     // what a market item costs right now
+            class shopInfo {};        // a CfgShops placement -> its type and shop
         };
     };
 };

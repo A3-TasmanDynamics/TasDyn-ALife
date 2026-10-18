@@ -2,7 +2,8 @@
     ALife_fnc_market (server)
 
     The dynamic market for virtual items (CfgMarket.hpp). The server keeps
-    the current price of every item in ALife_market (class -> price):
+    the current buy price of every item in ALife_market (class -> price);
+    the sell price moves with it (ALife_fnc_marketPrice):
 
       - "init": base prices from CfgMarket, then the saved prices from the
         database (market_prices) on top, so prices carry over restarts. Then
@@ -47,7 +48,7 @@ switch (_mode) do {
     case "init": {
         ALife_market = createHashMap;
         {
-            ALife_market set [configName _x, getNumber (_x >> "price")];
+            ALife_market set [configName _x, getNumber (_x >> "buyPrice")];
         } forEach ("true" configClasses _cfg);
 
         private _saved = ["market", ["load"]] call ALife_fnc_extension;
@@ -76,7 +77,7 @@ switch (_mode) do {
                 private _changed = false;
                 {
                     private _current = ALife_market get _x;
-                    private _base = getNumber (_cfg >> _x >> "price");
+                    private _base = getNumber (_cfg >> _x >> "buyPrice");
                     private _gap = _base - _current;
                     if (abs _gap >= 0.01) then {
                         private _new = _current + _gap * ([_x, "recovery"] call _setting);

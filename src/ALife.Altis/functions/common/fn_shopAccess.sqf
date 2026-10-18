@@ -6,8 +6,8 @@
     to grey things out and by the server to refuse them.
 
     Arguments:
-        0: CONFIG - a CfgShops shop, a CfgMarket item, or a faction block
-                    (class civ / cop / medic) in CfgVehicles / CfgWeapons / CfgClothing
+        0: CONFIG or ARRAY - a shop or CfgMarket item (its licence / level
+                    fields), or a Tonic row's [licence, level]
         1: ARRAY  - the player's licences (CfgLicences keys)
         2: NUMBER - the player's rank (cop_level / medic_level; 0 for civs)
 
@@ -15,15 +15,23 @@
         STRING - "" if allowed, otherwise what's missing (e.g. "Firearms Licence")
 */
 
-params [["_cfg", configNull, [configNull]], ["_licences", [], [[]]], ["_level", 0, [0]]];
+params [["_cfg", configNull, [configNull, []]], ["_licences", [], [[]]], ["_level", 0, [0]]];
 
-private _licence = getText (_cfg >> "licence");
+private _need = 0;
+private _licence = "";
+if (_cfg isEqualType []) then {
+    _cfg params [["_l", "", [""]], ["_n", 0, [0]]];
+    _licence = _l;
+    _need = _n;
+} else {
+    _licence = getText (_cfg >> "licence");
+    _need = getNumber (_cfg >> "level");
+};
 if (_licence != "" && { !(_licence in _licences) }) exitWith {
     private _name = getText (missionConfigFile >> "CfgLicences" >> _licence >> "displayName");
     [_name, _licence] select (_name == "")
 };
 
-private _need = getNumber (_cfg >> "level");
 if (_level < _need) exitWith { format ["Rank %1", _need] };
 
 ""

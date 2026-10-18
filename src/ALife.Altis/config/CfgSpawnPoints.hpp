@@ -35,4 +35,20 @@ class CfgSpawnPoints
         class athira          { displayName = "Athira Hospital"; description = "Central Altis."; marker = "spawn_medic_athira"; radius = 10; };
         class pyrgos          { displayName = "Pyrgos Hospital"; description = "South-east."; marker = "spawn_medic_pyrgos"; radius = 10; };
     };
+
+    class rebel
+    {
+        class kavala { displayName = "Kavala"; description = "The capital. Shops, jobs and the main square."; marker = "spawn_civ_kavala"; radius = 15; };
+        class athira { displayName = "Athira"; description = "Central Altis."; marker = "spawn_civ_athira"; radius = 25; };
+        class pyrgos { displayName = "Pyrgos"; description = "South-east coast."; marker = "spawn_civ_pyrgos"; radius = 25; };
+        class sofia  { displayName = "Sofia"; description = "The far north-east."; marker = "spawn_civ_sofia"; radius = 25; };
+    };
+
+    class cartel
+    {
+        class kavala { displayName = "Kavala"; description = "The capital. Shops, jobs and the main square."; marker = "spawn_civ_kavala"; radius = 15; };
+        class athira { displayName = "Athira"; description = "Central Altis."; marker = "spawn_civ_athira"; radius = 25; };
+        class pyrgos { displayName = "Pyrgos"; description = "South-east coast."; marker = "spawn_civ_pyrgos"; radius = 25; };
+        class sofia  { displayName = "Sofia"; description = "The far north-east."; marker = "spawn_civ_sofia"; radius = 25; };
+    };
 };

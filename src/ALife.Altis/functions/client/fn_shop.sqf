@@ -1,8 +1,9 @@
 /*
     ALife_fnc_shop (client)
 
-    A shop window (ui\shop.hpp) for one CfgShops entry. Shows each item it
-    sells (items[]) at its current market price (ALife_fnc_marketPrice,
+    A market window (ui\shop.hpp) for one CfgShops placement of a
+    VirtualShops shop. Shows each item it sells (items[]) at its current
+    market price (ALife_fnc_marketPrice,
     re-read on every refresh, e.g. after a purchase) and how many you have; Pay cash / Pay bank ask the server to buy
     (ALife_fnc_shopBuy), which checks everything again and answers with a
     notice and fresh phone data (refreshing this window).
@@ -26,7 +27,7 @@ params ["_mode", ["_arg", ""]];
 
 private _display = findDisplay IDD_SHOP;
 private _shop = missionNamespace getVariable ["ALife_shopClass", ""];
-private _cfg = missionConfigFile >> "CfgShops" >> _shop;
+private _cfg = ([_shop] call ALife_fnc_shopInfo) param [2, configNull]; // the VirtualShops shop
 private _data = missionNamespace getVariable ["ALife_phone", createHashMap];
 private _fnc_money = { "$" + ([_this] call BIS_fnc_numberText) };
 // What this player lacks for a shop / entry config ("" = nothing).
@@ -37,8 +38,9 @@ private _fnc_missing = {
 
 switch (_mode) do {
     case "open": {
-        if (!isNull _display || { !isClass (missionConfigFile >> "CfgShops" >> _arg) }) exitWith {};
-        private _missing = (missionConfigFile >> "CfgShops" >> _arg) call _fnc_missing;
+        private _info = [_arg] call ALife_fnc_shopInfo;
+        if (!isNull _display || { _info isEqualTo [] } || { (_info select 0) != "market" }) exitWith {};
+        private _missing = (_info select 2) call _fnc_missing;
         if (_missing != "") exitWith { [format ["%1 needed to use this shop.", _missing], "warning"] call ALife_fnc_toast; };
         ALife_shopClass = _arg;
         createDialog "ALife_Shop";
@@ -47,7 +49,7 @@ switch (_mode) do {
 
     case "onLoad": {
         _display = _arg;
-        (_display displayCtrl IDC_TITLE) ctrlSetText toUpper getText (_cfg >> "displayName");
+        (_display displayCtrl IDC_TITLE) ctrlSetText toUpper getText (_cfg >> "name");
         private _list = _display displayCtrl IDC_LIST;
         lnbClear _list;
         {
