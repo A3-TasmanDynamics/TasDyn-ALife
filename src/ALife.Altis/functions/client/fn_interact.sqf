@@ -25,6 +25,7 @@ private _isBag = !isNull _target && { _target in (missionNamespace getVariable [
 private _isVehicle = !isNull _target && { alive _target } && { _target isKindOf "LandVehicle" || { _target isKindOf "Air" } || { _target isKindOf "Ship" } };
 
 if ((_isBag && { player distance _target < 4 }) || { _isVehicle && { player distance _target < 8 } }) then {
+    if (_isBag) then { player playActionNow "PutDown"; }; // reach down to it
     [player, _target] remoteExecCall ["ALife_fnc_containerOpen", 2];
 } else {
     ["openGround"] call ALife_fnc_transfer;

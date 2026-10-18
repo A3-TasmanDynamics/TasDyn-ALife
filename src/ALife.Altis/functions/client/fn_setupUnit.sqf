@@ -6,6 +6,7 @@
       - the death screen when this unit goes down
       - medics: the Revive action on downed players
       - shop actions for your faction (e.g. Medical Supplies at hospitals)
+      - Repair / Refuel / Pick the lock on a vehicle, with the item
       - your view settings (phone -> Settings)
 */
 
@@ -57,6 +58,18 @@ if (_faction == "medic") then {
         };
     };
 } forEach ("true" configClasses (missionConfigFile >> "CfgShops"));
+
+// Items that work on a vehicle: an action when you're looking at one
+// within 5 m and carry the item (same as Use in the inventory).
+{
+    _x params ["_item", "_label", ["_extra", "true"]];
+    player addAction [
+        format ["<t color='#fbbf24'>%1</t>", _label],
+        { [_this select 3] spawn ALife_fnc_useItem; },
+        _item, 4, true, true, "",
+        format ["alive player && { vehicle player == player } && { isNil 'ALife_using' } && { !isNull cursorObject } && { player distance cursorObject < 5 } && { (['LandVehicle', 'Air', 'Ship'] findIf { cursorObject isKindOf _x }) >= 0 } && { (((missionNamespace getVariable ['ALife_phone', createHashMap]) getOrDefault ['items', []]) findIf { (_x select 0) == '%1' && { (_x select 1) > 0 } }) >= 0 } && { %2 }", _item, _extra]
+    ];
+} forEach [["toolkit", "Repair (Toolkit)"], ["fuelcan", "Refuel (Fuel Can)"], ["lockpick", "Pick the lock (Lockpick)", "locked cursorObject >= 2"]];
 
 // Group looks (uniform textures, hidden cop / medic backpacks): now,
 // whenever the inventory changes, and every few seconds in case the gear
