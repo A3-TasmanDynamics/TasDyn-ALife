@@ -1,7 +1,8 @@
 /*
     ALife_fnc_useItem (client, scheduled)
 
-    The Use button (phone Inventory, the Windows-key inventory): uses one
+    The Use button (phone Inventory, the Windows-key inventory) and the
+    vehicle menu (Repair / Refuel / Pick the lock): uses one
     of a virtual item, as its CfgItems `use` says -- eat / drink, heal
     yourself, repair / refuel / lockpick the vehicle you're next to. A
     progress bar runs for its `useTime` (ui\progress.hpp); for anything
@@ -11,9 +12,11 @@
 
     Arguments:
         0: STRING - item class (CfgItems)
+        1: OBJECT - the vehicle (optional; else the one you're looking at
+                    or the nearest within 6 m)
 */
 
-params [["_class", "", [""]]];
+params [["_class", "", [""]], ["_vehicle", objNull, [objNull]]];
 
 if (!hasInterface || { !isNil "ALife_using" } || { !isNil "ALife_reviving" }) exitWith {};
 private _cfg = missionConfigFile >> "CfgItems" >> _class;
@@ -26,13 +29,14 @@ if (!alive player || { player getVariable ["alife_downed", false] }) exitWith {}
 
 private _have = 0;
 { if ((_x select 0) == _class) then { _have = _x select 1; }; } forEach ((missionNamespace getVariable ["ALife_phone", createHashMap]) getOrDefault ["items", []]);
-if (_have < 1) exitWith { [format ["You don't have a %1.", _name], "warning"] call ALife_fnc_toast; };
+if (_have < 1) exitWith { [format ["You need a %1 for that.", _name], "warning"] call ALife_fnc_toast; };
 
 // The vehicle you're looking at, or the nearest one within 5 m.
 private _target = objNull;
 if (_use in ["repair", "refuel", "lockpick"]) then {
     if (vehicle player != player) exitWith {};
     private _types = ["LandVehicle", "Air", "Ship"];
+    if (!isNull _vehicle && { player distance _vehicle <= 8 }) exitWith { _target = _vehicle; };
     if (!isNull cursorObject && { (_types findIf { cursorObject isKindOf _x }) >= 0 } && { player distance cursorObject <= 6 }) then {
         _target = cursorObject;
     } else {

@@ -4,9 +4,7 @@
     Runs each time you're placed in the world (spawn menu or revive) --
     a respawn gives you a new unit, so this sets it up again:
       - the death screen when this unit goes down
-      - medics: the Revive action on downed players
-      - shop actions for your faction (e.g. Medical Supplies at hospitals)
-      - Repair / Refuel / Pick the lock on a vehicle, with the item
+      - group looks (uniform textures, hidden backpacks)
       - your view settings (phone -> Settings)
 */
 
@@ -15,7 +13,6 @@ if (player getVariable ["alife_setUp", false]) exitWith {};
 player setVariable ["alife_setUp", true];
 
 ALife_spawned = true;
-private _faction = missionNamespace getVariable ["ALife_faction", "civ"];
 
 player addEventHandler ["Killed", {
     params ["_unit", "_killer", "_instigator"];
@@ -24,52 +21,8 @@ player addEventHandler ["Killed", {
     ["start", _unit, _killer, _instigator] call ALife_fnc_deathScreen;
 }];
 
-if (_faction == "medic") then {
-    player addAction [
-        "<t color='#22c55e'>Revive</t>",
-        { ["start", cursorObject] spawn ALife_fnc_revive; },
-        nil, 10, true, true, "",
-        "alive player && { vehicle player == player } && { isNil 'ALife_reviving' } && { !isNull cursorObject } && { cursorObject getVariable ['alife_downed', false] } && { player distance cursorObject < 3.5 }"
-    ];
-};
-
-// Shops for this faction: one "Open <shop>" action per placement (CfgShops),
-// shown near any of its markers. Markets, clothing and vehicle shops for
-// now; weapon shops come later.
-{
-    private _info = [configName _x] call ALife_fnc_shopInfo;
-    if (_info isNotEqualTo []) then {
-        _info params ["_type", "_place", "_shop"];
-        if (_type in ["market", "clothing", "vehicles"] && { getText (_shop >> "side") == _faction }) then {
-            private _spots = getArray (_place >> "markers") apply { getMarkerPos _x };
-            player addAction [
-                format ["<t color='#fbbf24'>Open %1</t>", getText (_shop >> "name")],
-                {
-                    private _place = _this select 3;
-                    switch (getText (missionConfigFile >> "CfgShops" >> _place >> "type")) do {
-                        case "clothing": { ["open", _place] call ALife_fnc_clothingShop; };
-                        case "vehicles": { ["open", _place] call ALife_fnc_vehicleShop; };
-                        default { ["open", _place] call ALife_fnc_shop; };
-                    };
-                },
-                configName _place, 5, true, true, "",
-                format ["alive player && { vehicle player == player } && { (%1 findIf { player distance2D _x <= %2 }) >= 0 }", _spots, getNumber (_place >> "radius")]
-            ];
-        };
-    };
-} forEach ("true" configClasses (missionConfigFile >> "CfgShops"));
-
-// Items that work on a vehicle: an action when you're looking at one
-// within 5 m and carry the item (same as Use in the inventory).
-{
-    _x params ["_item", "_label", ["_extra", "true"]];
-    player addAction [
-        format ["<t color='#fbbf24'>%1</t>", _label],
-        { [_this select 3] spawn ALife_fnc_useItem; },
-        _item, 4, true, true, "",
-        format ["alive player && { vehicle player == player } && { isNil 'ALife_using' } && { !isNull cursorObject } && { player distance cursorObject < 5 } && { (['LandVehicle', 'Air', 'Ship'] findIf { cursorObject isKindOf _x }) >= 0 } && { (((missionNamespace getVariable ['ALife_phone', createHashMap]) getOrDefault ['items', []]) findIf { (_x select 0) == '%1' && { (_x select 1) > 0 } }) >= 0 } && { %2 }", _item, _extra]
-    ];
-} forEach [["toolkit", "Repair (Toolkit)"], ["fuelcan", "Refuel (Fuel Can)"], ["lockpick", "Pick the lock (Lockpick)", "locked cursorObject >= 2"]];
+// No scroll-wheel actions: reviving, shops and vehicles are all on the
+// Windows key (ALife_fnc_interact).
 
 // Group looks (uniform textures, hidden cop / medic backpacks): now,
 // whenever the inventory changes, and every few seconds in case the gear

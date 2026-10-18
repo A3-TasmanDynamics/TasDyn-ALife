@@ -53,7 +53,7 @@ Respawning takes you back through the spawn menu (`onPlayerRespawn.sqf`).
 ### Revive
 
 Medics revive downed players with a **medkit** (a virtual item). Look at the body and use
-**Revive** (scroll menu): an 8-second action with a progress bar, cancelled if you move away. When
+**Revive** (Windows key on a downed player, then Revive): an 8-second action with a progress bar, cancelled if you move away. When
 it finishes the server checks the medic has a medkit, uses one, and the downed player gets up where
 they fell, with their gear, at 50% health (`reviveTime` / `reviveHealth` in `config/CfgALife.hpp`).
 Flow: `ALife_fnc_revive` (medic) → `ALife_fnc_requestRevive` (server) → `ALife_fnc_revived`
@@ -123,7 +123,7 @@ buttons ($100 / $500 / $1,000 / $5,000), **Deposit**, **Withdraw**, **Deposit al
   `tools/phone_icons/make_items.py`. Saved per faction in
   `players.<faction>_items`.
 - Shops: `config/CfgShops.hpp`. **Medical Supplies** (medics only) at the three hospital spawn
-  markers: Medkit $250, paid by cash or bank. Use **Open shop** in the scroll menu there.
+  markers: Medkit $250, paid by cash or bank. Press **Windows** there and pick the shop.
 - Money: bank payments and transfers go through the extension's `bank` command (the
   `bank_transactions` ledger); cash uses the `*_cash` delta save. Nobody starts with money yet —
   staff can add some on the website (player profile → bank adjustment).

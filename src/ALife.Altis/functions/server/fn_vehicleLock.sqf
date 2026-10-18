@@ -1,7 +1,8 @@
 /*
     ALife_fnc_vehicleLock (server, called by the client: U near your vehicle)
 
-    Locks or unlocks a vehicle for its owner (alife_owner = their Steam UID).
+    Locks or unlocks a vehicle for its owner (alife_owner = their Steam UID)
+    or someone they gave a key to (alife_keys).
     `lock` only works where the vehicle is local, so the change is applied
     there (the server, or whoever is driving).
 
@@ -15,7 +16,8 @@ params [["_unit", objNull, [objNull]], ["_vehicle", objNull, [objNull]]];
 if (!isServer || { isNull _unit } || { isNull _vehicle }) exitWith {};
 if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith {};
 if (!alive _unit || { !alive _vehicle } || { _unit distance _vehicle > 15 }) exitWith {};
-if ((_vehicle getVariable ["alife_owner", ""]) != getPlayerUID _unit) exitWith {
+private _uid = getPlayerUID _unit;
+if ((_vehicle getVariable ["alife_owner", ""]) != _uid && { !(_uid in (_vehicle getVariable ["alife_keys", []])) }) exitWith {
     ["You don't have the keys to this vehicle.", "warning"] remoteExecCall ["ALife_fnc_notify", owner _unit];
 };
 
