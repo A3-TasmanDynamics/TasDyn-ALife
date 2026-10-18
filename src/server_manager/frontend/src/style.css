@@ -108,6 +108,9 @@ html, body {
   min-width: 0;
 }
 
+/* The wordmark: the A in the logo's amber, "Life" in white (text). */
+.wordmark-a { color: var(--amber-bright); }
+
 .brand-title {
   font-size: 14px;
   font-weight: 700;
