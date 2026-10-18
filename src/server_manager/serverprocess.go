@@ -128,6 +128,15 @@ func armaStart() (launchSpec, error) {
 	if err := os.MkdirAll(profileDir, 0o755); err != nil {
 		return launchSpec{}, fmt.Errorf("create profile dir: %w", err)
 	}
+	// The difficulty options server.cfg's "Custom" reads (third person on --
+	// see serverProfile). -name=alife_server looks for it here.
+	userDir := filepath.Join(profileDir, "Users", "alife_server")
+	if err := os.MkdirAll(userDir, 0o755); err != nil {
+		return launchSpec{}, fmt.Errorf("create profile dir: %w", err)
+	}
+	if err := os.WriteFile(filepath.Join(userDir, "alife_server.Arma3Profile"), []byte(serverProfile), 0o644); err != nil {
+		return launchSpec{}, fmt.Errorf("write server profile: %w", err)
+	}
 
 	cmd := exec.Command(exePath,
 		"-config=server.cfg",
