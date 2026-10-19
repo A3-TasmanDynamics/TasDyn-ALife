@@ -37,6 +37,7 @@ class CfgFunctions
             class shopSell {};       // client -> server: sell to a trader
             class requestGather {};  // client -> server: gather a resource (timed)
             class requestProcess {}; // client -> server: process resources (timed)
+            class buyLicence {};     // client -> server: buy a processing licence at its processor
             class containerGet {};   // the container (bag / vehicle trunk) behind an object
             class containerCreateBag {}; // drop a bag at a player's feet
             class containerSend {};  // send a player a container's contents

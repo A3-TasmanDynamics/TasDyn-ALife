@@ -27,6 +27,7 @@ class CfgRemoteExec
         class ALife_fnc_shopSell { allowedTargets = 2; };
         class ALife_fnc_requestGather { allowedTargets = 2; };
         class ALife_fnc_requestProcess { allowedTargets = 2; };
+        class ALife_fnc_buyLicence { allowedTargets = 2; };
         class ALife_fnc_completeRevive { allowedTargets = 2; };
         class ALife_fnc_containerOpen { allowedTargets = 2; };
         class ALife_fnc_containerTransfer { allowedTargets = 2; };

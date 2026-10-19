@@ -39,7 +39,8 @@ class CfgProcessing
     //   to[]       -- {{item, count}, ...} made per batch
     //   time       -- seconds per batch (everything you carry is processed in one go)
     //   maxTime    -- the whole job never takes longer than this
-    //   licence    -- CfgLicences key that makes it free ("" = always free)
+    //   licence    -- CfgLicences key that makes it free ("" = always free); it's
+//                 sold at the processor (CfgLicences price / payment)
     //   fee        -- dollars per batch without that licence (taken from cash)
     //   markers[]  -- point markers: a worker stands at each one
 //   radius     -- how close to the worker you must be
