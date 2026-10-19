@@ -27,13 +27,14 @@
 #define IDC_LINES 5704
 #define IDC_ACCENT 5705
 #define IDC_CENTRE 5706
+#define IDC_RIM 5707
 #define IDC_DIM 5709
 #define IDC_SLICE 5710
 // Sizes in pixels on a 1080p screen (scaled with the resolution); the
-// images are 128 px across, the ring 30-58.5 of that, the centre 27.5.
-#define WHEEL_R 210
-#define CENTRE_R (27.5 / 64 * WHEEL_R)
-#define SLICE_R (44.25 / 64 * WHEEL_R)
+// images are 128 px across, the ring 27-61 of that (make_radial.py).
+#define WHEEL_R 200
+#define CENTRE_R (27 / 64 * WHEEL_R)
+#define SLICE_R (44 / 64 * WHEEL_R)
 
 params ["_mode", ["_a", ""], ["_b", []], ["_c", ""]];
 
@@ -80,27 +81,25 @@ switch (_mode) do {
             private _ctrl = _display displayCtrl _x;
             _ctrl ctrlSetPosition [_cx - _r * pixelW, _cy - _r * pixelH, 2 * _r * pixelW, 2 * _r * pixelH];
             _ctrl ctrlCommit 0;
-        } forEach [IDC_RING, IDC_WEDGE, IDC_LINES, IDC_ACCENT, IDC_CENTRE];
-        (_display displayCtrl IDC_WEDGE) ctrlSetText format ["ui\radial\wedge_%1_ca.paa", _n];
+        } forEach [IDC_RING, IDC_WEDGE, IDC_LINES, IDC_ACCENT, IDC_CENTRE, IDC_RIM];
         (_display displayCtrl IDC_LINES) ctrlSetText format ["ui\radial\lines_%1_ca.paa", _n];
-        (_display displayCtrl IDC_ACCENT) ctrlSetText format ["ui\radial\accent_%1_ca.paa", _n];
         { (_display displayCtrl _x) ctrlShow false; } forEach [IDC_WEDGE, IDC_ACCENT];
 
         private _label = _display displayCtrl IDC_LABEL;
-        private _lw = CENTRE_R * 1.6 * _k;
-        _label ctrlSetPosition [_cx - _lw / 2 * pixelW, _cy - 34 * _k * pixelH, _lw * pixelW, 72 * _k * pixelH];
+        private _lw = CENTRE_R * 1.7 * _k;
+        _label ctrlSetPosition [_cx - _lw / 2 * pixelW, _cy - 30 * _k * pixelH, _lw * pixelW, 66 * _k * pixelH];
         _label ctrlCommit 0;
 
         // One label per slice, at the middle of its part of the ring.
         private _sr = SLICE_R * _k;
-        private _sw = 118 * _k;
-        private _sh = 50 * _k;
+        private _sw = 116 * _k;
+        private _sh = 48 * _k;
         {
             private _angle = 360 * _forEachIndex / _n;
             private _text = _display ctrlCreate ["ALife_RscStructuredText", IDC_SLICE + _forEachIndex];
             _text ctrlSetPosition [
                 _cx + (_sr * sin _angle - _sw / 2) * pixelW,
-                _cy + (-_sr * cos _angle - 16 * _k) * pixelH,
+                _cy + (-_sr * cos _angle - 13 * _k) * pixelH,
                 _sw * pixelW, _sh * pixelH];
             _text ctrlCommit 0;
         } forEach _options;
@@ -128,12 +127,15 @@ switch (_mode) do {
 
         { (_display displayCtrl _x) ctrlShow (_hover >= 0); } forEach [IDC_WEDGE, IDC_ACCENT];
         if (_hover >= 0) then {
-            { (_display displayCtrl _x) ctrlSetAngle [360 * _hover / _n, 0.5, 0.5]; } forEach [IDC_WEDGE, IDC_ACCENT];
+            // One image per slice position (never rotated: Arma stretches rotated pictures).
+            (_display displayCtrl IDC_WEDGE) ctrlSetText format ["ui\radial\wedge_%1_%2_ca.paa", _n, _hover];
+            (_display displayCtrl IDC_ACCENT) ctrlSetText format ["ui\radial\accent_%1_%2_ca.paa", _n, _hover];
         };
         for "_i" from 0 to _count - 1 do {
             private _text = _display displayCtrl (IDC_SLICE + _i);
-            _text ctrlSetStructuredText parseText format ["<t align='center' size='%2' font='RobotoCondensedBold' color='%3'>%1</t>",
-                ((_options select _i) select 0) call _safe, 1.05, ["#b4bac6", "#ffffff"] select (_i == _hover)];
+            _text ctrlSetStructuredText parseText format ["<t align='center' size='%2' font='%4' color='%3'>%1</t>",
+                ((_options select _i) select 0) call _safe, 1.15, ["#aeb4c0", "#ffffff"] select (_i == _hover),
+                ["RobotoCondensed", "RobotoCondensedBold"] select (_i == _hover)];
         };
         [_hover] call _fnc_label;
     };

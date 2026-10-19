@@ -1,17 +1,19 @@
 """Draws the interaction wheel images (src/ALife.Altis/ui/radial/*.paa) for
-ALife_fnc_radial: a solid ring cut into slices, a centre disc, and for each
-slice count (2-8) the highlight wedge, the divider lines and the accent arc.
-Everything is white on transparent; the game tints it (ctrlSetTextColor) and
-turns the wedge / arc to the slice under the mouse (ctrlSetAngle). Same
-pure-Python drawing as make_icons.py; converted with Arma 3 Tools' ImageToPAA:
+ALife_fnc_radial: a solid ring cut into slices around a centre disc.
+Everything is white on transparent; the game tints it (ctrlSetTextColor).
+
+Nothing is rotated in game -- Arma rotates pictures in non-square screen
+units, which stretches them -- so the hover highlight is drawn for every
+slice position of every slice count:
 
     python tools/phone_icons/make_radial.py "G:/SteamLibrary/steamapps/common/Arma 3 Tools"
 
-    ring_ca                      - the ring the slices sit on
-    centre_ca                    - the disc in the middle (the label)
-    wedge_<n>_ca                 - one slice of n, centred on 12 o'clock
-    lines_<n>_ca                 - the n divider lines between slices
-    accent_<n>_ca                - a thin arc outside one slice of n
+    ring_ca                 - the ring the slices sit on
+    centre_ca               - the disc in the middle (the label), touching the ring
+    rim_ca                  - a thin line where the ring meets the centre
+    lines_<n>_ca            - the n divider lines between slices (inset from the edges)
+    wedge_<n>_<i>_ca        - slice i of n (clockwise from 12 o'clock): the hover fill
+    accent_<n>_<i>_ca       - slice i of n: the amber arc on the ring's outer edge
 """
 import math
 import os
@@ -24,10 +26,10 @@ from make_items import render  # noqa: E402
 
 OUT = os.path.join(os.path.dirname(__file__), "..", "..", "src", "ALife.Altis", "ui", "radial")
 WHITE = (255, 255, 255)
-C = 64             # centre of the 128 px image
-INNER, OUTER = 30, 58.5  # the ring
-ACCENT = (60.5, 63.5)    # the accent arc, just outside it
-CENTRE = 27.5            # the middle disc (a dark gap between it and the ring)
+C = 64                    # centre of the 128 px image
+INNER, OUTER = 27, 61     # the ring
+ACCENT = (57.5, 61)       # the amber arc: the ring's outer edge
+GAP = 0.035               # radians left clear either side of each slice's highlight
 
 
 def angle(x, y):
@@ -35,25 +37,26 @@ def angle(x, y):
     return math.atan2(x - C, -(y - C)) % (2 * math.pi)
 
 
-def sector(r_in, r_out, width):
-    """The part of a ring within `width` radians either side of 12 o'clock / 2."""
+def sector(r_in, r_out, centre, width):
+    """The part of a ring within width / 2 radians of `centre` (radians)."""
     band = ring(C, C, r_out, r_in)
 
     def f(x, y):
         if not band(x, y):
             return False
-        a = angle(x, y)
-        return a <= width / 2 or a >= 2 * math.pi - width / 2
+        d = (angle(x, y) - centre + math.pi) % (2 * math.pi) - math.pi
+        return abs(d) <= width / 2
     return f
 
 
-def lines(n, thickness=0.9):
-    """Divider lines between n slices (slices are centred on 12 o'clock)."""
+def lines(n, thickness=0.6):
+    """Divider lines between n slices (slices centred on 12 o'clock), kept
+    clear of the ring's edges."""
     cuts = [(i + 0.5) * 2 * math.pi / n for i in range(n)]
 
     def f(x, y):
         r = math.hypot(x - C, y - C)
-        if r < INNER or r > OUTER:
+        if r < INNER + 4 or r > OUTER - 4:
             return False
         for cut in cuts:
             dx, dy = math.sin(cut), -math.cos(cut)
@@ -71,21 +74,30 @@ def main():
 
     images = {
         "ring": [(ring(C, C, OUTER, INNER), WHITE)],
-        "centre": [(circle(C, C, CENTRE), WHITE)],
+        "centre": [(circle(C, C, INNER), WHITE)],
+        "rim": [(ring(C, C, INNER + 0.7, INNER - 0.7), WHITE)],
     }
     for n in range(2, 9):
         width = 2 * math.pi / n
-        images[f"wedge_{n}"] = [(sector(INNER, OUTER, width), WHITE)]
         images[f"lines_{n}"] = [(lines(n), WHITE)]
-        images[f"accent_{n}"] = [(sector(ACCENT[0], ACCENT[1], width * 0.96), WHITE)]
+        for i in range(n):
+            centre = i * width
+            images[f"wedge_{n}_{i}"] = [(sector(INNER + 1, OUTER, centre, width - 2 * GAP), WHITE)]
+            images[f"accent_{n}_{i}"] = [(sector(ACCENT[0], ACCENT[1], centre, width - 2 * GAP), WHITE)]
+
+    # Old images from the rotating version.
+    for old in os.listdir(OUT):
+        name = old[:-len("_ca.paa")] if old.endswith("_ca.paa") else None
+        if name and name not in images:
+            os.remove(os.path.join(OUT, old))
 
     for name, layers in images.items():
         png = os.path.join(png_dir, f"radial_{name}_ca.png")
         write_png(png, render(layers))
-        print("drew", png)
         if tools:
             subprocess.run([os.path.join(tools, "ImageToPAA", "ImageToPAA.exe"), png,
-                            os.path.join(OUT, f"{name}_ca.paa")], check=True)
+                            os.path.join(OUT, f"{name}_ca.paa")], check=True, capture_output=True)
+    print(f"drew {len(images)} images")
 
 
 if __name__ == "__main__":
