@@ -182,7 +182,8 @@ std::string HandleVehicle(Database& db, const std::vector<std::string>& args) {
 //   ["log",        staffUid, targetUid|"", action, reason, afterJson] -> "OK"
 //   ["ban",        staffUid, targetUid, minutes (0 = permanent), reason] -> "OK" / "ALREADY"
 //   ["kick",       staffUid, targetUid, reason] -> "OK"
-//   ["compensate", staffUid, targetUid, faction, amount, reason] -> "OK:<balance>" / "NO_ACCOUNT"
+//   ["compensate", staffUid, targetUid, faction, amount, reason, "self"?] -> "OK:<balance>" / "NO_ACCOUNT"
+//      (staffUid == targetUid only with "self": a server owner, CfgALife >> owners[])
 std::string HandleAdmin(Database& db, const std::vector<std::string>& args) {
     if (args.size() < 3) return "ERROR:expected [op, staffUid, targetUid, ...]";
     const std::string& op = args[0];
@@ -225,7 +226,7 @@ std::string HandleAdmin(Database& db, const std::vector<std::string>& args) {
         if (args[3] != "civ" && args[3] != "cop" && args[3] != "medic") return "ERROR:invalid faction";
         long long amount = std::stoll(args[4]);
         if (amount < 1 || amount > 100000000) return "ERROR:amount must be $1 to $100,000,000";
-        if (args[1] == args[2]) return "ERROR:you can't compensate yourself";
+        if (args[1] == args[2] && (args.size() < 7 || args[6] != "self")) return "ERROR:you can't compensate yourself";
         if (!db.AdminCompensate(args[1], args[2], args[3], amount, args[5], status, error)) return "ERROR:" + error;
         return status;
     }

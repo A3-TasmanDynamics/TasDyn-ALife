@@ -5,12 +5,14 @@
     the database. The staff member's permissions are the ones loaded with
     their character (record "staff_perms": the website's rank permissions
     and overrides, only while they're active staff -- the extension
-    resolves them like the website does). Anything without the permission
-    is refused and logged.
+    resolves them like the website does). Server owners (CfgALife >>
+    owners[]) may do everything, including compensating themselves.
+    Anything without the permission is refused and logged.
 
     Logged to the staff log (source 'game', posted to #staff-log): bring,
-    heal, freeze / unfreeze, warn, kick, ban, compensate, give, god mode,
-    invisibility, announce, spawn vehicle, delete vehicle.
+    heal, freeze / unfreeze, warn, kick, ban, compensate, give item, give
+    cash, arsenal, god mode, invisibility, announce, spawn vehicle, delete
+    vehicle.
 
     Arguments:
         0: OBJECT - the staff member's unit
@@ -31,6 +33,7 @@ private _record = ALife_sessions getOrDefault [_uid, createHashMap];
 private _perms = (_record getOrDefault ["staff_perms", []]) select { _x isEqualType "" };
 private _me = _unit getVariable ["alife_name", name _unit];
 if ((_record getOrDefault ["status", ""]) != "OK") exitWith {};
+private _isOwner = _uid in getArray (missionConfigFile >> "CfgALife" >> "owners");
 
 private _needs = switch (_action) do {
     case "bring": { "game.teleport" };
@@ -42,6 +45,8 @@ private _needs = switch (_action) do {
     case "ban": { "bans.issue" };
     case "compensate": { "players.compensate" };
     case "give";
+    case "giveCash";
+    case "arsenal";
     case "spawnVehicle": { "game.spawn" };
     case "god";
     case "invisible": { "game.self" };
@@ -51,7 +56,7 @@ private _needs = switch (_action) do {
     case "deleteVeh": { "game.vehicles" };
     default { "" };
 };
-if (_needs == "" || { !(_needs in _perms) }) exitWith {
+if (_needs == "" || { !_isOwner && { !(_needs in _perms) } }) exitWith {
     diag_log format ["[ALife] admin: %1 (%2) tried %3 without %4", _uid, _me, _action, _needs];
     "You don't have permission for that." call _fnc_reply;
 };
@@ -59,7 +64,7 @@ if (_needs == "" || { !(_needs in _perms) }) exitWith {
 // The player it's done to.
 private _theirUid = if (isNull _target) then { "" } else { getPlayerUID _target };
 private _them = if (isNull _target) then { "" } else { _target getVariable ["alife_name", name _target] };
-private _targeted = _action in ["bring", "heal", "freeze", "message", "warn", "kick", "ban", "compensate", "give"];
+private _targeted = _action in ["bring", "heal", "freeze", "message", "warn", "kick", "ban", "compensate", "give", "giveCash"];
 if (_targeted && { _theirUid == "" }) exitWith { "That player has left." call _fnc_reply; };
 private _reason = _args param [0, "", [""]];
 _reason = (_reason splitString "<>") joinString "";
@@ -125,7 +130,7 @@ switch (_action) do {
     case "ban": {
         private _minutes = _args param [1, 1440, [0]];
         if (!(_minutes in [0, 60, 1440, 4320, 10080, 43200])) exitWith {};
-        if (_minutes == 0 && { !("bans.permanent" in _perms) }) exitWith { "Permanent bans need bans.permanent." call _fnc_reply; };
+        if (_minutes == 0 && { !_isOwner } && { !("bans.permanent" in _perms) }) exitWith { "Permanent bans need bans.permanent." call _fnc_reply; };
         private _r = ["admin", ["ban", _uid, _theirUid, str _minutes, _reason]] call ALife_fnc_extension;
         if (_r == "ALREADY") exitWith { format ["%1 is already banned.", _them] call _fnc_reply; };
         if (_r != "OK") exitWith { diag_log format ["[ALife] admin ban failed: %1", _r]; "The ban didn't save. Try again." call _fnc_reply; };
@@ -138,9 +143,9 @@ switch (_action) do {
         private _amount = round (_args param [1, 0, [0]]);
         private _account = _args param [2, "civ", [""]];
         if (_amount < 1 || { _amount > 100000000 } || { !(_account in ["civ", "cop", "medic"]) }) exitWith { "Enter an amount ($1 or more)." call _fnc_reply; };
-        if (_amount > 10000 && { !("players.compensate_large" in _perms) }) exitWith { "Over $10,000 needs players.compensate_large." call _fnc_reply; };
-        if (_theirUid == _uid) exitWith { "You can't compensate yourself." call _fnc_reply; };
-        private _r = ["admin", ["compensate", _uid, _theirUid, _account, str _amount, _reason]] call ALife_fnc_extension;
+        if (_amount > 10000 && { !_isOwner } && { !("players.compensate_large" in _perms) }) exitWith { "Over $10,000 needs players.compensate_large." call _fnc_reply; };
+        if (_theirUid == _uid && { !_isOwner }) exitWith { "You can't compensate yourself." call _fnc_reply; };
+        private _r = ["admin", ["compensate", _uid, _theirUid, _account, str _amount, _reason, ["", "self"] select (_theirUid == _uid)]] call ALife_fnc_extension;
         if (_r == "NO_ACCOUNT") exitWith { format ["%1 has no %2 bank account yet.", _them, _account] call _fnc_reply; };
         if (_r select [0, 3] != "OK:") exitWith { diag_log format ["[ALife] admin compensate failed: %1", _r]; "The compensation didn't go through." call _fnc_reply; };
         // Their cached balance follows the ledger.
@@ -163,6 +168,27 @@ switch (_action) do {
         [format ["Staff gave you %1 x%2.", _name, _qty], "success"] remoteExecCall ["ALife_fnc_notify", owner _target];
         [format ["Gave %1 %2 x%3.", _them, _name, _qty], "success"] call _fnc_reply;
     };
+
+    case "giveCash": {
+        // Cash in hand, for the faction they're playing (a delta save with
+        // a one-off token, like any other cash change).
+        private _amount = round (_args param [1, 0, [0]]);
+        if (_amount < 1 || { _amount > 1000000 }) exitWith { "Enter an amount ($1 - $1,000,000)." call _fnc_reply; };
+        private _faction = _target getVariable ["alife_faction", ""];
+        if (_faction == "") exitWith { "They need to be spawned in." call _fnc_reply; };
+        private _token = format ["admincash-%1-%2-%3", _theirUid, round (diag_tickTime * 1000), floor random 1e6];
+        private _r = ["save", [_theirUid, _faction + "_cash", str _amount, _token]] call ALife_fnc_extension;
+        if (_r != "OK") exitWith { diag_log format ["[ALife] admin give cash failed: %1", _r]; "That didn't save. Try again." call _fnc_reply; };
+        private _theirRecord = ALife_sessions getOrDefault [_theirUid, createHashMap];
+        _theirRecord set [_faction + "_cash", (_theirRecord getOrDefault [_faction + "_cash", 0]) + _amount];
+        ["game.give_cash", format ["$%1 %2 cash%3", [_amount] call BIS_fnc_numberText, _faction, ["", ": " + _reason] select (_reason != "")],
+            format ['{"faction": "%1", "amount": %2}', _faction, _amount]] call _fnc_log;
+        [_target] call ALife_fnc_requestPhoneData;
+        if (_target != _unit) then { [format ["Staff gave you $%1 cash.", [_amount] call BIS_fnc_numberText], "success"] remoteExecCall ["ALife_fnc_notify", owner _target]; };
+        [format ["Gave %1 $%2 cash.", _them, [_amount] call BIS_fnc_numberText], "success"] call _fnc_reply;
+    };
+
+    case "arsenal": { ["game.arsenal"] call _fnc_log; };
 
     case "god": { ["game.godmode"] call _fnc_log; };
 
