@@ -3,7 +3,7 @@ the phone's Inventory, shops and the inventory screen. Transparent
 background (they sit in list rows). Same pure-Python drawing as
 make_icons.py; converted with Arma 3 Tools' ImageToPAA:
 
-    python tools/phone_icons/make_items.py "G:/SteamLibrary/steamapps/common/Arma 3 Tools"
+    python tools/phone_icons/make_items.py "G:/SteamLibrary/steamapps/common/Arma 3 Tools" [item ...]
 
 Add an item: draw it in ITEMS, re-run, and point its CfgItems `icon` at
 ui\\items\\<name>_ca.paa.
@@ -18,6 +18,47 @@ from make_icons import SIZE, SS, capsule, circle, minus, poly, ring, rotated_rec
 OUT = os.path.join(os.path.dirname(__file__), "..", "..", "src", "ALife.Altis", "ui", "items")
 
 # Each item: list of (shape, (r, g, b)) layers, painted in order.
+def ore(base, shade, fleck, crystal=False):
+    """A rough chunk of rock, with flecks (or a crystal) of the mineral."""
+    rock = poly([(22, 70), (34, 40), (62, 28), (92, 36), (108, 62), (98, 94), (66, 106), (34, 98)])
+    layers = [
+        (rock, base),
+        (poly([(62, 28), (92, 36), (108, 62), (70, 60)]), shade),                     # facet
+        (poly([(22, 70), (70, 60), (66, 106), (34, 98)]), shade),
+    ]
+    if crystal:
+        layers.append((poly([(56, 64), (64, 38), (76, 46), (80, 72), (66, 82)]), fleck))
+    else:
+        layers.append((union(circle(46, 58, 7), circle(76, 78, 8), circle(84, 50, 5), circle(52, 86, 5)), fleck))
+    return layers
+
+
+def ingot(front, side, top):
+    """A metal bar: top face, front face and end."""
+    return [
+        (poly([(20, 82), (34, 58), (110, 58), (96, 82)]), top),                       # top
+        (poly([(20, 82), (96, 82), (100, 98), (16, 98)]), front),                     # front
+        (poly([(96, 82), (110, 58), (114, 74), (100, 98)]), side),                    # end
+    ]
+
+
+def barrel(body, band):
+    return [
+        (rrect(64, 66, 64, 88, 8), body),                                             # drum
+        (union(rrect(64, 40, 64, 5, 0), rrect(64, 92, 64, 5, 0)), band),              # ribs
+        (rrect(64, 24, 64, 6, 3), band),                                              # rim
+    ]
+
+
+def mound(top, shade):
+    """A heap (salt, sand)."""
+    heap = lambda x, y: y >= 100 - 46 * max(0.0, 1 - ((x - 64) / 50) ** 2) and y <= 102 and abs(x - 64) <= 50
+    return [
+        (heap, top),
+        (lambda x, y: heap(x, y) and x > 64 + (100 - y) * 0.2, shade),               # shadow side
+    ]
+
+
 ITEMS = {
     "medkit": [
         (minus(ring(64, 34, 20, 12), lambda x, y: y > 40), (180, 40, 46)),           # handle
@@ -100,6 +141,39 @@ ITEMS = {
         (union(*[poly([(x - 7, 70), (x + 7, 70), (x, 46)]) for x in (22, 43, 64, 85, 106)]), (200, 205, 215)),  # spikes
         (union(*[rrect(x, 76, 10, 16, 0) for x in (32, 75)]), (230, 190, 40)),        # hazard bands
     ],
+    # ---- resources: raw (ore, crude) and processed ----
+    "oil_raw": barrel((45, 45, 50), (25, 25, 28)) + [
+        (union(circle(64, 82, 13), poly([(64, 52), (52, 78), (76, 78)])), (12, 12, 14)),  # oil drop
+    ],
+    "oil_refined": barrel((230, 170, 40), (190, 130, 20)) + [
+        (union(circle(64, 82, 13), poly([(64, 52), (52, 78), (76, 78)])), (255, 235, 170)),
+    ],
+    "copper_ore": ore((105, 92, 84), (80, 70, 64), (205, 115, 60)),
+    "copper_bar": ingot((215, 125, 65), (175, 95, 45), (240, 165, 105)),
+    "iron_ore": ore((98, 94, 94), (72, 70, 70), (160, 85, 60)),
+    "iron_bar": ingot((150, 155, 165), (115, 120, 130), (195, 200, 210)),
+    "salt_raw": ore((200, 200, 206), (165, 165, 172), (235, 235, 240)),
+    "salt": mound((245, 245, 248), (215, 215, 222)),
+    "sand": mound((222, 190, 120), (190, 160, 95)),
+    "glass": [
+        (rrect(64, 64, 76, 92, 6), (150, 215, 235)),                                  # pane
+        (minus(rrect(64, 64, 76, 92, 6), rrect(64, 64, 68, 84, 4)), (95, 165, 195)),  # frame edge
+        (union(capsule(42, 56, 62, 36, 3), capsule(46, 76, 76, 46, 3)), (235, 250, 255)),  # glints
+    ],
+    "diamond_raw": ore((110, 110, 115), (82, 82, 88), (150, 230, 250), crystal=True),
+    "diamond": [
+        (poly([(30, 50), (46, 30), (82, 30), (98, 50), (64, 104)]), (120, 215, 245)),  # gem
+        (poly([(30, 50), (98, 50), (64, 104)]), (90, 185, 230)),                      # pavilion
+        (union(capsule(46, 30, 54, 50, 1.6), capsule(82, 30, 74, 50, 1.6), capsule(54, 50, 64, 104, 1.4),
+               capsule(74, 50, 64, 104, 1.4), capsule(30, 50, 98, 50, 1.6)), (220, 245, 255)),  # facets
+    ],
+    "rock": ore((140, 140, 145), (105, 105, 110), (165, 165, 170)),
+    "cement": [
+        (poly([(30, 34), (98, 34), (104, 104), (24, 104)]), (175, 172, 165)),         # bag
+        (rrect(64, 34, 64, 8, 3), (145, 142, 135)),                                   # folded top
+        (rrect(64, 72, 60, 24, 3), (70, 75, 85)),                                     # label
+        (rrect(64, 72, 40, 6, 2), (220, 220, 215)),
+    ],
 }
 
 
@@ -135,7 +209,10 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     png_dir = os.path.join(os.path.dirname(__file__), "png")
     os.makedirs(png_dir, exist_ok=True)
+    only = set(sys.argv[2:])  # optional: just these items
     for name, layers in ITEMS.items():
+        if only and name not in only:
+            continue
         png = os.path.join(png_dir, f"item_{name}_ca.png")
         write_png(png, render(layers))
         print("drew", png)

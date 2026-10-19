@@ -12,11 +12,24 @@
 
 class VirtualShops
 {
+    class resources
+    {
+        name = "Resource Trader";
+        side = "civ";
+        licence = "";
+        level = 0;
+        items[] = {};
+        buys[] = { "oil_raw", "oil_refined", "copper_ore", "copper_bar", "iron_ore", "iron_bar", "salt_raw", "salt",
+                   "sand", "glass", "diamond_raw", "diamond", "rock", "cement" };
+    };
+
     //   name     -- shown in the shop window
     //   side     -- "civ" / "cop" / "medic": who can use it
     //   licence  -- needed to use the shop at all (CfgLicences key, "" = none)
     //   level    -- minimum cop_level / medic_level to use it (0 = any)
-    //   items[]  -- CfgMarket / CfgItems classes
+    //   items[]  -- CfgMarket / CfgItems classes it sells to players
+    //   buys[]   -- classes it buys from players, at the market's sell price
+    //               (a shop with buys[] and no items[] is a trader)
 
     class general
     {
@@ -77,4 +90,20 @@ class CfgMarket
     class donut      { buyPrice = 25; sellPrice = 12; min = 12; max = 75; };
     class spikestrip { buyPrice = 2500; sellPrice = 1250; min = 1250; max = 7500; level = 1; };
     class medkit     { buyPrice = 250; sellPrice = 125; min = 125; max = 750; };
+
+    // ---- Resources: the Resource Trader buys them (sellPrice); nobody sells them ----
+    class oil_raw     { buyPrice = 1000; sellPrice = 500; min = 400; max = 2000; };
+    class oil_refined { buyPrice = 6400; sellPrice = 3200; min = 2560; max = 12800; };
+    class copper_ore  { buyPrice = 600; sellPrice = 300; min = 240; max = 1200; };
+    class copper_bar  { buyPrice = 3000; sellPrice = 1500; min = 1200; max = 6000; };
+    class iron_ore    { buyPrice = 700; sellPrice = 350; min = 280; max = 1400; };
+    class iron_bar    { buyPrice = 4000; sellPrice = 2000; min = 1600; max = 8000; };
+    class salt_raw    { buyPrice = 400; sellPrice = 200; min = 160; max = 800; };
+    class salt        { buyPrice = 2600; sellPrice = 1300; min = 1040; max = 5200; };
+    class sand        { buyPrice = 300; sellPrice = 150; min = 120; max = 600; };
+    class glass       { buyPrice = 2900; sellPrice = 1450; min = 1160; max = 5800; };
+    class diamond_raw { buyPrice = 1500; sellPrice = 750; min = 600; max = 3000; };
+    class diamond     { buyPrice = 7000; sellPrice = 3500; min = 2800; max = 14000; };
+    class rock        { buyPrice = 300; sellPrice = 150; min = 120; max = 600; };
+    class cement      { buyPrice = 3900; sellPrice = 1950; min = 1560; max = 7800; };
 };

@@ -134,4 +134,104 @@ class CfgItems
         use = "heal"; useTime = 6; heal = 1;         // yourself; medics also revive with it
         anim = "AinvPknlMstpSnonWnonDnon_medic2";
     };
+
+    // ---- Resources (gathered and processed: CfgResources.hpp) ----
+    class oil_raw
+    {
+        displayName = "Crude Oil";
+        description = "Unprocessed oil from an oil field. Refine it at an oil refinery.";
+        icon = "ui\items\oil_raw_ca.paa";
+        weight = 7;
+    };
+    class oil_refined
+    {
+        displayName = "Refined Oil";
+        description = "Processed oil, ready to sell or use.";
+        icon = "ui\items\oil_refined_ca.paa";
+        weight = 6;
+    };
+    class copper_ore
+    {
+        displayName = "Copper Ore";
+        description = "Unprocessed copper from a copper mine. Smelt it into bars.";
+        icon = "ui\items\copper_ore_ca.paa";
+        weight = 4;
+    };
+    class copper_bar
+    {
+        displayName = "Copper Bar";
+        description = "Smelted copper.";
+        icon = "ui\items\copper_bar_ca.paa";
+        weight = 3;
+    };
+    class iron_ore
+    {
+        displayName = "Iron Ore";
+        description = "Unprocessed iron from an iron mine. Smelt it into bars.";
+        icon = "ui\items\iron_ore_ca.paa";
+        weight = 5;
+    };
+    class iron_bar
+    {
+        displayName = "Iron Bar";
+        description = "Smelted iron.";
+        icon = "ui\items\iron_bar_ca.paa";
+        weight = 3;
+    };
+    class salt_raw
+    {
+        displayName = "Rock Salt";
+        description = "Unprocessed salt from a salt flat. Refine it.";
+        icon = "ui\items\salt_raw_ca.paa";
+        weight = 3;
+    };
+    class salt
+    {
+        displayName = "Refined Salt";
+        description = "Clean, refined salt.";
+        icon = "ui\items\salt_ca.paa";
+        weight = 1;
+    };
+    class sand
+    {
+        displayName = "Sand";
+        description = "Sand from a sand mine. Melt it into glass.";
+        icon = "ui\items\sand_ca.paa";
+        weight = 3;
+    };
+    class glass
+    {
+        displayName = "Glass";
+        description = "A pane of glass, made from sand.";
+        icon = "ui\items\glass_ca.paa";
+        weight = 1;
+    };
+    class diamond_raw
+    {
+        displayName = "Uncut Diamond";
+        description = "A rough diamond from a diamond mine. Have it cut.";
+        icon = "ui\items\diamond_raw_ca.paa";
+        weight = 4;
+    };
+    class diamond
+    {
+        displayName = "Cut Diamond";
+        description = "A cut and polished diamond.";
+        icon = "ui\items\diamond_ca.paa";
+        weight = 2;
+    };
+    class rock
+    {
+        displayName = "Rock";
+        description = "Rock from a quarry. Grind it into cement.";
+        icon = "ui\items\rock_ca.paa";
+        weight = 6;
+    };
+    class cement
+    {
+        displayName = "Cement Bag";
+        description = "A bag of cement, made from rock.";
+        icon = "ui\items\cement_ca.paa";
+        weight = 5;
+    };
 };

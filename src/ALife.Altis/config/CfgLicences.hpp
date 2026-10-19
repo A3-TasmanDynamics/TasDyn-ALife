@@ -14,6 +14,14 @@ class CfgLicences
     class hunting { displayName = "Hunting Licence"; };
     class home    { displayName = "Home Owner"; };
     class rebel   { displayName = "Rebel Training"; };
+    // Processing (CfgResources.hpp): free with the licence, a fee per batch without
+    class oil     { displayName = "Oil Processing"; };
+    class copper  { displayName = "Copper Processing"; };
+    class iron    { displayName = "Iron Processing"; };
+    class salt    { displayName = "Salt Processing"; };
+    class sand    { displayName = "Sand Processing"; };
+    class diamond { displayName = "Diamond Processing"; };
+    class cement  { displayName = "Cement Mixing"; };
 
     // Police
     class cAir    { displayName = "Police Air Unit"; };

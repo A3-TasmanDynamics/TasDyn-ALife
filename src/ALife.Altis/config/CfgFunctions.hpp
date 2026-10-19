@@ -33,6 +33,9 @@ class CfgFunctions
             class requestUseItem {}; // client -> server: the Use button finished
             class vehicleAction {};  // client -> server: push / give a key / impound
             class personAction {};   // client -> server: restrain / fine / strip / heal
+            class shopSell {};       // client -> server: sell to a trader
+            class requestGather {};  // client -> server: gather a resource (timed)
+            class requestProcess {}; // client -> server: process resources (timed)
             class containerGet {};   // the container (bag / vehicle trunk) behind an object
             class containerCreateBag {}; // drop a bag at a player's feet
             class containerSend {};  // send a player a container's contents
@@ -76,6 +79,7 @@ class CfgFunctions
             class restrained {};      // server -> client: you're restrained
             class fine {};            // server -> client: a fine to pay or refuse
             class personApply {};     // server -> client: police strip you
+            class resourceProgress {}; // server -> client: progress bar while gathering / processing
             class itemUsed {};        // server -> client: apply a used item where it's local
             class interact {};        // the Windows key
             class transfer {};        // the inventory screen (bags, trunks, dropping)

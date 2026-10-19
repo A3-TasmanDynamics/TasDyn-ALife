@@ -14,6 +14,14 @@
 
 class CfgShops
 {
+    class resource_trader
+    {
+        type = "market";
+        shop = "resources";
+        markers[] = { "trader_resources" };   // place this marker in Eden
+        radius = 15;
+    };
+
     class general_market
     {
         type = "market";
