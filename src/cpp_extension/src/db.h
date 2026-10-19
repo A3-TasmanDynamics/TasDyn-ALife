@@ -85,6 +85,26 @@ public:
                          const std::string& weapon, const std::string& distance,
                          const std::string& secondsIncapacitated, std::string& outError);
 
+    // Staff actions from the game's Admin app (ALife_fnc_adminAction). All
+    // land in staff_log with source 'game' (posted to #staff-log like the
+    // website's), alongside banlist / kick_log / bank_transactions -- the
+    // same rows the website writes for the same actions.
+    //   AdminLog:        just the staff_log row (afterJson may be "")
+    //   AdminBan:        minutes 0 = permanent. outStatus "OK" / "ALREADY"
+    //   AdminKick:       kick_log 'manual' + staff_log
+    //   AdminCompensate: an 'admin_adjustment' credit to the target's
+    //                    faction bank account. outStatus "OK:<new balance>"
+    //                    / "NO_ACCOUNT"
+    bool AdminLog(const std::string& staffUid, const std::string& targetUid, const std::string& action,
+                  const std::string& reason, const std::string& afterJson, std::string& outError);
+    bool AdminBan(const std::string& staffUid, const std::string& targetUid, int minutes,
+                  const std::string& reason, std::string& outStatus, std::string& outError);
+    bool AdminKick(const std::string& staffUid, const std::string& targetUid, const std::string& reason,
+                   std::string& outError);
+    bool AdminCompensate(const std::string& staffUid, const std::string& targetUid, const std::string& faction,
+                         long long amount, const std::string& reason, std::string& outStatus,
+                         std::string& outError);
+
 private:
     PGconn* conn_ = nullptr;
     mutable std::mutex mutex_;
@@ -102,4 +122,7 @@ private:
     bool EnsureBlankPlayer(const std::string& uid, std::string& outError);
     bool SaveCashDelta(const std::string& uid, const std::string& faction, const std::string& value,
                         const std::string& token, std::string& outStatus, std::string& outError);
+    bool InsertStaffLog(const std::string& staffUid, const std::string& targetUid, const std::string& action,
+                        const std::string& reason, const std::string& beforeJson, const std::string& afterJson,
+                        std::string& outError);
 };

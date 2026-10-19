@@ -301,7 +301,24 @@ switch (_mode) do {
             case "perks": { ["A talent tree: earn perk points as you play and spend them on perks for your faction -- faster repairs, better prices, quicker revives and more."] call _fnc_comingSoon; };
             case "gang": { ["Create or join a gang, invite members, manage ranks and the gang bank."] call _fnc_comingSoon; };
             case "keys": { ["Your vehicle keys: give a key to someone within 10 m. Arrives with vehicles."] call _fnc_comingSoon; };
-            case "admin": { ["Staff tools for moderating the server in game."] call _fnc_comingSoon; };
+            case "admin": {
+                // Staff with game.admin (website permissions): open the admin menu.
+                private _perms = _data getOrDefault ["perms", []];
+                if !("game.admin" in _perms) exitWith {
+                    [0, 0, 0.42] call _fnc_card;
+                    ([IDC_INFO, 0.03, 0.38, 0.05, 0.9] call _fnc_place) ctrlSetStructuredText parseText format [
+                        "<t size='%1' color='#fbbf24' font='RobotoCondensedBold'>STAFF ONLY</t><br/><br/><t size='%2' color='#d6dbe2'>The admin tools are for the staff team. What each rank can do is set on the website (Admin, Roles).</t>",
+                        22 call _fnc_px, 27 call _fnc_px];
+                };
+                [0, 0, 0.42] call _fnc_card;
+                ([IDC_INFO, 0.03, 0.38, 0.05, 0.9] call _fnc_place) ctrlSetStructuredText parseText format [
+                    "<t size='%1' color='#fbbf24' font='RobotoCondensedBold'>ADMIN</t><br/><br/><t size='%2' color='#d6dbe2'>%3<br/>%4 permissions from the website.</t>",
+                    22 call _fnc_px, 27 call _fnc_px,
+                    (((_data getOrDefault ["staffRank", ""]) splitString "_") apply { (toUpper (_x select [0, 1])) + (_x select [1]) }) joinString " ",
+                    count _perms];
+                [0, "Open admin menu", 0.5, 0.08, 0, 1, true] call _fnc_button;
+                if (missionNamespace getVariable ["ALife_adminSpectating", false]) then { [1, "Stop spectating", 0.6, 0.075] call _fnc_button; };
+            };
         };
         ["refresh"] call ALife_fnc_phone;
     };
@@ -502,6 +519,15 @@ switch (_mode) do {
                         [player, ALife_phoneChannel, _target, _text, ALife_phoneAnon] remoteExec ["ALife_fnc_sendMessage", 2];
                         (_display displayCtrl IDC_MESSAGE) ctrlSetText "";
                     };
+                };
+            };
+
+            case "admin": {
+                if (_n == 0) then { ["open"] call ALife_fnc_admin; };
+                if (_n == 1) then {
+                    player switchCamera "INTERNAL";
+                    ALife_adminSpectating = false;
+                    ["app", 7] call ALife_fnc_phone;
                 };
             };
 

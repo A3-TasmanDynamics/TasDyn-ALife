@@ -447,7 +447,18 @@ JOIN (VALUES
     ('announce.post', 40),
     ('rules.edit', 40),
     ('bot.admin', 100),
-    ('dev.tools', 100)
+    ('dev.tools', 100),
+    ('game.admin', 10),
+    ('game.spectate', 10),
+    ('game.teleport', 20),
+    ('game.heal', 20),
+    ('game.freeze', 20),
+    ('game.kick', 20),
+    ('game.warn', 20),
+    ('game.markers', 20),
+    ('game.vehicles', 20),
+    ('game.self', 40),
+    ('game.spawn', 100)
 ) AS k(command_key, seed_level) ON sr.level >= k.seed_level;
 
 -- Development ranks (Admin → Development): project and tooling access

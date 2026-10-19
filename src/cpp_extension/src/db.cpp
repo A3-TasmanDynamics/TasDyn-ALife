@@ -315,9 +315,35 @@ bool Database::LoadPlayer(const std::string& uid, std::string& outResponse, std:
     // in-game it picks gang uniform textures (CfgClothing UniformTextures).
     AppendStringKv(out, first, "gang_tag", col(30));
     AppendStringKv(out, first, "gang_name", col(31));
-    out += "]";
-
     PQclear(res);
+
+    // Their effective staff permissions, resolved exactly like the website's
+    // auth.Effective: none unless they have a rank and staff_status is
+    // 'active'; the rank's rank_permissions, then per-player overrides
+    // (allow adds, deny removes) -- except the NoOverride keys, which only a
+    // rank can give (keep this list in step with permissions.go). A JSON
+    // array of strings is also a valid SQF array.
+    {
+        const char* permParams[1] = {uid.c_str()};
+        PGresult* permRes = PQexecParams(
+            conn_,
+            "WITH p AS (SELECT id, staff_rank_id FROM players "
+            "           WHERE uid = $1 AND staff_rank_id IS NOT NULL AND staff_status = 'active'), "
+            "no_override(k) AS (VALUES ('staff.edit'), ('staff.suspend'), ('staff.remove'), ('roles.manage'), "
+            "    ('players.edit_police'), ('players.edit_medic'), ('server.control'), ('database.query')), "
+            "o AS (SELECT o.command_key, o.allow FROM staff_permission_overrides o JOIN p ON p.id = o.player_id "
+            "      WHERE o.command_key NOT IN (SELECT k FROM no_override)) "
+            "SELECT COALESCE(json_agg(k ORDER BY k)::text, '[]') FROM ("
+            "  SELECT rp.command_key AS k FROM rank_permissions rp JOIN p ON rp.rank_id = p.staff_rank_id "
+            "  WHERE NOT EXISTS (SELECT 1 FROM o WHERE o.command_key = rp.command_key AND NOT o.allow) "
+            "  UNION SELECT command_key FROM o WHERE allow) s",
+            1, nullptr, permParams, nullptr, nullptr, 0);
+        std::string perms = "[]";
+        if (PQresultStatus(permRes) == PGRES_TUPLES_OK && PQntuples(permRes) == 1) perms = PQgetvalue(permRes, 0, 0);
+        PQclear(permRes);
+        AppendRawKv(out, first, "staff_perms", perms);
+    }
+    out += "]";
 
     outResponse = "[[\"status\",\"OK\"]," + out.substr(1);  // splice status in as the first pair
     return true;
@@ -848,5 +874,212 @@ bool Database::VehicleStatus(const std::string& id, const std::string& status, s
     if (!ok) outError = PQerrorMessage(conn_);
     else if (std::string(PQcmdTuples(res)) == "0") { ok = false; outError = "no such vehicle"; }
     PQclear(res);
+    return ok;
+}
+
+// ---------------------------------------------------------------------------
+// Staff actions from the game's Admin app.
+// ---------------------------------------------------------------------------
+
+bool Database::InsertStaffLog(const std::string& staffUid, const std::string& targetUid, const std::string& action,
+                              const std::string& reason, const std::string& beforeJson,
+                              const std::string& afterJson, std::string& outError) {
+    // Caller holds mutex_.
+    const char* params[6] = {staffUid.c_str(), targetUid.c_str(), action.c_str(), reason.c_str(),
+                             beforeJson.c_str(), afterJson.c_str()};
+    PGresult* res = PQexecParams(
+        conn_,
+        "INSERT INTO staff_log (staff_player_id, target_player_id, action, reason, before_value, after_value, source) "
+        "VALUES ((SELECT id FROM players WHERE uid = $1), (SELECT id FROM players WHERE uid = NULLIF($2, '')), "
+        "        $3, NULLIF($4, ''), NULLIF($5, '')::jsonb, NULLIF($6, '')::jsonb, 'game')",
+        6, nullptr, params, nullptr, nullptr, 0);
+    bool ok = PQresultStatus(res) == PGRES_COMMAND_OK;
+    if (!ok) outError = PQerrorMessage(conn_);
+    PQclear(res);
+    return ok;
+}
+
+namespace {
+
+// "Permanent ban" / "3-day ban" / "2-hour ban" / "30-minute ban", like the
+// website's DurationLabel.
+std::string BanLabel(int minutes) {
+    if (minutes <= 0) return "Permanent ban";
+    if (minutes % 1440 == 0) return std::to_string(minutes / 1440) + "-day ban";
+    if (minutes % 60 == 0) return std::to_string(minutes / 60) + "-hour ban";
+    return std::to_string(minutes) + "-minute ban";
+}
+
+// 1234567 -> "1,234,567", like the website's players.Dollars.
+std::string Dollars(long long amount) {
+    std::string digits = std::to_string(amount);
+    std::string out;
+    int count = 0;
+    for (auto it = digits.rbegin(); it != digits.rend(); ++it) {
+        if (count && count % 3 == 0) out.insert(out.begin(), ',');
+        out.insert(out.begin(), *it);
+        ++count;
+    }
+    return out;
+}
+
+}  // namespace
+
+bool Database::AdminLog(const std::string& staffUid, const std::string& targetUid, const std::string& action,
+                        const std::string& reason, const std::string& afterJson, std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    return InsertStaffLog(staffUid, targetUid, action, reason, "", afterJson, outError);
+}
+
+bool Database::AdminBan(const std::string& staffUid, const std::string& targetUid, int minutes,
+                        const std::string& reason, std::string& outStatus, std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    auto rollback = [&](PGresult* res) {
+        if (res) {
+            outError = PQerrorMessage(conn_);
+            PQclear(res);
+        }
+        PQclear(PQexec(conn_, "ROLLBACK"));
+        return false;
+    };
+    PQclear(PQexec(conn_, "BEGIN"));
+
+    const char* activeParams[1] = {targetUid.c_str()};
+    PGresult* active = PQexecParams(conn_,
+        "SELECT 1 FROM banlist WHERE uid = $1 AND (expires_at IS NULL OR expires_at > now()) LIMIT 1",
+        1, nullptr, activeParams, nullptr, nullptr, 0);
+    if (PQresultStatus(active) != PGRES_TUPLES_OK) return rollback(active);
+    bool already = PQntuples(active) > 0;
+    PQclear(active);
+    if (already) {
+        PQclear(PQexec(conn_, "ROLLBACK"));
+        outStatus = "ALREADY";
+        return true;
+    }
+
+    std::string mins = std::to_string(minutes);
+    const char* banParams[4] = {staffUid.c_str(), targetUid.c_str(), reason.c_str(), mins.c_str()};
+    PGresult* ban = PQexecParams(conn_,
+        "INSERT INTO banlist (uid, reason, banned_by, expires_at, player_id, scope) "
+        "VALUES ($2, $3, (SELECT id FROM players WHERE uid = $1), "
+        "        CASE WHEN $4::int > 0 THEN now() + make_interval(mins => $4::int) END, "
+        "        (SELECT id FROM players WHERE uid = $2), 'game') RETURNING id",
+        4, nullptr, banParams, nullptr, nullptr, 0);
+    if (PQresultStatus(ban) != PGRES_TUPLES_OK) return rollback(ban);
+    std::string banId = PQgetvalue(ban, 0, 0);
+    PQclear(ban);
+
+    std::string after = "{\"ban\": " + banId + ", \"scope\": \"game\", \"minutes\": " + mins + "}";
+    if (!InsertStaffLog(staffUid, targetUid, "ban.issue", BanLabel(minutes) + ": " + reason + " (in game)", "", after,
+                        outError)) {
+        return rollback(nullptr);
+    }
+    PGresult* commit = PQexec(conn_, "COMMIT");
+    bool ok = PQresultStatus(commit) == PGRES_COMMAND_OK;
+    if (!ok) outError = PQerrorMessage(conn_);
+    PQclear(commit);
+    outStatus = "OK";
+    return ok;
+}
+
+bool Database::AdminKick(const std::string& staffUid, const std::string& targetUid, const std::string& reason,
+                         std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    PQclear(PQexec(conn_, "BEGIN"));
+    const char* params[3] = {staffUid.c_str(), targetUid.c_str(), reason.c_str()};
+    PGresult* res = PQexecParams(conn_,
+        "INSERT INTO kick_log (target_player_id, kicked_by, kick_type, reason) "
+        "SELECT t.id, (SELECT id FROM players WHERE uid = $1), 'manual', $3 FROM players t WHERE t.uid = $2",
+        3, nullptr, params, nullptr, nullptr, 0);
+    bool ok = PQresultStatus(res) == PGRES_COMMAND_OK;
+    if (!ok) outError = PQerrorMessage(conn_);
+    PQclear(res);
+    if (ok) ok = InsertStaffLog(staffUid, targetUid, "player.kick", reason, "", "", outError);
+    PGresult* end = PQexec(conn_, ok ? "COMMIT" : "ROLLBACK");
+    if (ok && PQresultStatus(end) != PGRES_COMMAND_OK) {
+        ok = false;
+        outError = PQerrorMessage(conn_);
+    }
+    PQclear(end);
+    return ok;
+}
+
+bool Database::AdminCompensate(const std::string& staffUid, const std::string& targetUid, const std::string& faction,
+                               long long amount, const std::string& reason, std::string& outStatus,
+                               std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    const char* bankFaction = BankFaction(faction);
+    if (!bankFaction) {
+        outError = "invalid faction";
+        return false;
+    }
+    auto rollback = [&](PGresult* res) {
+        if (res) {
+            outError = PQerrorMessage(conn_);
+            PQclear(res);
+        }
+        PQclear(PQexec(conn_, "ROLLBACK"));
+        return false;
+    };
+    PQclear(PQexec(conn_, "BEGIN"));
+
+    const char* lookupParams[2] = {targetUid.c_str(), bankFaction};
+    PGresult* acct = PQexecParams(conn_,
+        "SELECT b.id, b.balance FROM bank_accounts b JOIN players p ON p.id = b.player_id "
+        "WHERE p.uid = $1 AND b.faction = $2 FOR UPDATE OF b",
+        2, nullptr, lookupParams, nullptr, nullptr, 0);
+    if (PQresultStatus(acct) != PGRES_TUPLES_OK) return rollback(acct);
+    if (PQntuples(acct) == 0) {
+        PQclear(acct);
+        PQclear(PQexec(conn_, "ROLLBACK"));
+        outStatus = "NO_ACCOUNT";
+        return true;
+    }
+    std::string accountId = PQgetvalue(acct, 0, 0);
+    long long balance = std::stoll(PQgetvalue(acct, 0, 1));
+    PQclear(acct);
+
+    // Same row the website's players.Compensate writes; the
+    // bank_transactions trigger updates the balance.
+    std::string amountStr = std::to_string(amount);
+    std::string after = std::to_string(balance + amount);
+    std::string memo = "Compensation: " + reason;
+    const char* txParams[5] = {accountId.c_str(), amountStr.c_str(), after.c_str(), memo.c_str(), staffUid.c_str()};
+    PGresult* tx = PQexecParams(conn_,
+        "INSERT INTO bank_transactions (account_id, type, amount, balance_after, memo, created_by) "
+        "VALUES ($1::bigint, 'admin_adjustment', $2::bigint, $3::bigint, $4, (SELECT id FROM players WHERE uid = $5))",
+        5, nullptr, txParams, nullptr, nullptr, 0);
+    if (PQresultStatus(tx) != PGRES_COMMAND_OK) return rollback(tx);
+    PQclear(tx);
+
+    std::string account = std::string("\"") + bankFaction + "\"";
+    if (!InsertStaffLog(staffUid, targetUid, "player.compensate",
+                        "+$" + Dollars(amount) + " " + bankFaction + " bank: " + reason,
+                        "{\"account\": " + account + ", \"balance\": " + std::to_string(balance) + "}",
+                        "{\"account\": " + account + ", \"balance\": " + after + ", \"amount\": " + amountStr + "}",
+                        outError)) {
+        return rollback(nullptr);
+    }
+    PGresult* commit = PQexec(conn_, "COMMIT");
+    bool ok = PQresultStatus(commit) == PGRES_COMMAND_OK;
+    if (!ok) outError = PQerrorMessage(conn_);
+    PQclear(commit);
+    outStatus = "OK:" + after;
     return ok;
 }

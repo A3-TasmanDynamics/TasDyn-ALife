@@ -33,6 +33,7 @@ class CfgFunctions
             class requestUseItem {}; // client -> server: the Use button finished
             class vehicleAction {};  // client -> server: push / give a key / impound
             class personAction {};   // client -> server: restrain / fine / strip / heal
+            class adminAction {};    // client -> server: the admin menu (checked against website permissions)
             class shopSell {};       // client -> server: sell to a trader
             class requestGather {};  // client -> server: gather a resource (timed)
             class requestProcess {}; // client -> server: process resources (timed)
@@ -79,6 +80,8 @@ class CfgFunctions
             class restrained {};      // server -> client: you're restrained
             class fine {};            // server -> client: a fine to pay or refuse
             class personApply {};     // server -> client: police strip you
+            class admin {};           // the admin menu (phone -> Admin)
+            class adminApply {};      // server -> client: staff actions on you (bring, freeze, kick, ...)
             class resourceProgress {}; // server -> client: progress bar while gathering / processing
             class itemUsed {};        // server -> client: apply a used item where it's local
             class interact {};        // the Windows key

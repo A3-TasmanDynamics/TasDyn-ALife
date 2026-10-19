@@ -75,6 +75,7 @@ On `OK`, every key below is present:
 | `name` | string | `players.name` | See [Escaping](#escaping) |
 | `staff_rank_key` | string | `staff_ranks.key` via `players.staff_rank_id` | Empty string if `staff_rank_id IS NULL` |
 | `staff_level` | number | `staff_ranks.level` via the same join | `0` if no staff rank |
+| `staff_perms` | array of strings | `rank_permissions` + `staff_permission_overrides` | The player's effective website permissions, resolved like the website's `auth.Effective`: `[]` unless they have a rank and `staff_status = 'active'`; overrides can't grant the NoOverride keys. Gates the phone's Admin app |
 | `civ_cash` / `cop_cash` / `medic_cash` | number | `players.<faction>_cash` | Physical cash on hand, per faction |
 | `civ_bank` / `cop_bank` / `medic_bank` | number | `players.<faction>_bank` | **Cache** — `bank_accounts.balance` is authoritative, this is kept in sync by DB trigger (see `database/schema.sql`), never written independently by application code |
 | `cop_level` / `medic_level` | number | `players.cop_level` / `players.medic_level` | Civilian has no level (no `civ_level` key) |
@@ -199,6 +200,22 @@ Response: the array for `load`, otherwise `OK` or `ERROR:reason`.
 
 Validation errors (`ERROR:invalid uid` / `faction` / `classname` / `price` / `id` / `status`) are
 returned before anything reaches the database.
+
+## `admin` — the game's Admin app
+
+Staff actions from the phone's Admin app (`ALife_fnc_adminAction`, which checks `staff_perms` first).
+Every one writes a `staff_log` row with `source = 'game'` (posted to #staff-log), next to the same
+rows the website writes for the same action.
+
+- `["log", staffUid, targetUid|"", action, reason, afterJson]` -- just the staff log (teleports,
+  heals, freezes, warnings, spawns, ...). `action` is `[a-z_.]`, up to 40 characters. Response `OK`.
+- `["ban", staffUid, targetUid, minutes, reason]` -- a `banlist` row (`scope 'game'`; `minutes` 0 =
+  permanent) and a `ban.issue` staff log ("1-day ban: <reason> (in game)"). Response `OK`, or
+  `ALREADY` if they have an active ban.
+- `["kick", staffUid, targetUid, reason]` -- a `kick_log` row (`manual`) and a `player.kick` staff log.
+- `["compensate", staffUid, targetUid, faction, amount, reason]` -- an `admin_adjustment` credit to the
+  target's faction bank account (the website's `players.Compensate`) and a `player.compensate` staff
+  log. Response `OK:<new balance>` or `NO_ACCOUNT`. `amount` $1-$100,000,000; not to yourself.
 
 ## Gear
 

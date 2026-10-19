@@ -171,6 +171,19 @@ var moderationPhrases = map[string]string{
 	"server.restart_cancel":      "cancelled a server restart",
 	"server.stop":                "stopped the game server",
 	"server.start":               "started the game server",
+	// The game's Admin app (source 'game').
+	"player.kick":         "kicked from the game server",
+	"game.warn":           "warned in game",
+	"game.heal":           "healed / revived in game",
+	"game.freeze":         "froze in game",
+	"game.unfreeze":       "unfroze in game",
+	"game.bring":          "teleported a player to themselves",
+	"game.godmode":        "turned on god mode",
+	"game.invisible":      "turned on invisibility",
+	"game.spawn_vehicle":  "spawned a vehicle",
+	"game.give_item":      "gave items",
+	"game.vehicle_delete": "deleted a vehicle",
+	"game.announce":       "made an in-game announcement",
 }
 
 // discordModeration are the staff_log actions the bot writes for

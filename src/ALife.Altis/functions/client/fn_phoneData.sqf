@@ -14,9 +14,10 @@
         6: STRING - staff rank key ("" = none)
         7: NUMBER - staff level
         8: ARRAY  - licence keys for this faction (CfgLicences)
+        9: ARRAY  - staff permission keys (website ranks; the Admin app)
 */
 
-params ["_faction", "_items", "_cash", "_bank", "_copLevel", "_medicLevel", "_staffRank", "_staffLevel", ["_licences", []]];
+params ["_faction", "_items", "_cash", "_bank", "_copLevel", "_medicLevel", "_staffRank", "_staffLevel", ["_licences", []], ["_perms", []]];
 
 ALife_phone = createHashMapFromArray [
     ["faction", _faction],
@@ -27,7 +28,8 @@ ALife_phone = createHashMapFromArray [
     ["medicLevel", _medicLevel],
     ["staffRank", _staffRank],
     ["staffLevel", _staffLevel],
-    ["licences", _licences]
+    ["licences", _licences],
+    ["perms", _perms]                 // staff permissions (website ranks): the Admin app
 ];
 
 if (!isNull (findDisplay 5000)) then { ["refresh"] call ALife_fnc_phone; };
