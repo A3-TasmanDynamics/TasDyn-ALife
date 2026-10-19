@@ -212,7 +212,12 @@ in-game; Athira, Pyrgos and Sofia are town centres — move them onto the statio
 
 ## Not built yet
 
-- Phone apps Gang, Keys (needs vehicles) and Admin.
+Tracked as issues on the Delivery Board; the main gaps:
+
+- Phone apps Gang and Keys; Perks.
+- Drugs: processing at objects, drug dealers, cash-only licences (#208).
+- Garage / impound lot to get vehicles back (#209); a licence shop for the non-processing licences (#210).
+- Police: escort, put in vehicle, jail (#211, #16).
 - Paychecks (staff add money on the website for now; withdraw it at an ATM).
 - Medic whitelisting (all Medic slots are open).
-- Gear/loadouts (slot weapons are removed on spawn; uniforms stay).
+- Saving vehicle trunk contents (#213); a server-side kick (#212).
