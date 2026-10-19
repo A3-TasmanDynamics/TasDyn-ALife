@@ -57,7 +57,17 @@ private _openShop = {
 private _near = !isNull _target && { !isPlayer _target } && { player distance _target <= 5 };
 private _process = if (_near) then { _target getVariable ["alife_process", ""] } else { "" };
 if (_process != "") exitWith {
-    if (isNil "ALife_using") then { [player, _process] remoteExecCall ["ALife_fnc_requestProcess", 2]; };
+    // The worker's menu: process, and buy the licence if you don't have it.
+    private _cfg = missionConfigFile >> "CfgProcessing" >> _process;
+    private _licence = getText (_cfg >> "licence");
+    private _lcfg = missionConfigFile >> "CfgLicences" >> _licence;
+    private _options = [["Process", { if (isNil "ALife_using") then { [player, _this] remoteExecCall ["ALife_fnc_requestProcess", 2]; }; }, _process]];
+    if (_licence != "" && { getNumber (_lcfg >> "price") > 0 }
+        && { !(_licence in ((missionNamespace getVariable ["ALife_phone", createHashMap]) getOrDefault ["licences", []])) }) then {
+        _options pushBack [format ["Buy licence $%1 (%2)", [getNumber (_lcfg >> "price")] call BIS_fnc_numberText, getText (_lcfg >> "payment")],
+            { [player, _this] remoteExecCall ["ALife_fnc_buyLicence", 2]; }, _process];
+    };
+    ["open", getText (_cfg >> "name"), _options] call ALife_fnc_radial;
     true
 };
 private _npcShop = "";
