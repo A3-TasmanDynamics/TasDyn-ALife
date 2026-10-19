@@ -8,12 +8,17 @@
     (ALife_fnc_shopBuy), which checks everything again and answers with a
     notice and fresh phone data (refreshing this window).
 
+    A trader (a shop with buys[] and no items[], e.g. the Resource Trader)
+    opens the other way round: what it buys, at the market's sell price
+    (ALife_fnc_marketPrice [class, true]), and Sell / Sell all
+    (ALife_fnc_shopSell; paid in cash).
+
     Modes:
         ["open", shopClass]
         ["onLoad", display]
         ["refresh"]
         ["select"]          - show the selected item's description
-        ["buy", "cash"|"bank"]
+        ["buy", "cash"|"bank"]  - a trader: "cash" = Sell (the quantity), "bank" = Sell all
 */
 
 #define IDD_SHOP     5100
@@ -29,6 +34,7 @@ private _display = findDisplay IDD_SHOP;
 private _shop = missionNamespace getVariable ["ALife_shopClass", ""];
 private _cfg = ([_shop] call ALife_fnc_shopInfo) param [2, configNull]; // the VirtualShops shop
 private _data = missionNamespace getVariable ["ALife_phone", createHashMap];
+private _selling = getArray (_cfg >> "items") isEqualTo [] && { getArray (_cfg >> "buys") isNotEqualTo [] }; // a trader
 private _fnc_money = { "$" + ([_this] call BIS_fnc_numberText) };
 // What this player lacks for a shop / entry config ("" = nothing).
 private _fnc_missing = {
@@ -52,13 +58,17 @@ switch (_mode) do {
         (_display displayCtrl IDC_TITLE) ctrlSetText toUpper getText (_cfg >> "name");
         private _list = _display displayCtrl IDC_LIST;
         lnbClear _list;
+        if (_selling) then {
+            (_display displayCtrl 5130) ctrlSetText "Sell";
+            (_display displayCtrl 5131) ctrlSetText "Sell all";
+        };
         {
             private _class = _x;
-            private _row = _list lnbAddRow [getText (missionConfigFile >> "CfgItems" >> _class >> "displayName"), ([_class] call ALife_fnc_marketPrice) call _fnc_money, ""];
+            private _row = _list lnbAddRow [getText (missionConfigFile >> "CfgItems" >> _class >> "displayName"), ([_class, _selling] call ALife_fnc_marketPrice) call _fnc_money, ""];
             _list lnbSetData [[_row, 0], _class];
             _list lnbSetPicture [[_row, 0], getText (missionConfigFile >> "CfgItems" >> _class >> "icon")];
             if (((missionConfigFile >> "CfgMarket" >> _class) call _fnc_missing) != "") then { _list lnbSetColor [[_row, 0], [1, 1, 1, 0.4]]; };
-        } forEach (getArray (_cfg >> "items") select { isClass (missionConfigFile >> "CfgMarket" >> _x) });
+        } forEach (getArray (_cfg >> (["items", "buys"] select _selling)) select { isClass (missionConfigFile >> "CfgMarket" >> _x) });
         if ((lnbSize _list) select 0 > 0) then { _list lnbSetCurSelRow 0; };
         [] spawn { ["refresh"] call ALife_fnc_shop; }; // after the dialog has finished opening
     };
@@ -73,7 +83,7 @@ switch (_mode) do {
         private _list = _display displayCtrl IDC_LIST;
         for "_row" from 0 to ((lnbSize _list) select 0) - 1 do {
             private _class = _list lnbData [_row, 0];
-            _list lnbSetText [[_row, 1], ([_class] call ALife_fnc_marketPrice) call _fnc_money]; // prices move
+            _list lnbSetText [[_row, 1], ([_class, _selling] call ALife_fnc_marketPrice) call _fnc_money]; // prices move
             _list lnbSetText [[_row, 2], format ["x%1", _owned getOrDefault [_class, 0]]];
         };
         ["select"] call ALife_fnc_shop;
@@ -97,6 +107,14 @@ switch (_mode) do {
         private _row = lnbCurSelRow _list;
         private _qty = floor parseNumber ctrlText (_display displayCtrl IDC_QTY);
         if (_row < 0) exitWith { ["Pick an item first.", "warning"] call ALife_fnc_toast; };
+        if (_selling) exitWith {
+            private _class = _list lnbData [_row, 0];
+            private _owned = (createHashMapFromArray ((_data getOrDefault ["items", []]) select { _x isEqualTypeParams ["", 0] })) getOrDefault [_class, 0];
+            if (_arg == "bank") then { _qty = _owned; }; // Sell all
+            if (_owned < 1) exitWith { [format ["You don't have any %1.", getText (missionConfigFile >> "CfgItems" >> _class >> "displayName")], "warning"] call ALife_fnc_toast; };
+            if (_qty < 1) exitWith { ["Enter how many to sell.", "warning"] call ALife_fnc_toast; };
+            [player, _shop, _class, _qty min _owned] remoteExec ["ALife_fnc_shopSell", 2];
+        };
         if (_qty < 1 || { _qty > 20 }) exitWith { ["Buy between 1 and 20 at a time.", "warning"] call ALife_fnc_toast; };
         [player, _shop, _list lnbData [_row, 0], _qty, _arg] remoteExec ["ALife_fnc_shopBuy", 2];
     };

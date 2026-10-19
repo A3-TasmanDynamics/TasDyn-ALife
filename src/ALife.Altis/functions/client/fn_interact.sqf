@@ -9,9 +9,10 @@
       - a dropped bag: opens it in the inventory screen;
       - a player within 3.5 m (or a downed one): their radial menu
         (ALife_fnc_personMenu) -- restrain, fine, heal, revive, ...;
+      - in a gathering area (CfgResources >> CfgGathering): gather there;
       - anything else: your own inventory with the ground beside it, to
-        drop things -- or, at one of your faction's shops (CfgShops), a
-        radial menu with the shop(s) and Inventory.
+        drop things -- or, at your faction's shops (CfgShops) and / or a
+        processor (CfgProcessing), a menu with those and Inventory.
 
     The server checks everything again.
 
@@ -47,6 +48,19 @@ if (!isNull _target && { _target != player } && { _target isKindOf "CAManBase" }
     true
 };
 
+// A gathering area: gather (the server checks the tool, room and area).
+private _resource = "";
+if (vehicle player == player) then {
+    {
+        private _cfg = _x;
+        if ((getArray (_cfg >> "zones") findIf { _x in allMapMarkers && { player inArea _x } }) >= 0) exitWith { _resource = configName _cfg; };
+    } forEach ("true" configClasses (missionConfigFile >> "CfgGathering"));
+};
+if (_resource != "") exitWith {
+    if (isNil "ALife_using") then { [player, _resource] remoteExecCall ["ALife_fnc_requestGather", 2]; };
+    true
+};
+
 // Your faction's shops you're standing at (CfgShops markers + radius).
 private _shops = [];
 {
@@ -66,6 +80,13 @@ private _shops = [];
         };
     };
 } forEach ("true" configClasses (missionConfigFile >> "CfgShops"));
+
+// Processors you're standing at (CfgProcessing area markers).
+{
+    if ((getArray (_x >> "markers") findIf { _x in allMapMarkers && { player inArea _x } }) >= 0) then {
+        _shops pushBack [getText (_x >> "name"), { [player, _this] remoteExecCall ["ALife_fnc_requestProcess", 2]; }, configName _x];
+    };
+} forEach ("true" configClasses (missionConfigFile >> "CfgProcessing"));
 
 if (_shops isNotEqualTo []) exitWith {
     ["open", "Shop", (_shops select [0, 7]) + [["Inventory", { ["openGround"] call ALife_fnc_transfer; }, []]]] call ALife_fnc_radial;

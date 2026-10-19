@@ -128,6 +128,32 @@ buttons ($100 / $500 / $1,000 / $5,000), **Deposit**, **Withdraw**, **Deposit al
   `bank_transactions` ledger); cash uses the `*_cash` delta save. Nobody starts with money yet —
   staff can add some on the website (player profile → bank adjustment).
 
+## Gathering, processing and selling (Windows key)
+
+Set in `config\CfgResources.hpp`; items in `CfgItems`, prices in `CfgMarket`.
+
+- **Gather**: press Windows inside a gathering area (needs a Pickaxe). The server times it, checks
+  you're still there, and gives what fits your carry weight.
+- **Process**: press Windows at a processor and pick it. Everything you carry for it is processed in
+  one go. Free with the processing licence; without it, a fee per batch from cash.
+- **Sell**: the Resource Trader (`trader_resources`) buys raw and processed resources at the market's
+  sell price, which drops as people sell and recovers over time.
+
+Markers to place in Eden (area markers -- ellipse or rectangle, any size):
+
+| Resource | Gather | Process into | Processor |
+|---|---|---|---|
+| Oil | `mine_oil` | Refined Oil | `process_oil` |
+| Copper | `mine_copper` | Copper Bar | `process_copper` |
+| Iron | `mine_iron` | Iron Bar | `process_iron` |
+| Salt | `mine_salt` | Refined Salt | `process_salt` |
+| Sand | `mine_sand` | Glass | `process_glass` |
+| Diamond | `mine_diamond` | Cut Diamond | `process_diamond` |
+| Rock | `mine_rock` | Cement | `process_cement` |
+
+Plus `trader_resources` (any marker; within 15 m). More spots for one resource: add markers to its
+`zones[]` / `markers[]`.
+
 ## What's saved, and when
 
 | When | What |
