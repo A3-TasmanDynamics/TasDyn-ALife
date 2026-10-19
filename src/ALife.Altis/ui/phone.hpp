@@ -60,16 +60,16 @@ class ALife_Phone
             x = "safezoneX + safezoneW * 0.768";
             y = "safezoneY + safezoneH * 0.33";
             w = "safezoneW * 0.16";
-            h = "safezoneH * 0.2";
+            h = "safezoneH * 0.11";
         };
         class TileIcon0: ALife_RscPicture
         {
             idc = 5110;
             text = "ui\icons\messages_ca.paa";
-            x = "safezoneX + safezoneW * 0.7618";
-            y = "safezoneY + safezoneH * 0.56";
-            w = "safezoneW * 0.044";
-            h = "safezoneH * 0.078";
+            x = "safezoneX + safezoneW * 0.7648";
+            y = "safezoneY + safezoneH * 0.460";
+            w = "safezoneW * 0.038";
+            h = "safezoneH * 0.067";
         };
         class TileLabel0: ALife_RscText
         {
@@ -79,7 +79,7 @@ class ALife_Phone
             colorText[] = { 0.945, 0.961, 0.976, 1 };
             text = "Messages";
             x = "safezoneX + safezoneW * 0.752";
-            y = "safezoneY + safezoneH * 0.642";
+            y = "safezoneY + safezoneH * 0.531";
             w = "safezoneW * 0.0637";
             h = "safezoneH * 0.028";
         };
@@ -94,18 +94,18 @@ class ALife_Phone
             offsetPressedX = 0; offsetPressedY = 0;
             action = "['app', 0] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.756";
-            y = "safezoneY + safezoneH * 0.554";
+            y = "safezoneY + safezoneH * 0.449";
             w = "safezoneW * 0.0557";
-            h = "safezoneH * 0.118";
+            h = "safezoneH * 0.112";
         };
         class TileIcon1: ALife_RscPicture
         {
             idc = 5111;
             text = "ui\icons\bank_ca.paa";
-            x = "safezoneX + safezoneW * 0.8255";
-            y = "safezoneY + safezoneH * 0.56";
-            w = "safezoneW * 0.044";
-            h = "safezoneH * 0.078";
+            x = "safezoneX + safezoneW * 0.8285";
+            y = "safezoneY + safezoneH * 0.460";
+            w = "safezoneW * 0.038";
+            h = "safezoneH * 0.067";
         };
         class TileLabel1: ALife_RscText
         {
@@ -115,7 +115,7 @@ class ALife_Phone
             colorText[] = { 0.945, 0.961, 0.976, 1 };
             text = "Bank";
             x = "safezoneX + safezoneW * 0.8157";
-            y = "safezoneY + safezoneH * 0.642";
+            y = "safezoneY + safezoneH * 0.531";
             w = "safezoneW * 0.0637";
             h = "safezoneH * 0.028";
         };
@@ -130,18 +130,18 @@ class ALife_Phone
             offsetPressedX = 0; offsetPressedY = 0;
             action = "['app', 1] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.8197";
-            y = "safezoneY + safezoneH * 0.554";
+            y = "safezoneY + safezoneH * 0.449";
             w = "safezoneW * 0.0557";
-            h = "safezoneH * 0.118";
+            h = "safezoneH * 0.112";
         };
         class TileIcon2: ALife_RscPicture
         {
             idc = 5112;
             text = "ui\icons\inventory_ca.paa";
-            x = "safezoneX + safezoneW * 0.8892";
-            y = "safezoneY + safezoneH * 0.56";
-            w = "safezoneW * 0.044";
-            h = "safezoneH * 0.078";
+            x = "safezoneX + safezoneW * 0.8922";
+            y = "safezoneY + safezoneH * 0.460";
+            w = "safezoneW * 0.038";
+            h = "safezoneH * 0.067";
         };
         class TileLabel2: ALife_RscText
         {
@@ -151,7 +151,7 @@ class ALife_Phone
             colorText[] = { 0.945, 0.961, 0.976, 1 };
             text = "Inventory";
             x = "safezoneX + safezoneW * 0.8793";
-            y = "safezoneY + safezoneH * 0.642";
+            y = "safezoneY + safezoneH * 0.531";
             w = "safezoneW * 0.0637";
             h = "safezoneH * 0.028";
         };
@@ -166,18 +166,18 @@ class ALife_Phone
             offsetPressedX = 0; offsetPressedY = 0;
             action = "['app', 2] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.8833";
-            y = "safezoneY + safezoneH * 0.554";
+            y = "safezoneY + safezoneH * 0.449";
             w = "safezoneW * 0.0557";
-            h = "safezoneH * 0.118";
+            h = "safezoneH * 0.112";
         };
         class TileIcon3: ALife_RscPicture
         {
             idc = 5113;
             text = "ui\icons\playerid_ca.paa";
-            x = "safezoneX + safezoneW * 0.7618";
-            y = "safezoneY + safezoneH * 0.685";
-            w = "safezoneW * 0.044";
-            h = "safezoneH * 0.078";
+            x = "safezoneX + safezoneW * 0.7648";
+            y = "safezoneY + safezoneH * 0.575";
+            w = "safezoneW * 0.038";
+            h = "safezoneH * 0.067";
         };
         class TileLabel3: ALife_RscText
         {
@@ -187,7 +187,7 @@ class ALife_Phone
             colorText[] = { 0.945, 0.961, 0.976, 1 };
             text = "Player ID";
             x = "safezoneX + safezoneW * 0.752";
-            y = "safezoneY + safezoneH * 0.767";
+            y = "safezoneY + safezoneH * 0.646";
             w = "safezoneW * 0.0637";
             h = "safezoneH * 0.028";
         };
@@ -202,18 +202,18 @@ class ALife_Phone
             offsetPressedX = 0; offsetPressedY = 0;
             action = "['app', 3] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.756";
-            y = "safezoneY + safezoneH * 0.679";
+            y = "safezoneY + safezoneH * 0.564";
             w = "safezoneW * 0.0557";
-            h = "safezoneH * 0.118";
+            h = "safezoneH * 0.112";
         };
         class TileIcon4: ALife_RscPicture
         {
             idc = 5114;
             text = "ui\icons\perks_ca.paa";
-            x = "safezoneX + safezoneW * 0.8255";
-            y = "safezoneY + safezoneH * 0.685";
-            w = "safezoneW * 0.044";
-            h = "safezoneH * 0.078";
+            x = "safezoneX + safezoneW * 0.8285";
+            y = "safezoneY + safezoneH * 0.575";
+            w = "safezoneW * 0.038";
+            h = "safezoneH * 0.067";
         };
         class TileLabel4: ALife_RscText
         {
@@ -223,7 +223,7 @@ class ALife_Phone
             colorText[] = { 0.945, 0.961, 0.976, 1 };
             text = "Perks";
             x = "safezoneX + safezoneW * 0.8157";
-            y = "safezoneY + safezoneH * 0.767";
+            y = "safezoneY + safezoneH * 0.646";
             w = "safezoneW * 0.0637";
             h = "safezoneH * 0.028";
         };
@@ -238,18 +238,18 @@ class ALife_Phone
             offsetPressedX = 0; offsetPressedY = 0;
             action = "['app', 4] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.8197";
-            y = "safezoneY + safezoneH * 0.679";
+            y = "safezoneY + safezoneH * 0.564";
             w = "safezoneW * 0.0557";
-            h = "safezoneH * 0.118";
+            h = "safezoneH * 0.112";
         };
         class TileIcon5: ALife_RscPicture
         {
             idc = 5115;
             text = "ui\icons\gang_ca.paa";
-            x = "safezoneX + safezoneW * 0.8892";
-            y = "safezoneY + safezoneH * 0.685";
-            w = "safezoneW * 0.044";
-            h = "safezoneH * 0.078";
+            x = "safezoneX + safezoneW * 0.8922";
+            y = "safezoneY + safezoneH * 0.575";
+            w = "safezoneW * 0.038";
+            h = "safezoneH * 0.067";
         };
         class TileLabel5: ALife_RscText
         {
@@ -259,7 +259,7 @@ class ALife_Phone
             colorText[] = { 0.945, 0.961, 0.976, 1 };
             text = "Gang";
             x = "safezoneX + safezoneW * 0.8793";
-            y = "safezoneY + safezoneH * 0.767";
+            y = "safezoneY + safezoneH * 0.646";
             w = "safezoneW * 0.0637";
             h = "safezoneH * 0.028";
         };
@@ -274,18 +274,18 @@ class ALife_Phone
             offsetPressedX = 0; offsetPressedY = 0;
             action = "['app', 5] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.8833";
-            y = "safezoneY + safezoneH * 0.679";
+            y = "safezoneY + safezoneH * 0.564";
             w = "safezoneW * 0.0557";
-            h = "safezoneH * 0.118";
+            h = "safezoneH * 0.112";
         };
         class TileIcon6: ALife_RscPicture
         {
             idc = 5116;
             text = "ui\icons\keys_ca.paa";
-            x = "safezoneX + safezoneW * 0.7618";
-            y = "safezoneY + safezoneH * 0.81";
-            w = "safezoneW * 0.044";
-            h = "safezoneH * 0.078";
+            x = "safezoneX + safezoneW * 0.7648";
+            y = "safezoneY + safezoneH * 0.690";
+            w = "safezoneW * 0.038";
+            h = "safezoneH * 0.067";
         };
         class TileLabel6: ALife_RscText
         {
@@ -295,7 +295,7 @@ class ALife_Phone
             colorText[] = { 0.945, 0.961, 0.976, 1 };
             text = "Keys";
             x = "safezoneX + safezoneW * 0.752";
-            y = "safezoneY + safezoneH * 0.892";
+            y = "safezoneY + safezoneH * 0.761";
             w = "safezoneW * 0.0637";
             h = "safezoneH * 0.028";
         };
@@ -310,18 +310,18 @@ class ALife_Phone
             offsetPressedX = 0; offsetPressedY = 0;
             action = "['app', 6] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.756";
-            y = "safezoneY + safezoneH * 0.804";
+            y = "safezoneY + safezoneH * 0.679";
             w = "safezoneW * 0.0557";
-            h = "safezoneH * 0.118";
+            h = "safezoneH * 0.112";
         };
         class TileIcon7: ALife_RscPicture
         {
             idc = 5117;
             text = "ui\icons\admin_ca.paa";
-            x = "safezoneX + safezoneW * 0.8255";
-            y = "safezoneY + safezoneH * 0.81";
-            w = "safezoneW * 0.044";
-            h = "safezoneH * 0.078";
+            x = "safezoneX + safezoneW * 0.8285";
+            y = "safezoneY + safezoneH * 0.690";
+            w = "safezoneW * 0.038";
+            h = "safezoneH * 0.067";
         };
         class TileLabel7: ALife_RscText
         {
@@ -331,7 +331,7 @@ class ALife_Phone
             colorText[] = { 0.945, 0.961, 0.976, 1 };
             text = "Admin";
             x = "safezoneX + safezoneW * 0.8157";
-            y = "safezoneY + safezoneH * 0.892";
+            y = "safezoneY + safezoneH * 0.761";
             w = "safezoneW * 0.0637";
             h = "safezoneH * 0.028";
         };
@@ -346,18 +346,18 @@ class ALife_Phone
             offsetPressedX = 0; offsetPressedY = 0;
             action = "['app', 7] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.8197";
-            y = "safezoneY + safezoneH * 0.804";
+            y = "safezoneY + safezoneH * 0.679";
             w = "safezoneW * 0.0557";
-            h = "safezoneH * 0.118";
+            h = "safezoneH * 0.112";
         };
         class TileIcon8: ALife_RscPicture
         {
             idc = 5118;
             text = "ui\icons\settings_ca.paa";
-            x = "safezoneX + safezoneW * 0.8892";
-            y = "safezoneY + safezoneH * 0.81";
-            w = "safezoneW * 0.044";
-            h = "safezoneH * 0.078";
+            x = "safezoneX + safezoneW * 0.8922";
+            y = "safezoneY + safezoneH * 0.690";
+            w = "safezoneW * 0.038";
+            h = "safezoneH * 0.067";
         };
         class TileLabel8: ALife_RscText
         {
@@ -367,7 +367,7 @@ class ALife_Phone
             colorText[] = { 0.945, 0.961, 0.976, 1 };
             text = "Settings";
             x = "safezoneX + safezoneW * 0.8793";
-            y = "safezoneY + safezoneH * 0.892";
+            y = "safezoneY + safezoneH * 0.761";
             w = "safezoneW * 0.0637";
             h = "safezoneH * 0.028";
         };
@@ -382,9 +382,45 @@ class ALife_Phone
             offsetPressedX = 0; offsetPressedY = 0;
             action = "['app', 8] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.8833";
-            y = "safezoneY + safezoneH * 0.804";
+            y = "safezoneY + safezoneH * 0.679";
             w = "safezoneW * 0.0557";
-            h = "safezoneH * 0.118";
+            h = "safezoneH * 0.112";
+        };
+        class TileIcon9: ALife_RscPicture
+        {
+            idc = 5119;
+            text = "ui\icons\market_ca.paa";
+            x = "safezoneX + safezoneW * 0.7648";
+            y = "safezoneY + safezoneH * 0.805";
+            w = "safezoneW * 0.038";
+            h = "safezoneH * 0.067";
+        };
+        class TileLabel9: ALife_RscText
+        {
+            idc = 5129;
+            style = 2;
+            sizeEx = 0.026;
+            colorText[] = { 0.945, 0.961, 0.976, 1 };
+            text = "Market";
+            x = "safezoneX + safezoneW * 0.752";
+            y = "safezoneY + safezoneH * 0.876";
+            w = "safezoneW * 0.0637";
+            h = "safezoneH * 0.028";
+        };
+        class Tile9: ALife_RscButton
+        {
+            idc = 5139;
+            colorBackground[] = { 0, 0, 0, 0 };
+            colorBackgroundActive[] = { 1, 1, 1, 0.06 };
+            colorFocused[] = { 0, 0, 0, 0 };
+            colorShadow[] = { 0, 0, 0, 0 };
+            colorBorder[] = { 0, 0, 0, 0 };
+            offsetPressedX = 0; offsetPressedY = 0;
+            action = "['app', 9] call ALife_fnc_phone";
+            x = "safezoneX + safezoneW * 0.756";
+            y = "safezoneY + safezoneH * 0.794";
+            w = "safezoneW * 0.0557";
+            h = "safezoneH * 0.112";
         };
         class AppHeader: ALife_RscBackground
         {

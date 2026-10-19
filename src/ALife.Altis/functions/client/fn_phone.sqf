@@ -8,7 +8,8 @@
     request to the server, which answers with fresh phone data
     (ALife_fnc_phoneData) -- that refreshes the open app.
 
-    Apps: Messages, Bank, Inventory, Player ID, Settings; Perks, Gang, Keys
+    Apps: Messages, Bank, Inventory, Player ID, Settings, Market (live prices),
+    Admin (staff); Perks, Gang, Keys
     and Admin are "coming soon".
 
     Modes:
@@ -47,8 +48,8 @@ params ["_mode"];
 private _args = _this select [1];
 private _display = uiNamespace getVariable ["ALife_phoneDisplay", displayNull];
 
-private _apps = ["messages", "bank", "inventory", "playerid", "perks", "gang", "keys", "admin", "settings"];
-private _titles = ["Messages", "Bank", "Inventory", "Player ID", "Perks", "Gang", "Keys", "Admin", "Settings"];
+private _apps = ["messages", "bank", "inventory", "playerid", "perks", "gang", "keys", "admin", "settings", "market"];
+private _titles = ["Messages", "Bank", "Inventory", "Player ID", "Perks", "Gang", "Keys", "Admin", "Settings", "Market"];
 private _data = missionNamespace getVariable ["ALife_phone", createHashMap];
 private _faction = _data getOrDefault ["faction", missionNamespace getVariable ["ALife_faction", "civ"]];
 private _factionName = switch (_faction) do { case "cop": { "Police" }; case "medic": { "EMS" }; default { "Civilian" }; };
@@ -182,7 +183,7 @@ switch (_mode) do {
         if (isNull _display) exitWith {};
         ALife_phoneApp = "";
         { (_display displayCtrl _x) ctrlShow false; } forEach _appControls;
-        for "_i" from 0 to 8 do {
+        for "_i" from 0 to count _apps - 1 do {
             { (_display displayCtrl (_x + _i)) ctrlShow true; } forEach [IDC_ICON, IDC_LABEL, IDC_TILE];
         };
         (_display displayCtrl IDC_CLOCK) ctrlShow true;
@@ -191,7 +192,7 @@ switch (_mode) do {
 
         (_display displayCtrl IDC_BODY) ctrlSetText (["wallpaperTexture"] call ALife_fnc_phoneSettings);
 
-        // Stacked clock (hours over minutes) and "Sat, 24 Jun", top-left.
+        // The clock ("12:34") over "Sat, 24 Jun", top-left.
         date params ["_year", "_month", "_day"];
         private _months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         // Day of the week (Zeller's congruence, 0 = Saturday).
@@ -201,10 +202,10 @@ switch (_mode) do {
         private _hour = floor daytime;
         private _minute = floor ((daytime - _hour) * 60);
         (_display displayCtrl IDC_CLOCK) ctrlSetStructuredText parseText format [
-            "<t size='%4' font='RobotoCondensedLight'>%1</t><br/><t size='%4' font='RobotoCondensedLight'>%2</t><br/><t size='%5' color='#f1f5f9'>%3</t>",
+            "<t size='%4' font='RobotoCondensedLight'>%1:%2</t><br/><t size='%5' color='#f1f5f9'>%3</t>",
             _hour, (["", "0"] select (_minute < 10)) + str _minute,
             format ["%1, %2 %3", ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"] select _weekday, _day, _months select ((_month - 1) max 0)],
-            64 call _fnc_px, 24 call _fnc_px];
+            58 call _fnc_px, 24 call _fnc_px];
         call _fnc_status;
     };
 
@@ -212,7 +213,7 @@ switch (_mode) do {
         if (isNull _display) exitWith {};
         private _index = _args param [0, 0];
         ALife_phoneApp = _apps select _index;
-        for "_i" from 0 to 8 do {
+        for "_i" from 0 to count _apps - 1 do {
             { (_display displayCtrl (_x + _i)) ctrlShow false; } forEach [IDC_ICON, IDC_LABEL, IDC_TILE];
         };
         (_display displayCtrl IDC_CLOCK) ctrlShow false;
@@ -265,6 +266,27 @@ switch (_mode) do {
                 [0, "Give", 0.77, 0.075, 0.28, 0.72, true] call _fnc_button;
                 [2, "Use", 0.87, 0.07, 0, 0.49] call _fnc_button;
                 [1, "Drop", 0.87, 0.07, 0.51, 0.49] call _fnc_button;
+            };
+            case "market": {
+                // Live market prices: a filter, the items, and the selected one's details.
+                [0, "SHOW", 0] call _fnc_label;
+                private _combo = [IDC_COMBO, 0.05, 0.07] call _fnc_place;
+                [IDC_LIST, 0.13, 0.55] call _fnc_place;
+                (_display displayCtrl IDC_LIST) lnbSetColumnsPos [0.04, 0.58];
+                [1, 0.7, 0.28] call _fnc_card;
+                [IDC_INFO, 0.71, 0.27, 0.04, 0.92] call _fnc_place;
+                ALife_phoneFilling = true;
+                lbClear _combo;
+                { _combo lbSetData [_combo lbAdd (_x select 1), _x select 0]; } forEach [["shop", "Shop items"], ["resources", "Resources"], ["all", "Everything"]];
+                _combo lbSetCurSel ((["shop", "resources", "all"] find (missionNamespace getVariable ["ALife_marketFilter", "shop"])) max 0);
+                ALife_phoneFilling = false;
+                // Prices move while you watch.
+                [] spawn {
+                    while { (missionNamespace getVariable ["ALife_phoneApp", ""]) == "market" && { !isNull (findDisplay 5000) } } do {
+                        uiSleep 5;
+                        if ((missionNamespace getVariable ["ALife_phoneApp", ""]) == "market") then { ["refresh"] call ALife_fnc_phone; };
+                    };
+                };
             };
             case "playerid": {
                 [0, 0, 0.36, [0.08, 0.63, 0.59, 0.16]] call _fnc_card;
@@ -403,6 +425,34 @@ switch (_mode) do {
                 [[getNumber (missionConfigFile >> "CfgALife" >> "giveDistance")] call _fnc_players, "Nobody nearby"] call _fnc_fillPlayers;
             };
 
+            case "market": {
+                private _list = _display displayCtrl IDC_LIST;
+                private _keep = _list lnbData [(lnbCurSelRow _list) max 0, 0];
+                private _filter = missionNamespace getVariable ["ALife_marketFilter", "shop"];
+                // Resources are what traders buy (VirtualShops buys[]): shown at the
+                // trader's price. Everything else at what a shop charges.
+                private _resources = [];
+                { _resources append getArray (_x >> "buys"); } forEach ("true" configClasses (missionConfigFile >> "VirtualShops"));
+                private _rows = ("true" configClasses (missionConfigFile >> "CfgMarket")) apply { configName _x } select {
+                    switch (_filter) do { case "shop": { !(_x in _resources) }; case "resources": { _x in _resources }; default { true }; }
+                };
+                lnbClear _list;
+                {
+                    private _selling = _x in _resources;
+                    private _price = [_x, _selling] call ALife_fnc_marketPrice;
+                    private _base = getNumber (missionConfigFile >> "CfgMarket" >> _x >> (["buyPrice", "sellPrice"] select _selling));
+                    private _change = if (_base > 0) then { round ((_price / _base - 1) * 100) } else { 0 };
+                    private _row = _list lnbAddRow [getText (missionConfigFile >> "CfgItems" >> _x >> "displayName"),
+                        format ["%1  %2", _price call _fnc_money, if (_change == 0) then { "" } else { format ["%1%2%%", ["", "+"] select (_change > 0), _change] }]];
+                    _list lnbSetData [[_row, 0], _x];
+                    _list lnbSetPicture [[_row, 0], getText (missionConfigFile >> "CfgItems" >> _x >> "icon")];
+                    if (_change != 0) then { _list lnbSetColor [[_row, 1], [[0.97, 0.44, 0.41, 1], [0.29, 0.81, 0.59, 1]] select (_change > 0)]; };
+                    if (_x == _keep) then { _list lnbSetCurSelRow _row; };
+                } forEach _rows;
+                if (lnbCurSelRow _list < 0 && { (lnbSize _list) select 0 > 0 }) then { _list lnbSetCurSelRow 0; };
+                ["select", IDC_LIST, lnbCurSelRow _list] call ALife_fnc_phone;
+            };
+
             case "playerid": {
                 private _cop = _data getOrDefault ["copLevel", 0];
                 private _medic = _data getOrDefault ["medicLevel", 0];
@@ -448,6 +498,27 @@ switch (_mode) do {
     case "select": {
         _args params ["_idc", "_row"];
         if (isNull _display || { _row < 0 }) exitWith {};
+        if (ALife_phoneApp == "market" && { _idc == IDC_COMBO }) exitWith {
+            if (missionNamespace getVariable ["ALife_phoneFilling", false]) exitWith {};
+            ALife_marketFilter = (_display displayCtrl IDC_COMBO) lbData _row;
+            ["refresh"] call ALife_fnc_phone;
+        };
+        if (ALife_phoneApp == "market" && { _idc == IDC_LIST }) exitWith {
+            private _class = (_display displayCtrl IDC_LIST) lnbData [_row, 0];
+            private _cfg = missionConfigFile >> "CfgMarket" >> _class;
+            if (!isClass _cfg) exitWith {};
+            private _buy = [_class] call ALife_fnc_marketPrice;
+            private _sell = [_class, true] call ALife_fnc_marketPrice;
+            private _have = 0;
+            { if ((_x select 0) == _class) then { _have = _x select 1; }; } forEach (_data getOrDefault ["items", []]);
+            private _change = round ((_buy / (getNumber (_cfg >> "buyPrice") max 1) - 1) * 100);
+            (_display displayCtrl IDC_INFO) ctrlSetStructuredText parseText format [
+                "<t size='%7' font='RobotoCondensedBold'>%1</t><br/><t size='%8' color='#8b98b3'>Shops sell </t><t size='%8'>%2</t><t size='%8' color='#8b98b3'>   Traders pay </t><t size='%8'>%3</t><br/><t size='%8' color='#8b98b3'>%4 base price</t><br/><t size='%8' color='#8b98b3'>You carry </t><t size='%8'>%5</t>%6",
+                getText (missionConfigFile >> "CfgItems" >> _class >> "displayName") call _fnc_safe, _buy call _fnc_money, _sell call _fnc_money,
+                if (_change == 0) then { "At the" } else { format ["<t color='%1'>%2%3%%</t> on the", ["#fca5a5", "#4ade80"] select (_change > 0), ["", "+"] select (_change > 0), _change] },
+                _have, if (_have > 0) then { format ["<t size='%2' color='#8b98b3'> (worth %1)</t>", (_sell * _have) call _fnc_money, 22 call _fnc_px] } else { "" },
+                26 call _fnc_px, 22 call _fnc_px];
+        };
         if (_idc == IDC_COMBO) exitWith {
             if (missionNamespace getVariable ["ALife_phoneFilling", false]) exitWith {};
             ["viewDistance", (_display displayCtrl IDC_COMBO) lbValue _row] call ALife_fnc_phoneSettings;
