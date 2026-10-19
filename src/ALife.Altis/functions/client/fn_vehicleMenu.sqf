@@ -10,7 +10,7 @@
         Push            - an empty vehicle or boat, away from you
         Give Keys       - the owner: to a player within 10 m
         Refuel          - with a Fuel Can
-        Pick the lock   - with a Lockpick, when it's locked
+        Lockpick        - with a Lockpick, when it's locked
 
     Police also get Impound. The server checks everything again
     (ALife_fnc_vehicleLock, ALife_fnc_containerOpen, ALife_fnc_useItem,
@@ -29,7 +29,6 @@ private _owner = (_vehicle getVariable ["alife_owner", ""]) == _uid;
 private _hasKey = _owner || { _uid in (_vehicle getVariable ["alife_keys", []]) };
 private _name = getText (configFile >> "CfgVehicles" >> typeOf _vehicle >> "displayName");
 private _plate = _vehicle getVariable ["alife_plate", ""];
-private _title = if (_plate == "") then { _name } else { format ["%1<br/><t size='0.8' color='#fbbf24'>%2</t>", _name, _plate] };
 private _have = { private _i = ((missionNamespace getVariable ["ALife_phone", createHashMap]) getOrDefault ["items", []]) findIf { (_x select 0) == _this && { (_x select 1) > 0 } }; _i >= 0 };
 
 switch (_mode) do {
@@ -50,12 +49,12 @@ switch (_mode) do {
             _options pushBack ["Refuel", { ["fuelcan", _this] call ALife_fnc_useItem; }, _vehicle];
         };
         if (!_hasKey && { locked _vehicle >= 2 } && { "lockpick" call _have }) then {
-            _options pushBack ["Pick the lock", { ["lockpick", _this] call ALife_fnc_useItem; }, _vehicle];
+            _options pushBack ["Lockpick", { ["lockpick", _this] call ALife_fnc_useItem; }, _vehicle];
         };
         if ((missionNamespace getVariable ["ALife_faction", "civ"]) == "cop") then {
             _options pushBack ["Impound", { [player, "impound", _this] remoteExecCall ["ALife_fnc_vehicleAction", 2]; }, _vehicle];
         };
-        ["open", _title, _options] call ALife_fnc_radial;
+        ["open", _name, _options, _plate] call ALife_fnc_radial;
     };
 
     case "keys": {

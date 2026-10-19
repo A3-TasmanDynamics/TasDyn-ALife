@@ -43,7 +43,7 @@ switch (_mode) do {
                 };
             } else {
                 if (!_restrained && { "zipties" call _have }) then {
-                    _options pushBack ["Restrain (Zip Ties)", { [player, "restrain", _this] remoteExecCall ["ALife_fnc_personAction", 2]; }, _target];
+                    _options pushBack ["Zip Tie", { [player, "restrain", _this] remoteExecCall ["ALife_fnc_personAction", 2]; }, _target];
                 };
                 if (_restrained && { _zipTied }) then {
                     _options pushBack ["Untie", { [player, "unrestrain", _this] remoteExecCall ["ALife_fnc_personAction", 2]; }, _target];

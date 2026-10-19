@@ -2,7 +2,7 @@
     ALife_fnc_useItem (client, scheduled)
 
     The Use button (phone Inventory, the Windows-key inventory) and the
-    vehicle menu (Repair / Refuel / Pick the lock): uses one
+    vehicle menu (Repair / Refuel / Lockpick): uses one
     of a virtual item, as its CfgItems `use` says -- eat / drink, heal
     yourself, repair / refuel / lockpick the vehicle you're next to. A
     progress bar runs for its `useTime` (ui\progress.hpp); for anything
