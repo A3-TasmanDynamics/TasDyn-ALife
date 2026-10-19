@@ -34,8 +34,7 @@ if (_info isEqualTo [] || { (_info select 0) != "market" } || { !isClass (missio
     || { !(_class in getArray (_shopCfg >> "buys")) } || { getText (_shopCfg >> "side") != _faction }) exitWith {
     "They don't buy that here." call _fnc_reply;
 };
-private _radius = getNumber (_placeCfg >> "radius");
-if ((getArray (_placeCfg >> "markers") findIf { _unit distance2D getMarkerPos _x <= _radius }) < 0) exitWith {
+if (!([_unit, _placeCfg] call ALife_fnc_atPlace)) exitWith {
     "You're too far from the shop." call _fnc_reply;
 };
 private _licences = (_record getOrDefault [_faction + "_licence", []]) select { _x isEqualType "" };

@@ -91,6 +91,7 @@ class CfgFunctions
         {
             file = "functions\common";
             class sideToFaction {};   // west/independent/civilian -> "cop"/"medic"/"civ"
+            class atPlace {};         // is a unit at a shop / processor / gathering area (markers or NPCs)
             class parsePosition {};   // stored DB position -> [x,y,z]
             class killInfo {};        // killer name, weapon, distance
             class itemsWeight {};     // weight of a list of items

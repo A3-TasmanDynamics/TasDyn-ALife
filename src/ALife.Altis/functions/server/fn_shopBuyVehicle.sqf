@@ -37,8 +37,7 @@ _info params ["", "_place", "_shop"];
 private _rows = getArray (_shop >> "vehicles");
 private _index = _rows findIf { (_x select 0) == _class };
 if (_index < 0 || { getText (_shop >> "side") != _faction }) exitWith { "You can't buy that here." call _fnc_reply; };
-private _radius = getNumber (_place >> "radius");
-if ((getArray (_place >> "markers") findIf { _unit distance2D getMarkerPos _x <= _radius }) < 0) exitWith {
+if (!([_unit, _place] call ALife_fnc_atPlace)) exitWith {
     "You're too far from the shop." call _fnc_reply;
 };
 

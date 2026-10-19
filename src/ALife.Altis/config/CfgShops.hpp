@@ -5,7 +5,10 @@
 //                CfgClothing.hpp) or "vehicles" (CarShops, CfgVehicles.hpp)
 //   shop      -- the shop's class there (its name, side, licence and stock)
 //   markers[] -- mission.sqm markers it's at
-//   radius    -- metres from a marker
+//   npcs[]    -- and / or units placed in Eden (their variable names): look at
+//                one and press Windows to open the shop. They stand still and
+//                can't be hurt (ALife_fnc_serverInit).
+//   radius    -- metres from a marker / NPC
 //   vehicleSpawns[] -- vehicle shops: where bought vehicles appear
 //
 // Shops sit on the town spawn markers for now; give each its own marker in
@@ -18,8 +21,9 @@ class CfgShops
     {
         type = "market";
         shop = "resources";
-        markers[] = { "trader_resources" };   // place this marker in Eden
-        radius = 15;
+        markers[] = {};
+        npcs[] = { "trader_resources_1", "trader_resources_2" }; // units placed in Eden: Windows key on one
+        radius = 5;
     };
 
     class general_market

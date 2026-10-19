@@ -1,6 +1,6 @@
 /*
-    ALife_fnc_requestProcess (server, called by the client: a processor in
-    the Windows-key menu)
+    ALife_fnc_requestProcess (server, called by the client: Windows on a
+    processor's worker)
 
     Processes everything the player carries for one processor
     (CfgResources.hpp >> CfgProcessing): as many batches of from[] as they
@@ -32,7 +32,7 @@ if (_unit getVariable ["alife_restrained", false]) exitWith {};
 if (isNil "ALife_busy") then { ALife_busy = createHashMap; };
 if (ALife_busy getOrDefault [_uid, false]) exitWith {};
 
-private _fnc_here = { (getArray (_cfg >> "markers") findIf { _x in allMapMarkers && { _unit inArea _x } }) >= 0 };
+private _fnc_here = { [_unit, _cfg] call ALife_fnc_atPlace };
 if !(call _fnc_here) exitWith { "You're not at the processor." call _fnc_reply; };
 
 private _from = getArray (_cfg >> "from") select { _x isEqualTypeParams ["", 0] && { (_x select 1) > 0 } };

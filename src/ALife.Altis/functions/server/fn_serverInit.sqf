@@ -109,6 +109,33 @@ addMissionEventHandler ["EntityRespawned", {
             ["session", ["reset"]] call ALife_fnc_extension;
             // Current market prices (saved across restarts) before anyone can shop.
             ["init"] call ALife_fnc_market;
+            // The people you deal with: shop NPCs placed in Eden (CfgShops
+            // npcs[]) and a worker at each processor marker (CfgProcessing).
+            // They stand still and can't be hurt.
+            private _fnc_static = {
+                { _this disableAI _x; } forEach ["MOVE", "PATH", "FSM", "TARGET", "AUTOTARGET", "AUTOCOMBAT"];
+                _this allowDamage false;
+                removeAllWeapons _this;
+                _this setUnitPos "UP";
+            };
+            {
+                {
+                    private _npc = missionNamespace getVariable [_x, objNull];
+                    if (!isNull _npc) then { _npc call _fnc_static; };
+                } forEach getArray (_x >> "npcs");
+            } forEach ("true" configClasses (missionConfigFile >> "CfgShops"));
+            private _workerClass = getText (missionConfigFile >> "CfgProcessing" >> "npcClass");
+            {
+                private _process = configName _x;
+                {
+                    if (_x in allMapMarkers) then {
+                        private _worker = createAgent [_workerClass, getMarkerPos _x, [], 0, "CAN_COLLIDE"];
+                        _worker setDir markerDir _x;
+                        _worker call _fnc_static;
+                        _worker setVariable ["alife_process", _process, true];
+                    };
+                } forEach getArray (_x >> "markers");
+            } forEach ("true" configClasses (missionConfigFile >> "CfgProcessing"));
         };
         ALife_serverStatus = format ["Waiting for the database: %1", _ping select [6]];
         publicVariable "ALife_serverStatus";

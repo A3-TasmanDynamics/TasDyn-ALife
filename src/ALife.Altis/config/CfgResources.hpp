@@ -2,12 +2,15 @@
 // CfgMarket, and what buys them in VirtualShops + CfgShops (the Resource
 // Trader).
 //
-// Markers: place AREA markers (ellipse / rectangle) in Eden with the names
-// below. A missing marker just means that spot doesn't exist yet. Add more
-// spots for one resource by listing more markers.
+// Markers: gathering zones are AREA markers (ellipse / rectangle);
+// processors are point markers where the worker stands. A missing marker
+// just means that spot doesn't exist yet. Add more spots for one resource by
+// listing more markers.
 //
-// Press Windows inside a gathering area to gather (a pickaxe for mining),
-// or at a processor to process. The server times both and checks again
+// Press Windows inside a gathering area to gather (a pickaxe for mining).
+// Processing is done by an NPC: the server puts a worker (npcClass) at each
+// processor marker, facing the marker's direction; look at them and press
+// Windows to process. The server times both and checks again
 // before anything changes (ALife_fnc_requestGather, ALife_fnc_requestProcess).
 
 class CfgGathering
@@ -29,6 +32,8 @@ class CfgGathering
 
 class CfgProcessing
 {
+    npcClass = "C_Man_ConstructionWorker_01_Black_F"; // the worker at each processor
+
     //   name       -- the processor, shown in the menu ("Process at <name>")
     //   from[]     -- {{item, count}, ...} used per batch
     //   to[]       -- {{item, count}, ...} made per batch
@@ -36,12 +41,13 @@ class CfgProcessing
     //   maxTime    -- the whole job never takes longer than this
     //   licence    -- CfgLicences key that makes it free ("" = always free)
     //   fee        -- dollars per batch without that licence (taken from cash)
-    //   markers[]  -- area markers it's at
-    class oil     { name = "Oil Refinery";    from[] = { { "oil_raw", 1 } };     to[] = { { "oil_refined", 1 } }; time = 1.5; maxTime = 30; licence = "oil";     fee = 400; markers[] = { "process_oil" }; };
-    class copper  { name = "Copper Smelter";  from[] = { { "copper_ore", 1 } };  to[] = { { "copper_bar", 1 } };  time = 1;   maxTime = 30; licence = "copper";  fee = 250; markers[] = { "process_copper" }; };
-    class iron    { name = "Iron Smelter";    from[] = { { "iron_ore", 1 } };    to[] = { { "iron_bar", 1 } };    time = 1;   maxTime = 30; licence = "iron";    fee = 300; markers[] = { "process_iron" }; };
-    class salt    { name = "Salt Refinery";   from[] = { { "salt_raw", 1 } };    to[] = { { "salt", 1 } };        time = 1;   maxTime = 30; licence = "salt";    fee = 200; markers[] = { "process_salt" }; };
-    class glass   { name = "Glass Works";     from[] = { { "sand", 1 } };        to[] = { { "glass", 1 } };       time = 1;   maxTime = 30; licence = "sand";    fee = 200; markers[] = { "process_glass" }; };
-    class diamond { name = "Diamond Cutter";  from[] = { { "diamond_raw", 1 } }; to[] = { { "diamond", 1 } };     time = 2;   maxTime = 30; licence = "diamond"; fee = 600; markers[] = { "process_diamond" }; };
-    class cement  { name = "Cement Plant";    from[] = { { "rock", 1 } };        to[] = { { "cement", 1 } };      time = 1.5; maxTime = 30; licence = "cement";  fee = 300; markers[] = { "process_cement" }; };
+    //   markers[]  -- point markers: a worker stands at each one
+//   radius     -- how close to the worker you must be
+    class oil     { name = "Oil Refinery";    from[] = { { "oil_raw", 1 } };     to[] = { { "oil_refined", 1 } }; time = 1.5; maxTime = 30; licence = "oil";     fee = 400; markers[] = { "process_oil" }; radius = 5; };
+    class copper  { name = "Copper Smelter";  from[] = { { "copper_ore", 1 } };  to[] = { { "copper_bar", 1 } };  time = 1;   maxTime = 30; licence = "copper";  fee = 250; markers[] = { "process_copper" }; radius = 5; };
+    class iron    { name = "Iron Smelter";    from[] = { { "iron_ore", 1 } };    to[] = { { "iron_bar", 1 } };    time = 1;   maxTime = 30; licence = "iron";    fee = 300; markers[] = { "process_iron" }; radius = 5; };
+    class salt    { name = "Salt Refinery";   from[] = { { "salt_raw", 1 } };    to[] = { { "salt", 1 } };        time = 1;   maxTime = 30; licence = "salt";    fee = 200; markers[] = { "process_salt" }; radius = 5; };
+    class glass   { name = "Glass Works";     from[] = { { "sand", 1 } };        to[] = { { "glass", 1 } };       time = 1;   maxTime = 30; licence = "sand";    fee = 200; markers[] = { "process_glass" }; radius = 5; };
+    class diamond { name = "Diamond Cutter";  from[] = { { "diamond_raw", 1 } }; to[] = { { "diamond", 1 } };     time = 2;   maxTime = 30; licence = "diamond"; fee = 600; markers[] = { "process_diamond" }; radius = 5; };
+    class cement  { name = "Cement Plant";    from[] = { { "rock", 1 } };        to[] = { { "cement", 1 } };      time = 1.5; maxTime = 30; licence = "cement";  fee = 300; markers[] = { "process_cement" }; radius = 5; };
 };

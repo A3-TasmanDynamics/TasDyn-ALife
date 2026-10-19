@@ -40,8 +40,7 @@ if (count ((_items apply { _x select 0 }) arrayIntersect (_items apply { _x sele
 _info params ["", "_place", "_shop"];
 
 if (getText (_shop >> "side") != _faction) exitWith { "You can't buy that here." call _fnc_reply; };
-private _radius = getNumber (_place >> "radius");
-if ((getArray (_place >> "markers") findIf { _unit distance2D getMarkerPos _x <= _radius }) < 0) exitWith {
+if (!([_unit, _place] call ALife_fnc_atPlace)) exitWith {
     "You're too far from the shop." call _fnc_reply;
 };
 
