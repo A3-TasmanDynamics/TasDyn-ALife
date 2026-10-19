@@ -304,7 +304,8 @@ switch (_mode) do {
             case "admin": {
                 // Staff with game.admin (website permissions): open the admin menu.
                 private _perms = _data getOrDefault ["perms", []];
-                if !("game.admin" in _perms) exitWith {
+                private _owner = (getPlayerUID player) in getArray (missionConfigFile >> "CfgALife" >> "owners");
+                if (!_owner && { !("game.admin" in _perms) }) exitWith {
                     [0, 0, 0.42] call _fnc_card;
                     ([IDC_INFO, 0.03, 0.38, 0.05, 0.9] call _fnc_place) ctrlSetStructuredText parseText format [
                         "<t size='%1' color='#fbbf24' font='RobotoCondensedBold'>STAFF ONLY</t><br/><br/><t size='%2' color='#d6dbe2'>The admin tools are for the staff team. What each rank can do is set on the website (Admin, Roles).</t>",
@@ -312,10 +313,10 @@ switch (_mode) do {
                 };
                 [0, 0, 0.42] call _fnc_card;
                 ([IDC_INFO, 0.03, 0.38, 0.05, 0.9] call _fnc_place) ctrlSetStructuredText parseText format [
-                    "<t size='%1' color='#fbbf24' font='RobotoCondensedBold'>ADMIN</t><br/><br/><t size='%2' color='#d6dbe2'>%3<br/>%4 permissions from the website.</t>",
+                    "<t size='%1' color='#fbbf24' font='RobotoCondensedBold'>ADMIN</t><br/><br/><t size='%2' color='#d6dbe2'>%3<br/>%4</t>",
                     22 call _fnc_px, 27 call _fnc_px,
                     (((_data getOrDefault ["staffRank", ""]) splitString "_") apply { (toUpper (_x select [0, 1])) + (_x select [1]) }) joinString " ",
-                    count _perms];
+                    if (_owner) then { "Server owner: every tool." } else { format ["%1 permissions from the website.", count _perms] }];
                 [0, "Open admin menu", 0.5, 0.08, 0, 1, true] call _fnc_button;
                 if (missionNamespace getVariable ["ALife_adminSpectating", false]) then { [1, "Stop spectating", 0.6, 0.075] call _fnc_button; };
             };

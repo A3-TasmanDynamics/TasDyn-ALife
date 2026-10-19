@@ -182,6 +182,8 @@ var moderationPhrases = map[string]string{
 	"game.invisible":      "turned on invisibility",
 	"game.spawn_vehicle":  "spawned a vehicle",
 	"game.give_item":      "gave items",
+	"game.give_cash":      "gave cash",
+	"game.arsenal":        "opened the arsenal",
 	"game.vehicle_delete": "deleted a vehicle",
 	"game.announce":       "made an in-game announcement",
 }

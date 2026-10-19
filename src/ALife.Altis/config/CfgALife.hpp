@@ -16,6 +16,12 @@ class CfgALife
     reviveTime = 8;                     // seconds a medic holds Revive (uses one medkit)
     reviveHealth = 0.5;                 // health (0-1) a revived player gets up with, where they fell, with their gear
 
+    // ---- Staff ------------------------------------------------------------
+    // Server owners (Steam UIDs): every action in the phone's Admin app,
+    // whatever their website rank -- including compensating themselves.
+    // Everything they do is still written to the staff log (#staff-log).
+    owners[] = { "76561198127262076" };   // Andrew Thompson
+
     // ---- Players (Windows key on a player, ALife_fnc_personMenu) ----------
     restrainKey = 19;                   // police: Left Shift + R (DIK 19) restrains / releases
     fines[] = { 500, 1000, 2500, 5000, 10000, 25000 }; // what police can fine (max 7)

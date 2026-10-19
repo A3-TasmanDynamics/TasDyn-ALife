@@ -144,19 +144,19 @@ class ALife_Admin
         class ServerLabel: YouLabel
         {
             text = "SERVER";
-            y = "safezoneY + safezoneH * 0.39";
+            y = "safezoneY + safezoneH * 0.425";
         };
         class VehicleLabel: YouLabel
         {
             text = "Vehicle class (spawn)";
-            y = "safezoneY + safezoneH * 0.415";
+            y = "safezoneY + safezoneH * 0.455";
         };
         class VehicleClass: Reason
         {
             idc = 5825;
             text = "C_Offroad_01_F";
             x = "safezoneX + safezoneW * 0.62";
-            y = "safezoneY + safezoneH * 0.44";
+            y = "safezoneY + safezoneH * 0.48";
             w = "safezoneW * 0.21";
         };
 

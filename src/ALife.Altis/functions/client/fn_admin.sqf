@@ -3,7 +3,8 @@
 
     The admin menu (ui\admin.hpp), opened from the phone's Admin app. What
     a staff member can do comes from their website permissions (loaded with
-    their character: ALife_phone "perms"): only those buttons are shown, and
+    their character: ALife_phone "perms") -- server owners (CfgALife >>
+    owners[]) get everything: only those buttons are shown, and
     the server checks every action again (ALife_fnc_adminAction), which also
     logs the important ones to the staff log / #staff-log.
 
@@ -13,10 +14,11 @@
         Message (game.admin) - Warn (game.warn) - Kick (game.kick)
         Ban (bans.issue; Permanent needs bans.permanent)
         Compensate (players.compensate; over $10,000 needs players.compensate_large)
-        Give item (game.spawn)
+        Give item, Give cash (game.spawn)
     You:
         God mode, Invisible (game.self) - Player markers (game.markers)
         Map teleport (game.teleport) - Heal me (game.heal) - Stop spectating
+        Arsenal (game.spawn): Arma's full arsenal
     Server:
         Announce (announce.post) - Spawn vehicle (game.spawn)
         Repair / Refuel / Delete the vehicle you're looking at (game.vehicles)
@@ -46,7 +48,8 @@ params ["_mode", ["_arg", ""]];
 private _display = findDisplay IDD;
 private _data = missionNamespace getVariable ["ALife_phone", createHashMap];
 private _perms = _data getOrDefault ["perms", []];
-private _can = { _this in _perms };
+private _owner = (getPlayerUID player) in getArray (missionConfigFile >> "CfgALife" >> "owners");
+private _can = { _owner || { _this in _perms } };
 private _safe = { (_this splitString "<>&") joinString "" };
 private _fnc_money = { "$" + ([_this] call BIS_fnc_numberText) };
 
@@ -63,12 +66,14 @@ private _buttons = [
     ["ban", "Ban", "bans.issue", "player"],
     ["compensate", "Compensate", "players.compensate", "player"],
     ["give", "Give item", "game.spawn", "player"],
+    ["giveCash", "Give cash", "game.spawn", "player"],
     ["god", "God mode", "game.self", "self"],
     ["invisible", "Invisible", "game.self", "self"],
     ["markers", "Player markers", "game.markers", "self"],
     ["mapTeleport", "Map teleport", "game.teleport", "self"],
     ["healSelf", "Heal me", "game.heal", "self"],
     ["stopSpectate", "Stop spectating", "game.spectate", "self"],
+    ["arsenal", "Arsenal", "game.spawn", "self"],
     ["announce", "Announce", "announce.post", "server"],
     ["spawnVehicle", "Spawn vehicle", "game.spawn", "server"],
     ["repair", "Repair vehicle", "game.vehicles", "server"],
@@ -121,7 +126,7 @@ switch (_mode) do {
         (_display displayCtrl IDC_AMOUNT) ctrlSetText "1";
 
         // The buttons this staff member can use, in their column.
-        private _cols = createHashMapFromArray [["player", [0.385, 0.54, 0.107]], ["self", [0.62, 0.235, 0.102]], ["server", [0.62, 0.485, 0.102]]];
+        private _cols = createHashMapFromArray [["player", [0.385, 0.54, 0.107]], ["self", [0.62, 0.235, 0.102]], ["server", [0.62, 0.53, 0.102]]];
         private _counts = createHashMap;
         {
             _x params ["_id", "_label", "_perm", "_col"];
@@ -237,6 +242,11 @@ switch (_mode) do {
                 ALife_adminSpectating = false;
             };
             case "healSelf": { player setDamage 0; ["Healed.", "success"] call ALife_fnc_toast; };
+            case "arsenal": {
+                closeDialog 0;
+                [player, "arsenal", objNull, []] remoteExecCall ["ALife_fnc_adminAction", 2]; // logged
+                ["Open", true] spawn BIS_fnc_arsenal; // the full arsenal; what you leave with is saved with your gear
+            };
             case "god": {
                 ALife_adminGod = !(missionNamespace getVariable ["ALife_adminGod", false]);
                 player allowDamage !ALife_adminGod;
@@ -287,6 +297,7 @@ switch (_mode) do {
                     case "ban": { [_reason, (_display displayCtrl IDC_BAN) lbValue lbCurSel (_display displayCtrl IDC_BAN)] };
                     case "compensate": { [_reason, _amount, (_display displayCtrl IDC_ACCOUNT) lbData lbCurSel (_display displayCtrl IDC_ACCOUNT)] };
                     case "give": { [(_display displayCtrl IDC_ITEM) lbData lbCurSel (_display displayCtrl IDC_ITEM), _amount] };
+                    case "giveCash": { [_reason, _amount] };
                     case "spawnVehicle": { [ctrlText (_display displayCtrl IDC_VEHCLASS)] };
                     case "repair";
                     case "refuel";
