@@ -52,7 +52,8 @@ ALife_containers set [_id, createHashMapFromArray [
     ["title", getText (configFile >> "CfgVehicles" >> typeOf _object >> "displayName")],
     ["items", createHashMap],
     ["cash", 0],
-    ["capacity", [getNumber (missionConfigFile >> "CfgALife" >> "Trunks" >> _type), getNumber (missionConfigFile >> "CfgVehicles" >> typeOf _object >> "trunk")] select (isNumber (missionConfigFile >> "CfgVehicles" >> typeOf _object >> "trunk"))],
+    // Its own trunk in CfgVehicles, else CfgVehicles >> TrunkDefaults for its type.
+    ["capacity", [getNumber (missionConfigFile >> "CfgVehicles" >> "TrunkDefaults" >> _type), getNumber (missionConfigFile >> "CfgVehicles" >> typeOf _object >> "trunk")] select (isNumber (missionConfigFile >> "CfgVehicles" >> typeOf _object >> "trunk"))],
     ["created", time]
 ]];
 _object setVariable ["alife_container", _id, true];

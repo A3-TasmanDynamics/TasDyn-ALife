@@ -167,13 +167,24 @@ class CarShops
 // vanilla (tools/textures/make_placeholders.py): drop the real PAAs in at
 // the same paths under textures\vehicles\.
 //
-// Each vehicle's trunk space, in CfgItems weight units.
-// A vehicle not listed falls back to CfgALife >> Trunks by type.
+// Each vehicle's trunk space, in CfgItems weight units. A vehicle not
+// listed here (map vehicles, admin-spawned ones) gets TrunkDefaults for its
+// type.
 // Read with missionConfigFile >> "CfgVehicles" (the mission's own list, not
 // Arma's configFile >> "CfgVehicles").
 
 class CfgVehicles
 {
+    // Trunk space by type, for vehicles without their own `trunk` below.
+    class TrunkDefaults
+    {
+        car = 50;
+        truck = 150;
+        air = 100;
+        ship = 80;
+        other = 30;
+    };
+
     class B_Quadbike_01_F              { trunk = 25; };
     class B_G_Offroad_01_F             { trunk = 65; };
     class O_MRAP_02_F                  { trunk = 60; };
