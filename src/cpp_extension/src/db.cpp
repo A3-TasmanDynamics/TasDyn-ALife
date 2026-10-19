@@ -264,7 +264,9 @@ bool Database::LoadPlayer(const std::string& uid, std::string& outResponse, std:
         "       p.civ_position::text, p.cop_position::text, p.medic_position::text, "
         "       p.civ_bounty, "
         "       p.civ_items::text, p.cop_items::text, p.medic_items::text, "
-        "       COALESCE(g.tag, ''), COALESCE(g.name, '') "
+        "       COALESCE(g.tag, ''), COALESCE(g.name, ''), "
+        "       COALESCE((SELECT name FROM faction_rank_names WHERE faction = 'police' AND level = p.cop_level), ''), "
+        "       COALESCE((SELECT name FROM faction_rank_names WHERE faction = 'ems' AND level = p.medic_level), '') "
         "FROM players p LEFT JOIN staff_ranks sr ON sr.id = p.staff_rank_id "
         "LEFT JOIN gang_members gm ON gm.player_id = p.id "
         "LEFT JOIN gangs g ON g.id = gm.gang_id "
@@ -315,6 +317,10 @@ bool Database::LoadPlayer(const std::string& uid, std::string& outResponse, std:
     // in-game it picks gang uniform textures (CfgClothing UniformTextures).
     AppendStringKv(out, first, "gang_tag", col(30));
     AppendStringKv(out, first, "gang_name", col(31));
+    // Their police / EMS rank names (faction_rank_names, edited on the
+    // website), "" if their level has no name: shown on player tags.
+    AppendStringKv(out, first, "cop_rank", col(32));
+    AppendStringKv(out, first, "medic_rank", col(33));
     PQclear(res);
 
     // Their effective staff permissions, resolved exactly like the website's
