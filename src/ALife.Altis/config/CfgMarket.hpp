@@ -77,33 +77,33 @@ class CfgMarket
     // buyPrice / sellPrice -- base prices, dollars
     // min / max            -- the buy price never leaves this range
     // licence / level      -- needed to buy it (optional)
-    class water      { buyPrice = 10; sellPrice = 5; min = 5; max = 30; };
-    class coffee     { buyPrice = 10; sellPrice = 5; min = 5; max = 30; };
-    class apple      { buyPrice = 50; sellPrice = 25; min = 25; max = 150; };
-    class tbacon     { buyPrice = 75; sellPrice = 37; min = 38; max = 225; };
-    class redgull    { buyPrice = 1500; sellPrice = 750; min = 750; max = 4500; };
-    class pickaxe    { buyPrice = 750; sellPrice = 375; min = 375; max = 2250; };
-    class fuelcan    { buyPrice = 850; sellPrice = 425; min = 425; max = 2550; };
-    class lockpick   { buyPrice = 150; sellPrice = 75; min = 75; max = 450; };
-    class toolkit    { buyPrice = 350; sellPrice = 175; min = 175; max = 1050; };
-    class zipties    { buyPrice = 500; sellPrice = 250; min = 250; max = 1500; };
-    class donut      { buyPrice = 25; sellPrice = 12; min = 12; max = 75; };
-    class spikestrip { buyPrice = 2500; sellPrice = 1250; min = 1250; max = 7500; level = 1; };
-    class medkit     { buyPrice = 250; sellPrice = 125; min = 125; max = 750; };
+    class water      { buyPrice = 10; sellPrice = 5; min = 5; max = 30; };  // Water Bottle
+    class coffee     { buyPrice = 10; sellPrice = 5; min = 5; max = 30; };  // Coffee
+    class apple      { buyPrice = 50; sellPrice = 25; min = 25; max = 150; };  // Apple
+    class tbacon     { buyPrice = 75; sellPrice = 37; min = 38; max = 225; };  // Tactical Bacon
+    class redgull    { buyPrice = 1500; sellPrice = 750; min = 750; max = 4500; };  // Redgull
+    class pickaxe    { buyPrice = 750; sellPrice = 375; min = 375; max = 2250; };  // Pickaxe
+    class fuelcan    { buyPrice = 850; sellPrice = 425; min = 425; max = 2550; };  // Fuel Can
+    class lockpick   { buyPrice = 150; sellPrice = 75; min = 75; max = 450; };  // Lockpick
+    class toolkit    { buyPrice = 350; sellPrice = 175; min = 175; max = 1050; };  // Toolkit
+    class zipties    { buyPrice = 500; sellPrice = 250; min = 250; max = 1500; };  // Zip Ties
+    class donut      { buyPrice = 25; sellPrice = 12; min = 12; max = 75; };  // Donut
+    class spikestrip { buyPrice = 2500; sellPrice = 1250; min = 1250; max = 7500; level = 1; };  // Spike Strip
+    class medkit     { buyPrice = 250; sellPrice = 125; min = 125; max = 750; };  // Medkit
 
     // ---- Resources: the Resource Trader buys them (sellPrice); nobody sells them ----
-    class oil_raw     { buyPrice = 1000; sellPrice = 500; min = 400; max = 2000; };
-    class oil_refined { buyPrice = 6400; sellPrice = 3200; min = 2560; max = 12800; };
-    class copper_ore  { buyPrice = 600; sellPrice = 300; min = 240; max = 1200; };
-    class copper_bar  { buyPrice = 3000; sellPrice = 1500; min = 1200; max = 6000; };
-    class iron_ore    { buyPrice = 700; sellPrice = 350; min = 280; max = 1400; };
-    class iron_bar    { buyPrice = 4000; sellPrice = 2000; min = 1600; max = 8000; };
-    class salt_raw    { buyPrice = 400; sellPrice = 200; min = 160; max = 800; };
-    class salt        { buyPrice = 2600; sellPrice = 1300; min = 1040; max = 5200; };
-    class sand        { buyPrice = 300; sellPrice = 150; min = 120; max = 600; };
-    class glass       { buyPrice = 2900; sellPrice = 1450; min = 1160; max = 5800; };
-    class diamond_raw { buyPrice = 1500; sellPrice = 750; min = 600; max = 3000; };
-    class diamond     { buyPrice = 7000; sellPrice = 3500; min = 2800; max = 14000; };
-    class rock        { buyPrice = 300; sellPrice = 150; min = 120; max = 600; };
-    class cement      { buyPrice = 3900; sellPrice = 1950; min = 1560; max = 7800; };
+    class oil_raw     { buyPrice = 1000; sellPrice = 500; min = 400; max = 2000; };  // Crude Oil
+    class oil_refined { buyPrice = 6400; sellPrice = 3200; min = 2560; max = 12800; };  // Refined Oil
+    class copper_ore  { buyPrice = 600; sellPrice = 300; min = 240; max = 1200; };  // Copper Ore
+    class copper_bar  { buyPrice = 3000; sellPrice = 1500; min = 1200; max = 6000; };  // Copper Bar
+    class iron_ore    { buyPrice = 700; sellPrice = 350; min = 280; max = 1400; };  // Iron Ore
+    class iron_bar    { buyPrice = 4000; sellPrice = 2000; min = 1600; max = 8000; };  // Iron Bar
+    class salt_raw    { buyPrice = 400; sellPrice = 200; min = 160; max = 800; };  // Rock Salt
+    class salt        { buyPrice = 2600; sellPrice = 1300; min = 1040; max = 5200; };  // Refined Salt
+    class sand        { buyPrice = 300; sellPrice = 150; min = 120; max = 600; };  // Sand
+    class glass       { buyPrice = 2900; sellPrice = 1450; min = 1160; max = 5800; };  // Glass
+    class diamond_raw { buyPrice = 1500; sellPrice = 750; min = 600; max = 3000; };  // Uncut Diamond
+    class diamond     { buyPrice = 7000; sellPrice = 3500; min = 2800; max = 14000; };  // Cut Diamond
+    class rock        { buyPrice = 300; sellPrice = 150; min = 120; max = 600; };  // Rock
+    class cement      { buyPrice = 3900; sellPrice = 1950; min = 1560; max = 7800; };  // Cement Bag
 };
