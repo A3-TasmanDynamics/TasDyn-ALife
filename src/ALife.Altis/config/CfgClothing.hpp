@@ -21,48 +21,48 @@ class ClothingShops
         licence = "";
         level = 0;
         uniforms[] = {
-            {"U_C_Poloshirt_blue"     , "", 250, "", 0},
-            {"U_C_Poloshirt_burgundy" , "", 275, "", 0},
-            {"U_C_Poloshirt_redwhite" , "", 150, "", 0},
-            {"U_C_Poloshirt_salmon"   , "", 175, "", 0},
-            {"U_C_Poloshirt_stripped" , "", 125, "", 0},
-            {"U_C_Poloshirt_tricolour", "", 350, "", 0},
-            {"U_C_Commoner1_1"        , "", 200, "", 0},
-            {"U_C_WorkerCoveralls"    , "", 450, "", 0},
-            {"U_C_HunterBody_grn"     , "", 1500, "", 0},
-            {"U_C_Journalist"         , "", 1200, "", 0},
-            {"U_OrestesBody"          , "", 1100, "", 0},
-            {"U_Rangemaster"          , "", 1250, "", 0},
-            {"U_C_Scientist"          , "", 900, "", 0},
-            {"U_C_man_sport_1_F"      , "", 500, "", 0},  // DLC: Apex
-            {"U_C_Man_casual_1_F"     , "", 600, "", 0},  // DLC: Apex
-            {"U_C_Mechanic_01_F"      , "", 700, "", 0}   // DLC: Laws of War
+            {"U_C_Poloshirt_blue"     , "", 250, "", 0},  // Commoner Clothes (Blue)
+            {"U_C_Poloshirt_burgundy" , "", 275, "", 0},  // Commoner Clothes (Burgundy)
+            {"U_C_Poloshirt_redwhite" , "", 150, "", 0},  // Commoner Clothes (Red-White)
+            {"U_C_Poloshirt_salmon"   , "", 175, "", 0},  // Commoner Clothes (Salmon)
+            {"U_C_Poloshirt_stripped" , "", 125, "", 0},  // Commoner Clothes (Striped)
+            {"U_C_Poloshirt_tricolour", "", 350, "", 0},  // Commoner Clothes (Tricolor)
+            {"U_C_Commoner1_1"        , "", 200, "", 0},  // Commoner Clothes 2
+            {"U_C_WorkerCoveralls"    , "", 450, "", 0},  // Worker Coveralls
+            {"U_C_HunterBody_grn"     , "", 1500, "", 0},  // Hunting Clothes
+            {"U_C_Journalist"         , "", 1200, "", 0},  // Journalist Clothes
+            {"U_OrestesBody"          , "", 1100, "", 0},  // Jacket and Shorts
+            {"U_Rangemaster"          , "", 1250, "", 0},  // Rangemaster Suit
+            {"U_C_Scientist"          , "", 900, "", 0},  // Scientist Clothes
+            {"U_C_man_sport_1_F"      , "", 500, "", 0},  // Sport Clothes (Beach) -- DLC: Apex
+            {"U_C_Man_casual_1_F"     , "", 600, "", 0},  // Casual Clothes (Navy) -- DLC: Apex
+            {"U_C_Mechanic_01_F"      , "", 700, "", 0}  // Mechanic Clothes -- DLC: Laws of War
         };
         headgear[] = {
-            {"H_Cap_red"      , "", 100, "", 0},
-            {"H_Cap_blu"      , "", 100, "", 0},
-            {"H_Cap_grn"      , "", 100, "", 0},
-            {"H_Cap_blk"      , "", 100, "", 0},
-            {"H_Bandanna_gry" , "", 150, "", 0},
-            {"H_Hat_brown"    , "", 250, "", 0},
-            {"H_Hat_tan"      , "", 250, "", 0},
-            {"H_StrawHat"     , "", 225, "", 0},
-            {"H_Booniehat_tan", "", 300, "", 0}
+            {"H_Cap_red"      , "", 100, "", 0},  // Cap (Red)
+            {"H_Cap_blu"      , "", 100, "", 0},  // Cap (Blue)
+            {"H_Cap_grn"      , "", 100, "", 0},  // Cap (Green)
+            {"H_Cap_blk"      , "", 100, "", 0},  // Cap (Black)
+            {"H_Bandanna_gry" , "", 150, "", 0},  // Bandana (Black)
+            {"H_Hat_brown"    , "", 250, "", 0},  // Hat (Brown)
+            {"H_Hat_tan"      , "", 250, "", 0},  // Hat (Tan)
+            {"H_StrawHat"     , "", 225, "", 0},  // Straw Hat
+            {"H_Booniehat_tan", "", 300, "", 0}  // Boonie Hat (Sand)
         };
         goggles[] = {
-            {"G_Shades_Black"  , "", 50, "", 0},
-            {"G_Shades_Blue"   , "", 50, "", 0},
-            {"G_Sport_Blackred", "", 75, "", 0},
-            {"G_Squares"       , "", 50, "", 0},
-            {"G_Aviator"       , "", 100, "", 0},
-            {"G_Spectacles"    , "", 50, "", 0}
+            {"G_Shades_Black"  , "", 50, "", 0},  // Shades (Black)
+            {"G_Shades_Blue"   , "", 50, "", 0},  // Shades (Blue)
+            {"G_Sport_Blackred", "", 75, "", 0},  // Sport Shades (Vulcan)
+            {"G_Squares"       , "", 50, "", 0},  // Square Spectacles
+            {"G_Aviator"       , "", 100, "", 0},  // Aviator Glasses
+            {"G_Spectacles"    , "", 50, "", 0}  // Spectacle Glasses
         };
         backpacks[] = {
-            {"B_AssaultPack_cbr", "", 2500, "", 0},
-            {"B_AssaultPack_blk", "", 2500, "", 0},
-            {"B_FieldPack_cbr"  , "", 3000, "", 0},
-            {"B_Kitbag_cbr"     , "", 4500, "", 0},
-            {"B_Carryall_cbr"   , "", 6500, "", 0}
+            {"B_AssaultPack_cbr", "", 2500, "", 0},  // Assault Pack (Coyote)
+            {"B_AssaultPack_blk", "", 2500, "", 0},  // Assault Pack (Black)
+            {"B_FieldPack_cbr"  , "", 3000, "", 0},  // Field Pack (Coyote)
+            {"B_Kitbag_cbr"     , "", 4500, "", 0},  // Kitbag (Coyote)
+            {"B_Carryall_cbr"   , "", 6500, "", 0}  // Carryall Backpack (Coyote)
         };
     };
 
@@ -73,33 +73,33 @@ class ClothingShops
         licence = "rebel";
         level = 0;
         uniforms[] = {
-            {"U_IG_Guerilla1_1"         , "", 5000, "", 0},
-            {"U_IG_Guerilla2_1"         , "", 5500, "", 0},
-            {"U_IG_Guerilla3_1"         , "", 5500, "", 0},
-            {"U_I_G_resistanceLeader_F" , "", 11500, "", 0},
-            {"U_I_G_Story_Protagonist_F", "", 7500, "", 0},
-            {"U_O_SpecopsUniform_ocamo" , "", 17500, "", 0}
+            {"U_IG_Guerilla1_1"         , "", 5000, "", 0},  // Guerilla Garment
+            {"U_IG_Guerilla2_1"         , "", 5500, "", 0},  // Guerilla Outfit (Plain, Dark)
+            {"U_IG_Guerilla3_1"         , "", 5500, "", 0},  // Guerilla Smocks
+            {"U_I_G_resistanceLeader_F" , "", 11500, "", 0},  // Combat Fatigues (Stavrou)
+            {"U_I_G_Story_Protagonist_F", "", 7500, "", 0},  // Worn Combat Fatigues (Kerry)
+            {"U_O_SpecopsUniform_ocamo" , "", 17500, "", 0}  // Recon Fatigues (Hex)
         };
         headgear[] = {
-            {"H_Shemag_olive"  , "", 850, "", 0},
-            {"H_ShemagOpen_khk", "", 800, "", 0},
-            {"H_Bandanna_khk"  , "", 500, "", 0},
-            {"H_Booniehat_khk" , "", 650, "", 0}
+            {"H_Shemag_olive"  , "", 850, "", 0},  // Shemag (Olive)
+            {"H_ShemagOpen_khk", "", 800, "", 0},  // Shemag (White)
+            {"H_Bandanna_khk"  , "", 500, "", 0},  // Bandana (Khaki)
+            {"H_Booniehat_khk" , "", 650, "", 0}  // Boonie Hat (Khaki)
         };
         goggles[] = {
-            {"G_Balaclava_blk", "", 2000, "", 0},
-            {"G_Bandanna_blk" , "", 1500, "", 0}
+            {"G_Balaclava_blk", "", 2000, "", 0},  // Balaclava (Black)
+            {"G_Bandanna_blk" , "", 1500, "", 0}  // Bandana (Black)
         };
         vests[] = {
-            {"V_BandollierB_cbr"     , "", 4500, "", 0},
-            {"V_HarnessO_brn"        , "", 7500, "", 0},
-            {"V_TacVest_khk"         , "", 12500, "", 0},
-            {"V_PlateCarrierIA1_dgtl", "", 25000, "", 0}
+            {"V_BandollierB_cbr"     , "", 4500, "", 0},  // Slash Bandolier (Coyote)
+            {"V_HarnessO_brn"        , "", 7500, "", 0},  // LBV Harness
+            {"V_TacVest_khk"         , "", 12500, "", 0},  // Tactical Vest (Khaki)
+            {"V_PlateCarrierIA1_dgtl", "", 25000, "", 0}  // GA Carrier Lite (Digital)
         };
         backpacks[] = {
-            {"B_FieldPack_oli", "", 3000, "", 0},
-            {"B_Kitbag_cbr"   , "", 4500, "", 0},
-            {"B_Carryall_oli" , "", 6500, "", 0}
+            {"B_FieldPack_oli", "", 3000, "", 0},  // Field Pack (Olive)
+            {"B_Kitbag_cbr"   , "", 4500, "", 0},  // Kitbag (Coyote)
+            {"B_Carryall_oli" , "", 6500, "", 0}  // Carryall Backpack (Olive)
         };
     };
 
@@ -110,29 +110,29 @@ class ClothingShops
         licence = "";
         level = 0;
         uniforms[] = {
-            {"U_Rangemaster"      , "", 25, "", 0},
-            {"U_B_GEN_Soldier_F"  , "", 150, "", 1},  // DLC: Apex (Gendarmerie)
-            {"U_B_GEN_Commander_F", "", 250, "", 3}   // DLC: Apex
+            {"U_Rangemaster"      , "", 25, "", 0},  // Rangemaster Suit
+            {"U_B_GEN_Soldier_F"  , "", 150, "", 1},  // Gendarmerie Uniform -- DLC: Apex (Gendarmerie)
+            {"U_B_GEN_Commander_F", "", 250, "", 3}  // Gendarmerie Commander Uniform -- DLC: Apex
         };
         headgear[] = {
-            {"H_Cap_police"  , "", 25, "", 0},
-            {"H_MilCap_gen_F", "", 50, "", 1},  // DLC: Apex
-            {"H_Beret_gen_F" , "", 75, "", 3}   // DLC: Apex
+            {"H_Cap_police"  , "", 25, "", 0},  // Cap (Police)
+            {"H_MilCap_gen_F", "", 50, "", 1},  // Military Cap (Gendarmerie) -- DLC: Apex
+            {"H_Beret_gen_F" , "", 75, "", 3}  // Beret (Gendarmerie) -- DLC: Apex
         };
         goggles[] = {
-            {"G_Aviator"     , "", 50, "", 0},
-            {"G_Shades_Black", "", 50, "", 0}
+            {"G_Aviator"     , "", 50, "", 0},  // Aviator Glasses
+            {"G_Shades_Black", "", 50, "", 0}  // Shades (Black)
         };
         vests[] = {
-            {"V_Rangemaster_belt"  , "", 800, "", 0},
-            {"V_TacVest_blk_POLICE", "", 1500, "", 1},
-            {"V_TacVest_gen_F"     , "", 2000, "", 2},  // DLC: Apex
-            {"V_PlateCarrier1_blk" , "", 3500, "", 4}
+            {"V_Rangemaster_belt"  , "", 800, "", 0},  // Rangemaster Belt
+            {"V_TacVest_blk_POLICE", "", 1500, "", 1},  // Tactical Vest (Police)
+            {"V_TacVest_gen_F"     , "", 2000, "", 2},  // Gendarmerie Vest -- DLC: Apex
+            {"V_PlateCarrier1_blk" , "", 3500, "", 4}  // Carrier Lite (Black)
         };
         backpacks[] = {
-            {"B_AssaultPack_blk", "", 500, "", 0},
-            {"B_FieldPack_blk"  , "", 1000, "", 1},
-            {"B_Carryall_blk"   , "", 1500, "", 3}
+            {"B_AssaultPack_blk", "", 500, "", 0},  // Assault Pack (Black)
+            {"B_FieldPack_blk"  , "", 1000, "", 1},  // Field Pack (Black)
+            {"B_Carryall_blk"   , "", 1500, "", 3}  // Carryall Backpack (Black)
         };
     };
 
@@ -143,24 +143,24 @@ class ClothingShops
         licence = "";
         level = 0;
         uniforms[] = {
-            {"U_C_Paramedic_01_F", "", 25, "", 0},  // DLC: Laws of War
-            {"U_Rangemaster"     , "", 25, "", 0}
+            {"U_C_Paramedic_01_F", "", 25, "", 0},  // Paramedic Outfit -- DLC: Laws of War
+            {"U_Rangemaster"     , "", 25, "", 0}  // Rangemaster Suit
         };
         headgear[] = {
-            {"H_Cap_blk"    , "", 25, "", 0},
-            {"H_Cap_marshal", "", 25, "", 2}
+            {"H_Cap_blk"    , "", 25, "", 0},  // Cap (Black)
+            {"H_Cap_marshal", "", 25, "", 2}  // Marshal Cap
         };
         goggles[] = {
-            {"G_Aviator", "", 50, "", 0}
+            {"G_Aviator", "", 50, "", 0}  // Aviator Glasses
         };
         vests[] = {
-            {"V_Safety_yellow_F", "", 100, "", 0},  // DLC: Laws of War
-            {"V_Safety_orange_F", "", 100, "", 0}   // DLC: Laws of War
+            {"V_Safety_yellow_F", "", 100, "", 0},  // Safety Vest (Yellow) -- DLC: Laws of War
+            {"V_Safety_orange_F", "", 100, "", 0}  // Safety Vest (Orange) -- DLC: Laws of War
         };
         backpacks[] = {
-            {"B_AssaultPack_blk" , "", 500, "", 0},
-            {"B_Messenger_Gray_F", "", 750, "", 0},  // DLC: Contact
-            {"B_FieldPack_blk"   , "", 1000, "", 1}
+            {"B_AssaultPack_blk" , "", 500, "", 0},  // Assault Pack (Black)
+            {"B_Messenger_Gray_F", "", 750, "", 0},  // Messenger Bag (Gray) -- DLC: Contact
+            {"B_FieldPack_blk"   , "", 1000, "", 1}  // Field Pack (Black)
         };
     };
 };
@@ -180,13 +180,13 @@ class UniformTextures
     class cop
     {
         textures[] = {
-            {"U_Rangemaster", "textures\uniforms\cop_uniform.paa"}
+            {"U_Rangemaster", "textures\uniforms\cop_uniform.paa"}  // Rangemaster Suit
         };
     };
     class medic
     {
         textures[] = {
-            {"U_Rangemaster", "textures\uniforms\medic_uniform.paa"}
+            {"U_Rangemaster", "textures\uniforms\medic_uniform.paa"}  // Rangemaster Suit
         };
     };
     class gang
