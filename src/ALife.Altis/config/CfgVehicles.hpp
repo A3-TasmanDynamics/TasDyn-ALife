@@ -173,6 +173,14 @@ class CarShops
 // Read with missionConfigFile >> "CfgVehicles" (the mission's own list, not
 // Arma's configFile >> "CfgVehicles").
 
+// The garage (at every vehicle shop: Windows -> Garage, ALife_fnc_garage).
+class CfgGarage
+{
+    impoundRate = 0.1;      // release fee: this share of the vehicle's shop price...
+    impoundMin = 250;       // ...but at least this (dollars, from the bank)
+    storeRange = 30;        // metres: how close your vehicle must be to store it
+};
+
 class CfgVehicles
 {
     // Trunk space by type, for vehicles without their own `trunk` below.

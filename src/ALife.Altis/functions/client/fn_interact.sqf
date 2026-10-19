@@ -105,6 +105,10 @@ private _shops = [];
         _info params ["_type", "_place", "_shop"];
         if (_type in ["market", "clothing", "vehicles"] && { getText (_shop >> "side") == _faction } && { [player, _place] call ALife_fnc_atPlace }) then {
             _shops pushBack [getText (_shop >> "name"), _openShop, configName _place];
+            // Every vehicle shop is a garage too (one entry per spot).
+            if (_type == "vehicles" && { (_shops findIf { (_x select 0) == "Garage" }) < 0 }) then {
+                _shops pushBack ["Garage", { ["open", _this] call ALife_fnc_garageMenu; }, configName _place];
+            };
         };
     };
 } forEach ("true" configClasses (missionConfigFile >> "CfgShops"));

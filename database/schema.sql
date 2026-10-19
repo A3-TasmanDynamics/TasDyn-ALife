@@ -325,6 +325,9 @@ CREATE TABLE vehicles (
     garage_id        BIGINT REFERENCES garages(id) ON DELETE SET NULL,
     position         JSONB,           -- last known world position, NULL if garaged
     inventory        JSONB NOT NULL DEFAULT '[]'::jsonb,  -- [[key,value],...] pairs -- cargo
+    -- The colour / livery chosen at the shop (ALife_fnc_vehicleSkin choice:
+    -- "tex:<row>" / "src:<TextureSources class>", "" = as it comes).
+    skin             TEXT NOT NULL DEFAULT '',
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
     CHECK (owner_player_id IS NOT NULL OR owner_gang_id IS NOT NULL)
 );

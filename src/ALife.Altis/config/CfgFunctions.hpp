@@ -38,6 +38,9 @@ class CfgFunctions
             class requestGather {};  // client -> server: gather a resource (timed)
             class requestProcess {}; // client -> server: process resources (timed)
             class buyLicence {};     // client -> server: buy a processing licence at its processor
+            class garage {};         // client -> server: the garage (list / take out / store)
+            class vehicleSpawn {};   // an owned vehicle into the world (shop, garage)
+            class vehicleState {};   // an owned vehicle's fuel / damage / trunk, for saving
             class containerGet {};   // the container (bag / vehicle trunk) behind an object
             class containerCreateBag {}; // drop a bag at a player's feet
             class containerSend {};  // send a player a container's contents
@@ -85,6 +88,7 @@ class CfgFunctions
             class admin {};           // the admin menu (phone -> Admin)
             class adminApply {};      // server -> client: staff actions on you (bring, freeze, kick, ...)
             class resourceProgress {}; // server -> client: progress bar while gathering / processing
+            class garageMenu {};      // the garage window
             class itemUsed {};        // server -> client: apply a used item where it's local
             class interact {};        // the Windows key
             class transfer {};        // the inventory screen (bags, trunks, dropping)
