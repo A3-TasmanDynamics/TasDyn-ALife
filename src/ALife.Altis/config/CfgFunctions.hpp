@@ -66,6 +66,7 @@ class CfgFunctions
             class clothingShop {};    // clothing shop: 3D try-on
             class applySkins {};      // uniform textures by group; hidden cop / medic backpacks
             class survival {};        // food, water and the player HUD
+            class playerTags {};      // name tags (police: rank under the name)
             class groupMarkers {};    // map / GPS markers for your police, EMS or gang (with a GPS)
             class vehicleShop {};     // vehicle shop: 3D showroom, colours
             class vehicleLockApply {}; // set a lock where the vehicle is local            // shop window

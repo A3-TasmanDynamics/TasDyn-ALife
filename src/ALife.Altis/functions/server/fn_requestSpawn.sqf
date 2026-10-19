@@ -53,6 +53,13 @@ _unit setVariable ["alife_uid", _uid];
 _unit setVariable ["alife_faction", _faction];
 _unit setVariable ["alife_name", name _unit, true]; // shown to medics reviving them
 _unit setVariable ["alife_gang", _record getOrDefault ["gang_tag", ""], true]; // gang uniform textures
+_unit setVariable ["alife_gangName", _record getOrDefault ["gang_name", ""], true]; // shown on player tags
+// Their rank name (the website's faction_rank_names), shown on player tags.
+_unit setVariable ["alife_rank", switch (_faction) do {
+    case "cop": { _record getOrDefault ["cop_rank", ""] };
+    case "medic": { _record getOrDefault ["medic_rank", ""] };
+    default { "" };
+}, true];
 
 _record set [_faction + "_alive", true];
 // Save the destination itself: the unit's own position may not have

@@ -28,6 +28,20 @@ class CfgALife
     fineTimeout = 60;                   // seconds the fined player has to pay or refuse
     healTime = 6;                       // seconds a medic takes to heal a player (one medkit)
 
+    // ---- Player tags (ALife_fnc_playerTags) -------------------------------
+    // Names over other players you can see on foot; under the name, police
+    // and EMS show their rank (the website's rank names) and civilians in a
+    // gang their gang's name.
+    class PlayerTags
+    {
+        on = 1;
+        distance = 15;                  // metres
+        max = 10;                       // tags at once (the nearest)
+        copColour[] = { 0.48, 0.7, 1, 1 };     // the line under the name: police rank
+        medicColour[] = { 0.45, 0.85, 0.6, 1 }; // EMS rank
+        gangColour[] = { 0.98, 0.75, 0.14, 1 }; // gang name
+    };
+
     // ---- Police slots -----------------------------------------------------
     // mission.sqm police_1 .. police_10: the first copPublicSlots are open to
     // anyone; the rest need players.cop_level >= copWhitelistLevel.

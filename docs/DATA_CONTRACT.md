@@ -79,6 +79,7 @@ On `OK`, every key below is present:
 | `civ_cash` / `cop_cash` / `medic_cash` | number | `players.<faction>_cash` | Physical cash on hand, per faction |
 | `civ_bank` / `cop_bank` / `medic_bank` | number | `players.<faction>_bank` | **Cache** — `bank_accounts.balance` is authoritative, this is kept in sync by DB trigger (see `database/schema.sql`), never written independently by application code |
 | `cop_level` / `medic_level` | number | `players.cop_level` / `players.medic_level` | Civilian has no level (no `civ_level` key) |
+| `cop_rank` / `medic_rank` | string | `faction_rank_names.name` for that level (`police` / `ems`) | `""` if the level has no name; shown on player tags |
 | `cop_dept` / `medic_dept` | string | `players.cop_dept` / `players.medic_dept` | Empty string if not yet assigned — **not `null`**, see [Why no `null`](#why-no-null) |
 | `civ_licence` / `cop_licence` / `medic_licence` | array of strings | `players.<faction>_licence` (JSONB) | e.g. `["driver","boat"]` — a set, not a single value |
 | `civ_gear` / `cop_gear` / `medic_gear` | array of `[key, value]` pairs | `players.<faction>_gear` (JSONB) | Full loadout + virtual items, e.g. `[["primaryWeapon","arifle_MX_F"],["uniform","U_B_CombatUniform_mcam"]]` — **not a JSON object**, see [Why array-of-pairs, not objects](#why-array-of-pairs-not-objects) |
