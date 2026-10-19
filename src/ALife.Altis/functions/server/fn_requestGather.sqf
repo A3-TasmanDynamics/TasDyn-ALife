@@ -31,7 +31,7 @@ if (_unit getVariable ["alife_restrained", false]) exitWith {};
 if (isNil "ALife_busy") then { ALife_busy = createHashMap; }; // uid -> true while gathering / processing
 if (ALife_busy getOrDefault [_uid, false]) exitWith {};
 
-private _fnc_inZone = { (getArray (_cfg >> "zones") findIf { _x in allMapMarkers && { _unit inArea _x } }) >= 0 };
+private _fnc_inZone = { [_unit, _cfg, "zones"] call ALife_fnc_atPlace };
 if !(call _fnc_inZone) exitWith { "You're not in a gathering area for that." call _fnc_reply; };
 
 private _items = createHashMapFromArray ((_record getOrDefault [_faction + "_items", []]) select { _x isEqualTypeParams ["", 0] });

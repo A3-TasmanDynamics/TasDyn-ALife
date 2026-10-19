@@ -134,12 +134,16 @@ Set in `config\CfgResources.hpp`; items in `CfgItems`, prices in `CfgMarket`.
 
 - **Gather**: press Windows inside a gathering area (needs a Pickaxe). The server times it, checks
   you're still there, and gives what fits your carry weight.
-- **Process**: press Windows at a processor and pick it. Everything you carry for it is processed in
-  one go. Free with the processing licence; without it, a fee per batch from cash.
-- **Sell**: the Resource Trader (`trader_resources`) buys raw and processed resources at the market's
-  sell price, which drops as people sell and recovers over time.
+- **Process**: look at the worker at a processor and press Windows. The server puts a worker
+  (`CfgProcessing >> npcClass`) at each `process_*` point marker, facing the marker's direction.
+  Everything you carry for it is processed in one go. Free with the processing licence; without it, a
+  fee per batch from cash.
+- **Sell**: look at a Resource Trader NPC (`trader_resources_1` / `_2`, placed in Eden; CfgShops
+  `npcs[]`) and press Windows. It buys raw and processed resources at the market's sell price, which
+  drops as people sell and recovers over time.
 
-Markers to place in Eden (area markers -- ellipse or rectangle, any size):
+Shop NPCs and workers stand still and can't be hurt. Markers in Eden (gathering: area markers --
+ellipse or rectangle; processors: point markers):
 
 | Resource | Gather | Process into | Processor |
 |---|---|---|---|
@@ -151,8 +155,8 @@ Markers to place in Eden (area markers -- ellipse or rectangle, any size):
 | Diamond | `mine_diamond` | Cut Diamond | `process_diamond` |
 | Rock | `mine_rock` | Cement | `process_cement` |
 
-Plus `trader_resources` (any marker; within 15 m). More spots for one resource: add markers to its
-`zones[]` / `markers[]`.
+More spots for one resource: add markers to its `zones[]` / `markers[]`; more traders: add units to
+`npcs[]`.
 
 ## What's saved, and when
 

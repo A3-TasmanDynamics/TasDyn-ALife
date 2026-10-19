@@ -7,6 +7,8 @@
       - an ATM (any on the map): the bank menu;
       - a vehicle within 8 m: its radial menu (ALife_fnc_vehicleMenu);
       - a dropped bag: opens it in the inventory screen;
+      - a shop's NPC (CfgShops npcs[]) or a processor's worker within
+        5 m: that shop / processing;
       - a player within 3.5 m (or a downed one): their radial menu
         (ALife_fnc_personMenu) -- restrain, fine, heal, revive, ...;
       - in a gathering area (CfgResources >> CfgGathering): gather there;
@@ -42,6 +44,30 @@ if (!isNull _target && { _target in (missionNamespace getVariable ["ALife_ground
     true
 };
 
+// Opening a shop by its kind (CfgShops placement name in _this).
+private _openShop = {
+    switch (getText (missionConfigFile >> "CfgShops" >> _this >> "type")) do {
+        case "clothing": { ["open", _this] call ALife_fnc_clothingShop; };
+        case "vehicles": { ["open", _this] call ALife_fnc_vehicleShop; };
+        default { ["open", _this] call ALife_fnc_shop; };
+    };
+};
+
+// A shop / processor NPC you're looking at.
+private _near = !isNull _target && { !isPlayer _target } && { player distance _target <= 5 };
+private _process = if (_near) then { _target getVariable ["alife_process", ""] } else { "" };
+if (_process != "") exitWith {
+    if (isNil "ALife_using") then { [player, _process] remoteExecCall ["ALife_fnc_requestProcess", 2]; };
+    true
+};
+private _npcShop = "";
+if (_near && { vehicleVarName _target != "" }) then {
+    private _shops = "true" configClasses (missionConfigFile >> "CfgShops");
+    private _i = _shops findIf { (vehicleVarName _target) in getArray (_x >> "npcs") };
+    if (_i >= 0) then { _npcShop = configName (_shops select _i); };
+};
+if (_npcShop != "") exitWith { _npcShop call _openShop; true };
+
 if (!isNull _target && { _target != player } && { _target isKindOf "CAManBase" } && { player distance _target < 3.5 }
     && { (alive _target && { isPlayer _target }) || { _target getVariable ["alife_downed", false] } }) exitWith {
     ["open", _target] call ALife_fnc_personMenu;
@@ -53,7 +79,7 @@ private _resource = "";
 if (vehicle player == player) then {
     {
         private _cfg = _x;
-        if ((getArray (_cfg >> "zones") findIf { _x in allMapMarkers && { player inArea _x } }) >= 0) exitWith { _resource = configName _cfg; };
+        if ([player, _cfg, "zones"] call ALife_fnc_atPlace) exitWith { _resource = configName _cfg; };
     } forEach ("true" configClasses (missionConfigFile >> "CfgGathering"));
 };
 if (_resource != "") exitWith {
@@ -61,32 +87,17 @@ if (_resource != "") exitWith {
     true
 };
 
-// Your faction's shops you're standing at (CfgShops markers + radius).
+// Your faction's shops you're standing at (CfgShops markers / NPCs + radius).
 private _shops = [];
 {
     private _info = [configName _x] call ALife_fnc_shopInfo;
     if (_info isNotEqualTo []) then {
         _info params ["_type", "_place", "_shop"];
-        private _radius = getNumber (_place >> "radius");
-        if (_type in ["market", "clothing", "vehicles"] && { getText (_shop >> "side") == _faction }
-            && { (getArray (_place >> "markers") findIf { player distance2D getMarkerPos _x <= _radius }) >= 0 }) then {
-            _shops pushBack [getText (_shop >> "name"), {
-                switch (getText (missionConfigFile >> "CfgShops" >> _this >> "type")) do {
-                    case "clothing": { ["open", _this] call ALife_fnc_clothingShop; };
-                    case "vehicles": { ["open", _this] call ALife_fnc_vehicleShop; };
-                    default { ["open", _this] call ALife_fnc_shop; };
-                };
-            }, configName _place];
+        if (_type in ["market", "clothing", "vehicles"] && { getText (_shop >> "side") == _faction } && { [player, _place] call ALife_fnc_atPlace }) then {
+            _shops pushBack [getText (_shop >> "name"), _openShop, configName _place];
         };
     };
 } forEach ("true" configClasses (missionConfigFile >> "CfgShops"));
-
-// Processors you're standing at (CfgProcessing area markers).
-{
-    if ((getArray (_x >> "markers") findIf { _x in allMapMarkers && { player inArea _x } }) >= 0) then {
-        _shops pushBack [getText (_x >> "name"), { [player, _this] remoteExecCall ["ALife_fnc_requestProcess", 2]; }, configName _x];
-    };
-} forEach ("true" configClasses (missionConfigFile >> "CfgProcessing"));
 
 if (_shops isNotEqualTo []) exitWith {
     ["open", "Shop", (_shops select [0, 7]) + [["Inventory", { ["openGround"] call ALife_fnc_transfer; }, []]]] call ALife_fnc_radial;
