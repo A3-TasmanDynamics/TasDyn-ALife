@@ -5,7 +5,7 @@ with a white glyph, built from simple shapes and anti-aliased by
 supersampling, written as a 128x128 PNG and converted to .paa with Arma 3
 Tools' ImageToPAA. Run from the repo root:
 
-    python tools/phone_icons/make_icons.py "G:/SteamLibrary/steamapps/common/Arma 3 Tools"
+    python tools/phone_icons/make_icons.py "G:/SteamLibrary/steamapps/common/Arma 3 Tools" [icon ...]
 """
 import math
 import os
@@ -137,6 +137,12 @@ GLYPHS = {
         union(capsule(48, 64, 60, 76, 4.5), capsule(60, 76, 82, 52, 4.5)),
     ),
     "settings": gear(64, 64),
+    # market: a rising price line with an arrow head, over a base line
+    "market": union(
+        capsule(28, 88, 50, 66, 6), capsule(50, 66, 66, 78, 6), capsule(66, 78, 92, 46, 6),
+        poly([(80, 40), (102, 34), (98, 58)]),
+        rrect(64, 100, 80, 6, 3),
+    ),
 }
 
 COLOURS = {
@@ -149,6 +155,7 @@ COLOURS = {
     "keys": (217, 160, 6),
     "admin": (71, 85, 105),
     "settings": (107, 114, 128),
+    "market": (14, 165, 233),
 }
 
 
@@ -198,7 +205,10 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     png_dir = os.path.join(os.path.dirname(__file__), "png")
     os.makedirs(png_dir, exist_ok=True)
+    only = set(sys.argv[2:])  # optional: just these icons
     for name in GLYPHS:
+        if only and name not in only:
+            continue
         png = os.path.join(png_dir, f"{name}_ca.png")
         write_png(png, render(name))
         print("drew", png)
