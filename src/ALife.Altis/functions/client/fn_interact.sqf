@@ -7,7 +7,8 @@
       - an ATM (any on the map): the bank menu;
       - a vehicle within 8 m: its radial menu (ALife_fnc_vehicleMenu);
       - a dropped bag: opens it in the inventory screen;
-      - medics, a downed player within 3.5 m: a radial menu with Revive;
+      - a player within 3.5 m (or a downed one): their radial menu
+        (ALife_fnc_personMenu) -- restrain, fine, heal, revive, ...;
       - anything else: your own inventory with the ground beside it, to
         drop things -- or, at one of your faction's shops (CfgShops), a
         radial menu with the shop(s) and Inventory.
@@ -40,10 +41,9 @@ if (!isNull _target && { _target in (missionNamespace getVariable ["ALife_ground
     true
 };
 
-if (_faction == "medic" && { !isNull _target } && { _target getVariable ["alife_downed", false] } && { player distance _target < 3.5 } && { isNil "ALife_reviving" }) exitWith {
-    ["open", _target getVariable ["alife_name", "Patient"], [
-        ["Revive", { ["start", _this] spawn ALife_fnc_revive; }, _target]
-    ]] call ALife_fnc_radial;
+if (!isNull _target && { _target != player } && { _target isKindOf "CAManBase" } && { player distance _target < 3.5 }
+    && { (alive _target && { isPlayer _target }) || { _target getVariable ["alife_downed", false] } }) exitWith {
+    ["open", _target] call ALife_fnc_personMenu;
     true
 };
 

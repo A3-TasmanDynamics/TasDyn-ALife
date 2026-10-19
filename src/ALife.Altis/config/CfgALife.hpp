@@ -16,6 +16,12 @@ class CfgALife
     reviveTime = 8;                     // seconds a medic holds Revive (uses one medkit)
     reviveHealth = 0.5;                 // health (0-1) a revived player gets up with, where they fell, with their gear
 
+    // ---- Players (Windows key on a player, ALife_fnc_personMenu) ----------
+    restrainKey = 19;                   // police: Left Shift + R (DIK 19) restrains / releases
+    fines[] = { 500, 1000, 2500, 5000, 10000, 25000 }; // what police can fine (max 7)
+    fineTimeout = 60;                   // seconds the fined player has to pay or refuse
+    healTime = 6;                       // seconds a medic takes to heal a player (one medkit)
+
     // ---- Police slots -----------------------------------------------------
     // mission.sqm police_1 .. police_10: the first copPublicSlots are open to
     // anyone; the rest need players.cop_level >= copWhitelistLevel.
