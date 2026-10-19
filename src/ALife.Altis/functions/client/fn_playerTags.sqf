@@ -2,8 +2,9 @@
     ALife_fnc_playerTags (client)
 
     Name tags over other players you can see, as set in CfgALife >>
-    PlayerTags: their name, and for police their rank under it
-    (alife_rank, the website's police rank name, set when they spawn).
+    PlayerTags: their name, and under it police and EMS their rank
+    (alife_rank, the website's rank names) and civilians in a gang their
+    gang's name (alife_gangName) -- both set when they spawn.
     Only players on foot, within `distance`, in your line of sight; the
     tag fades out towards the edge of that range. Drawn every frame
     (Draw3D), for the nearest few.
@@ -20,7 +21,7 @@ ALife_tagMax = getNumber (_cfg >> "max") max 1;
 ALife_tagColours = createHashMapFromArray [
     ["cop", getArray (_cfg >> "copColour")],
     ["medic", getArray (_cfg >> "medicColour")],
-    ["civ", getArray (_cfg >> "civColour")]
+    ["civ", getArray (_cfg >> "gangColour")]
 ];
 
 addMissionEventHandler ["Draw3D", {
@@ -37,12 +38,13 @@ addMissionEventHandler ["Draw3D", {
             private _alpha = 1 - ((_distance / ALife_tagDistance) ^ 3);
             private _head = _x modelToWorldVisual ((_x selectionPosition "head") vectorAdd [0, 0, 0.42]);
             private _faction = [side group _x] call ALife_fnc_sideToFaction;
-            private _rank = _x getVariable ["alife_rank", ""];
+            // Under the name: police / EMS rank, or a civilian's gang.
+            private _second = if (_faction == "civ") then { _x getVariable ["alife_gangName", ""] } else { _x getVariable ["alife_rank", ""] };
             private _colour = +(ALife_tagColours getOrDefault [_faction, [1, 1, 1, 1]]);
             _colour set [3, (_colour param [3, 1]) * _alpha];
             drawIcon3D ["", [1, 1, 1, _alpha], _head, 0, 0, 0, _x getVariable ["alife_name", name _x], 2, 0.034, "RobotoCondensedBold", "center"];
-            if (_faction == "cop" && { _rank != "" }) then {
-                drawIcon3D ["", _colour, _head vectorAdd [0, 0, -0.13 - _distance * 0.008], 0, 0, 0, _rank, 2, 0.028, "RobotoCondensed", "center"];
+            if (_second != "") then {
+                drawIcon3D ["", _colour, _head vectorAdd [0, 0, -0.13 - _distance * 0.008], 0, 0, 0, _second, 2, 0.028, "RobotoCondensed", "center"];
             };
         };
     } forEach (_near select [0, ALife_tagMax]);
