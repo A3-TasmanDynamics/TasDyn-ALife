@@ -102,7 +102,7 @@ bag/trunk on the left, you on the right, with weights.
   within 5 m or drop it): physical money you carry (`<faction>_cash`), moved with the same
   idempotent delta save as purchases.
 - **Limits:** what you carry is capped at `carryWeight` (24), trunks by vehicle type
-  (CfgVehicles `trunk`, or `CfgALife >> Trunks` for unlisted vehicles), using each item's `weight`.
+  (CfgVehicles `trunk`, or `CfgVehicles >> TrunkDefaults` by type for unlisted vehicles), using each item's `weight`.
 - The server does all the moving (`ALife_fnc_containerTransfer`, run with `remoteExecCall` so two
   players can't race each other) and checks distance, what each side has, and space.
   Trunk contents live on the server only (not saved yet).
