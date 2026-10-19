@@ -1,5 +1,3 @@
-// Vehicle shops, in Tonic's row format (Config_Vehicles) with our licence /
-// rank fields instead of condition strings. Each shop:
 //
 //   name     -- shown in the shop window
 //   side     -- "civ" / "cop" / "medic": who can use it
@@ -169,7 +167,7 @@ class CarShops
 // vanilla (tools/textures/make_placeholders.py): drop the real PAAs in at
 // the same paths under textures\vehicles\.
 //
-// Each vehicle's trunk space (Tonic's vItemSpace), in CfgItems weight units.
+// Each vehicle's trunk space, in CfgItems weight units.
 // A vehicle not listed falls back to CfgALife >> Trunks by type.
 // Read with missionConfigFile >> "CfgVehicles" (the mission's own list, not
 // Arma's configFile >> "CfgVehicles").
