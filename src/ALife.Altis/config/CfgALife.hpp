@@ -50,7 +50,7 @@ class CfgALife
         emptyDamagePerMinute = 0.08;    // health lost per minute for each one at 0
         warnAt = 20;                    // a notice when one drops to this
         hud = 1;                        // 1: health / food / water HUD, bottom right
-        hudStyle = "minimal";           // default style: "minimal" (icons + numbers), "rings" or "off";
+        hudStyle = "rings";           // default style: "minimal" (icons + numbers), "rings" or "off";
                                         // each player can switch it in the phone's Settings
     };
 
@@ -60,17 +60,6 @@ class CfgALife
     cashClass = "Land_Money_F";         // dropping only cash leaves a money stack instead
     cashIcon = "ui\items\cash_ca.paa";  // cash in inventory lists
     bagLifetime = 900;                  // seconds before a dropped bag disappears
-
-    // Vehicle storage for vehicles without a `trunk` in CfgVehicles (e.g.
-    // ones not sold in a shop), by type.
-    class Trunks
-    {
-        car = 50;
-        truck = 150;
-        air = 100;
-        ship = 80;
-        other = 30;
-    };
 
     // ---- ATMs -------------------------------------------------------------
     // Every ATM on the map works, recognised by model or class, so nothing
