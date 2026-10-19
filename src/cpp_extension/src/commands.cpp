@@ -176,6 +176,62 @@ std::string HandleVehicle(Database& db, const std::vector<std::string>& args) {
     return "ERROR:unknown vehicle op";
 }
 
+
+// The game's Admin app (ALife_fnc_adminAction). The mission has already
+// checked the staff member's permissions; this only validates and writes.
+//   ["log",        staffUid, targetUid|"", action, reason, afterJson] -> "OK"
+//   ["ban",        staffUid, targetUid, minutes (0 = permanent), reason] -> "OK" / "ALREADY"
+//   ["kick",       staffUid, targetUid, reason] -> "OK"
+//   ["compensate", staffUid, targetUid, faction, amount, reason] -> "OK:<balance>" / "NO_ACCOUNT"
+std::string HandleAdmin(Database& db, const std::vector<std::string>& args) {
+    if (args.size() < 3) return "ERROR:expected [op, staffUid, targetUid, ...]";
+    const std::string& op = args[0];
+    if (!IsSteam64(args[1])) return "ERROR:invalid staff uid";
+    if (!(args[2].empty() && op == "log") && !IsSteam64(args[2])) return "ERROR:invalid target uid";
+    auto digits = [](const std::string& s, size_t max) {
+        if (s.empty() || s.size() > max) return false;
+        for (char c : s) {
+            if (c < '0' || c > '9') return false;
+        }
+        return true;
+    };
+    auto reasonOk = [](const std::string& s) { return !s.empty() && s.size() <= 300; };
+    std::string error;
+    std::string status;
+
+    if (op == "log") {
+        if (args.size() < 6) return "ERROR:expected [log, staffUid, targetUid, action, reason, afterJson]";
+        const std::string& action = args[3];
+        if (action.empty() || action.size() > 40) return "ERROR:invalid action";
+        for (char c : action) {
+            if (!((c >= 'a' && c <= 'z') || c == '_' || c == '.')) return "ERROR:invalid action";
+        }
+        if (args[4].size() > 300 || args[5].size() > 2000) return "ERROR:too long";
+        if (!db.AdminLog(args[1], args[2], action, args[4], args[5], error)) return "ERROR:" + error;
+        return "OK";
+    }
+    if (op == "ban") {
+        if (args.size() < 5 || !digits(args[3], 6) || !reasonOk(args[4])) return "ERROR:expected [ban, staffUid, targetUid, minutes, reason]";
+        if (!db.AdminBan(args[1], args[2], std::stoi(args[3]), args[4], status, error)) return "ERROR:" + error;
+        return status;
+    }
+    if (op == "kick") {
+        if (args.size() < 4 || !reasonOk(args[3])) return "ERROR:expected [kick, staffUid, targetUid, reason]";
+        if (!db.AdminKick(args[1], args[2], args[3], error)) return "ERROR:" + error;
+        return "OK";
+    }
+    if (op == "compensate") {
+        if (args.size() < 6 || !digits(args[4], 9) || !reasonOk(args[5])) return "ERROR:expected [compensate, staffUid, targetUid, faction, amount, reason]";
+        if (args[3] != "civ" && args[3] != "cop" && args[3] != "medic") return "ERROR:invalid faction";
+        long long amount = std::stoll(args[4]);
+        if (amount < 1 || amount > 100000000) return "ERROR:amount must be $1 to $100,000,000";
+        if (args[1] == args[2]) return "ERROR:you can't compensate yourself";
+        if (!db.AdminCompensate(args[1], args[2], args[3], amount, args[5], status, error)) return "ERROR:" + error;
+        return status;
+    }
+    return "ERROR:unknown admin op";
+}
+
 }  // namespace
 
 std::string UnwrapArmaString(const std::string& arg) {
@@ -211,6 +267,7 @@ std::string DispatchCommand(Database& db, const std::string& command,
     if (command == "session") return HandleSession(db, args);
     if (command == "market") return HandleMarket(db, args);
     if (command == "vehicle") return HandleVehicle(db, args);
+    if (command == "admin") return HandleAdmin(db, args);
 
     return "ERROR:unknown command";
 }

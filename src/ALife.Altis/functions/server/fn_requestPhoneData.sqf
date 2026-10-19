@@ -29,5 +29,6 @@ private _faction = [side group _unit] call ALife_fnc_sideToFaction;
     _record getOrDefault ["medic_level", 0],
     _record getOrDefault ["staff_rank_key", ""],
     _record getOrDefault ["staff_level", 0],
-    (_record getOrDefault [_faction + "_licence", []]) select { _x isEqualType "" }
+    (_record getOrDefault [_faction + "_licence", []]) select { _x isEqualType "" },
+    (_record getOrDefault ["staff_perms", []]) select { _x isEqualType "" }
 ] remoteExecCall ["ALife_fnc_phoneData", owner _unit];

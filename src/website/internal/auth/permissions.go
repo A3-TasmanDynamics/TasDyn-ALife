@@ -83,6 +83,22 @@ var Catalogue = []Permission{
 	{Key: "bot.admin", Label: "Bot health and forced syncs", Group: "Server", SeedLevel: LevelHeadAdmin},
 
 	{Key: "dev.tools", Label: "Development: system health, website logs, project board", Group: "Development", SeedLevel: LevelHeadAdmin},
+
+	// The phone's Admin app in the game (src/ALife.Altis, ALife_fnc_admin).
+	// Bans, compensation and announcements there use the website keys
+	// above (bans.issue / bans.permanent, players.compensate(_large),
+	// announce.post).
+	{Key: "game.admin", Label: "Open the in-game Admin menu, see players, message them", Group: "In game", SeedLevel: LevelTrialMod},
+	{Key: "game.spectate", Label: "Spectate players in game", Group: "In game", SeedLevel: LevelTrialMod},
+	{Key: "game.teleport", Label: "Teleport to players, bring them, map teleport", Group: "In game", SeedLevel: LevelModerator},
+	{Key: "game.heal", Label: "Heal and revive players in game", Group: "In game", SeedLevel: LevelModerator},
+	{Key: "game.freeze", Label: "Freeze players in game", Group: "In game", SeedLevel: LevelModerator},
+	{Key: "game.kick", Label: "Kick players from the game server", Group: "In game", SeedLevel: LevelModerator},
+	{Key: "game.warn", Label: "Warn players in game", Group: "In game", SeedLevel: LevelModerator},
+	{Key: "game.markers", Label: "See every player on the map", Group: "In game", SeedLevel: LevelModerator},
+	{Key: "game.vehicles", Label: "Repair, refuel and delete vehicles in game", Group: "In game", SeedLevel: LevelModerator},
+	{Key: "game.self", Label: "God mode and invisibility", Group: "In game", SeedLevel: LevelAdmin},
+	{Key: "game.spawn", Label: "Spawn vehicles and give items", Group: "In game", SeedLevel: LevelHeadAdmin},
 }
 
 var catalogueByKey = func() map[string]Permission {

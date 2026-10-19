@@ -57,7 +57,7 @@ ALife_toastLoop = [] spawn {
     private _top = safezoneY + safezoneH * 0.08;
     private _gap = safezoneH * 0.01;
     private _pad = safezoneH * 0.01;
-    private _ours = [5700, 5600, 5500, 5400, 5300, 5100, 5000, 4900, 4800];
+    private _ours = [5800, 5700, 5600, 5500, 5400, 5300, 5100, 5000, 4900, 4800];
 
     while { ALife_toasts isNotEqualTo [] } do {
         // The screen on top: one of our menus, else Arma's inventory, else
