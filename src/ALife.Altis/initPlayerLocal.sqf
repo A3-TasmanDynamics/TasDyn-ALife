@@ -62,7 +62,7 @@ waitUntil { !isNil "ALife_fnc_startSession" };
             true
         };
         if (_key != getNumber (missionConfigFile >> "CfgALife" >> "phoneKey")) exitWith { false };
-        if (!(missionNamespace getVariable ["ALife_spawned", false]) || { !alive player } || { dialog }) exitWith { false };
+        if (!(missionNamespace getVariable ["ALife_spawned", false]) || { !alive player } || { dialog } || { player getVariable ["alife_tased", false] }) exitWith { false };
         ["open"] call ALife_fnc_phone;
         true
     }];

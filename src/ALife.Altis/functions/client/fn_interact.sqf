@@ -22,7 +22,7 @@
         BOOL - true if the key press was used
 */
 
-if (!alive player || { !(missionNamespace getVariable ["ALife_spawned", false]) } || { dialog }) exitWith { false };
+if (!alive player || { !(missionNamespace getVariable ["ALife_spawned", false]) } || { dialog } || { player getVariable ["alife_tased", false] }) exitWith { false };
 
 private _target = cursorObject;
 private _faction = missionNamespace getVariable ["ALife_faction", "civ"];

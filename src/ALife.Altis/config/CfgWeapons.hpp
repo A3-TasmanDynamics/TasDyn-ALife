@@ -121,7 +121,8 @@ class WeaponShops
         licence = "";
         level = 0;
         items[] = {
-            {"hgun_P07_snds_F", "Taser", 2000, 1000, "", 0},  // P07 9 mm
+            {"hgun_P07_snds_F", "Taser Pistol", 2000, 1000, "", 0},  // P07 9 mm, black suppressor (ALife_fnc_taser)
+            {"arifle_Mk20_plain_F", "Taser Rifle", 6000, 3000, "", 0},  // Mk20 5.56 mm (ALife_fnc_taser)
             {"hgun_P07_F"     , "", 1500, 750, "", 0},  // P07 9 mm
             {"SMG_05_F"       , "", 12000, 6000, "", 1},  // Protector 9 mm -- DLC: Apex (Protector)
             {"SMG_02_F"       , "", 15000, 7500, "", 2},  // Sting 9 mm -- Sting
@@ -131,6 +132,8 @@ class WeaponShops
         };
         mags[] = {
             {"16Rnd_9x21_Mag"          , "", 25, 12, "", 0},  // 9 mm 16Rnd Mag
+            {"16Rnd_9x21_yellow_Mag"   , "Taser Cartridges (Pistol)", 40, 20, "", 0},  // 9 mm 16Rnd Reload Tracer (Yellow) Mag
+            {"30Rnd_556x45_Stanag_Tracer_Yellow", "Taser Cartridges (Rifle)", 80, 40, "", 0},  // 5.56 mm 30rnd Tracer (Yellow) Mag
             {"30Rnd_9x21_Mag_SMG_02"   , "", 75, 37, "", 1},  // 9 mm 30Rnd Mag
             {"30Rnd_65x39_caseless_mag", "", 130, 65, "", 3}  // 6.5 mm 30Rnd Sand Mag
         };

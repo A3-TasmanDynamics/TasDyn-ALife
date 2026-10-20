@@ -115,6 +115,18 @@ class CfgALife
         itemCapacity = 300;             // weight of virtual items it holds
     };
 
+    // ---- Police tasers (ALife_fnc_taser) ----------------------------------
+    // A hit from a taser weapon firing its taser cartridges, by a police
+    // officer, does no damage: the target drops for `duration` seconds.
+    // The same gun and magazine in anyone else's hands is a normal gun.
+    class Taser
+    {
+        weapons[] = { "arifle_Mk20_plain_F", "hgun_P07_F", "hgun_P07_snds_F" };   // taser rifle, taser pistol (with / without the suppressor)
+        magazines[] = { "30Rnd_556x45_Stanag_Tracer_Yellow", "16Rnd_9x21_yellow_Mag" }; // taser cartridges
+        duration = 12;          // seconds on the ground
+        range = 60;             // metres: further than this, it doesn't take
+    };
+
     // ---- Police slots -----------------------------------------------------
     // mission.sqm police_1 .. police_10: the first copPublicSlots are open to
     // anyone; the rest need players.cop_level >= copWhitelistLevel.
