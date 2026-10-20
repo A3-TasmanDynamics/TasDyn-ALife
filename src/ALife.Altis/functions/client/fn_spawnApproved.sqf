@@ -35,6 +35,8 @@ if (getNumber (missionConfigFile >> "CfgALife" >> "GroupMarkers" >> "spawnGps") 
 };
 
 player setPosATL _pos;
+// Arma's First Aid Kits / Medikits aren't used here (vItems instead).
+{ player removeItems _x; } forEach ["FirstAidKit", "Medikit"];
 ALife_food = _survival param [0, 100];
 ALife_water = _survival param [1, 100];
 player enableSimulation true;

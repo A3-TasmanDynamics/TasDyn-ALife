@@ -28,7 +28,6 @@ class WeaponShops
             {"ItemRadio"      , "", 100, 50, "", 0},  // Radio
             {"ItemGPS"        , "", 100, 50, "", 0},  // GPS
             {"Binocular"      , "", 150, 75, "", 0},  // Binoculars
-            {"FirstAidKit"    , "", 150, 75, "", 0},  // First Aid Kit
             {"Chemlight_green", "", 30, 15, "", 0},  // Chemlight (Green)
             {"NVGoggles"      , "", 2000, 1000, "", 0}  // NV Goggles (Brown)
         };
@@ -111,7 +110,6 @@ class WeaponShops
             {"ItemGPS"    , "", 100, 50, "", 0},  // GPS
             {"Binocular"  , "", 150, 75, "", 0},  // Binoculars
             {"Rangefinder", "", 500, 250, "", 2},  // Rangefinder
-            {"FirstAidKit", "", 150, 75, "", 0},  // First Aid Kit
             {"NVGoggles"  , "", 1200, 600, "", 1}  // NV Goggles (Brown)
         };
     };
@@ -160,7 +158,6 @@ class WeaponShops
             {"ItemRadio"      , "", 100, 50, "", 0},  // Radio
             {"ItemGPS"        , "", 100, 50, "", 0},  // GPS
             {"Binocular"      , "", 150, 75, "", 0},  // Binoculars
-            {"FirstAidKit"    , "", 50, 25, "", 0},  // First Aid Kit
             {"Chemlight_green", "", 30, 15, "", 0},  // Chemlight (Green)
             {"NVGoggles"      , "", 1200, 600, "", 1}  // NV Goggles (Brown)
         };

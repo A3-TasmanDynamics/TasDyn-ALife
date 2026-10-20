@@ -125,14 +125,31 @@ class CfgItems
     };
 
     // ---- Medical ----
+    // First Aid Kit < Medkit; only a Defibrillator revives.
+    class firstaid
+    {
+        displayName = "First Aid Kit";
+        description = "Patches you up a little (35% health).";
+        icon = "ui\items\firstaid_ca.paa";
+        weight = 1;
+        use = "heal"; useTime = 4; heal = 0.35;
+        anim = "AinvPknlMstpSnonWnonDnon_medic2";
+    };
     class medkit
     {
         displayName = "Medkit";
-        description = "Heals you. Medics also use one to revive an incapacitated player.";
+        description = "Heals fully: yourself, or (medics) another player.";
         icon = "ui\items\medkit_ca.paa";
         weight = 2;
-        use = "heal"; useTime = 6; heal = 1;         // yourself; medics also revive with it
+        use = "heal"; useTime = 6; heal = 1;
         anim = "AinvPknlMstpSnonWnonDnon_medic2";
+    };
+    class defib
+    {
+        displayName = "Defibrillator";
+        description = "Medics: revives an incapacitated player. Not used up.";
+        icon = "ui\items\defib_ca.paa";
+        weight = 3;
     };
 
     // ---- Resources (gathered and processed: CfgResources.hpp) ----
