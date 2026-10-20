@@ -59,6 +59,7 @@ private _openShop = {
     switch (getText (missionConfigFile >> "CfgShops" >> _this >> "type")) do {
         case "clothing": { ["open", _this] call ALife_fnc_clothingShop; };
         case "vehicles": { ["open", _this] call ALife_fnc_vehicleShop; };
+        case "licences": { ["open", _this] call ALife_fnc_licenceShop; };
         default { ["open", _this] call ALife_fnc_shop; };
     };
 };

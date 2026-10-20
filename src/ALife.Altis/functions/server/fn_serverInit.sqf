@@ -129,9 +129,19 @@ addMissionEventHandler ["EntityRespawned", {
                 _this setUnitPos "UP";
             };
             {
+                private _label = getText (_x >> "mapMarker");
                 {
                     private _npc = missionNamespace getVariable [_x, objNull];
-                    if (!isNull _npc) then { _npc call _fnc_static; };
+                    if (!isNull _npc) then {
+                        _npc call _fnc_static;
+                        // Shops that ask for one get a map marker on each NPC.
+                        if (_label != "") then {
+                            private _m = createMarker ["alife_shop_" + _x, getPosWorld _npc];
+                            _m setMarkerType "mil_dot";
+                            _m setMarkerColor "ColorBlue";
+                            _m setMarkerText _label;
+                        };
+                    };
                 } forEach getArray (_x >> "npcs");
             } forEach ("true" configClasses (missionConfigFile >> "CfgShops"));
             private _workerClass = getText (missionConfigFile >> "CfgProcessing" >> "npcClass");

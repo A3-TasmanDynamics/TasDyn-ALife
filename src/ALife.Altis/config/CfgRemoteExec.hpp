@@ -58,6 +58,7 @@ class CfgRemoteExec
         class ALife_fnc_admin { allowedTargets = 1; };
         class ALife_fnc_resourceProgress { allowedTargets = 1; };
         class ALife_fnc_garageMenu { allowedTargets = 1; };
+        class ALife_fnc_licenceShop { allowedTargets = 1; };
         class ALife_fnc_reviveApplied { allowedTargets = 1; };
         class ALife_fnc_containerData { allowedTargets = 1; };
         class ALife_fnc_clothingShop { allowedTargets = 1; };
