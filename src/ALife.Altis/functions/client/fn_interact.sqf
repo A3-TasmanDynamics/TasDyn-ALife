@@ -64,11 +64,17 @@ private _openShop = {
     };
 };
 
-// A police placeable you're looking at: pick it up.
+// A police placeable you're looking at: move it or pick it up.
 if (!isNull _target && { ((_target getVariable ["alife_placed", []]) param [1, ""]) != "" } && { _faction == "cop" }
     && { player distance _target <= getNumber (missionConfigFile >> "CfgALife" >> "Placeables" >> "pickupRange") }) exitWith {
     private _class = (_target getVariable ["alife_placed", []]) select 1;
     ["open", getText (missionConfigFile >> "CfgItems" >> _class >> "displayName"), [
+        ["Move", {
+            _this spawn {
+                private _at = [typeOf _this, _this] call ALife_fnc_placeMode;
+                if (_at isNotEqualTo []) then { ["move", player, _this, _at select 0, _at select 1] remoteExecCall ["ALife_fnc_placeables", 2]; };
+            };
+        }, _target],
         ["Pick up", { ["pickup", player, _this] remoteExecCall ["ALife_fnc_placeables", 2]; }, _target]
     ]] call ALife_fnc_radial;
     true

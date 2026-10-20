@@ -55,8 +55,16 @@ class CfgALife
     {
         max = 20;               // placed at once, per player
         lifetime = 3600;        // seconds before a placed object is cleared (the item is gone)
-        pickupRange = 4;        // metres: Windows on it to pick it up (police)
+        pickupRange = 4;        // metres: Windows on it to pick it up or move it (police)
         spikeRange = 3.5;       // metres: vehicles this close to a spike strip lose their tyres
+        // Choosing where it goes (Use, or Move on a placed one): it follows
+        // in front of you until you put it down.
+        placeRange = 6;         // metres: furthest from you it can go
+        moveRange = 30;         // metres: how far you can carry a placed one while moving it
+        placeKey = 57;          // Space: put it here
+        cancelKey = 14;         // Backspace: cancel
+        turnLeftKey = 16;       // Q: turn it 15 degrees
+        turnRightKey = 18;      // E: turn it 15 degrees
     };
 
     // ---- Police slots -----------------------------------------------------
