@@ -31,7 +31,18 @@ private _use = getText (_cfg >> "use");
 private _name = getText (_cfg >> "displayName");
 
 if ((_record getOrDefault ["status", ""]) != "OK" || { _faction == "" } || { !alive _unit } || { _unit getVariable ["alife_downed", false] }) exitWith {};
-if (!isClass _cfg || { !(_use in ["consume", "heal", "repair", "refuel", "lockpick"]) }) exitWith {};
+if (!isClass _cfg || { !(_use in ["consume", "heal", "repair", "refuel", "lockpick", "place"]) }) exitWith {};
+// Placeables: the police only, and a cap per player (CfgALife >> Placeables).
+if (_use == "place") then {
+    if (_faction != "cop") exitWith { _use = ""; "Only the police can put those down." call _fnc_reply; };
+    if (vehicle _unit != _unit) exitWith { _use = ""; "Get out of the vehicle first." call _fnc_reply; };
+    if (isNil "ALife_placed") then { ALife_placed = []; };
+    ALife_placed = ALife_placed select { !isNull _x };
+    if (({ (_x getVariable ["alife_placed", []]) param [0, ""] == _uid } count ALife_placed) >= getNumber (missionConfigFile >> "CfgALife" >> "Placeables" >> "max")) exitWith {
+        _use = ""; "You've put down as many as you can. Pick some up first." call _fnc_reply;
+    };
+};
+if (_use == "") exitWith {};
 
 private _onVehicle = _use in ["repair", "refuel", "lockpick"];
 if (_onVehicle && { isNull _target || { !alive _target } || { !(_target isKindOf "AllVehicles") } || { _target isKindOf "Man" } || { _unit distance _target > 10 } }) exitWith {
@@ -64,6 +75,22 @@ switch (_use) do {
         private _amount = getNumber (_cfg >> "fuel");
         if (local _target) then { _target setFuel ((fuel _target + _amount) min 1); } else { ["fuel", _target, _amount] remoteExecCall ["ALife_fnc_itemUsed", _target]; };
         _message = format ["Refuelled the %1.", _vehName];
+    };
+    case "place": {
+        private _pos = _unit modelToWorld [0, 2, 0];
+        private _object = createVehicle [getText (_cfg >> "object"), [_pos select 0, _pos select 1, 0], [], 0, "CAN_COLLIDE"];
+        _object setDir getDir _unit;
+        _object setPosATL [_pos select 0, _pos select 1, 0];
+        _object allowDamage false;
+        _object setVariable ["alife_placed", [_uid, _class], true]; // who, and what it goes back to
+        if (isNil "ALife_placed") then { ALife_placed = []; };
+        ALife_placed pushBack _object;
+        if (getNumber (_cfg >> "spikes") == 1) then { [_object] call ALife_fnc_placeables; };
+        _object spawn {
+            sleep getNumber (missionConfigFile >> "CfgALife" >> "Placeables" >> "lifetime");
+            if (!isNull _this) then { deleteVehicle _this; };
+        };
+        _message = format ["Put down the %1. Windows on it to pick it up.", _name];
     };
     case "lockpick": {
         if (random 1 < getNumber (_cfg >> "chance")) then {
