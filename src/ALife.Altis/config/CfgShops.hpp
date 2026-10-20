@@ -2,7 +2,9 @@
 //
 //   type      -- "market" (VirtualShops, CfgMarket.hpp), "weapons"
 //                (WeaponShops, CfgWeapons.hpp), "clothing" (ClothingShops,
-//                CfgClothing.hpp) or "vehicles" (CarShops, CfgVehicles.hpp)
+//                CfgClothing.hpp), "vehicles" (CarShops, CfgVehicles.hpp)
+//                or "licences" (a licence office: no shop class; its own
+//                name, side and licences[] -- CfgLicences keys with a price)
 //   shop      -- the shop's class there (its name, side, licence and stock)
 //   markers[] -- mission.sqm markers it's at
 //   npcs[]    -- and / or units placed in Eden (their variable names): look at
@@ -10,6 +12,7 @@
 //                can't be hurt (ALife_fnc_serverInit).
 //   radius    -- metres from a marker / NPC
 //   vehicleSpawns[] -- vehicle shops: where bought vehicles appear
+//   mapMarker -- optional: a map marker with this text on each of its NPCs
 //
 // Shops sit on the town spawn markers for now; give each its own marker in
 // Eden when they get placed properly. Only markets can be bought from so far;
@@ -17,6 +20,20 @@
 
 class CfgShops
 {
+    // Licence office: place civilian units in Eden named licence_vendor_1,
+    // licence_vendor_2, ... (add more names here).
+    class licence_office
+    {
+        type = "licences";
+        name = "Licence Office";
+        side = "civ";
+        licences[] = { "driver", "truck", "pilot", "boat", "dive", "gun", "hunting", "home" };
+        markers[] = {};
+        npcs[] = { "licence_vendor_1", "licence_vendor_2", "licence_vendor_3" };
+        radius = 5;
+        mapMarker = "Licence Office";
+    };
+
     class resource_trader
     {
         type = "market";

@@ -95,6 +95,7 @@ class CfgFunctions
             class adminApply {};      // server -> client: staff actions on you (bring, freeze, kick, ...)
             class resourceProgress {}; // server -> client: progress bar while gathering / processing
             class garageMenu {};      // the garage window
+            class licenceShop {};     // the licence office window
             class itemUsed {};        // server -> client: apply a used item where it's local
             class interact {};        // the Windows key
             class transfer {};        // the inventory screen (bags, trunks, dropping)
