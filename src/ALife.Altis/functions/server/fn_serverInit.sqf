@@ -39,6 +39,12 @@ addMissionEventHandler ["HandleDisconnect", {
         ALife_online deleteAt _uid;
     };
     _unit setVariable ["alife_downed", false, true]; // a body nobody's coming back to
+    // In jail: the time left is saved and the clock stops until they're back.
+    if (!isNil "ALife_jail" && { _uid in ALife_jail }) then {
+        private _left = ["remaining", _uid] call ALife_fnc_jail;
+        ["save", [_uid, "civ_jail", str (round _left), "-"]] call ALife_fnc_extension;
+        ALife_jail deleteAt _uid;
+    };
     ALife_revives deleteAt _uid;
     // Leaving while incapacitated (on the death screen) is combat logging --
     // against the rules. Recorded as an anti-cheat flag + staff log entry,
@@ -109,6 +115,7 @@ addMissionEventHandler ["EntityRespawned", {
             ["session", ["reset"]] call ALife_fnc_extension;
             // Current market prices (saved across restarts) before anyone can shop.
             ["init"] call ALife_fnc_market;
+            ["loop"] call ALife_fnc_jail; // releases prisoners when their time's up
             // The people you deal with: shop NPCs placed in Eden (CfgShops
             // npcs[]) and a worker at each processor marker (CfgProcessing).
             // They stand still and can't be hurt.

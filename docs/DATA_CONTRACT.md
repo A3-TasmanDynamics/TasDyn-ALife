@@ -79,6 +79,7 @@ On `OK`, every key below is present:
 | `civ_cash` / `cop_cash` / `medic_cash` | number | `players.<faction>_cash` | Physical cash on hand, per faction |
 | `civ_bank` / `cop_bank` / `medic_bank` | number | `players.<faction>_bank` | **Cache** — `bank_accounts.balance` is authoritative, this is kept in sync by DB trigger (see `database/schema.sql`), never written independently by application code |
 | `cop_level` / `medic_level` | number | `players.cop_level` / `players.medic_level` | Civilian has no level (no `civ_level` key) |
+| `civ_jail` / `civ_bail` | number | `players.civ_jail_seconds` / `players.civ_bail` | Jail seconds left to serve (0 = free) and the bail; saved with `save` fields `civ_jail` / `civ_bail` |
 | `cop_rank` / `medic_rank` | string | `faction_rank_names.name` for that level (`police` / `ems`) | `""` if the level has no name; shown on player tags |
 | `cop_dept` / `medic_dept` | string | `players.cop_dept` / `players.medic_dept` | Empty string if not yet assigned — **not `null`**, see [Why no `null`](#why-no-null) |
 | `civ_licence` / `cop_licence` / `medic_licence` | array of strings | `players.<faction>_licence` (JSONB) | e.g. `["driver","boat"]` — a set, not a single value |
@@ -217,6 +218,15 @@ rows the website writes for the same action.
 - `["compensate", staffUid, targetUid, faction, amount, reason]` -- an `admin_adjustment` credit to the
   target's faction bank account (the website's `players.Compensate`) and a `player.compensate` staff
   log. Response `OK:<new balance>` or `NO_ACCOUNT`. `amount` $1-$100,000,000; not to yourself.
+
+## `wanted` — the police wanted list
+
+`wanted_crimes`; `players.civ_bounty` is its trigger-kept cache (returned by `load`).
+
+- `["add", uid, crime, bounty, issuerUid]` -> `OK:<id>` (`crime` is a CfgCrimes class, `[A-Za-z0-9_]`).
+- `["list", uid]` -> `[[id, crime, bounty], ...]`, outstanding only.
+- `["clear", uid]` -> `OK:<count>`: marks them cleared (on arrest).
+- `["board"]` -> `[[uid, name, bounty, crimes], ...]`: everyone wanted, highest bounty first.
 
 ## Gear
 

@@ -47,12 +47,19 @@ if (_key == "last") then {
     };
 };
 
+// Still serving a sentence: back into the jail, whatever they picked.
+private _jail = if (_faction == "civ") then { _record getOrDefault ["civ_jail", 0] } else { 0 };
+if (_jail > 0) then {
+    private _cell = getMarkerPos (getArray (missionConfigFile >> "CfgJail" >> "markers") param [0, ""]);
+    if (_cell isNotEqualTo [0, 0, 0]) then { _target = [_cell select 0, _cell select 1, 0]; _name = "Jail"; };
+};
 _unit setPosATL _target;
 _unit hideObjectGlobal false;
 _unit setVariable ["alife_uid", _uid];
 _unit setVariable ["alife_faction", _faction];
 _unit setVariable ["alife_name", name _unit, true]; // shown to medics reviving them
 _unit setVariable ["alife_gang", _record getOrDefault ["gang_tag", ""], true]; // gang uniform textures
+_unit setVariable ["alife_bounty", [0, _record getOrDefault ["civ_bounty", 0]] select (_faction == "civ"), true]; // police see it
 _unit setVariable ["alife_gangName", _record getOrDefault ["gang_name", ""], true]; // shown on player tags
 // Their rank name (the website's faction_rank_names), shown on player tags.
 _unit setVariable ["alife_rank", switch (_faction) do {
@@ -87,3 +94,4 @@ _unit setVariable ["alife_food", _survival select 0];
 _unit setVariable ["alife_water", _survival select 1];
 
 [_target, _name, "", _loadout, _survival] remoteExecCall ["ALife_fnc_spawnApproved", _owner];
+if (_jail > 0) then { ["start", _unit, _jail, _record getOrDefault ["civ_bail", 0]] call ALife_fnc_jail; };

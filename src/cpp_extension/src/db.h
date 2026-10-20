@@ -4,6 +4,7 @@
 
 #include <mutex>
 #include <string>
+#include <vector>
 
 #include "config.h"
 
@@ -104,6 +105,13 @@ public:
     bool AdminCompensate(const std::string& staffUid, const std::string& targetUid, const std::string& faction,
                          long long amount, const std::string& reason, std::string& outStatus,
                          std::string& outError);
+
+    // The police wanted list (wanted_crimes): ["add", uid, crime, bounty,
+    // issuerUid] -> "OK:<id>"; ["list", uid] -> [[id, crime, bounty], ...]
+    // outstanding; ["clear", uid] -> "OK:<count>"; ["board"] -> [[uid, name,
+    // totalBounty, crimes], ...] everyone wanted.
+    bool Wanted(const std::string& op, const std::vector<std::string>& args, std::string& outResponse,
+                std::string& outError);
 
 private:
     PGconn* conn_ = nullptr;

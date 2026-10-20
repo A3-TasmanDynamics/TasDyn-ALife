@@ -137,6 +137,11 @@ GLYPHS = {
         union(capsule(48, 64, 60, 76, 4.5), capsule(60, 76, 82, 52, 4.5)),
     ),
     "settings": gear(64, 64),
+    # wanted: a poster with a person and a big "!" mark
+    "wanted": minus(
+        rrect(64, 64, 76, 92, 8),
+        union(circle(64, 50, 13), rrect(64, 76, 34, 18, 8), rrect(64, 100, 50, 6, 2)),
+    ),
     # market: a rising price line with an arrow head, over a base line
     "market": union(
         capsule(28, 88, 50, 66, 6), capsule(50, 66, 66, 78, 6), capsule(66, 78, 92, 46, 6),
@@ -156,6 +161,7 @@ COLOURS = {
     "admin": (71, 85, 105),
     "settings": (107, 114, 128),
     "market": (14, 165, 233),
+    "wanted": (190, 40, 40),
 }
 
 

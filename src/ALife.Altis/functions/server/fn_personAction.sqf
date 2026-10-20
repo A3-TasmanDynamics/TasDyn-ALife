@@ -21,6 +21,10 @@
         "putIn"       - police: a restrained player into the back of the
                         nearest vehicle with a free seat (within 8 m)
         "takeOut"     - police: a restrained player out of a vehicle
+        "wanted"      - police: add a crime (3 = CfgCrimes class) to a
+                        civilian's wanted list
+        "arrest"      - police: a restrained, wanted civilian at the jail
+                        (ALife_fnc_jail "arrest")
         "strip"       - police: a restrained player loses their weapons,
                         vest, backpack, hat, glasses and what's in their
                         uniform (seized; ALife_fnc_personApply)
@@ -108,6 +112,27 @@ switch (_action) do {
         diag_log format ["[ALife] %1 released %2", _uid, getPlayerUID _target];
         [format ["You released %1.", _them], "success"] call _fnc_reply;
         [_target, format ["%1 released you.", _me], "success"] call _fnc_tell;
+    };
+    case "wanted": {
+        if (_faction != "cop") exitWith {};
+        private _crime = missionConfigFile >> "CfgCrimes" >> (["", _arg] select (_arg isEqualType ""));
+        if (!isClass _crime) exitWith {};
+        if ((_target getVariable ["alife_faction", ""]) != "civ") exitWith { "Only civilians go on the wanted list." call _fnc_reply; };
+        private _bounty = getNumber (_crime >> "bounty");
+        private _theirUid = getPlayerUID _target;
+        private _r = ["wanted", ["add", _theirUid, configName _crime, str _bounty, _uid]] call ALife_fnc_extension;
+        if (_r select [0, 3] != "OK:") exitWith { diag_log format ["[ALife] wanted add failed: %1", _r]; "That didn't save. Try again." call _fnc_reply; };
+        private _record = ALife_sessions getOrDefault [_theirUid, createHashMap];
+        private _total = (_record getOrDefault ["civ_bounty", 0]) + _bounty;
+        _record set ["civ_bounty", _total];
+        _target setVariable ["alife_bounty", _total, true];
+        diag_log format ["[ALife] %1 added %2 ($%3) to %4's wanted list", _uid, configName _crime, _bounty, _theirUid];
+        [format ["%1: %2 added. Wanted for $%3.", _them, getText (_crime >> "name"), [_total] call BIS_fnc_numberText], "success"] call _fnc_reply;
+        [_target, format ["The police added %1 to your record ($%2 bounty).", getText (_crime >> "name"), [_bounty] call BIS_fnc_numberText], "warning"] call _fnc_tell;
+    };
+    case "arrest": {
+        if (_faction != "cop") exitWith {};
+        ["arrest", _unit, _target] call ALife_fnc_jail;
     };
     case "escort": {
         if (_faction != "cop") exitWith {};

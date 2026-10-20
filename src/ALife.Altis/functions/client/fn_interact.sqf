@@ -27,6 +27,16 @@ if (!alive player || { !(missionNamespace getVariable ["ALife_spawned", false]) 
 private _target = cursorObject;
 private _faction = missionNamespace getVariable ["ALife_faction", "civ"];
 
+// In jail: bail, and how long's left.
+if (missionNamespace getVariable ["ALife_jailed", false]) exitWith {
+    private _left = ((missionNamespace getVariable ["ALife_jailUntil", 0]) - diag_tickTime) max 0;
+    private _bail = missionNamespace getVariable ["ALife_jailBail", 0];
+    ["open", "Jail", if (_bail > 0) then {
+        [[format ["Pay bail $%1 (bank)", [_bail] call BIS_fnc_numberText], { [player] remoteExecCall ["ALife_fnc_jailBail", 2]; }, []]]
+    } else { [] }, format ["%1 min left", ceil (_left / 60)]] call ALife_fnc_radial;
+    true
+};
+
 if ([_target] call ALife_fnc_isAtm && { player distance _target <= getNumber (missionConfigFile >> "CfgALife" >> "atmRange") + 1 }) exitWith {
     ["open"] call ALife_fnc_atm;
     true
