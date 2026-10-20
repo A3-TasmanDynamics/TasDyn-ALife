@@ -42,5 +42,7 @@ player addEventHandler ["Killed", {
     };
 };
 
+["init"] call ALife_fnc_taser; // police tasers drop you instead of hurting you
+
 ["apply"] call ALife_fnc_phoneSettings;
 [player] remoteExec ["ALife_fnc_requestPhoneData", 2];

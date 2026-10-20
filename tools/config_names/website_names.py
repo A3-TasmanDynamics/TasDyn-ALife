@@ -83,7 +83,7 @@ for m in re.finditer(r'class (\w+)\s*\{\s*name = "([^"]*)"', read("CfgCrimes.hpp
 gear = {}
 for name in sorted(os.listdir(CFG)):
     if name.endswith(".hpp"):
-        for cls in re.findall(r'"([A-Za-z][A-Za-z0-9_]{2,})"', read(name)):
+        for cls in re.findall(r'"([A-Za-z0-9][A-Za-z0-9_]{2,})"', read(name)):  # (magazines start with a digit)
             n = arma.get(cls.lower())
             if n and cls.lower() not in vehicles:
                 gear[cls.lower()] = n

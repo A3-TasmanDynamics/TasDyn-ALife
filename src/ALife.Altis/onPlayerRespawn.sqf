@@ -7,7 +7,7 @@ if (!hasInterface) exitWith {};
 // up, unrestrained, hands down and unfrozen (the server clears the rest,
 // ALife_fnc_serverInit's EntityRespawned; jail is the server's to restart).
 { player setVariable [_x select 0, _x select 1, true]; } forEach [
-    ["alife_downed", false], ["alife_restrained", false], ["alife_restrainedBy", ""], ["alife_softCuffed", false], ["alife_surrendered", false], ["alife_frozen", false]
+    ["alife_downed", false], ["alife_restrained", false], ["alife_restrainedBy", ""], ["alife_softCuffed", false], ["alife_tased", false], ["alife_surrendered", false], ["alife_frozen", false]
 ];
 player forceWalk false;
 player setAnimSpeedCoef 1;
