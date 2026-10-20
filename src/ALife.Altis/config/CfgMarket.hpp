@@ -37,7 +37,7 @@ class VirtualShops
         side = "civ";
         licence = "";
         level = 0;
-        items[] = { "water", "coffee", "apple", "tbacon", "redgull", "pickaxe", "fuelcan", "lockpick", "toolkit" };
+        items[] = { "water", "coffee", "apple", "tbacon", "redgull", "firstaid", "pickaxe", "fuelcan", "lockpick", "toolkit" };
     };
 
     class rebel
@@ -46,7 +46,7 @@ class VirtualShops
         side = "civ";
         licence = "rebel";
         level = 0;
-        items[] = { "water", "tbacon", "lockpick", "zipties", "toolkit", "fuelcan" };
+        items[] = { "water", "tbacon", "firstaid", "lockpick", "zipties", "toolkit", "fuelcan" };
     };
 
     class cop
@@ -55,7 +55,7 @@ class VirtualShops
         side = "cop";
         licence = "";
         level = 0;
-        items[] = { "water", "coffee", "donut", "toolkit", "fuelcan", "spikestrip" };
+        items[] = { "water", "coffee", "donut", "firstaid", "toolkit", "fuelcan", "spikestrip" };
     };
 
     class medic
@@ -64,7 +64,7 @@ class VirtualShops
         side = "medic";
         licence = "";
         level = 0;
-        items[] = { "medkit", "water", "coffee", "toolkit", "fuelcan" };
+        items[] = { "defib", "medkit", "firstaid", "water", "coffee", "toolkit", "fuelcan" };
     };
 };
 
@@ -90,6 +90,8 @@ class CfgMarket
     class donut      { buyPrice = 25; sellPrice = 12; min = 12; max = 75; };  // Donut
     class spikestrip { buyPrice = 2500; sellPrice = 1250; min = 1250; max = 7500; level = 1; };  // Spike Strip
     class medkit     { buyPrice = 250; sellPrice = 125; min = 125; max = 750; };  // Medkit
+    class firstaid   { buyPrice = 75; sellPrice = 37; min = 37; max = 225; };  // First Aid Kit
+    class defib      { buyPrice = 2500; sellPrice = 1250; min = 1250; max = 7500; };  // Defibrillator
 
     // ---- Resources: the Resource Trader buys them (sellPrice); nobody sells them ----
     class oil_raw     { buyPrice = 1000; sellPrice = 500; min = 400; max = 2000; };  // Crude Oil

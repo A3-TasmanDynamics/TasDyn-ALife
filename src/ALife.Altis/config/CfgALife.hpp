@@ -13,7 +13,7 @@ class CfgALife
 
     // ---- Death and revive -------------------------------------------------
     respawnTime = 120;                  // seconds on the death screen before Respawn unlocks (or wait for a medic)
-    reviveTime = 8;                     // seconds a medic holds Revive (uses one medkit)
+    reviveTime = 8;                     // seconds a medic holds Revive (needs a Defibrillator, not used up)
     reviveHealth = 0.5;                 // health (0-1) a revived player gets up with, where they fell, with their gear
 
     // ---- Staff ------------------------------------------------------------

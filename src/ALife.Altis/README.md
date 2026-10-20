@@ -52,9 +52,10 @@ Respawning takes you back through the spawn menu (`onPlayerRespawn.sqf`).
 
 ### Revive
 
-Medics revive downed players with a **medkit** (a virtual item). Look at the body and use
+Medics revive downed players with a **Defibrillator** (a virtual item, not used up; Medkits heal,
+First Aid Kits heal a little). Look at the body and use
 **Revive** (Windows key on a downed player, then Revive): an 8-second action with a progress bar, cancelled if you move away. When
-it finishes the server checks the medic has a medkit, uses one, and the downed player gets up where
+it finishes the server checks the medic has a Defibrillator, and the downed player gets up where
 they fell, with their gear, at 50% health (`reviveTime` / `reviveHealth` in `config/CfgALife.hpp`).
 Flow: `ALife_fnc_revive` (medic) → `ALife_fnc_requestRevive` (server) → `ALife_fnc_revived`
 (patient respawns) → `ALife_fnc_completeRevive` (server) → `ALife_fnc_reviveApplied`.

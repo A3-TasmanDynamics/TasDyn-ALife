@@ -4,7 +4,8 @@
     The Revive action: kneel over the body for CfgALife >> reviveTime
     seconds with a progress bar (ui\progress.hpp). Moving away, dying, or
     the body being revived/respawned by then cancels it. When it finishes,
-    the server checks everything again and uses a medkit
+    the server checks everything again (the medic needs a Defibrillator,
+    which isn't used up)
     (ALife_fnc_requestRevive).
 
     Arguments:
@@ -15,12 +16,12 @@ params ["_mode", ["_body", objNull]];
 
 if (_mode != "start" || { isNull _body } || { !isNil "ALife_reviving" }) exitWith {};
 
-private _medkits = 0;
+private _defibs = 0;
 {
-    if ((_x select 0) == "medkit") then { _medkits = _x select 1; };
+    if ((_x select 0) == "defib") then { _defibs = _x select 1; };
 } forEach ((missionNamespace getVariable ["ALife_phone", createHashMap]) getOrDefault ["items", []]);
-if (_medkits < 1) exitWith {
-    ["You need a medkit. Buy them at the hospital (Medical Supplies).", "warning"] call ALife_fnc_toast;
+if (_defibs < 1) exitWith {
+    ["You need a Defibrillator. Buy one at the hospital (Medical Supplies).", "warning"] call ALife_fnc_toast;
 };
 
 ALife_reviving = true;
