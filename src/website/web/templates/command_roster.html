@@ -30,7 +30,7 @@
       <p class="cmd-empty">{{if .Q}}Nobody matches &ldquo;{{.Q}}&rdquo;.{{else}}Nobody is in {{.FactionName}} yet.{{end}}</p>
       {{end}}
     </div>
-    <p class="hint">Select someone to open their personnel file: region, enrollment, promotions, time in grade, certifications, discipline, notes and roll call.</p>
+    <p class="hint">Select someone to open their personnel file: region, enrollment, promotions, time in grade, certifications, discipline, notes and roll call.{{if eq .Faction "police"}} The roster itself (rank, callsign, name, division, status) is public at <a href="/roster/police">/roster/police</a>; personnel files stay here.{{end}}</p>
 
     {{if .CanRecruit}}
     <dialog id="dlg-recruit" class="modal" aria-labelledby="dlg-recruit-title">

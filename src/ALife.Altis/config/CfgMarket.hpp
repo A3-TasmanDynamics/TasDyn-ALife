@@ -18,7 +18,9 @@ class VirtualShops
         side = "civ";
         licence = "";
         level = 0;
-        items[] = {};
+        // Buys and sells the same resources (the Windows menu asks which).
+        items[] = { "oil_raw", "oil_refined", "copper_ore", "copper_bar", "iron_ore", "iron_bar", "salt_raw", "salt",
+                    "sand", "glass", "diamond_raw", "diamond", "rock", "cement" };
         buys[] = { "oil_raw", "oil_refined", "copper_ore", "copper_bar", "iron_ore", "iron_bar", "salt_raw", "salt",
                    "sand", "glass", "diamond_raw", "diamond", "rock", "cement" };
     };
@@ -29,7 +31,8 @@ class VirtualShops
     //   level    -- minimum cop_level / medic_level to use it (0 = any)
     //   items[]  -- CfgMarket / CfgItems classes it sells to players
     //   buys[]   -- classes it buys from players, at the market's sell price
-    //               (a shop with buys[] and no items[] is a trader)
+    //               (a shop with buys[] and no items[] is a trader; with
+    //               both, the Windows menu offers Buy and Sell)
 
     class general
     {

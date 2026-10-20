@@ -68,6 +68,31 @@ _unit setVariable ["alife_rank", switch (_faction) do {
     default { "" };
 }, true];
 
+// Died and wasn't revived (alive saved false at death): a new life. The
+// old gear stays on the body; carried items and cash go too (CfgALife).
+// Done here, not at respawn, so leaving while dead doesn't keep anything.
+if (!(_record getOrDefault [_faction + "_alive", true])) then {
+    private _cfg = missionConfigFile >> "CfgALife";
+    _record set [_faction + "_gear", []];
+    ["save", [_uid, _faction + "_gear", "[]", "-"]] call ALife_fnc_extension;
+    private _lost = [];
+    if (getNumber (_cfg >> "deathLosesItems") == 1 && { (_record getOrDefault [_faction + "_items", []]) isNotEqualTo [] }) then {
+        if ((["save", [_uid, _faction + "_items", "[]", "-"]] call ALife_fnc_extension) == "OK") then {
+            _record set [_faction + "_items", []];
+            _lost pushBack "items";
+        };
+    };
+    private _cash = _record getOrDefault [_faction + "_cash", 0];
+    if (getNumber (_cfg >> "deathLosesCash") == 1 && { _cash > 0 }) then {
+        private _token = format ["death-%1-%2-%3", _faction, round (diag_tickTime * 1000), floor random 1e6];
+        if ((["save", [_uid, _faction + "_cash", "-" + (_cash toFixed 0), _token]] call ALife_fnc_extension) == "OK") then {
+            _record set [_faction + "_cash", 0];
+            _lost pushBack format ["$%1 cash", [_cash] call BIS_fnc_numberText];
+        };
+    };
+    diag_log format ["[ALife] %1 starts a new %2 life after dying (lost gear%3)", _uid, _faction, if (_lost isEqualTo []) then { "" } else { ", " + (_lost joinString ", ") }];
+};
+
 _record set [_faction + "_alive", true];
 // Save the destination itself: the unit's own position may not have
 // caught up yet on the server.
@@ -76,7 +101,7 @@ private _saved = ["save", [_uid, _faction + "_alive", "true", "-"]] call ALife_f
 
 diag_log format ["[ALife] %1 spawned as %2 at %3 %4 (alive saved: %5)", _uid, _faction, _key, _target, _saved];
 
-// The outfit they had (saved gear); none after dying and respawning.
+// The outfit they had (saved gear); none after dying (cleared above).
 private _gear = _record getOrDefault [_faction + "_gear", []];
 private _loadout = [];
 if (_gear isEqualType []) then {

@@ -49,3 +49,29 @@ class ALife_Progress
         };
     };
 };
+
+// Placing a police object (ALife_fnc_placeMode): what it is and the keys,
+// in the same spot and style as the progress label.
+class ALife_PlaceHint
+{
+    idd = -1;
+    duration = 1e+011;
+    fadeIn = 0;
+    fadeOut = 0.2;
+    movingEnable = 0;
+    onLoad = "uiNamespace setVariable ['ALife_PlaceHint', _this select 0]";
+    onUnload = "uiNamespace setVariable ['ALife_PlaceHint', displayNull]";
+
+    class controls
+    {
+        class Text: ALife_RscStructuredText
+        {
+            idc = 9211;
+            shadow = 2;
+            x = "safezoneX + safezoneW * 0.3";
+            y = "safezoneY + safezoneH * 0.78";
+            w = "safezoneW * 0.4";
+            h = "safezoneH * 0.07";
+        };
+    };
+};

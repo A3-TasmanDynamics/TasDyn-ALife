@@ -14,9 +14,12 @@
         0: OBJECT - the player's unit
         1: STRING - item class (CfgItems)
         2: OBJECT - the vehicle (repair / refuel / lockpick), else objNull
+        3: ARRAY  - place: where it goes (positionATL, chosen in
+                    ALife_fnc_placeMode); [] = 2 m in front of them
+        4: NUMBER - place: its direction (-1 = the way they face)
 */
 
-params [["_unit", objNull, [objNull]], ["_class", "", [""]], ["_target", objNull, [objNull]]];
+params [["_unit", objNull, [objNull]], ["_class", "", [""]], ["_target", objNull, [objNull]], ["_at", [], [[]]], ["_dir", -1, [0]]];
 
 if (!isServer || { isNull _unit }) exitWith {};
 if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith {};
@@ -40,6 +43,11 @@ if (_use == "place") then {
     ALife_placed = ALife_placed select { !isNull _x };
     if (({ (_x getVariable ["alife_placed", []]) param [0, ""] == _uid } count ALife_placed) >= getNumber (missionConfigFile >> "CfgALife" >> "Placeables" >> "max")) exitWith {
         _use = ""; "You've put down as many as you can. Pick some up first." call _fnc_reply;
+    };
+    if (_use != "" && { _at isNotEqualTo [] }) then {
+        if (!(_at isEqualTypeArray [0, 0, 0]) || { _unit distance2D _at > getNumber (missionConfigFile >> "CfgALife" >> "Placeables" >> "placeRange") + 2 } || { surfaceIsWater _at }) then {
+            _use = ""; "It can't go there." call _fnc_reply;
+        };
     };
 };
 if (_use == "") exitWith {};
@@ -77,9 +85,9 @@ switch (_use) do {
         _message = format ["Refuelled the %1.", _vehName];
     };
     case "place": {
-        private _pos = _unit modelToWorld [0, 2, 0];
+        private _pos = if (_at isEqualTo []) then { _unit modelToWorld [0, 2, 0] } else { _at };
         private _object = createVehicle [getText (_cfg >> "object"), [_pos select 0, _pos select 1, 0], [], 0, "CAN_COLLIDE"];
-        _object setDir getDir _unit;
+        _object setDir ([_dir, getDir _unit] select (_dir < 0));
         _object setPosATL [_pos select 0, _pos select 1, 0];
         _object allowDamage false;
         _object setVariable ["alife_placed", [_uid, _class], true]; // who, and what it goes back to
@@ -90,7 +98,7 @@ switch (_use) do {
             sleep getNumber (missionConfigFile >> "CfgALife" >> "Placeables" >> "lifetime");
             if (!isNull _this) then { deleteVehicle _this; };
         };
-        _message = format ["Put down the %1. Windows on it to pick it up.", _name];
+        _message = format ["Put down the %1. Windows on it to move it or pick it up.", _name];
     };
     case "lockpick": {
         if (random 1 < getNumber (_cfg >> "chance")) then {

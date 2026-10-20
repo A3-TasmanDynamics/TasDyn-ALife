@@ -24,6 +24,9 @@ var Statuses = []struct{ Key, Label string }{
 	{"active", "Active"}, {"semi_active", "Semi-active"}, {"loa", "LOA"}, {"reserve", "Reserve"},
 }
 
+// StatusLabel is a stored status key's label ("loa" -> "LOA").
+func StatusLabel(k string) string { return statusLabel(k) }
+
 func statusLabel(k string) string {
 	for _, s := range Statuses {
 		if s.Key == k {
