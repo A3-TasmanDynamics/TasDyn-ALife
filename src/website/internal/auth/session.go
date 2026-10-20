@@ -297,6 +297,16 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 			sess.Essential = &ess
 		}
 
+		// Panel access as it is now, not as it was at sign-in: someone given
+		// a staff rank (or an override) after signing in gets the "Admin
+		// panel" link straight away, and a suspension / demotion removes
+		// it -- the same answer the panel's own routes give
+		// (requirePanel). Kept on the session row too.
+		if admin, support := a.livePanelAccess(r.Context(), &sess); admin != sess.AdminPanelAccess || support != sess.SupportPanelAccess {
+			sess.AdminPanelAccess, sess.SupportPanelAccess = admin, support
+			_, _ = a.Pool.Exec(r.Context(), `UPDATE web_sessions SET admin_panel_access = $2, support_panel_access = $3 WHERE token_hash = $1`, hash, admin, support)
+		}
+
 		// Best-effort activity touch; a failure here must never break the request.
 		_, _ = a.Pool.Exec(r.Context(), `UPDATE web_sessions SET last_seen_at = now() WHERE token_hash = $1`, hash)
 
