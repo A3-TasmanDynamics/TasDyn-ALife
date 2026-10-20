@@ -75,6 +75,26 @@ corpseRemovalMaxTime = 900;
 #include "ui\garage.hpp"
 #include "ui\licenceShop.hpp"
 
+// Sounds the mission plays. "@" = a path in the game's own files: the
+// police and ambulance sirens of the Laws of War vans (lights and sirens,
+// ALife_fnc_emergency).
+class CfgSounds
+{
+    sounds[] = {};
+    class ALife_SirenPolice
+    {
+        name = "Police siren";
+        sound[] = { "@a3\sounds_f_orangeehicles\softan_02an_02_gendarmerie_siren_ext_loop_01.wss", 3, 1, 600 };
+        titles[] = {};
+    };
+    class ALife_SirenEMS
+    {
+        name = "Ambulance siren";
+        sound[] = { "@a3\sounds_f_orangeehicles\softan_02an_02_ambulance_siren_ext_loop.wss", 3, 1, 600 };
+        titles[] = {};
+    };
+};
+
 class RscTitles
 {
 #include "ui\loading.hpp"
