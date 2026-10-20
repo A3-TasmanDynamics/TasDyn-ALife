@@ -37,8 +37,11 @@ while { true } do {
     private _dt = diag_tickTime - _last;
     _last = diag_tickTime;
     private _active = (missionNamespace getVariable ["ALife_spawned", false]) && { alive player };
+    // God mode (admin menu): food, water and health stay where they were,
+    // and carry on from there when it's turned off.
+    private _god = missionNamespace getVariable ["ALife_adminGod", false];
 
-    if (_active) then {
+    if (_active && { !_god }) then {
         ALife_food = (ALife_food - _foodRate * _dt) max 0;
         ALife_water = (ALife_water - _waterRate * _dt) max 0;
 

@@ -44,6 +44,7 @@ waitUntil { !isNil "ALife_fnc_startSession" };
         };
         if ((missionNamespace getVariable ["ALife_leftShift", false]) && { !_ctrl } && { !_alt } && { _key == getNumber (_cfg >> "surrenderKey") }) exitWith { call ALife_fnc_surrender };
         if ((missionNamespace getVariable ["ALife_leftShift", false]) && { !_ctrl } && { !_alt } && { _key == getNumber (_cfg >> "holsterKey") }) exitWith { call ALife_fnc_holster };
+        if ((missionNamespace getVariable ["ALife_leftShift", false]) && { !_ctrl } && { !_alt } && { _key == getNumber (_cfg >> "Jump" >> "key") }) exitWith { call ALife_fnc_jump };
         if (_shift || _ctrl || _alt) exitWith { false };
         if (_key in getArray (missionConfigFile >> "CfgALife" >> "interactKeys")) exitWith { call ALife_fnc_interact };
         if (_key == getNumber (missionConfigFile >> "CfgALife" >> "lockKey")) exitWith {
