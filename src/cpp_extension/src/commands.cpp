@@ -146,8 +146,14 @@ std::string HandleMarket(Database& db, const std::vector<std::string>& args) {
     return "ERROR:unknown market op";
 }
 
-// args = ["add", uid, faction, classname, price] -> "OK:<id>:<plate>"
+// args = ["add", uid, faction, classname, price, skin?] -> "OK:<id>:<plate>"
 //        ["status", id, status]                 -> "OK"
+//        ["list", uid, faction]                 -> [[id, class, plate, status], ...]
+//        ["get", id]                            -> [id, ownerUid, scope, class, plate, status, fuel, damage, inventory, skin]
+//        ["store", id, status, fuel, damageJson, inventoryJson] -> "OK"   (status garaged / impounded)
+//        ["inventory", id, inventoryJson]       -> "OK"
+//        ["reset"]                              -> "OK:<count>"  (spawned -> garaged, at server start)
+//        ["log", id, uid, action, amount]       -> "OK"   (action impound / return)
 std::string HandleVehicle(Database& db, const std::vector<std::string>& args) {
     if (args.empty()) return "ERROR:expected [op, ...]";
     const std::string& op = args[0];
@@ -158,8 +164,13 @@ std::string HandleVehicle(Database& db, const std::vector<std::string>& args) {
         if (args[2] != "civ" && args[2] != "cop" && args[2] != "medic") return "ERROR:invalid faction";
         if (!IsItemName(args[3])) return "ERROR:invalid classname";
         if (!IsPrice(args[4]) || args[4].find('.') != std::string::npos) return "ERROR:invalid price";
+        std::string skin = args.size() > 5 ? args[5] : "";
+        if (skin.size() > 64) return "ERROR:invalid skin";
+        for (char c : skin) {
+            if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_' && c != ':') return "ERROR:invalid skin";
+        }
         std::string id, plate;
-        if (!db.VehicleAdd(args[1], args[2], args[3], args[4], id, plate, error)) return "ERROR:" + error;
+        if (!db.VehicleAdd(args[1], args[2], args[3], args[4], skin, id, plate, error)) return "ERROR:" + error;
         return "OK:" + id + ":" + plate;
     }
     if (op == "status") {
@@ -171,6 +182,53 @@ std::string HandleVehicle(Database& db, const std::vector<std::string>& args) {
         const std::string& st = args[2];
         if (st != "spawned" && st != "garaged" && st != "impounded" && st != "destroyed") return "ERROR:invalid status";
         if (!db.VehicleStatus(args[1], st, error)) return "ERROR:" + error;
+        return "OK";
+    }
+    auto validId = [](const std::string& s) {
+        if (s.empty() || s.size() > 18) return false;
+        for (char c : s) {
+            if (!std::isdigit(static_cast<unsigned char>(c))) return false;
+        }
+        return true;
+    };
+    auto validJson = [](const std::string& s) { return !s.empty() && s.size() <= 8000 && (s[0] == '[' || s[0] == '{'); };
+    if (op == "list") {
+        if (args.size() < 3 || !IsSteam64(args[1])) return "ERROR:expected [list, uid, faction]";
+        if (args[2] != "civ" && args[2] != "cop" && args[2] != "medic") return "ERROR:invalid faction";
+        std::string out;
+        if (!db.VehicleList(args[1], args[2], out, error)) return "ERROR:" + error;
+        return out;
+    }
+    if (op == "get") {
+        if (args.size() < 2 || !validId(args[1])) return "ERROR:invalid id";
+        std::string out;
+        if (!db.VehicleGet(args[1], out, error)) return "ERROR:" + error;
+        return out;
+    }
+    if (op == "store") {
+        if (args.size() < 6 || !validId(args[1])) return "ERROR:expected [store, id, status, fuel, damage, inventory]";
+        if (args[2] != "garaged" && args[2] != "impounded") return "ERROR:invalid status";
+        if (!IsPrice(args[3])) return "ERROR:invalid fuel";
+        if (!validJson(args[4]) || !validJson(args[5])) return "ERROR:invalid json";
+        if (!db.VehicleStore(args[1], args[2], args[3], args[4], args[5], error)) return "ERROR:" + error;
+        return "OK";
+    }
+    if (op == "inventory") {
+        if (args.size() < 3 || !validId(args[1]) || !validJson(args[2])) return "ERROR:expected [inventory, id, json]";
+        if (!db.VehicleInventory(args[1], args[2], error)) return "ERROR:" + error;
+        return "OK";
+    }
+    if (op == "reset") {
+        std::string count;
+        if (!db.VehicleReset(count, error)) return "ERROR:" + error;
+        return "OK:" + count;
+    }
+    if (op == "log") {
+        if (args.size() < 5 || !validId(args[1])) return "ERROR:expected [log, id, uid, action, amount]";
+        if (!args[2].empty() && !IsSteam64(args[2])) return "ERROR:invalid uid";
+        if (args[3] != "impound" && args[3] != "return") return "ERROR:invalid action";
+        if (!args[4].empty() && !validId(args[4])) return "ERROR:invalid amount";
+        if (!db.VehicleLog(args[1], args[2], args[3], args[4], error)) return "ERROR:" + error;
         return "OK";
     }
     return "ERROR:unknown vehicle op";

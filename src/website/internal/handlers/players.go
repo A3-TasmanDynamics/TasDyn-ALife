@@ -16,6 +16,7 @@ import (
 	"website/internal/auth"
 	"website/internal/cases"
 	"website/internal/factions"
+	"website/internal/lookup"
 	"website/internal/players"
 )
 
@@ -30,6 +31,7 @@ type playerLookupData struct {
 	Query    url.Values
 
 	Vehicles []players.Vehicle
+	Houses   []lookup.HouseRow
 	VehLog   []players.VehicleEvent
 	Audit    []players.AuditEvent
 
@@ -90,6 +92,7 @@ func (d *Deps) PlayerLookup(w http.ResponseWriter, r *http.Request) {
 		data.CanOpenCase = d.can(r, "cases.lead")
 		data.CanRevoke = d.can(r, "cases.close")
 		data.Points, data.ActivePoints = d.playerPoints(r.Context(), data.P.ID)
+		data.Houses, _ = lookup.PlayerHouses(r.Context(), d.Pool, data.P.ID)
 		if data.CanCases {
 			data.Cases, _ = cases.PlayerCases(r.Context(), d.Pool, data.P.ID)
 		}

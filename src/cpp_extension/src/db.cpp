@@ -830,8 +830,8 @@ bool Database::MarketReset(std::string& outError) {
 // The plate is drawn in SQL (letters and digits, no I/O/0/1) and redrawn if
 // it's taken.
 bool Database::VehicleAdd(const std::string& uid, const std::string& faction, const std::string& classname,
-                          const std::string& price, std::string& outId, std::string& outPlate,
-                          std::string& outError) {
+                          const std::string& price, const std::string& skin, std::string& outId,
+                          std::string& outPlate, std::string& outError) {
     std::lock_guard<std::mutex> lock(mutex_);
 
     if (!EnsureConnected()) {
@@ -839,19 +839,19 @@ bool Database::VehicleAdd(const std::string& uid, const std::string& faction, co
         return false;
     }
     const char* scope = faction == "cop" ? "police" : faction == "medic" ? "medic" : "civilian";
-    const char* params[4] = {uid.c_str(), scope, classname.c_str(), price.c_str()};
+    const char* params[5] = {uid.c_str(), scope, classname.c_str(), price.c_str(), skin.c_str()};
     for (int attempt = 0; attempt < 5; ++attempt) {
         PGresult* res = PQexecParams(conn_,
             "WITH p AS (SELECT id FROM players WHERE uid = $1), "
-            "v AS (INSERT INTO vehicles (owner_player_id, classname, faction_scope, status, plate) "
-            "      SELECT id, $3, $2, 'spawned', "
+            "v AS (INSERT INTO vehicles (owner_player_id, classname, faction_scope, status, skin, plate) "
+            "      SELECT id, $3, $2, 'spawned', $5, "
             "             (SELECT string_agg(substr('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', (floor(random() * 32) + 1)::int, 1), '') "
             "              FROM generate_series(1, 6)) "
             "      FROM p RETURNING id, plate, owner_player_id), "
             "l AS (INSERT INTO vehicle_logs (vehicle_id, player_id, action, amount) "
             "      SELECT id, owner_player_id, 'purchase', $4::bigint FROM v) "
             "SELECT id::text, plate FROM v",
-            4, nullptr, params, nullptr, nullptr, 0);
+            5, nullptr, params, nullptr, nullptr, 0);
         ExecStatusType st = PQresultStatus(res);
         if (st == PGRES_TUPLES_OK) {
             if (PQntuples(res) == 0) {
@@ -1098,6 +1098,132 @@ bool Database::AdminCompensate(const std::string& staffUid, const std::string& t
 }
 
 // ---------------------------------------------------------------------------
+// Garage: owned vehicles in and out of the world.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+// One statement, no parameters' worth of result handling: runs it and
+// returns the first column of the first row (or "" if there are no rows).
+bool QueryOne(PGconn* conn, const char* sql, int n, const char* const* params, std::string& out,
+              std::string& outError) {
+    PGresult* res = PQexecParams(conn, sql, n, nullptr, params, nullptr, nullptr, 0);
+    ExecStatusType st = PQresultStatus(res);
+    if (st != PGRES_TUPLES_OK && st != PGRES_COMMAND_OK) {
+        outError = PQerrorMessage(conn);
+        PQclear(res);
+        return false;
+    }
+    out = (st == PGRES_TUPLES_OK && PQntuples(res) > 0) ? PQgetvalue(res, 0, 0) : "";
+    if (st == PGRES_COMMAND_OK) out = PQcmdTuples(res);
+    PQclear(res);
+    return true;
+}
+
+}  // namespace
+
+bool Database::VehicleList(const std::string& uid, const std::string& faction, std::string& outResponse,
+                           std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    const char* scope = faction == "cop" ? "police" : faction == "medic" ? "medic" : "civilian";
+    const char* params[2] = {uid.c_str(), scope};
+    return QueryOne(conn_,
+        "SELECT COALESCE(json_agg(json_build_array(v.id::text, v.classname, COALESCE(v.plate, ''), v.status) ORDER BY v.id)::text, '[]') "
+        "FROM vehicles v JOIN players p ON p.id = v.owner_player_id "
+        "WHERE p.uid = $1 AND v.faction_scope = $2 AND v.status <> 'destroyed'",
+        2, params, outResponse, outError);
+}
+
+bool Database::VehicleGet(const std::string& id, std::string& outResponse, std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    const char* params[1] = {id.c_str()};
+    if (!QueryOne(conn_,
+            "SELECT json_build_array(v.id::text, COALESCE(p.uid, ''), COALESCE(v.faction_scope, ''), v.classname, "
+            "       COALESCE(v.plate, ''), v.status, v.fuel, v.damage, v.inventory, v.skin)::text "
+            "FROM vehicles v LEFT JOIN players p ON p.id = v.owner_player_id WHERE v.id = $1::bigint",
+            1, params, outResponse, outError)) {
+        return false;
+    }
+    if (outResponse.empty()) {
+        outError = "no such vehicle";
+        return false;
+    }
+    return true;
+}
+
+bool Database::VehicleStore(const std::string& id, const std::string& status, const std::string& fuel,
+                            const std::string& damageJson, const std::string& inventoryJson, std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    const char* params[5] = {id.c_str(), status.c_str(), fuel.c_str(), damageJson.c_str(), inventoryJson.c_str()};
+    std::string updated;
+    if (!QueryOne(conn_,
+            "UPDATE vehicles SET status = $2, fuel = $3::real, damage = $4::jsonb, inventory = $5::jsonb, position = NULL "
+            "WHERE id = $1::bigint",
+            5, params, updated, outError)) {
+        return false;
+    }
+    if (updated == "0") {
+        outError = "no such vehicle";
+        return false;
+    }
+    return true;
+}
+
+bool Database::VehicleInventory(const std::string& id, const std::string& inventoryJson, std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    const char* params[2] = {id.c_str(), inventoryJson.c_str()};
+    std::string updated;
+    if (!QueryOne(conn_, "UPDATE vehicles SET inventory = $2::jsonb WHERE id = $1::bigint", 2, params, updated, outError)) {
+        return false;
+    }
+    if (updated == "0") {
+        outError = "no such vehicle";
+        return false;
+    }
+    return true;
+}
+
+bool Database::VehicleReset(std::string& outCount, std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    return QueryOne(conn_, "UPDATE vehicles SET status = 'garaged', position = NULL WHERE status = 'spawned'", 0, nullptr,
+                    outCount, outError);
+}
+
+bool Database::VehicleLog(const std::string& id, const std::string& uid, const std::string& action,
+                          const std::string& amount, std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    const char* params[4] = {id.c_str(), uid.c_str(), action.c_str(), amount.c_str()};
+    std::string inserted;
+    return QueryOne(conn_,
+        "INSERT INTO vehicle_logs (vehicle_id, player_id, action, amount) "
+        "VALUES ($1::bigint, (SELECT id FROM players WHERE uid = NULLIF($2, '')), $3, NULLIF($4, '')::bigint)",
+        4, params, inserted, outError);
+}
+
 // Wanted list (wanted_crimes; players.civ_bounty is its trigger-kept cache).
 // ---------------------------------------------------------------------------
 

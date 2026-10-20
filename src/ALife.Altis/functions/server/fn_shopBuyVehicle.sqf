@@ -54,7 +54,6 @@ if (_colour select [0, 4] == "tex:") then {
     private _i = parseNumber (_colour select [4]);
     if (_i < 0 || { _i >= count _rows } || { !(((_rows select _i) select 1) in ["", _faction]) }) then { _colour = ""; };
 };
-private _textures = [_class, _colour] call ALife_fnc_vehicleSkin;
 if (_name == "") then { _name = getText (configFile >> "CfgVehicles" >> _class >> "displayName"); };
 
 // The shop's spawn point nearest the player, and it must be clear.
@@ -77,28 +76,19 @@ if (_paid != "OK") exitWith {
     }) call _fnc_reply;
 };
 
-private _vehicle = createVehicle [_class, _pos, [], 0, "NONE"];
-_vehicle setDir markerDir _marker;
-_vehicle setPosATL [_pos select 0, _pos select 1, 0.1];
-{ _vehicle setObjectTextureGlobal [_forEachIndex, _x]; } forEach _textures;
-clearItemCargoGlobal _vehicle;
-clearWeaponCargoGlobal _vehicle;
-clearMagazineCargoGlobal _vehicle;
-clearBackpackCargoGlobal _vehicle;
-_vehicle lock 2;
-_vehicle setVariable ["alife_owner", _uid, true];
-
-private _added = ["vehicle", ["add", _uid, _faction, _class, str _price]] call ALife_fnc_extension;
+// Recorded first (its id and plate), then put in the world, in its skin.
+private _added = ["vehicle", ["add", _uid, _faction, _class, str _price, _colour]] call ALife_fnc_extension;
+private _id = "";
 private _plate = "";
 if (_added select [0, 3] == "OK:") then {
     private _parts = _added splitString ":";
-    _vehicle setVariable ["alife_vehicleId", _parts select 1];
+    _id = _parts select 1;
     _plate = _parts select 2;
-    _vehicle setVariable ["alife_plate", _plate, true];
 } else {
     // Paid and spawned; only the record is missing. Logged for staff.
     diag_log format ["[ALife] %1 bought %2 but recording it failed: %3", _uid, _class, _added];
 };
+[_class, _marker, _uid, _id, _plate, _colour] call ALife_fnc_vehicleSpawn;
 
 diag_log format ["[ALife] %1 bought %2 (%3, plate %4) for $%5 (%6) at %7", _uid, _class, _colour, _plate, _price, _method, _placement];
 ["bought", [_name, _plate]] remoteExecCall ["ALife_fnc_vehicleShop", _owner];

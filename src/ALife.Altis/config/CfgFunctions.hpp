@@ -34,6 +34,7 @@ class CfgFunctions
             class jail {};           // the jail: arrest, sentence clock, release, bail
             class jailBail {};       // client -> server: pay bail
             class wantedBoard {};    // client -> server: the Wanted app (police)
+            class placeables {};     // police placeables: spike strips, picking up
             class vehicleAction {};  // client -> server: push / give a key / impound
             class personAction {};   // client -> server: restrain / fine / strip / heal
             class adminAction {};    // client -> server: the admin menu (checked against website permissions)
@@ -41,6 +42,9 @@ class CfgFunctions
             class requestGather {};  // client -> server: gather a resource (timed)
             class requestProcess {}; // client -> server: process resources (timed)
             class buyLicence {};     // client -> server: buy a processing licence at its processor
+            class garage {};         // client -> server: the garage (list / take out / store)
+            class vehicleSpawn {};   // an owned vehicle into the world (shop, garage)
+            class vehicleState {};   // an owned vehicle's fuel / damage / trunk, for saving
             class containerGet {};   // the container (bag / vehicle trunk) behind an object
             class containerCreateBag {}; // drop a bag at a player's feet
             class containerSend {};  // send a player a container's contents
@@ -90,6 +94,7 @@ class CfgFunctions
             class admin {};           // the admin menu (phone -> Admin)
             class adminApply {};      // server -> client: staff actions on you (bring, freeze, kick, ...)
             class resourceProgress {}; // server -> client: progress bar while gathering / processing
+            class garageMenu {};      // the garage window
             class itemUsed {};        // server -> client: apply a used item where it's local
             class interact {};        // the Windows key
             class transfer {};        // the inventory screen (bags, trunks, dropping)
@@ -101,6 +106,7 @@ class CfgFunctions
         {
             file = "functions\common";
             class sideToFaction {};   // west/independent/civilian -> "cop"/"medic"/"civ"
+            class vehicleTyres {};    // pop a vehicle's tyres (spike strips)
             class atPlace {};         // is a unit at a shop / processor / gathering area (markers or NPCs)
             class parsePosition {};   // stored DB position -> [x,y,z]
             class killInfo {};        // killer name, weapon, distance

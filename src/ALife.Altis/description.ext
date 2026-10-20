@@ -72,6 +72,7 @@ corpseRemovalMaxTime = 900;
 #include "ui\atm.hpp"
 #include "ui\radial.hpp"
 #include "ui\admin.hpp"
+#include "ui\garage.hpp"
 
 class RscTitles
 {

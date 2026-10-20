@@ -52,9 +52,10 @@ Respawning takes you back through the spawn menu (`onPlayerRespawn.sqf`).
 
 ### Revive
 
-Medics revive downed players with a **medkit** (a virtual item). Look at the body and use
+Medics revive downed players with a **Defibrillator** (a virtual item, not used up; Medkits heal,
+First Aid Kits heal a little). Look at the body and use
 **Revive** (Windows key on a downed player, then Revive): an 8-second action with a progress bar, cancelled if you move away. When
-it finishes the server checks the medic has a medkit, uses one, and the downed player gets up where
+it finishes the server checks the medic has a Defibrillator, and the downed player gets up where
 they fell, with their gear, at 50% health (`reviveTime` / `reviveHealth` in `config/CfgALife.hpp`).
 Flow: `ALife_fnc_revive` (medic) → `ALife_fnc_requestRevive` (server) → `ALife_fnc_revived`
 (patient respawns) → `ALife_fnc_completeRevive` (server) → `ALife_fnc_reviveApplied`.
@@ -212,7 +213,12 @@ in-game; Athira, Pyrgos and Sofia are town centres — move them onto the statio
 
 ## Not built yet
 
-- Phone apps Gang, Keys (needs vehicles) and Admin.
+Tracked as issues on the Delivery Board; the main gaps:
+
+- Phone apps Gang and Keys; Perks.
+- Drugs: processing at objects, drug dealers, cash-only licences (#208).
+- Garage / impound lot to get vehicles back (#209); a licence shop for the non-processing licences (#210).
+- Police: escort, put in vehicle, jail (#211, #16).
 - Paychecks (staff add money on the website for now; withdraw it at an ATM).
 - Medic whitelisting (all Medic slots are open).
-- Gear/loadouts (slot weapons are removed on spawn; uniforms stay).
+- Saving vehicle trunk contents (#213); a server-side kick (#212).

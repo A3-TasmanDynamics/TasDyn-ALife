@@ -404,6 +404,13 @@ func run() error {
 			r.Get("/admin/players", d.PlayerLookup)
 			r.Post("/admin/players/{id}/faction-level", d.PlayerSetFactionLevel)
 			r.Post("/admin/players/{id}/compensate", d.PlayerCompensate)
+			// Houses & Garages (the Garages tab checks players.vehicles itself).
+			r.Get("/admin/houses", d.HousesGarages)
+		})
+		// Vehicle Lookup: read-only, like Player Lookup's Vehicles tab.
+		r.Group(func(r chi.Router) {
+			r.Use(d.Auth.RequirePermission("players.vehicles"))
+			r.Get("/admin/vehicles", d.VehicleLookup)
 		})
 
 		r.Get("/admin/roles", d.Roles)

@@ -23,6 +23,7 @@ class CfgRemoteExec
         class ALife_fnc_requestUseItem { allowedTargets = 2; };
         class ALife_fnc_jailBail { allowedTargets = 2; };
         class ALife_fnc_wantedBoard { allowedTargets = 2; };
+        class ALife_fnc_placeables { allowedTargets = 2; };
         class ALife_fnc_vehicleAction { allowedTargets = 2; };
         class ALife_fnc_personAction { allowedTargets = 2; };
         class ALife_fnc_adminAction { allowedTargets = 2; };
@@ -30,6 +31,7 @@ class CfgRemoteExec
         class ALife_fnc_requestGather { allowedTargets = 2; };
         class ALife_fnc_requestProcess { allowedTargets = 2; };
         class ALife_fnc_buyLicence { allowedTargets = 2; };
+        class ALife_fnc_garage { allowedTargets = 2; };
         class ALife_fnc_completeRevive { allowedTargets = 2; };
         class ALife_fnc_containerOpen { allowedTargets = 2; };
         class ALife_fnc_containerTransfer { allowedTargets = 2; };
@@ -53,7 +55,9 @@ class CfgRemoteExec
         class ALife_fnc_fine { allowedTargets = 1; };
         class ALife_fnc_personApply { allowedTargets = 1; };
         class ALife_fnc_adminApply { allowedTargets = 1; };
+        class ALife_fnc_admin { allowedTargets = 1; };
         class ALife_fnc_resourceProgress { allowedTargets = 1; };
+        class ALife_fnc_garageMenu { allowedTargets = 1; };
         class ALife_fnc_reviveApplied { allowedTargets = 1; };
         class ALife_fnc_containerData { allowedTargets = 1; };
         class ALife_fnc_clothingShop { allowedTargets = 1; };

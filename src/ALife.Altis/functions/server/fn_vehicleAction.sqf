@@ -9,7 +9,9 @@
                      key holders can lock / unlock it and open the trunk
                      when it's locked (alife_keys, a list of Steam UIDs)
         "impound"  - police: an empty vehicle within 10 m is removed and
-                     marked impounded in the vehicles table
+                     marked impounded in the vehicles table, with its fuel,
+                     damage and trunk; the owner gets it back from a garage
+                     for a fee (ALife_fnc_garage)
 
     Arguments:
         0: OBJECT - the player's unit
@@ -67,9 +69,15 @@ switch (_action) do {
         private _plate = _vehicle getVariable ["alife_plate", ""];
         private _ownerUid = _vehicle getVariable ["alife_owner", ""];
         if (_id != "") then {
-            private _result = ["vehicle", ["status", _id, "impounded"]] call ALife_fnc_extension;
+            // Kept as it is (fuel, damage, trunk) until the owner pays to get it out of a garage.
+            ([_vehicle] call ALife_fnc_vehicleState) params ["_fuel", "_damage", "_trunk"];
+            private _result = ["vehicle", ["store", _id, "impounded", str _fuel, str _damage, str _trunk]] call ALife_fnc_extension;
             if (_result != "OK") then { diag_log format ["[ALife] impound of vehicle %1 not recorded: %2", _id, _result]; };
+            ["vehicle", ["log", _id, _uid, "impound", ""]] call ALife_fnc_extension;
+            if (!isNil "ALife_vehicleObjects") then { ALife_vehicleObjects deleteAt _id; };
         };
+        private _container = _vehicle getVariable ["alife_container", ""];
+        if (_container != "") then { ALife_containers deleteAt _container; };
         deleteVehicle _vehicle;
         diag_log format ["[ALife] %1 impounded %2 (id %3, plate %4, owner %5)", _uid, _name, _id, _plate, _ownerUid];
         [format ["Impounded the %1%2.", _name, ["", " (" + _plate + ")"] select (_plate != "")], "success"] call _fnc_reply;

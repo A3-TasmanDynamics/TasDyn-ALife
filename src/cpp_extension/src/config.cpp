@@ -54,10 +54,14 @@ bool LoadDbConfig(DbConfig& outConfig, std::string& outError) {
 
         size_t eq = trimmed.find('=');
         if (eq == std::string::npos) continue;
-        if (section != "database") continue;
 
         std::string key = Trim(trimmed.substr(0, eq));
         std::string value = Trim(trimmed.substr(eq + 1));
+        if (section == "server") {
+            if (key == "command_password") outConfig.commandPassword = value;
+            continue;
+        }
+        if (section != "database") continue;
 
         if (key == "host") outConfig.host = value;
         else if (key == "port") outConfig.port = value;

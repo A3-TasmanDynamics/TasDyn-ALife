@@ -79,7 +79,23 @@ public:
     // vehicle and its purchase log, returning its id and new plate;
     // VehicleStatus sets spawned / garaged / impounded / destroyed.
     bool VehicleAdd(const std::string& uid, const std::string& faction, const std::string& classname,
-                    const std::string& price, std::string& outId, std::string& outPlate, std::string& outError);
+                    const std::string& price, const std::string& skin, std::string& outId, std::string& outPlate,
+                    std::string& outError);
+    // The garage (ALife_fnc_garage*): a player's vehicles for one faction
+    // (not destroyed) as [[id, class, plate, status], ...]; one vehicle as
+    // [id, ownerUid, scope, class, plate, status, fuel, damage, inventory,
+    // skin]; storing one (status garaged / impounded, with its fuel,
+    // hit-point damage and trunk); saving just its trunk; sending every
+    // vehicle still "spawned" back to the garage (server start); and a
+    // vehicle_logs row (impound / return).
+    bool VehicleList(const std::string& uid, const std::string& faction, std::string& outResponse, std::string& outError);
+    bool VehicleGet(const std::string& id, std::string& outResponse, std::string& outError);
+    bool VehicleStore(const std::string& id, const std::string& status, const std::string& fuel,
+                      const std::string& damageJson, const std::string& inventoryJson, std::string& outError);
+    bool VehicleInventory(const std::string& id, const std::string& inventoryJson, std::string& outError);
+    bool VehicleReset(std::string& outCount, std::string& outError);
+    bool VehicleLog(const std::string& id, const std::string& uid, const std::string& action,
+                    const std::string& amount, std::string& outError);
     bool VehicleStatus(const std::string& id, const std::string& status, std::string& outError);
 
     bool RecordCombatLog(const std::string& uid, const std::string& faction, const std::string& killer,

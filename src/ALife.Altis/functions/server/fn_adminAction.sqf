@@ -11,7 +11,7 @@
 
     Logged to the staff log (source 'game', posted to #staff-log): bring,
     heal, freeze / unfreeze, warn, kick, ban, compensate, give item, give
-    cash, arsenal, god mode, invisibility, announce, spawn vehicle, delete
+    cash, give / take licence, arsenal, god mode, invisibility, announce, spawn vehicle, delete
     vehicle.
 
     Arguments:
@@ -39,12 +39,14 @@ private _needs = switch (_action) do {
     case "bring": { "game.teleport" };
     case "heal": { "game.heal" };
     case "freeze": { "game.freeze" };
-    case "message": { "game.admin" };
+    case "message";
+    case "licences": { "game.admin" };
     case "warn": { "game.warn" };
     case "kick": { "game.kick" };
     case "ban": { "bans.issue" };
     case "compensate": { "players.compensate" };
     case "give";
+    case "giveLicence";
     case "giveCash";
     case "arsenal";
     case "spawnVehicle": { "game.spawn" };
@@ -64,11 +66,27 @@ if (_needs == "" || { !_isOwner && { !(_needs in _perms) } }) exitWith {
 // The player it's done to.
 private _theirUid = if (isNull _target) then { "" } else { getPlayerUID _target };
 private _them = if (isNull _target) then { "" } else { _target getVariable ["alife_name", name _target] };
-private _targeted = _action in ["bring", "heal", "freeze", "message", "warn", "kick", "ban", "compensate", "give", "giveCash"];
+private _targeted = _action in ["bring", "heal", "freeze", "message", "warn", "kick", "ban", "compensate", "give", "giveCash", "giveLicence", "licences"];
 if (_targeted && { _theirUid == "" }) exitWith { "That player has left." call _fnc_reply; };
 private _reason = _args param [0, "", [""]];
 _reason = (_reason splitString "<>") joinString "";
 if (count _reason > 300) then { _reason = _reason select [0, 300]; };
+// Off the server: they see why for a few seconds, then a real kick
+// (serverCommand "#kick" with the server's command password, which the
+// Server Manager gives the extension). Without the password, their own
+// machine ends the mission instead (ALife_fnc_adminApply "kick").
+private _fnc_kick = {
+    params ["_who", "_why"];
+    ["kick", _me, _why] remoteExecCall ["ALife_fnc_adminApply", owner _who];
+    [_who] spawn {
+        params ["_who"];
+        sleep 5;
+        if (isNull _who) exitWith {};
+        private _pw = ["server", ["password"]] call ALife_fnc_extension;
+        if (_pw select [0, 6] == "ERROR:") exitWith { diag_log "[ALife] kick: no server command password -- the player's own machine ends the mission"; };
+        if !(_pw serverCommand format ["#kick %1", getPlayerID _who]) then { diag_log "[ALife] kick: serverCommand #kick was refused"; };
+    };
+};
 // The staff log (and #staff-log).
 private _fnc_log = {
     params ["_logAction", ["_logReason", ""], ["_after", ""]];
@@ -123,7 +141,7 @@ switch (_action) do {
     case "kick": {
         private _r = ["admin", ["kick", _uid, _theirUid, _reason]] call ALife_fnc_extension;
         if (_r != "OK") exitWith { diag_log format ["[ALife] admin kick log failed: %1", _r]; "The kick wasn't recorded. Try again." call _fnc_reply; };
-        ["kick", _me, format ["Kicked: %1", _reason]] remoteExecCall ["ALife_fnc_adminApply", owner _target];
+        [_target, format ["Kicked: %1", _reason]] call _fnc_kick;
         [format ["Kicked %1.", _them], "success"] call _fnc_reply;
     };
 
@@ -135,7 +153,7 @@ switch (_action) do {
         if (_r == "ALREADY") exitWith { format ["%1 is already banned.", _them] call _fnc_reply; };
         if (_r != "OK") exitWith { diag_log format ["[ALife] admin ban failed: %1", _r]; "The ban didn't save. Try again." call _fnc_reply; };
         private _length = switch (_minutes) do { case 0: { "permanently" }; case 60: { "for 1 hour" }; case 1440: { "for 1 day" }; default { format ["for %1 days", _minutes / 1440] }; };
-        ["kick", _me, format ["Banned %1: %2", _length, _reason]] remoteExecCall ["ALife_fnc_adminApply", owner _target];
+        [_target, format ["Banned %1: %2", _length, _reason]] call _fnc_kick;
         [format ["Banned %1 %2.", _them, _length], "success"] call _fnc_reply;
     };
 
@@ -186,6 +204,39 @@ switch (_action) do {
         [_target] call ALife_fnc_requestPhoneData;
         if (_target != _unit) then { [format ["Staff gave you $%1 cash.", [_amount] call BIS_fnc_numberText], "success"] remoteExecCall ["ALife_fnc_notify", owner _target]; };
         [format ["Gave %1 $%2 cash.", _them, [_amount] call BIS_fnc_numberText], "success"] call _fnc_reply;
+    };
+
+    case "licences": {
+        // For the admin panel: their licences for the faction they're playing.
+        private _faction = _target getVariable ["alife_faction", ""];
+        private _list = if (_faction == "") then { [] } else {
+            ((ALife_sessions getOrDefault [_theirUid, createHashMap]) getOrDefault [_faction + "_licence", []]) select { _x isEqualType "" }
+        };
+        ["licences", [_theirUid, _faction, _list]] remoteExecCall ["ALife_fnc_admin", _owner];
+    };
+
+    case "giveLicence": {
+        // Their licences for the faction they're playing: given, or taken
+        // away if they already have it.
+        private _licence = _args param [0, "", [""]];
+        private _cfg = missionConfigFile >> "CfgLicences" >> _licence;
+        if (!isClass _cfg) exitWith { "Pick a licence." call _fnc_reply; };
+        private _faction = _target getVariable ["alife_faction", ""];
+        if (_faction == "") exitWith { "They need to be spawned in." call _fnc_reply; };
+        private _theirRecord = ALife_sessions getOrDefault [_theirUid, createHashMap];
+        private _key = _faction + "_licence";
+        private _licences = (_theirRecord getOrDefault [_key, []]) select { _x isEqualType "" };
+        private _name = getText (_cfg >> "displayName");
+        private _take = _licence in _licences;
+        if (_take) then { _licences = _licences - [_licence]; } else { _licences pushBack _licence; };
+        private _r = ["save", [_theirUid, _key, str _licences, "-"]] call ALife_fnc_extension;
+        if (_r != "OK") exitWith { diag_log format ["[ALife] admin give licence failed: %1", _r]; "That didn't save. Try again." call _fnc_reply; };
+        _theirRecord set [_key, _licences];
+        [["game.give_licence", "game.take_licence"] select _take, format ["%1 (%2)", _name, _faction], format ['{"licence": "%1", "faction": "%2"}', _licence, _faction]] call _fnc_log;
+        [_target] call ALife_fnc_requestPhoneData;
+        ["licences", [_theirUid, _faction, _licences]] remoteExecCall ["ALife_fnc_admin", _owner];
+        if (_target != _unit) then { [format [["Staff gave you the %1.", "Staff took away your %1."] select _take, _name], ["success", "warning"] select _take] remoteExecCall ["ALife_fnc_notify", owner _target]; };
+        [format [["Gave %1 the %2.", "Took the %2 off %1."] select _take, _them, _name], "success"] call _fnc_reply;
     };
 
     case "arsenal": { ["game.arsenal"] call _fnc_log; };

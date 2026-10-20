@@ -13,7 +13,7 @@ class CfgALife
 
     // ---- Death and revive -------------------------------------------------
     respawnTime = 120;                  // seconds on the death screen before Respawn unlocks (or wait for a medic)
-    reviveTime = 8;                     // seconds a medic holds Revive (uses one medkit)
+    reviveTime = 8;                     // seconds a medic holds Revive (needs a Defibrillator, not used up)
     reviveHealth = 0.5;                 // health (0-1) a revived player gets up with, where they fell, with their gear
 
     // ---- Staff ------------------------------------------------------------
@@ -40,6 +40,15 @@ class CfgALife
         copColour[] = { 0.48, 0.7, 1, 1 };     // the line under the name: police rank
         medicColour[] = { 0.45, 0.85, 0.6, 1 }; // EMS rank
         gangColour[] = { 0.98, 0.75, 0.14, 1 }; // gang name
+    };
+
+    // ---- Police placeables (CfgItems use = "place") ---------------------------
+    class Placeables
+    {
+        max = 20;               // placed at once, per player
+        lifetime = 3600;        // seconds before a placed object is cleared (the item is gone)
+        pickupRange = 4;        // metres: Windows on it to pick it up (police)
+        spikeRange = 3.5;       // metres: vehicles this close to a spike strip lose their tyres
     };
 
     // ---- Police slots -----------------------------------------------------

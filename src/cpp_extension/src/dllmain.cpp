@@ -21,6 +21,7 @@ namespace {
 Database g_db;
 bool g_connected = false;
 std::string g_initError;
+std::string g_commandPassword;  // config.ini [server] command_password
 
 // Connects on first use rather than at DLL load (DllMain) -- doing blocking
 // I/O from DllMain is undefined-behavior-adjacent on Windows (loader lock),
@@ -36,6 +37,7 @@ void EnsureConnected() {
         return;
     }
 
+    g_commandPassword = config.commandPassword;
     if (!g_db.Connect(config, error)) {
         g_initError = error;
         return;
@@ -64,6 +66,14 @@ std::vector<std::string> ToVector(const char** argv, int argc) {
 
 std::string RunCommand(const std::string& command, const std::vector<std::string>& args) {
     EnsureConnected();
+    // ["server", ["password"]]: the server's command password, for the
+    // mission's serverCommand "#kick" (the extension only runs on the
+    // server, so only server-side SQF can ask). Never logged.
+    if (command == "server") {
+        if (args.empty() || args[0] != "password") return "ERROR:unknown server op";
+        if (g_commandPassword.empty()) return "ERROR:no command password in config.ini";
+        return g_commandPassword;
+    }
     if (!g_connected) {
         return "ERROR:" + g_initError;
     }

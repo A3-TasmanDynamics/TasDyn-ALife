@@ -63,6 +63,16 @@ private _openShop = {
     };
 };
 
+// A police placeable you're looking at: pick it up.
+if (!isNull _target && { ((_target getVariable ["alife_placed", []]) param [1, ""]) != "" } && { _faction == "cop" }
+    && { player distance _target <= getNumber (missionConfigFile >> "CfgALife" >> "Placeables" >> "pickupRange") }) exitWith {
+    private _class = (_target getVariable ["alife_placed", []]) select 1;
+    ["open", getText (missionConfigFile >> "CfgItems" >> _class >> "displayName"), [
+        ["Pick up", { ["pickup", player, _this] remoteExecCall ["ALife_fnc_placeables", 2]; }, _target]
+    ]] call ALife_fnc_radial;
+    true
+};
+
 // A shop / processor NPC you're looking at.
 private _near = !isNull _target && { !isPlayer _target } && { player distance _target <= 5 };
 private _process = if (_near) then { _target getVariable ["alife_process", ""] } else { "" };
@@ -115,6 +125,10 @@ private _shops = [];
         _info params ["_type", "_place", "_shop"];
         if (_type in ["market", "clothing", "vehicles"] && { getText (_shop >> "side") == _faction } && { [player, _place] call ALife_fnc_atPlace }) then {
             _shops pushBack [getText (_shop >> "name"), _openShop, configName _place];
+            // Every vehicle shop is a garage too (one entry per spot).
+            if (_type == "vehicles" && { (_shops findIf { (_x select 0) == "Garage" }) < 0 }) then {
+                _shops pushBack ["Garage", { ["open", _this] call ALife_fnc_garageMenu; }, configName _place];
+            };
         };
     };
 } forEach ("true" configClasses (missionConfigFile >> "CfgShops"));

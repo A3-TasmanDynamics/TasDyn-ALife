@@ -8,7 +8,8 @@
         ["freeze", staff, frozen]        - can't move while frozen
         ["message", staff, text]         - a private message from staff
         ["warn", staff, reason]          - a warning
-        ["kick", staff, reason]          - shown the reason, then sent back to the lobby
+        ["kick", staff, reason]          - shown the reason; the server then kicks them
+                                           (or, without its password, this ends the mission)
         ["announce", staff, text]        - to everyone
 */
 
@@ -39,7 +40,7 @@ switch (_mode) do {
         if (dialog) then { closeDialog 0; };
         titleText [format ["<t size='1.6' font='RobotoCondensedBold' color='#fca5a5'>%1</t><br/><t size='1.1'>by %2</t>", _value call _safe, _by call _safe], "BLACK", 1, true, true];
         [] spawn {
-            uiSleep 6;
+            uiSleep 12; // the server's kick normally lands first (after 5 s)
             endMission "LOSER";
         };
     };
