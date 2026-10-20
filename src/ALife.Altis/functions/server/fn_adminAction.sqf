@@ -69,6 +69,22 @@ if (_targeted && { _theirUid == "" }) exitWith { "That player has left." call _f
 private _reason = _args param [0, "", [""]];
 _reason = (_reason splitString "<>") joinString "";
 if (count _reason > 300) then { _reason = _reason select [0, 300]; };
+// Off the server: they see why for a few seconds, then a real kick
+// (serverCommand "#kick" with the server's command password, which the
+// Server Manager gives the extension). Without the password, their own
+// machine ends the mission instead (ALife_fnc_adminApply "kick").
+private _fnc_kick = {
+    params ["_who", "_why"];
+    ["kick", _me, _why] remoteExecCall ["ALife_fnc_adminApply", owner _who];
+    [_who] spawn {
+        params ["_who"];
+        sleep 5;
+        if (isNull _who) exitWith {};
+        private _pw = ["server", ["password"]] call ALife_fnc_extension;
+        if (_pw select [0, 6] == "ERROR:") exitWith { diag_log "[ALife] kick: no server command password -- the player's own machine ends the mission"; };
+        if !(_pw serverCommand format ["#kick %1", getPlayerID _who]) then { diag_log "[ALife] kick: serverCommand #kick was refused"; };
+    };
+};
 // The staff log (and #staff-log).
 private _fnc_log = {
     params ["_logAction", ["_logReason", ""], ["_after", ""]];
@@ -123,7 +139,7 @@ switch (_action) do {
     case "kick": {
         private _r = ["admin", ["kick", _uid, _theirUid, _reason]] call ALife_fnc_extension;
         if (_r != "OK") exitWith { diag_log format ["[ALife] admin kick log failed: %1", _r]; "The kick wasn't recorded. Try again." call _fnc_reply; };
-        ["kick", _me, format ["Kicked: %1", _reason]] remoteExecCall ["ALife_fnc_adminApply", owner _target];
+        [_target, format ["Kicked: %1", _reason]] call _fnc_kick;
         [format ["Kicked %1.", _them], "success"] call _fnc_reply;
     };
 
@@ -135,7 +151,7 @@ switch (_action) do {
         if (_r == "ALREADY") exitWith { format ["%1 is already banned.", _them] call _fnc_reply; };
         if (_r != "OK") exitWith { diag_log format ["[ALife] admin ban failed: %1", _r]; "The ban didn't save. Try again." call _fnc_reply; };
         private _length = switch (_minutes) do { case 0: { "permanently" }; case 60: { "for 1 hour" }; case 1440: { "for 1 day" }; default { format ["for %1 days", _minutes / 1440] }; };
-        ["kick", _me, format ["Banned %1: %2", _length, _reason]] remoteExecCall ["ALife_fnc_adminApply", owner _target];
+        [_target, format ["Banned %1: %2", _length, _reason]] call _fnc_kick;
         [format ["Banned %1 %2.", _them, _length], "success"] call _fnc_reply;
     };
 

@@ -9,6 +9,9 @@ struct DbConfig {
     std::string dbname;
     std::string user;
     std::string password;
+    // [server] command_password: the server's serverCommandPassword, written
+    // by the Server Manager when it deploys the extension (never in git).
+    std::string commandPassword;
 };
 
 // Loads config.ini from the directory this DLL is running from (not the

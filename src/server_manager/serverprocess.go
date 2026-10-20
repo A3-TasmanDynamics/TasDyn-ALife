@@ -117,7 +117,7 @@ func armaStart() (launchSpec, error) {
 	if err := deployMission(repoRoot, settings.ArmaServerPath, cfg.MissionTemplate); err != nil {
 		return launchSpec{}, fmt.Errorf("deploy mission: %w", err)
 	}
-	warnings := deployExtension(repoRoot, settings.ArmaServerPath)
+	warnings := deployExtension(repoRoot, settings.ArmaServerPath, cfg.PasswordAdmin) // also serverCommandPassword
 
 	cfgPath := filepath.Join(settings.ArmaServerPath, "server.cfg")
 	if err := os.WriteFile(cfgPath, []byte(renderServerCfg(cfg)), 0o644); err != nil {
