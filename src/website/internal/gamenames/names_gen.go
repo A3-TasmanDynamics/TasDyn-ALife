@@ -123,6 +123,21 @@ var crimes = map[string]string{
 }
 
 var gear = map[string]string{
+	"10rnd_762x54_mag":                    "7.62 mm 10Rnd Mag",
+	"11rnd_45acp_mag":                     ".45 ACP 11Rnd Mag",
+	"16rnd_9x21_mag":                      "9 mm 16Rnd Mag",
+	"16rnd_9x21_yellow_mag":               "9 mm 16Rnd Reload Tracer (Yellow) Mag",
+	"20rnd_762x51_mag":                    "7.62 mm 20Rnd Mag",
+	"30rnd_545x39_mag_f":                  "5.45 mm 30Rnd Reload Tracer (Yellow) Mag",
+	"30rnd_556x45_stanag":                 "5.56 mm 30rnd Reload Tracer (Yellow) Mag",
+	"30rnd_556x45_stanag_tracer_yellow":   "5.56 mm 30rnd Tracer (Yellow) Mag",
+	"30rnd_65x39_caseless_green":          "6.5 mm 30Rnd Caseless Mag",
+	"30rnd_65x39_caseless_mag":            "6.5 mm 30Rnd Sand Mag",
+	"30rnd_762x39_mag_f":                  "7.62 mm 30Rnd AKM Reload Tracer (Yellow) Mag",
+	"30rnd_9x21_mag":                      "9 mm 30Rnd Mag",
+	"30rnd_9x21_mag_smg_02":               "9 mm 30Rnd Mag",
+	"6rnd_45acp_cylinder":                 ".45 ACP 6Rnd Cylinder",
+	"9rnd_45acp_mag":                      ".45 ACP 9Rnd Mag",
 	"acc_flashlight":                      "Flashlight",
 	"acc_flashlight_pistol":               "Pistol Flashlight",
 	"arifle_akm_f":                        "AKM 7.62 mm",
