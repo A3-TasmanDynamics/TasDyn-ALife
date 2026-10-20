@@ -50,5 +50,5 @@ titleText [format ["<t size='1.6' font='RobotoCondensedBold'>%1</t>", _name], "P
 
 [] spawn {
     sleep 3; // a short grace period after landing
-    player allowDamage true;
+    player allowDamage !(missionNamespace getVariable ["ALife_adminGod", false]); // god mode stays on
 };

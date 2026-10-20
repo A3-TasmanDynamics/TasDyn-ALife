@@ -27,6 +27,16 @@ class CfgALife
     surrenderKey = 48;                  // Left Shift + B (DIK 48): hands on your head / down
     holsterKey = 35;                    // Left Shift + H (DIK 35): put your weapon away / draw it
 
+    // Jumping: Left Shift + Space while running on foot (ALife_fnc_jump).
+    class Jump
+    {
+        key = 57;               // Space (with Left Shift)
+        up = 3.6;               // metres / second upwards
+        forward = 0.6;          // metres / second extra forwards
+        minSpeed = 6;           // km/h: you have to be moving (running)
+        cooldown = 1.5;         // seconds between jumps
+    };
+
     // ---- Dying (and not being revived) ------------------------------------
     // A new life starts with the spawn point's kit: the gear stays on the
     // body. These also go (your bank never does):

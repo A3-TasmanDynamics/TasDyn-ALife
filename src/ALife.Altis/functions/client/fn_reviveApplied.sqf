@@ -34,5 +34,5 @@ titleText [format ["<t size='1.4' font='RobotoCondensedBold'>Revived by %1</t>",
 
 [] spawn {
     sleep 3;
-    player allowDamage true;
+    player allowDamage !(missionNamespace getVariable ["ALife_adminGod", false]); // god mode stays on
 };
