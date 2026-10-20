@@ -15,6 +15,11 @@
         Ban (bans.issue; Permanent needs bans.permanent)
         Compensate (players.compensate; over $10,000 needs players.compensate_large)
         Give item, Give cash (game.spawn)
+        Give / take licence (game.spawn): gives the picked licence, or takes
+            it away if they have it. Their licences (for the faction they're
+            playing) are shown with their details.
+        Their vehicles (game.vehicles): every vehicle they own, in any of
+            their garages -- pull one out (next to you) or send one back
     You:
         God mode, Invisible (game.self) - Player markers (game.markers)
         Map teleport (game.teleport) - Heal me (game.heal) - Stop spectating
@@ -41,6 +46,7 @@
 #define IDC_BAN 5823
 #define IDC_ITEM 5824
 #define IDC_VEHCLASS 5825
+#define IDC_LICENCE 5826
 #define IDC_BUTTON 5850
 
 params ["_mode", ["_arg", ""]];
@@ -66,6 +72,8 @@ private _buttons = [
     ["ban", "Ban", "bans.issue", "player"],
     ["compensate", "Compensate", "players.compensate", "player"],
     ["give", "Give item", "game.spawn", "player"],
+    ["giveLicence", "Give / take licence", "game.spawn", "player"],
+    ["vehicles", "Their vehicles", "game.vehicles", "player"],
     ["giveCash", "Give cash", "game.spawn", "player"],
     ["god", "God mode", "game.self", "self"],
     ["invisible", "Invisible", "game.self", "self"],
@@ -107,6 +115,8 @@ switch (_mode) do {
     case "onLoad": {
         _display = _arg;
         ALife_adminOpen = true;
+        ALife_adminLicences = [];
+        ALife_adminLicencesAsked = [];
         private _rank = _data getOrDefault ["staffRank", ""];
         (_display displayCtrl IDC_TITLE) ctrlSetStructuredText parseText format [
             "<t font='RobotoCondensedBold' size='1.25'>ADMIN</t><t color='#8b98b3' size='1.05'>   %1</t>",
@@ -120,6 +130,9 @@ switch (_mode) do {
             if ((_x select 0) > 0 || { "bans.permanent" call _can }) then { _combo lbSetValue [_combo lbAdd (_x select 1), _x select 0]; };
         } forEach [[60, "1 hour"], [1440, "1 day"], [4320, "3 days"], [10080, "7 days"], [43200, "30 days"], [0, "Permanent"]];
         _combo lbSetCurSel 1;
+        _combo = _display displayCtrl IDC_LICENCE;
+        { _combo lbSetData [_combo lbAdd getText (_x >> "displayName"), configName _x]; } forEach ("true" configClasses (missionConfigFile >> "CfgLicences"));
+        _combo lbSetCurSel 0;
         _combo = _display displayCtrl IDC_ITEM;
         { _combo lbSetData [_combo lbAdd getText (_x >> "displayName"), configName _x]; } forEach ("true" configClasses (missionConfigFile >> "CfgItems"));
         _combo lbSetCurSel 0;
@@ -174,12 +187,37 @@ switch (_mode) do {
         ["select", true] call ALife_fnc_admin;
     };
 
+    // From the server: [uid, faction, licences] for the selected player.
+    case "licences": {
+        ALife_adminLicences = _arg;
+        ["select", true] call ALife_fnc_admin;
+    };
+
     case "select": {
         if (isNull _display) exitWith {};
         private _list = _display displayCtrl IDC_LIST;
         private _row = lnbCurSelRow _list;
         if (_row >= 0 && { _arg isNotEqualTo true }) then { ALife_adminTarget = _list lnbData [_row, 0]; };
         private _t = call _fnc_target;
+        // Their licences come from the server: asked for when the selected
+        // player (or the faction they're playing) changes.
+        private _licences = "";
+        if (!isNull _t && { "game.admin" call _can }) then {
+            private _faction = if (isObjectHidden _t || { !alive _t }) then { "" } else { [side group _t] call ALife_fnc_sideToFaction };
+            private _key = [getPlayerUID _t, _faction];
+            private _known = missionNamespace getVariable ["ALife_adminLicences", []];
+            private _asked = missionNamespace getVariable ["ALife_adminLicencesAsked", []];
+            if ((_known param [0, ""]) == getPlayerUID _t && { (_known select [0, 2]) isEqualTo _key || { _asked isEqualTo _key } }) then {
+                private _names = (_known param [2, []]) apply { getText (missionConfigFile >> "CfgLicences" >> _x >> "displayName") };
+                _licences = if (_names isEqualTo []) then { "none" } else { _names joinString ", " };
+            } else {
+                _licences = "...";
+                if (_asked isNotEqualTo _key) then {
+                    ALife_adminLicencesAsked = _key;
+                    [player, "licences", _t, []] remoteExecCall ["ALife_fnc_adminAction", 2];
+                };
+            };
+        };
         (_display displayCtrl IDC_DETAILS) ctrlSetStructuredText parseText (if (isNull _t) then {
             "<t color='#8b98b3'>Pick a player.</t>"
         } else {
@@ -189,9 +227,10 @@ switch (_mode) do {
             if (_t getVariable ["alife_restrained", false]) then { _state pushBack "<t color='#fbbf24'>restrained</t>"; };
             if (isObjectHidden _t) then { _state pushBack "in the spawn menu"; };
             if (vehicle _t != _t) then { _state pushBack format ["in a %1", getText (configFile >> "CfgVehicles" >> typeOf vehicle _t >> "displayName")]; };
-            format ["<t font='RobotoCondensedBold' size='1.2'>%1</t><br/><t color='#8b98b3'>UID </t>%2<br/><t color='#8b98b3'>Health </t>%3%%   <t color='#8b98b3'>Distance </t>%4 m%5",
+            format ["<t font='RobotoCondensedBold' size='1.2'>%1</t><br/><t color='#8b98b3'>UID </t>%2<br/><t color='#8b98b3'>Health </t>%3%%   <t color='#8b98b3'>Distance </t>%4 m%5%6",
                 (_t getVariable ["alife_name", name _t]) call _safe, getPlayerUID _t, round ((1 - damage _t) * 100), round (player distance _t),
-                if (_state isEqualTo []) then { "" } else { "<br/>" + (_state joinString ", ") }]
+                if (_state isEqualTo []) then { "" } else { "<br/>" + (_state joinString ", ") },
+                if (_licences == "") then { "" } else { format ["<br/><t size='0.9'><t color='#8b98b3'>Licences </t>%1</t>", _licences] }]
         });
     };
 
@@ -240,6 +279,9 @@ switch (_mode) do {
             case "stopSpectate": {
                 player switchCamera "INTERNAL";
                 ALife_adminSpectating = false;
+            };
+            case "vehicles": {
+                ["openAdmin", [getPlayerUID _t, _t getVariable ["alife_name", name _t]]] call ALife_fnc_garageMenu;
             };
             case "healSelf": { player setDamage 0; ["Healed.", "success"] call ALife_fnc_toast; };
             case "arsenal": {
@@ -297,6 +339,7 @@ switch (_mode) do {
                     case "ban": { [_reason, (_display displayCtrl IDC_BAN) lbValue lbCurSel (_display displayCtrl IDC_BAN)] };
                     case "compensate": { [_reason, _amount, (_display displayCtrl IDC_ACCOUNT) lbData lbCurSel (_display displayCtrl IDC_ACCOUNT)] };
                     case "give": { [(_display displayCtrl IDC_ITEM) lbData lbCurSel (_display displayCtrl IDC_ITEM), _amount] };
+                    case "giveLicence": { [(_display displayCtrl IDC_LICENCE) lbData lbCurSel (_display displayCtrl IDC_LICENCE)] };
                     case "giveCash": { [_reason, _amount] };
                     case "spawnVehicle": { [ctrlText (_display displayCtrl IDC_VEHCLASS)] };
                     case "repair";

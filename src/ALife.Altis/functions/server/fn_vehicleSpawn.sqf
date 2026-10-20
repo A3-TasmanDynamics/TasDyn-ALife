@@ -11,7 +11,7 @@
 
     Arguments:
         0: STRING - classname
-        1: STRING - spawn marker (position and direction)
+        1: STRING - spawn marker (position and direction), or ARRAY [position, direction]
         2: STRING - owner's Steam UID
         3: STRING - vehicles.id ("" if it isn't recorded)
         4: STRING - plate
@@ -26,9 +26,9 @@
 
 params ["_class", "_marker", "_uid", ["_id", ""], ["_plate", ""], ["_skin", ""], ["_fuel", 1], ["_damage", []], ["_trunk", []]];
 
-private _pos = getMarkerPos _marker;
+private _pos = if (_marker isEqualType "") then { getMarkerPos _marker } else { _marker select 0 };
 private _vehicle = createVehicle [_class, _pos, [], 0, "NONE"];
-_vehicle setDir markerDir _marker;
+_vehicle setDir (if (_marker isEqualType "") then { markerDir _marker } else { _marker select 1 });
 _vehicle setPosATL [_pos select 0, _pos select 1, 0.1];
 { _vehicle setObjectTextureGlobal [_forEachIndex, _x]; } forEach ([_class, _skin] call ALife_fnc_vehicleSkin);
 clearItemCargoGlobal _vehicle;

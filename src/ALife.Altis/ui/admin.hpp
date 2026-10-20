@@ -100,22 +100,28 @@ class ALife_Admin
         };
         class AmountLabel: ReasonLabel
         {
-            text = "Amount / quantity  -  account";
+            text = "Amount  -  account  -  licence";
             y = "safezoneY + safezoneH * 0.405";
         };
         class Amount: Reason
         {
             idc = 5821;
             y = "safezoneY + safezoneH * 0.43";
-            w = "safezoneW * 0.09";
+            w = "safezoneW * 0.05";
         };
         class Account: ALife_RscCombo
         {
             idc = 5822;
-            x = "safezoneX + safezoneW * 0.48";
+            x = "safezoneX + safezoneW * 0.438";
             y = "safezoneY + safezoneH * 0.43";
-            w = "safezoneW * 0.125";
+            w = "safezoneW * 0.08";
             h = "safezoneH * 0.034";
+        };
+        class Licence: Account
+        {
+            idc = 5826;
+            x = "safezoneX + safezoneW * 0.521";
+            w = "safezoneW * 0.084";
         };
         class BanLabel: ReasonLabel
         {
@@ -132,6 +138,8 @@ class ALife_Admin
         class Item: Account
         {
             idc = 5824;
+            x = "safezoneX + safezoneW * 0.48";
+            w = "safezoneW * 0.125";
             y = "safezoneY + safezoneH * 0.495";
         };
 
