@@ -14,7 +14,9 @@
         Message (game.admin) - Warn (game.warn) - Kick (game.kick)
         Ban (bans.issue; Permanent needs bans.permanent)
         Compensate (players.compensate; over $10,000 needs players.compensate_large)
-        Give item, Give cash (game.spawn)
+        Give item, Give cash, Give licence (game.spawn)
+        Their vehicles (game.vehicles): every vehicle they own, in any of
+            their garages -- pull one out (next to you) or send one back
     You:
         God mode, Invisible (game.self) - Player markers (game.markers)
         Map teleport (game.teleport) - Heal me (game.heal) - Stop spectating
@@ -41,6 +43,7 @@
 #define IDC_BAN 5823
 #define IDC_ITEM 5824
 #define IDC_VEHCLASS 5825
+#define IDC_LICENCE 5826
 #define IDC_BUTTON 5850
 
 params ["_mode", ["_arg", ""]];
@@ -66,6 +69,8 @@ private _buttons = [
     ["ban", "Ban", "bans.issue", "player"],
     ["compensate", "Compensate", "players.compensate", "player"],
     ["give", "Give item", "game.spawn", "player"],
+    ["giveLicence", "Give licence", "game.spawn", "player"],
+    ["vehicles", "Their vehicles", "game.vehicles", "player"],
     ["giveCash", "Give cash", "game.spawn", "player"],
     ["god", "God mode", "game.self", "self"],
     ["invisible", "Invisible", "game.self", "self"],
@@ -120,6 +125,9 @@ switch (_mode) do {
             if ((_x select 0) > 0 || { "bans.permanent" call _can }) then { _combo lbSetValue [_combo lbAdd (_x select 1), _x select 0]; };
         } forEach [[60, "1 hour"], [1440, "1 day"], [4320, "3 days"], [10080, "7 days"], [43200, "30 days"], [0, "Permanent"]];
         _combo lbSetCurSel 1;
+        _combo = _display displayCtrl IDC_LICENCE;
+        { _combo lbSetData [_combo lbAdd getText (_x >> "displayName"), configName _x]; } forEach ("true" configClasses (missionConfigFile >> "CfgLicences"));
+        _combo lbSetCurSel 0;
         _combo = _display displayCtrl IDC_ITEM;
         { _combo lbSetData [_combo lbAdd getText (_x >> "displayName"), configName _x]; } forEach ("true" configClasses (missionConfigFile >> "CfgItems"));
         _combo lbSetCurSel 0;
@@ -241,6 +249,9 @@ switch (_mode) do {
                 player switchCamera "INTERNAL";
                 ALife_adminSpectating = false;
             };
+            case "vehicles": {
+                ["openAdmin", [getPlayerUID _t, _t getVariable ["alife_name", name _t]]] call ALife_fnc_garageMenu;
+            };
             case "healSelf": { player setDamage 0; ["Healed.", "success"] call ALife_fnc_toast; };
             case "arsenal": {
                 closeDialog 0;
@@ -297,6 +308,7 @@ switch (_mode) do {
                     case "ban": { [_reason, (_display displayCtrl IDC_BAN) lbValue lbCurSel (_display displayCtrl IDC_BAN)] };
                     case "compensate": { [_reason, _amount, (_display displayCtrl IDC_ACCOUNT) lbData lbCurSel (_display displayCtrl IDC_ACCOUNT)] };
                     case "give": { [(_display displayCtrl IDC_ITEM) lbData lbCurSel (_display displayCtrl IDC_ITEM), _amount] };
+                    case "giveLicence": { [(_display displayCtrl IDC_LICENCE) lbData lbCurSel (_display displayCtrl IDC_LICENCE)] };
                     case "giveCash": { [_reason, _amount] };
                     case "spawnVehicle": { [ctrlText (_display displayCtrl IDC_VEHCLASS)] };
                     case "repair";
