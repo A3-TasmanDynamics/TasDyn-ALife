@@ -262,6 +262,26 @@ Add a vehicles tab to the player profile designed in [WEBSITE.md §7](WEBSITE.md
 `vehicles` joined with `garages`, plus `vehicle_logs` for history. Read-only. Permission:
 `players.vehicles`.
 
+Built later (Oct 2026), alongside Vehicle Lookup and Houses & Garages:
+
+- **Tabs:** Money (cash and bank per faction, `bank_transactions` history), Inventory (virtual
+  items and the saved Arma loadout per faction), Sessions (playtime per faction and connection
+  history; IPs aren't shown), Notes, plus a Wanted & jail card on the overview. Viewing them needs
+  `players.view`.
+- **Staff notes** about a player are `staff_notes` rows of kind `player`, never edited or deleted.
+  The Staff Directory only shows its own kinds. Permission: `players.notes`.
+- **Licences** can be given and taken per faction, but only while the player is offline, because
+  the game keeps its own copy while they play. In game, the admin menu's Give / take licence is
+  used instead. Permission: `players.licences`.
+- **Vehicle actions:** release from the impound, mark destroyed, restore to the garage. A vehicle
+  that's out in the world is refused (the in-game admin menu handles those). Permission:
+  `players.vehicle_actions`.
+- **Ban / lift ban** from the profile, through the same case-based ban flow: the dialog picks one of
+  the player's open cases or opens a new one. Permissions: `bans.issue` / `bans.permanent` /
+  `bans.revoke`, plus `cases.lead` for a new case.
+
+All of these actions go to `staff_log`.
+
 ### 5.2 Faction level & department edits (#23)
 
 Staff can set `cop_level` / `medic_level` (and department, once departments exist) from the player

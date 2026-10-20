@@ -159,7 +159,7 @@ func GetVehicle(ctx context.Context, pool *pgxpool.Pool, id int64) (Vehicle, err
 		UNION ALL
 		SELECT sl.created_at, sl.action, 0, COALESCE(`+ownerExpr+`, 'Staff'), sl.before_value, sl.after_value, COALESCE(sl.reason, '')
 		FROM staff_log sl LEFT JOIN players p ON p.id = sl.staff_player_id
-		WHERE sl.action LIKE 'game.vehicle%' AND sl.after_value->>'vehicle' = $1::text
+		WHERE (sl.action LIKE 'game.vehicle%' OR sl.action LIKE 'vehicle.%') AND sl.after_value->>'vehicle' = $1::text
 		ORDER BY 1 DESC LIMIT 50`, id)
 	if err != nil {
 		return v, err
@@ -173,7 +173,7 @@ func GetVehicle(ctx context.Context, pool *pgxpool.Pool, id int64) (Vehicle, err
 		if err := rows.Scan(&e.When, &action, &amount, &e.By, &before, &after, &reason); err != nil {
 			return v, err
 		}
-		if strings.HasPrefix(action, "game.") {
+		if strings.Contains(action, ".") { // a staff_log row
 			e.What = audit.Describe(action, before, after)
 			if reason != "" {
 				e.What += ": " + reason

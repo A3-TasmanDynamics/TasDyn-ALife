@@ -12,6 +12,47 @@ func Vehicle(class string) string { return lookup(vehicles, class) }
 func Licence(key string) string   { return lookup(licences, key) }
 func Item(key string) string      { return lookup(items, key) }
 
+func Crime(key string) string { return lookup(crimes, key) }
+
+// Gear names an Arma class (weapon, clothing, attachment, magazine, item)
+// by Arma's own name when the mission's config mentions it; otherwise the
+// classname as it is.
+func Gear(class string) string {
+	if n, ok := gear[strings.ToLower(strings.TrimSpace(class))]; ok {
+		return n
+	}
+	return class
+}
+
+// LicenceDef is one CfgLicences entry and the faction it's for ("civ",
+// "cop", "medic").
+type LicenceDef struct {
+	Key  string
+	Name string
+	Side string
+}
+
+// Licences lists every licence for a faction, in config order.
+func Licences(side string) []LicenceDef {
+	var out []LicenceDef
+	for _, l := range licenceList {
+		if l.Side == side {
+			out = append(out, l)
+		}
+	}
+	return out
+}
+
+// IsLicence reports whether key is a CfgLicences class for that faction.
+func IsLicence(side, key string) bool {
+	for _, l := range licenceList {
+		if l.Side == side && l.Key == key {
+			return true
+		}
+	}
+	return false
+}
+
 // House names a house by its key (houses.house_key): there's no house
 // config yet, so it's the tidied-up key.
 func House(key string) string { return humanize(key) }

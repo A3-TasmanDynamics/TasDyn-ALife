@@ -336,7 +336,7 @@ func Notes(ctx context.Context, pool *pgxpool.Pool, targetID int64) ([]Note, err
 	rows, err := pool.Query(ctx, `
 		SELECT n.kind, n.body, COALESCE(NULLIF(a.name, ''), NULLIF(a.steam_name, ''), 'Player #' || a.id, 'Unknown'), n.created_at
 		FROM staff_notes n LEFT JOIN players a ON a.id = n.author_id
-		WHERE n.player_id = $1 ORDER BY n.created_at DESC LIMIT 100`, targetID)
+		WHERE n.player_id = $1 AND n.kind IN ('note', 'promotion') ORDER BY n.created_at DESC LIMIT 100`, targetID)
 	if err != nil {
 		return nil, err
 	}

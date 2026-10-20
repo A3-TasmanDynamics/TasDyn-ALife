@@ -524,6 +524,20 @@ func (d *Deps) BanIssue(w http.ResponseWriter, r *http.Request) {
 	if reason == "Other" && strings.TrimSpace(r.FormValue("reason_other")) != "" {
 		reason = strings.TrimSpace(r.FormValue("reason_other"))
 	}
+	// From Player Lookup: "a new case" opens one for this ban first.
+	if r.FormValue("case") == "new" && pid > 0 {
+		if !d.can(r, "cases.lead") {
+			finishCaseAction(w, r, back, fmt.Errorf("%w: opening a case needs cases.lead; pick one of their cases", cases.ErrNotAllowed), "")
+			return
+		}
+		var err error
+		caseNum, err = cases.Open(r.Context(), d.Pool, caseActor(r), banCaseType(reason), "Ban: "+reason, []int64{pid}, 0,
+			"Opened from Player Lookup to ban them.")
+		if err != nil {
+			finishCaseAction(w, r, back, err, "")
+			return
+		}
+	}
 	if caseNum == 0 {
 		finishCaseAction(w, r, back, fmt.Errorf("%w: every ban comes from a case; pick one", cases.ErrNotAllowed), "")
 		return
@@ -534,6 +548,23 @@ func (d *Deps) BanIssue(w http.ResponseWriter, r *http.Request) {
 		msg += d.discordBan(r.Context(), discordID, reason, false)
 	}
 	finishCaseAction(w, r, back, err, msg)
+}
+
+// banCaseType is the case type for a ban reason (BanReasons).
+func banCaseType(reason string) string {
+	switch reason {
+	case "Exploit / duplication":
+		return "exploit"
+	case "RDM", "VDM":
+		return "rdm_vdm"
+	case "Hate speech":
+		return "chat"
+	case "Cheating (anti-cheat flag)":
+		return "cheating"
+	case "Combat logging":
+		return "conduct"
+	}
+	return "other"
 }
 
 func (d *Deps) BanLift(w http.ResponseWriter, r *http.Request) {

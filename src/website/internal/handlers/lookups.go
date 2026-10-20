@@ -26,9 +26,12 @@ type vehicleLookupData struct {
 	Query    url.Values
 	Results  []lookup.VehicleRow
 	V        *lookup.Vehicle
+	CanAct   bool
 }
 
-func (vehicleLookupData) StatusText(s string) string { return lookup.StatusLabel(s) }
+func (vehicleLookupData) StatusText(s string) string     { return lookup.StatusLabel(s) }
+func (vehicleLookupData) Actions(status string) []string { return lookup.ActionsFor(status) }
+func (vehicleLookupData) ActionLabel(a string) string    { return lookup.ActionLabel(a) }
 
 // VehicleLookup: search on the left (plate, vehicle, owner, id; by
 // status), the selected vehicle on the right -- owner, state, trunk and
@@ -38,6 +41,7 @@ func (d *Deps) VehicleLookup(w http.ResponseWriter, r *http.Request) {
 	data := vehicleLookupData{
 		Base: baseFrom(r, "Vehicle Lookup"), AdminShell: d.adminShell(r, "vehicles"),
 		Q: strings.TrimSpace(q.Get("q")), Status: q.Get("status"), Statuses: lookup.Statuses, Query: q,
+		CanAct: d.can(r, "players.vehicle_actions"),
 	}
 	if !slices.Contains(lookup.Statuses, data.Status) {
 		data.Status = ""

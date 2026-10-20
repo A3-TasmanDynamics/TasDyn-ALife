@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 
 	"website/internal/audit"
@@ -32,6 +33,26 @@ type playerLookupData struct {
 
 	Vehicles []players.Vehicle
 	Houses   []lookup.HouseRow
+	Wanted   players.Wanted
+	Accounts []players.Account
+	BankTx   []players.BankTx
+	Inv      []players.Inventory
+	Sess     players.SessionInfo
+	Notes    []players.Note
+	Licences []players.LicenceGroup
+	Ban      *cases.Ban
+
+	CanNotes       bool
+	CanLicences    bool
+	CanVehActions  bool
+	CanBan         bool
+	CanPermBan     bool
+	CanLiftBan     bool
+	BanReasons     []string
+	BanDurations   []struct {
+		Days  int
+		Label string
+	}
 	VehLog   []players.VehicleEvent
 	Audit    []players.AuditEvent
 
@@ -93,6 +114,21 @@ func (d *Deps) PlayerLookup(w http.ResponseWriter, r *http.Request) {
 		data.CanRevoke = d.can(r, "cases.close")
 		data.Points, data.ActivePoints = d.playerPoints(r.Context(), data.P.ID)
 		data.Houses, _ = lookup.PlayerHouses(r.Context(), d.Pool, data.P.ID)
+		data.Wanted, _ = players.WantedInfo(r.Context(), d.Pool, data.P.ID)
+		data.CanNotes = d.can(r, "players.notes")
+		data.CanLicences = d.can(r, "players.licences")
+		data.CanVehActions = d.can(r, "players.vehicle_actions")
+		data.CanBan = d.can(r, "bans.issue")
+		data.CanPermBan = d.can(r, "bans.permanent")
+		data.CanLiftBan = d.can(r, "bans.revoke")
+		data.BanReasons, data.BanDurations = cases.BanReasons, cases.BanDurations
+		data.Ban, _, _ = cases.ActiveBan(r.Context(), d.Pool, data.P.ID)
+		if data.CanLicences {
+			data.Licences, _ = players.LicenceGroups(r.Context(), d.Pool, data.P.ID)
+		}
+		if (data.CanBan || data.CanOpenCase) && !data.CanCases {
+			data.Cases, _ = cases.PlayerCases(r.Context(), d.Pool, data.P.ID)
+		}
 		if data.CanCases {
 			data.Cases, _ = cases.PlayerCases(r.Context(), d.Pool, data.P.ID)
 		}
@@ -105,6 +141,20 @@ func (d *Deps) PlayerLookup(w http.ResponseWriter, r *http.Request) {
 		case "audit":
 			data.Tab = "audit"
 			data.Audit, _ = players.Audit(r.Context(), d.Pool, data.P.ID)
+		case "money":
+			data.Tab = "money"
+			data.Accounts, data.BankTx, _ = players.Money(r.Context(), d.Pool, data.P.ID)
+		case "inventory":
+			data.Tab = "inventory"
+			data.Inv, _ = players.Inventories(r.Context(), d.Pool, data.P.ID)
+		case "sessions":
+			data.Tab = "sessions"
+			data.Sess, _ = players.Sessions(r.Context(), d.Pool, data.P.ID)
+		case "notes":
+			if data.CanNotes {
+				data.Tab = "notes"
+				data.Notes, _ = players.Notes(r.Context(), d.Pool, data.P.ID)
+			}
 		}
 	}
 	d.Render.Render(w, "player_lookup.html", data)
@@ -193,6 +243,70 @@ func (d *Deps) PlayerCompensate(w http.ResponseWriter, r *http.Request) {
 	finishPlayerAction(w, r, back, err, "Compensation of $"+players.Dollars(amount)+" added.")
 }
 
+// PlayerLicences sets one faction's licences (players.licences; offline
+// players only -- see players.SetLicences).
+func (d *Deps) PlayerLicences(w http.ResponseWriter, r *http.Request) {
+	id, ok := profileID(r)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	back := playerBack(r, id)
+	if !d.can(r, "players.licences") {
+		http.Redirect(w, r, back+"&error="+errMsg("You don't have permission to do that."), http.StatusSeeOther)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad form.", http.StatusBadRequest)
+		return
+	}
+	added, removed, err := players.SetLicences(r.Context(), d.Pool, playerActor(r), id, r.FormValue("faction"), r.Form["licence"])
+	finishPlayerAction(w, r, back, err, fmt.Sprintf("Licences updated: %d given, %d taken. It's in the Staff Log.", len(added), len(removed)))
+}
+
+// PlayerAddNote adds a staff note about the player (players.notes).
+func (d *Deps) PlayerAddNote(w http.ResponseWriter, r *http.Request) {
+	id, ok := profileID(r)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	back := playerBack(r, id) + "&tab=notes"
+	if !d.can(r, "players.notes") {
+		http.Redirect(w, r, back+"&error="+errMsg("You don't have permission to do that."), http.StatusSeeOther)
+		return
+	}
+	err := players.AddNote(r.Context(), d.Pool, playerActor(r), id, r.FormValue("body"))
+	finishPlayerAction(w, r, back, err, "Note added.")
+}
+
+// VehicleActionPost releases, destroys or restores a vehicle
+// (players.vehicle_actions), from Vehicle Lookup or Player Lookup.
+func (d *Deps) VehicleActionPost(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	back := r.FormValue("back")
+	if !strings.HasPrefix(back, "/admin/") || strings.HasPrefix(back, "//") {
+		back = fmt.Sprintf("/admin/vehicles?id=%d", id)
+	}
+	if !strings.Contains(back, "?") {
+		back += "?"
+	}
+	if !d.can(r, "players.vehicle_actions") {
+		http.Redirect(w, r, back+"&error="+errMsg("You don't have permission to do that."), http.StatusSeeOther)
+		return
+	}
+	sess, _ := auth.FromContext(r.Context())
+	name, err := lookup.VehicleAction(r.Context(), d.Pool, lookup.Actor{PlayerID: sess.PlayerID, Source: audit.SourceWebsite}, id, r.FormValue("action"), r.FormValue("reason"))
+	if errors.Is(err, lookup.ErrNotAllowed) {
+		err = fmt.Errorf("%w: %s", players.ErrNotAllowed, strings.TrimPrefix(err.Error(), lookup.ErrNotAllowed.Error()+": "))
+	}
+	finishPlayerAction(w, r, back, err, name+": "+strings.ToLower(lookup.ActionLabel(r.FormValue("action")))+" done. It's in the Staff Log.")
+}
+
 // hoursMinutes renders a playtime duration like "142h 10m".
 func hoursMinutes(d time.Duration) string {
 	h := int(d.Hours())
@@ -202,6 +316,20 @@ func hoursMinutes(d time.Duration) string {
 	}
 	return fmt.Sprintf("%dh %dm", h, m)
 }
+
+// Signed is an amount with its sign before the dollar sign: "+$500", "-$500".
+func (d playerLookupData) Signed(c int64) string {
+	if c < 0 {
+		return "-$" + players.Dollars(-c)
+	}
+	return "+$" + players.Dollars(c)
+}
+
+// Dur is a duration like "3h 20m" (jail time, sessions).
+func (d playerLookupData) Dur(t time.Duration) string { return hoursMinutes(t) }
+
+func (d playerLookupData) VehActions(status string) []string { return lookup.ActionsFor(status) }
+func (d playerLookupData) VehActionLabel(a string) string  { return lookup.ActionLabel(a) }
 
 func (d playerLookupData) Playtime() string {
 	if d.P == nil {

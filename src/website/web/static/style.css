@@ -981,11 +981,14 @@ a.stafflog-row:hover { background: #151f35; }
 .profile-facts { display: flex; flex-wrap: wrap; gap: 10px 26px; font-size: 13px; margin-top: 10px; }
 .profile-facts span:first-child { display: block; color: var(--text-dim); font-size: 11.5px; margin-bottom: 2px; }
 .lookup-actions { flex-direction: column; align-items: flex-end; }
-.lookup-actions > div { display: flex; gap: 8px; }
+.lookup-profile .profile-head { flex-wrap: wrap; }
+.lookup-profile .profile-head-body { min-width: 240px; }
+.lookup-actions { flex-shrink: 1; margin-left: auto; }
+.lookup-actions > div { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .alert-strip { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-radius: var(--radius); font-size: 13px; }
 .alert-danger { background: rgba(239, 68, 68, 0.10); border: 1px solid rgba(239, 68, 68, 0.35); color: #fca5a5; }
-.lookup-tabs { margin-left: 0; align-self: flex-start; }
-.lookup-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.lookup-tabs { margin-left: 0; align-self: flex-start; flex-wrap: wrap; max-width: 100%; }
+.lookup-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
 .mini-card { margin: 0; padding: 16px 18px; }
 .kv { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; padding: 4px 0; }
 .kv > span:first-child { color: var(--text-dim); }
@@ -1021,13 +1024,40 @@ a.stafflog-row:hover { background: #151f35; }
 .fuel-bar { height: 6px; border-radius: 3px; background: var(--bg-input); overflow: hidden; margin-top: 6px; }
 .fuel-bar > span { display: block; height: 100%; background: var(--amber); }
 .veh-history-row { grid-template-columns: 130px minmax(0, 1fr) minmax(0, 160px); }
-.garage-counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.wanted-head { display: flex; gap: 28px; margin-bottom: 8px; }
+.wanted-head > div { display: flex; flex-direction: column; gap: 2px; }
+.money-row { grid-template-columns: 130px 80px minmax(0, 1fr) 110px 110px; }
+.money-amt { text-align: right; font-variant-numeric: tabular-nums; }
+.ok-text { color: #4ade80; }
+.sess-row { grid-template-columns: 1fr 1fr 120px; }
+.inv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; align-items: start; }
+.inv-slot { padding: 7px 0; border-top: 1px solid var(--border-soft); display: flex; flex-direction: column; gap: 2px; }
+.note-form { display: flex; flex-direction: column; gap: 8px; margin: 0; }
+.note-form textarea { width: 100%; }
+.note-row { padding: 12px 20px; border-bottom: 1px solid var(--border-soft); }
+.note-body { white-space: pre-wrap; margin-top: 4px; font-size: 13.5px; }
+.veh-action { display: grid; grid-template-columns: minmax(0, 1fr) 170px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-soft); margin: 0; }
+.veh-action select, .veh-action input { min-width: 0; width: 100%; }
+.veh-action-3 { grid-template-columns: 200px minmax(0, 1fr) auto; }
+.licence-form { margin-bottom: 12px; }
+.licence-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; margin-bottom: 10px; }
+.garage-counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
 .lookup-wide { padding: 28px 32px; display: flex; flex-direction: column; gap: 14px; }
+
+/* The lookup profile panel is narrow below ~1280px (sidebar + search
+   column): wide rows go onto two lines. */
+@media (max-width: 1280px) {
+  .lookup-veh-row, .money-row, .lookup-profile .audit-row:not(.sess-row) { grid-template-columns: 1fr 1fr; }
+  .money-amt { text-align: left; }
+  .veh-action { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
 
 @media (max-width: 1000px) {
   .lookup-page { flex-direction: column; }
   .lookup-search { width: auto; border-right: 0; border-bottom: 1px solid var(--border-soft); max-height: 50vh; }
-  .lookup-cards, .garage-counts { grid-template-columns: 1fr; }
+  .lookup-cards, .garage-counts, .inv-grid { grid-template-columns: 1fr; }
+  .money-row { grid-template-columns: 1fr 1fr; }
+  .veh-action { grid-template-columns: 1fr 1fr; }
   .lookup-wide { padding: 20px 16px; }
   .lookup-profile { padding: 20px 16px; }
   .lookup-veh-row, .audit-row { grid-template-columns: 1fr 1fr; }
