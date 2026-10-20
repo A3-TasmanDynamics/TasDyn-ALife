@@ -8,13 +8,14 @@
     (ALife_fnc_shopBuy), which checks everything again and answers with a
     notice and fresh phone data (refreshing this window).
 
-    A trader (a shop with buys[] and no items[], e.g. the Resource Trader)
-    opens the other way round: what it buys, at the market's sell price
+    A trader (a shop with buys[] and no items[]) opens the other way
+    round: what it buys, at the market's sell price
     (ALife_fnc_marketPrice [class, true]), and Sell / Sell all
-    (ALife_fnc_shopSell; paid in cash).
+    (ALife_fnc_shopSell; paid in cash). A shop with both (the Resource
+    Trader) opens whichever way you picked in its Windows menu.
 
     Modes:
-        ["open", shopClass]
+        ["open", shopClass(, "buy" | "sell")]
         ["onLoad", display]
         ["refresh"]
         ["select"]          - show the selected item's description
@@ -34,7 +35,11 @@ private _display = findDisplay IDD_SHOP;
 private _shop = missionNamespace getVariable ["ALife_shopClass", ""];
 private _cfg = ([_shop] call ALife_fnc_shopInfo) param [2, configNull]; // the VirtualShops shop
 private _data = missionNamespace getVariable ["ALife_phone", createHashMap];
-private _selling = getArray (_cfg >> "items") isEqualTo [] && { getArray (_cfg >> "buys") isNotEqualTo [] }; // a trader
+private _hasItems = getArray (_cfg >> "items") isNotEqualTo [];
+private _hasBuys = getArray (_cfg >> "buys") isNotEqualTo [];
+// Selling to the shop: a trader (buys only), or a shop that does both
+// opened with "sell".
+private _selling = _hasBuys && { !_hasItems || { missionNamespace getVariable ["ALife_shopSelling", false] } };
 private _fnc_money = { "$" + ([_this] call BIS_fnc_numberText) };
 // What this player lacks for a shop / entry config ("" = nothing).
 private _fnc_missing = {
@@ -49,13 +54,14 @@ switch (_mode) do {
         private _missing = (_info select 2) call _fnc_missing;
         if (_missing != "") exitWith { [format ["%1 needed to use this shop.", _missing], "warning"] call ALife_fnc_toast; };
         ALife_shopClass = _arg;
+        ALife_shopSelling = (_this param [2, ""]) == "sell";
         createDialog "ALife_Shop";
         [player] remoteExec ["ALife_fnc_requestPhoneData", 2];
     };
 
     case "onLoad": {
         _display = _arg;
-        (_display displayCtrl IDC_TITLE) ctrlSetText toUpper getText (_cfg >> "name");
+        (_display displayCtrl IDC_TITLE) ctrlSetText toUpper (getText (_cfg >> "name") + (if (_hasItems && { _hasBuys }) then { [": BUY", ": SELL"] select _selling } else { "" }));
         private _list = _display displayCtrl IDC_LIST;
         lnbClear _list;
         if (_selling) then {

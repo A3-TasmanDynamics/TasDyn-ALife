@@ -90,13 +90,12 @@ addMissionEventHandler ["EntityKilled", {
 addMissionEventHandler ["EntityRespawned", {
     params ["_new", "_old"];
     if (!isNull _old) then { _old setVariable ["alife_downed", false, true]; };
-    // Died and respawned (not revived): the gear stayed on the body.
-    private _uid = getPlayerUID _new;
-    private _faction = _old getVariable ["alife_faction", ""];
-    if (_uid != "" && { _faction != "" }) then {
-        (ALife_sessions getOrDefault [_uid, createHashMap]) set [_faction + "_gear", []];
-        ["save", [_uid, _faction + "_gear", "[]", "-"]] call ALife_fnc_extension;
-    };
+    // Arma copies the old unit's variables onto the new one: it isn't down,
+    // and nobody killed it yet.
+    _new setVariable ["alife_downed", false, true];
+    { _new setVariable [_x, nil]; } forEach ["alife_downedAt", "alife_downedBy", "alife_downedFaction"];
+    // What a death costs (gear, items, cash) is settled when they pick a
+    // spawn for their new life (ALife_fnc_requestSpawn).
 }];
 
 // Wait for the database, then open the doors.

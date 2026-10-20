@@ -58,6 +58,15 @@ if (_refuse != "") exitWith { [_refuse, "warning"] call ALife_fnc_toast; };
 
 if (dialog) then { closeDialog 0; };
 ALife_using = true;
+
+// A police object: choose where it goes first (Space puts it there).
+private _isCop = (missionNamespace getVariable ["ALife_faction", "civ"]) == "cop";
+private _placeAt = [];
+if (_use == "place" && { _isCop }) then { _placeAt = [getText (_cfg >> "object")] call ALife_fnc_placeMode; };
+if (_use == "place" && { _placeAt isEqualTo [] }) exitWith {
+    ALife_using = nil;
+    [["Only the police can put those down.", "Cancelled."] select _isCop, "warning"] call ALife_fnc_toast;
+};
 private _label = switch (_use) do {
     case "consume": { format ["Using %1...", _name] };
     case "heal": { "Patching yourself up..." };
@@ -108,7 +117,7 @@ if (_anim != "" && { alive player }) then { player playMoveNow "AinvPknlMstpSnon
 ALife_using = nil;
 
 if (_done) then {
-    [player, _class, _target] remoteExec ["ALife_fnc_requestUseItem", 2];
+    [player, _class, _target, _placeAt param [0, []], _placeAt param [1, -1]] remoteExec ["ALife_fnc_requestUseItem", 2];
 } else {
     ["Cancelled.", "warning"] call ALife_fnc_toast;
 };

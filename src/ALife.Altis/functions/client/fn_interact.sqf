@@ -60,15 +60,32 @@ private _openShop = {
         case "clothing": { ["open", _this] call ALife_fnc_clothingShop; };
         case "vehicles": { ["open", _this] call ALife_fnc_vehicleShop; };
         case "licences": { ["open", _this] call ALife_fnc_licenceShop; };
-        default { ["open", _this] call ALife_fnc_shop; };
+        default {
+            // A market that buys and sells (the Resource Trader): which way.
+            private _shopCfg = ([_this] call ALife_fnc_shopInfo) param [2, configNull];
+            if (getArray (_shopCfg >> "items") isNotEqualTo [] && { getArray (_shopCfg >> "buys") isNotEqualTo [] }) then {
+                ["open", getText (_shopCfg >> "name"), [
+                    ["Buy", { ["open", _this, "buy"] call ALife_fnc_shop; }, _this],
+                    ["Sell", { ["open", _this, "sell"] call ALife_fnc_shop; }, _this]
+                ]] call ALife_fnc_radial;
+            } else {
+                ["open", _this] call ALife_fnc_shop;
+            };
+        };
     };
 };
 
-// A police placeable you're looking at: pick it up.
+// A police placeable you're looking at: move it or pick it up.
 if (!isNull _target && { ((_target getVariable ["alife_placed", []]) param [1, ""]) != "" } && { _faction == "cop" }
     && { player distance _target <= getNumber (missionConfigFile >> "CfgALife" >> "Placeables" >> "pickupRange") }) exitWith {
     private _class = (_target getVariable ["alife_placed", []]) select 1;
     ["open", getText (missionConfigFile >> "CfgItems" >> _class >> "displayName"), [
+        ["Move", {
+            _this spawn {
+                private _at = [typeOf _this, _this] call ALife_fnc_placeMode;
+                if (_at isNotEqualTo []) then { ["move", player, _this, _at select 0, _at select 1] remoteExecCall ["ALife_fnc_placeables", 2]; };
+            };
+        }, _target],
         ["Pick up", { ["pickup", player, _this] remoteExecCall ["ALife_fnc_placeables", 2]; }, _target]
     ]] call ALife_fnc_radial;
     true
