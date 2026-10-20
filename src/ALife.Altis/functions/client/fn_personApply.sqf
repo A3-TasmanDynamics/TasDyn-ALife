@@ -27,13 +27,15 @@ switch (_mode) do {
         [format ["%1 took you out of the vehicle.", _by], "warning"] call ALife_fnc_toast;
     };
     case "strip": {
+        // The server has already put it all on the ground (ALife_fnc_dropGear).
         removeAllWeapons player;
-        { player removeItemFromUniform _x; } forEach uniformItems player;
+        removeAllItemsWithMagazines player;
+        removeAllAssignedItems player;
         removeVest player;
         removeBackpack player;
         removeHeadgear player;
         removeGoggles player;
         [true] call ALife_fnc_applySkins;
-        [format ["%1 took your weapons and gear.", _by], "warning"] call ALife_fnc_toast;
+        [format ["%1 stripped you: your gear is on the ground.", _by], "warning"] call ALife_fnc_toast;
     };
 };

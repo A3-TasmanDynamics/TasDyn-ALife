@@ -96,8 +96,12 @@ switch (_action) do {
             if (!([_uid, _faction, "zipties", -1] call ALife_fnc_itemsChange)) then { _by = ""; };
         };
         if (_by == "") exitWith { "You need Zip Ties." call _fnc_reply; };
+        // Police: hard cuffs (can't move) or a soft cuff ("soft": walk
+        // slowly). Zip ties hold like hard cuffs.
+        private _soft = _by == "cop" && { _arg isEqualTo "soft" };
         _target setVariable ["alife_restrained", true, true];
         _target setVariable ["alife_restrainedBy", _by, true];
+        _target setVariable ["alife_softCuffed", _soft, true];
         ["start", _me] remoteExecCall ["ALife_fnc_restrained", owner _target];
         diag_log format ["[ALife] %1 (%2) restrained %3 (%4)", _uid, _faction, getPlayerUID _target, _by];
         [format ["You restrained %1.", _them], "success"] call _fnc_reply;
@@ -108,6 +112,7 @@ switch (_action) do {
         if (_faction != "cop" && { (_target getVariable ["alife_restrainedBy", ""]) != "zipties" }) exitWith { "Only the police can take handcuffs off." call _fnc_reply; };
         _target setVariable ["alife_restrained", false, true];
         _target setVariable ["alife_restrainedBy", "", true];
+        _target setVariable ["alife_softCuffed", false, true];
         if (!isNull attachedTo _target) then { detach _target; };
         diag_log format ["[ALife] %1 released %2", _uid, getPlayerUID _target];
         [format ["You released %1.", _them], "success"] call _fnc_reply;
@@ -182,9 +187,25 @@ switch (_action) do {
     case "strip": {
         if (_faction != "cop") exitWith {};
         if (!_restrained) exitWith { format ["Restrain %1 first.", _them] call _fnc_reply; };
+        // Everything they carry goes on the ground where they stand: their
+        // gear in a pile (Arma's inventory, anyone can take from it) and
+        // their virtual items in a dropped bag. They keep their clothes and
+        // their cash.
+        private _pile = [_target] call ALife_fnc_dropGear;
+        private _tUid = getPlayerUID _target;
+        private _tFaction = _target getVariable ["alife_faction", ""];
+        private _tRecord = ALife_sessions getOrDefault [_tUid, createHashMap];
+        private _items = (_tRecord getOrDefault [_tFaction + "_items", []]) select { _x isEqualTypeParams ["", 0] && { (_x select 1) > 0 } };
+        if (_tFaction != "" && { _items isNotEqualTo [] } && { (["save", [_tUid, _tFaction + "_items", "[]", "-"]] call ALife_fnc_extension) == "OK" }) then {
+            _tRecord set [_tFaction + "_items", []];
+            private _bag = ALife_containers get ([_target] call ALife_fnc_containerCreateBag);
+            { (_bag get "items") set [_x select 0, ((_bag get "items") getOrDefault [_x select 0, 0]) + (_x select 1)]; } forEach _items;
+            _bag set ["title", format ["%1's items", _them]];
+            [_target] call ALife_fnc_requestPhoneData;
+        };
         ["strip", _me] remoteExecCall ["ALife_fnc_personApply", owner _target];
-        diag_log format ["[ALife] %1 stripped %2", _uid, getPlayerUID _target];
-        [format ["You took %1's gear.", _them], "success"] call _fnc_reply;
+        diag_log format ["[ALife] %1 stripped %2 (gear pile: %3, items: %4)", _uid, _tUid, !isNull _pile, _items];
+        [format ["%1's gear is on the ground.", _them], "success"] call _fnc_reply;
     };
     case "heal": {
         if (_faction != "medic") exitWith {};
