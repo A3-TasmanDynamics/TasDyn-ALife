@@ -36,7 +36,8 @@ class CfgFunctions
             class wantedBoard {};    // client -> server: the Wanted app (police)
             class placeables {};     // police placeables: spike strips, picking up
             class vehicleAction {};  // client -> server: push / give a key / impound
-            class personAction {};   // client -> server: restrain / fine / strip / heal
+            class personAction {};
+            class dropGear {};        // a player's Arma gear onto the ground (strip)   // client -> server: restrain / fine / strip / heal
             class adminAction {};    // client -> server: the admin menu (checked against website permissions)
             class shopSell {};       // client -> server: sell to a trader
             class requestGather {};  // client -> server: gather a resource (timed)
