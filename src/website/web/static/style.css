@@ -1009,13 +1009,29 @@ a.stafflog-row:hover { background: #151f35; }
 .src-Kick, .src-Anti-cheat { background: rgba(239, 68, 68, 0.14); color: #fca5a5; }
 .src-Game { background: rgba(59, 130, 246, 0.16); color: #93c5fd; }
 .lookup-empty { flex: 1; display: flex; align-items: center; justify-content: center; }
+.licence-set { margin-top: 10px; }
+.licence-set .chips { margin-top: 4px; }
+.lookup-veh-link { color: var(--text); text-decoration: none; }
+.lookup-veh-link:hover { background: #151f35; }
+.lookup-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.lookup-filters a { font-size: 12px; padding: 3px 10px; border-radius: 12px; border: 1px solid var(--border); color: var(--text-dim); text-decoration: none; }
+.lookup-filters a.active { border-color: var(--amber); color: var(--text); }
+.trunk-row { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; padding: 5px 0; border-bottom: 1px solid var(--border-soft); }
+.trunk-row:last-child { border-bottom: 0; }
+.fuel-bar { height: 6px; border-radius: 3px; background: var(--bg-input); overflow: hidden; margin-top: 6px; }
+.fuel-bar > span { display: block; height: 100%; background: var(--amber); }
+.veh-history-row { grid-template-columns: 130px minmax(0, 1fr) minmax(0, 160px); }
+.garage-counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.lookup-wide { padding: 28px 32px; display: flex; flex-direction: column; gap: 14px; }
 
 @media (max-width: 1000px) {
   .lookup-page { flex-direction: column; }
   .lookup-search { width: auto; border-right: 0; border-bottom: 1px solid var(--border-soft); max-height: 50vh; }
-  .lookup-cards { grid-template-columns: 1fr; }
+  .lookup-cards, .garage-counts { grid-template-columns: 1fr; }
+  .lookup-wide { padding: 20px 16px; }
   .lookup-profile { padding: 20px 16px; }
   .lookup-veh-row, .audit-row { grid-template-columns: 1fr 1fr; }
+  .veh-history-row > :nth-child(2) { grid-column: 1 / -1; order: 3; }
 }
 
 /* ---------- Admin dashboard (layout plan board) ---------- */

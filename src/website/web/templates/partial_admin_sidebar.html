@@ -37,6 +37,8 @@
   {{if .Session.AdminPanelAccess}}
   {{if index .Perms "players.view"}}<div class="admin-nav-group">Players</div>{{end}}
   {{if index .Perms "players.view"}}<a href="/admin/players" class="admin-nav-item {{if eq .AdminTab "players"}}active{{end}}" {{if eq .AdminTab "players"}}aria-current="page"{{end}}>Player Lookup</a>{{end}}
+  {{if index .Perms "players.vehicles"}}<a href="/admin/vehicles" class="admin-nav-item {{if eq .AdminTab "vehicles"}}active{{end}}" {{if eq .AdminTab "vehicles"}}aria-current="page"{{end}}>Vehicle Lookup</a>{{end}}
+  {{if index .Perms "players.view"}}<a href="/admin/houses" class="admin-nav-item {{if eq .AdminTab "houses"}}active{{end}}" {{if eq .AdminTab "houses"}}aria-current="page"{{end}}>Houses &amp; Garages</a>{{end}}
 
   <div class="admin-nav-group">Staff</div>
   {{if index .Perms "staff.view"}}<a href="/admin/staff" class="admin-nav-item {{if eq .AdminTab "staff"}}active{{end}}" {{if eq .AdminTab "staff"}}aria-current="page"{{end}}>Staff Directory</a>{{end}}

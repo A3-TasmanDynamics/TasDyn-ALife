@@ -1,0 +1,101 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  {{if eq .Tab "garages"}}
+  <div class="admin-content lookup-wide">
+    <h1 class="page-title admin-title">Houses &amp; Garages</h1>
+    <nav class="tabbar lookup-tabs" aria-label="Sections">
+      <a class="tab" href="/admin/houses">Houses</a>
+      <a class="tab active" href="/admin/houses?tab=garages" aria-current="page">Garages</a>
+    </nav>
+    {{if .Error}}<div class="alert-strip alert-danger"><span>{{.Error}}</span></div>{{end}}
+    <div class="garage-counts">
+      {{range .Garages.Counts}}
+      <div class="card mini-card">
+        <div class="card-label">{{.Side}} garages</div>
+        <div class="kv"><span>In garage</span><strong>{{.Garaged}}</strong></div>
+        <div class="kv"><span>Out</span><strong>{{.Out}}</strong></div>
+        <div class="kv"><span>Impounded</span><strong>{{.Impounded}}</strong></div>
+        <div class="kv"><span>Destroyed</span><strong>{{.Destroyed}}</strong></div>
+      </div>
+      {{end}}
+    </div>
+
+    <div class="card-label">Impound lot &middot; {{len .Garages.Impound}}</div>
+    <div class="stafflog-table lookup-table">
+      <div class="lookup-veh-row stafflog-th"><span>Vehicle</span><span>Garage</span><span>Owner</span><span>Impounded</span></div>
+      {{range .Garages.Impound}}
+      <a class="lookup-veh-row lookup-veh-link" href="/admin/vehicles?id={{.ID}}"><span class="strong">{{.Name}} <span class="mono muted">{{.Plate}}</span></span><span>{{.Side}}</span><span>{{if .Owner}}{{.Owner}}{{else}}<span class="muted">none</span>{{end}}</span><span class="muted">{{if .Since}}{{.Since.Format "2 Jan 15:04"}}{{else}}—{{end}}</span></a>
+      {{else}}<p class="empty-state">Nothing in the impound.</p>{{end}}
+    </div>
+
+    <div class="card-label">Out in the world &middot; {{len .Garages.Out}}</div>
+    <div class="stafflog-table lookup-table">
+      <div class="lookup-veh-row stafflog-th"><span>Vehicle</span><span>Garage</span><span>Owner</span><span>State</span></div>
+      {{range .Garages.Out}}
+      <a class="lookup-veh-row lookup-veh-link" href="/admin/vehicles?id={{.ID}}"><span class="strong">{{.Name}} <span class="mono muted">{{.Plate}}</span></span><span>{{.Side}}</span><span>{{if .Owner}}{{.Owner}}{{else}}<span class="muted">none</span>{{end}}</span><span><span class="veh-state veh-{{.Status}}">{{.StatusText}}</span></span></a>
+      {{else}}<p class="empty-state">No vehicles are out.</p>{{end}}
+    </div>
+    <p class="hint">{{.Garages.Total}} vehicles in all. Every vehicle shop is a garage for its faction: a player's vehicles for that faction can be taken out at any of them. "Out" is as of the last save; vehicles left out when the server stops go back to the garage on the next start.</p>
+  </div>
+  {{else}}
+  <div class="admin-content lookup-page">
+    <section class="lookup-search" aria-label="Search">
+      <h1 class="page-title admin-title">Houses &amp; Garages</h1>
+      <nav class="tabbar lookup-tabs" aria-label="Sections">
+        <a class="tab active" href="/admin/houses" aria-current="page">Houses</a>
+        {{if .CanVehicles}}<a class="tab" href="/admin/houses?tab=garages">Garages</a>{{end}}
+      </nav>
+      <p class="admin-sub">House key, owner (name or Steam64) or house ID.</p>
+      <form method="get" action="/admin/houses">
+        {{if .Owned}}<input type="hidden" name="owned" value="{{.Owned}}">{{end}}
+        <label class="search-box"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input name="q" value="{{.Q}}" aria-label="Search houses" placeholder="e.g. kavala or a player" autofocus></label>
+      </form>
+      <nav class="lookup-filters" aria-label="Filter">
+        <a class="{{if not .Owned}}active{{end}}" href="/admin/houses{{qset .Query "owned" "" "id" ""}}">All</a>
+        <a class="{{if eq .Owned "owned"}}active{{end}}" href="/admin/houses{{qset .Query "owned" "owned" "id" ""}}">Owned</a>
+        <a class="{{if eq .Owned "forsale"}}active{{end}}" href="/admin/houses{{qset .Query "owned" "forsale" "id" ""}}">For sale</a>
+      </nav>
+      <div class="card-label result-label">{{len .Results}} {{if eq (len .Results) 1}}house{{else}}houses{{end}}</div>
+      <div class="lookup-results">
+        {{range .Results}}
+        <a class="lookup-result {{if and $.H (eq .ID $.H.ID)}}selected{{end}}" href="/admin/houses{{qset $.Query "id" (i64 .ID)}}">
+          <span class="lookup-result-text"><span class="strong">{{.Name}}</span><span class="muted small ellipsis">{{if .Owner}}{{.Owner}}{{else}}For sale{{end}} &middot; ${{$.Money .Price}}</span></span>
+        </a>
+        {{else}}
+        <p class="empty-state">{{if or .Q .Owned}}No houses match.{{else}}No houses yet: they're added to the database when houses come to the game.{{end}}</p>
+        {{end}}
+      </div>
+    </section>
+
+    <section class="lookup-profile" aria-label="House">
+      {{with .H}}
+      <div class="profile-head">
+        <div class="profile-head-body">
+          <div class="profile-title">
+            <h2>{{.Name}}</h2>
+            <span class="status-pill">{{if .Locked}}locked{{else}}unlocked{{end}}</span>
+          </div>
+          <div class="profile-line small"><span class="mono">{{.Key}}</span> &middot; id {{.ID}}</div>
+          <div class="profile-facts">
+            <div><span>Owner</span>{{if .OwnerID}}<a href="/admin/players?id={{.OwnerID}}">{{.Owner}}</a>{{else}}<span class="muted">for sale</span>{{end}}</div>
+            <div><span>Price</span>${{$.Money .Price}}</div>
+            <div><span>Added</span>{{.Created.Format "2 Jan 2006"}}</div>
+            <div><span>Last change</span>{{.Updated.Format "2 Jan 2006 15:04"}}</div>
+          </div>
+        </div>
+      </div>
+      <div class="card mini-card">
+        <div class="card-label">Storage</div>
+        {{range .Storage}}<div class="trunk-row"><span>{{.Name}}</span><strong>{{.Value}}</strong></div>{{else}}<p class="muted small">Empty.</p>{{end}}
+      </div>
+      <p class="hint">Read-only.</p>
+      {{else}}
+      <div class="lookup-empty"><p class="empty-state">Pick a house from the list.</p></div>
+      {{end}}
+    </section>
+  </div>
+  {{end}}
+</div>
+{{end}}

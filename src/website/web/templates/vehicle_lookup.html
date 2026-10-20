@@ -1,0 +1,78 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content lookup-page">
+    <section class="lookup-search" aria-label="Search">
+      <h1 class="page-title admin-title">Vehicle Lookup</h1>
+      <p class="admin-sub">Plate, vehicle, owner (name, Steam64 or gang) or vehicle ID.</p>
+      <form method="get" action="/admin/vehicles">
+        {{if .Status}}<input type="hidden" name="status" value="{{.Status}}">{{end}}
+        <label class="search-box"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input name="q" value="{{.Q}}" aria-label="Search vehicles" placeholder="e.g. ABC 123 or Offroad" autofocus></label>
+      </form>
+      <nav class="lookup-filters" aria-label="Filter by state">
+        <a class="{{if not .Status}}active{{end}}" href="/admin/vehicles{{qset .Query "status" "" "id" ""}}">All</a>
+        {{range .Statuses}}<a class="{{if eq . $.Status}}active{{end}}" href="/admin/vehicles{{qset $.Query "status" . "id" ""}}">{{$.StatusText .}}</a>{{end}}
+      </nav>
+      <div class="card-label result-label">{{if or .Q .Status}}{{len .Results}} {{if eq (len .Results) 1}}match{{else}}matches{{end}}{{else}}Newest{{end}}</div>
+      <div class="lookup-results">
+        {{range .Results}}
+        <a class="lookup-result {{if and $.V (eq .ID $.V.ID)}}selected{{end}}" href="/admin/vehicles{{qset $.Query "id" (i64 .ID)}}">
+          <span class="lookup-result-text"><span class="strong">{{.Name}} <span class="mono muted">{{.Plate}}</span></span><span class="muted small ellipsis">{{if .Owner}}{{.Owner}}{{else}}No owner{{end}} &middot; {{.Side}}</span></span>
+          <span class="veh-state veh-{{.Status}}">{{.StatusText}}</span>
+        </a>
+        {{else}}
+        <p class="empty-state">No vehicles match.</p>
+        {{end}}
+      </div>
+    </section>
+
+    <section class="lookup-profile" aria-label="Vehicle">
+      {{with .V}}
+      <div class="profile-head">
+        <div class="profile-head-body">
+          <div class="profile-title">
+            <h2>{{.Name}}</h2>
+            <span class="veh-state veh-{{.Status}}">{{.StatusText}}</span>
+          </div>
+          <div class="profile-line small"><span class="mono">{{if .Plate}}{{.Plate}}{{else}}no plate{{end}}</span> &middot; id {{.ID}} &middot; <span class="mono">{{.Class}}</span></div>
+          <div class="profile-facts">
+            <div><span>Owner</span>{{if .OwnerID}}<a href="/admin/players?id={{.OwnerID}}">{{.Owner}}</a>{{else if .Gang}}Gang: {{.Gang}}{{else}}<span class="muted">none</span>{{end}}</div>
+            <div><span>Garage</span>{{.Side}}{{if .Garage}} &middot; {{.Garage}}{{end}}</div>
+            <div><span>Bought</span>{{.Created.Format "2 Jan 2006 15:04"}}</div>
+            {{if .OwnerUID}}<div><span>Steam64</span><span class="mono">{{.OwnerUID}}</span></div>{{end}}
+          </div>
+        </div>
+      </div>
+
+      <div class="lookup-cards">
+        <div class="card mini-card">
+          <div class="card-label">Fuel</div>
+          <div class="strong">{{.Fuel}}%</div>
+          <div class="fuel-bar" aria-hidden="true"><span style="width: {{.Fuel}}%"></span></div>
+        </div>
+        <div class="card mini-card">
+          <div class="card-label">Damage</div>
+          {{range .Damage}}<div class="kv"><span>{{.Name}}</span><strong{{if ge .Pct 90}} class="warn-text"{{end}}>{{.Pct}}%</strong></div>{{else}}<p class="muted small">No damage saved.</p>{{end}}
+        </div>
+        <div class="card mini-card">
+          <div class="card-label">Trunk</div>
+          {{range .Items}}<div class="trunk-row"><span>{{.Name}}</span><strong>&times;{{.Count}}</strong></div>{{end}}
+          {{if .Cash}}<div class="trunk-row"><span>Cash</span><strong>${{money .Cash}}</strong></div>{{end}}
+          {{if and (not .Items) (not .Cash)}}<p class="muted small">Empty.</p>{{end}}
+        </div>
+      </div>
+
+      <div class="card lookup-audit">
+        {{range .History}}
+        <div class="audit-row veh-history-row"><span class="muted">{{.When.Format "2 Jan 2006 15:04"}}</span><span>{{.What}}</span><span class="muted audit-by">{{.By}}</span></div>
+        {{else}}<p class="empty-state">No history for this vehicle yet.</p>{{end}}
+      </div>
+      <p class="hint">Read-only. Fuel, damage and trunk are as last saved (when it was stored, impounded or its trunk changed); a vehicle that's out may differ now. In game, the admin menu's "Their vehicles" pulls a player's vehicle out or sends it back to their garage.</p>
+      {{else}}
+      <div class="lookup-empty"><p class="empty-state">Search for a vehicle, then pick it from the list.</p></div>
+      {{end}}
+    </section>
+  </div>
+</div>
+{{end}}
