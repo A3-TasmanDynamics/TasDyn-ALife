@@ -20,6 +20,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"website/internal/audit"
+	"website/internal/gamenames"
+	"website/internal/lookup"
 )
 
 var ErrNotAllowed = errors.New("not allowed")
@@ -133,7 +135,7 @@ type Profile struct {
 	MedicName  string
 	GangName   string
 	GangRank   string
-	Licences   []string
+	Licences   []LicenceSet // per faction, only those with any
 	Discord    string
 	SteamVAC   *int
 	SteamGame  *int
@@ -178,7 +180,14 @@ func Get(ctx context.Context, pool *pgxpool.Pool, id int64) (Profile, error) {
 		p.StaffID = p.ID
 	}
 	p.Playtime = time.Duration(playSecs) * time.Second
-	p.Licences = mergeLicences(civL, copL, medL)
+	for _, f := range []struct {
+		side string
+		raw  []byte
+	}{{"Civilian", civL}, {"Police", copL}, {"EMS", medL}} {
+		if names := licenceNames(f.raw); len(names) > 0 {
+			p.Licences = append(p.Licences, LicenceSet{Side: f.side, Names: names})
+		}
+	}
 
 	rows, err := pool.Query(ctx, `SELECT name FROM player_aliases WHERE player_id = $1 AND name IS DISTINCT FROM $2 ORDER BY last_seen_at DESC LIMIT 10`, id, p.Name)
 	if err == nil {
@@ -200,33 +209,41 @@ func Get(ctx context.Context, pool *pgxpool.Pool, id int64) (Profile, error) {
 	return p, nil
 }
 
-// mergeLicences unions the three per-faction licence sets (DATA_CONTRACT:
-// JSON arrays of strings). Anything that isn't a string array is ignored
-// rather than shown wrongly.
-func mergeLicences(sets ...[]byte) []string {
-	seen := map[string]bool{}
+// LicenceSet is one faction's licences, by their in-game names.
+type LicenceSet struct {
+	Side  string
+	Names []string
+}
+
+// licenceNames reads one faction's licence set (DATA_CONTRACT: a JSON
+// array of CfgLicences keys) as in-game names. Anything that isn't a
+// string array is ignored rather than shown wrongly.
+func licenceNames(raw []byte) []string {
+	var l []string
+	if len(raw) == 0 || json.Unmarshal(raw, &l) != nil {
+		return nil
+	}
 	var out []string
-	for _, raw := range sets {
-		var l []string
-		if len(raw) == 0 || json.Unmarshal(raw, &l) != nil {
-			continue
-		}
-		for _, s := range l {
-			if s != "" && !seen[s] {
-				seen[s] = true
-				out = append(out, s)
-			}
+	seen := map[string]bool{}
+	for _, s := range l {
+		if s != "" && !seen[s] {
+			seen[s] = true
+			out = append(out, gamenames.Licence(s))
 		}
 	}
 	return out
 }
 
 type Vehicle struct {
-	Name   string // classname + plate
+	ID     int64
+	Name   string
+	Plate  string
 	Side   string
-	Where  string
 	Status string
+	Fuel   int // percent
 }
+
+func (v Vehicle) StatusText() string { return lookup.StatusLabel(v.Status) }
 
 type VehicleEvent struct {
 	When time.Time
@@ -236,27 +253,30 @@ type VehicleEvent struct {
 // Vehicles lists a player's vehicles and their recent vehicle_logs.
 func Vehicles(ctx context.Context, pool *pgxpool.Pool, id int64) ([]Vehicle, []VehicleEvent, error) {
 	rows, err := pool.Query(ctx, `
-		SELECT v.classname || CASE WHEN v.plate IS NOT NULL AND v.plate <> '' THEN ' · ' || v.plate ELSE '' END,
-		       COALESCE(v.faction_scope, 'civilian'), COALESCE(gr.name, CASE v.status WHEN 'spawned' THEN 'Out in the world' ELSE '—' END), v.status
-		FROM vehicles v LEFT JOIN garages gr ON gr.id = v.garage_id
-		WHERE v.owner_player_id = $1 ORDER BY v.status, v.classname`, id)
+		SELECT v.id, v.classname, COALESCE(v.plate, ''), COALESCE(v.faction_scope, 'civilian'), v.status, v.fuel
+		FROM vehicles v
+		WHERE v.owner_player_id = $1 ORDER BY v.faction_scope, v.status, v.classname`, id)
 	if err != nil {
 		return nil, nil, err
 	}
 	var vs []Vehicle
 	for rows.Next() {
 		var v Vehicle
-		if err := rows.Scan(&v.Name, &v.Side, &v.Where, &v.Status); err != nil {
+		var class string
+		var fuel float64
+		if err := rows.Scan(&v.ID, &class, &v.Plate, &v.Side, &v.Status, &fuel); err != nil {
 			rows.Close()
 			return nil, nil, err
 		}
+		v.Name = gamenames.Vehicle(class)
+		v.Side = lookup.Side(v.Side)
+		v.Fuel = int(fuel*100 + 0.5)
 		vs = append(vs, v)
 	}
 	rows.Close()
 
 	rows, err = pool.Query(ctx, `
-		SELECT vl.created_at, vl.action || ' · ' || v.classname ||
-		       CASE WHEN vl.amount IS NOT NULL AND vl.amount <> 0 THEN ' · $' || (vl.amount / 100)::text ELSE '' END
+		SELECT vl.created_at, vl.action, v.classname, COALESCE(v.plate, ''), COALESCE(vl.amount, 0)
 		FROM vehicle_logs vl JOIN vehicles v ON v.id = vl.vehicle_id
 		WHERE vl.player_id = $1 ORDER BY vl.created_at DESC LIMIT 20`, id)
 	if err != nil {
@@ -266,8 +286,18 @@ func Vehicles(ctx context.Context, pool *pgxpool.Pool, id int64) ([]Vehicle, []V
 	var evs []VehicleEvent
 	for rows.Next() {
 		var e VehicleEvent
-		if err := rows.Scan(&e.When, &e.What); err != nil {
+		var action, class, plate string
+		var amount int64
+		if err := rows.Scan(&e.When, &action, &class, &plate, &amount); err != nil {
 			return vs, nil, err
+		}
+		// Money is whole dollars (no cents).
+		e.What = action + " · " + gamenames.Vehicle(class)
+		if plate != "" {
+			e.What += " " + plate
+		}
+		if amount != 0 {
+			e.What += " · $" + Dollars(amount)
 		}
 		evs = append(evs, e)
 	}

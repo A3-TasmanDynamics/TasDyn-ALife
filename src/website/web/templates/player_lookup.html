@@ -80,7 +80,7 @@
           <div class="card-label">Gang &amp; licences</div>
           <div class="strong">{{if .GangName}}{{.GangName}}{{else}}<span class="muted">No gang</span>{{end}}</div>
           <div class="muted small">{{.GangRank}}</div>
-          <div class="chips">{{range .Licences}}<span class="chip">{{.}}</span>{{else}}<span class="muted small">No licences</span>{{end}}</div>
+          {{range .Licences}}<div class="licence-set"><span class="muted small">{{.Side}}</span><div class="chips">{{range .Names}}<span class="chip">{{.}}</span>{{end}}</div></div>{{else}}<div class="chips"><span class="muted small">No licences</span></div>{{end}}
         </div>
       </div>
       <div class="card lookup-points">
@@ -103,6 +103,14 @@
         <p class="muted small">No punishment points on record. Expired and revoked points stay listed but stop counting.</p>
         {{end}}
       </div>
+      <div class="card lookup-points">
+        <div class="card-label">Houses</div>
+        {{range $.Houses}}
+        <a class="points-row points-case" href="/admin/houses?id={{.ID}}"><strong>{{.Name}}</strong><span class="muted small mono">{{.Key}}</span><span class="muted small">{{if .Locked}}locked{{else}}unlocked{{end}}</span><span class="muted small">${{$.Money .Price}}</span></a>
+        {{else}}
+        <p class="muted small">Doesn't own a house.</p>
+        {{end}}
+      </div>
       {{if $.CanCases}}
       <div class="card lookup-points">
         <div class="card-label">Cases</div>
@@ -117,16 +125,16 @@
 
       {{if eq $.Tab "vehicles"}}
       <div class="stafflog-table lookup-table">
-        <div class="lookup-veh-row stafflog-th"><span>Vehicle</span><span>Side</span><span>Garage / location</span><span>State</span></div>
+        <div class="lookup-veh-row stafflog-th"><span>Vehicle</span><span>Garage</span><span>Plate &middot; fuel</span><span>State</span></div>
         {{range $.Vehicles}}
-        <div class="lookup-veh-row"><span class="strong">{{.Name}}</span><span>{{.Side}}</span><span>{{.Where}}</span><span><span class="veh-state veh-{{.Status}}">{{.Status}}</span></span></div>
+        <a class="lookup-veh-row lookup-veh-link" href="/admin/vehicles?id={{.ID}}"><span class="strong">{{.Name}}</span><span>{{.Side}}</span><span><span class="mono">{{if .Plate}}{{.Plate}}{{else}}—{{end}}</span> <span class="muted">&middot; {{.Fuel}}%</span></span><span><span class="veh-state veh-{{.Status}}">{{.StatusText}}</span></span></a>
         {{else}}<p class="empty-state">No vehicles.</p>{{end}}
       </div>
       <div class="card lookup-points">
         <div class="card-label">Vehicle history</div>
         {{range $.VehLog}}<div class="kv"><span>{{.When.Format "2 Jan 15:04"}}</span><span>{{.What}}</span></div>{{else}}<p class="muted small">No vehicle history.</p>{{end}}
       </div>
-      <p class="hint">Read-only. Requires players.vehicles.</p>
+      <p class="hint">Read-only. Requires players.vehicles. Pick a vehicle for its trunk, damage and history in <a href="/admin/vehicles?q={{.UID}}">Vehicle Lookup</a>. In game, the admin menu's "Their vehicles" pulls them out or sends them back to the garage.</p>
       {{end}}
 
       {{if eq $.Tab "audit"}}

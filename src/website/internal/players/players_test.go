@@ -16,9 +16,12 @@ func TestDollars(t *testing.T) {
 	}
 }
 
-func TestMergeLicences(t *testing.T) {
-	got := mergeLicences([]byte(`["driver","boat"]`), []byte(`["driver","pilot"]`), []byte(`not json`), nil)
-	if want := []string{"driver", "boat", "pilot"}; !reflect.DeepEqual(got, want) {
+func TestLicenceNames(t *testing.T) {
+	got := licenceNames([]byte(`["driver","boat","driver","some_new_one"]`))
+	if want := []string{"Driver Licence", "Boating Licence", "Some new one"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("got %v, want %v", got, want)
+	}
+	if got := licenceNames([]byte(`not json`)); got != nil {
+		t.Errorf("not json: got %v", got)
 	}
 }
