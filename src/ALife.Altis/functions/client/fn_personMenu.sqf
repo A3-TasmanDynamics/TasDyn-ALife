@@ -4,8 +4,9 @@
     The radial menu for a player you're looking at (Windows key,
     ALife_fnc_interact):
 
-        Police:   Restrain / Unrestrain (also Left Shift + R), Fine,
-                  Strip down (when they're restrained)
+        Police:   Restrain / Unrestrain (also Left Shift + R), Fine; when
+                  they're restrained: Escort / Stop escorting, Put in
+                  vehicle, Strip down
         Everyone: Restrain with Zip Ties; Untie someone zip-tied
         Medics:   Revive (a downed player), Heal (a hurt one, uses a Medkit)
 
@@ -39,6 +40,9 @@ switch (_mode) do {
                 _options pushBack [["Restrain", "Unrestrain"] select _restrained, { [player, ["restrain", "unrestrain"] select (_this getVariable ["alife_restrained", false]), _this] remoteExecCall ["ALife_fnc_personAction", 2]; }, _target];
                 _options pushBack ["Fine", { ["fine", _this] call ALife_fnc_personMenu; }, _target];
                 if (_restrained) then {
+                    private _escorting = attachedTo _target == player;
+                    _options pushBack [["Escort", "Stop escorting"] select _escorting, { [player, ["escort", "stopEscort"] select (attachedTo _this == player), _this] remoteExecCall ["ALife_fnc_personAction", 2]; }, _target];
+                    _options pushBack ["Put in vehicle", { [player, "putIn", _this] remoteExecCall ["ALife_fnc_personAction", 2]; }, _target];
                     _options pushBack ["Strip down", { [player, "strip", _this] remoteExecCall ["ALife_fnc_personAction", 2]; }, _target];
                 };
             } else {

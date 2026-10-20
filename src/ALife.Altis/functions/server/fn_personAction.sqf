@@ -14,6 +14,13 @@
                         (ALife_fnc_fine), within fineTimeout seconds
         "finePay"     - the fined player pays: 3 = "cash" / "bank"
         "fineRefuse"  - the fined player refuses
+        "escort"      - police: a restrained player on foot walks in front of
+                        them (attached) until "stopEscort", release or either
+                        of them going down
+        "stopEscort"  - police: let go of them
+        "putIn"       - police: a restrained player into the back of the
+                        nearest vehicle with a free seat (within 8 m)
+        "takeOut"     - police: a restrained player out of a vehicle
         "strip"       - police: a restrained player loses their weapons,
                         vest, backpack, hat, glasses and what's in their
                         uniform (seized; ALife_fnc_personApply)
@@ -72,7 +79,7 @@ if (_action in ["finePay", "fineRefuse"]) exitWith {
 if (isNull _target || { !isPlayer _target } || { _target == _unit }) exitWith {};
 private _them = _target getVariable ["alife_name", name _target];
 if (!alive _target) exitWith { format ["%1 is down.", _them] call _fnc_reply; };
-if (_unit distance _target > 4) exitWith { format ["Get closer to %1.", _them] call _fnc_reply; };
+if (_unit distance (vehicle _target) > ([4, 8] select (vehicle _target != _target))) exitWith { format ["Get closer to %1.", _them] call _fnc_reply; };
 private _restrained = _target getVariable ["alife_restrained", false];
 
 switch (_action) do {
@@ -97,9 +104,43 @@ switch (_action) do {
         if (_faction != "cop" && { (_target getVariable ["alife_restrainedBy", ""]) != "zipties" }) exitWith { "Only the police can take handcuffs off." call _fnc_reply; };
         _target setVariable ["alife_restrained", false, true];
         _target setVariable ["alife_restrainedBy", "", true];
+        if (!isNull attachedTo _target) then { detach _target; };
         diag_log format ["[ALife] %1 released %2", _uid, getPlayerUID _target];
         [format ["You released %1.", _them], "success"] call _fnc_reply;
         [_target, format ["%1 released you.", _me], "success"] call _fnc_tell;
+    };
+    case "escort": {
+        if (_faction != "cop") exitWith {};
+        if (!_restrained) exitWith { format ["Restrain %1 first.", _them] call _fnc_reply; };
+        if (vehicle _target != _target) exitWith { format ["Take %1 out of the vehicle first.", _them] call _fnc_reply; };
+        if (!isNull attachedTo _target) exitWith { format ["Someone's already escorting %1.", _them] call _fnc_reply; };
+        _target attachTo [_unit, [0, 1.1, 0]];
+        [format ["You're escorting %1.", _them], "success"] call _fnc_reply;
+        [_target, format ["%1 is escorting you.", _me], "warning"] call _fnc_tell;
+    };
+    case "stopEscort": {
+        if (attachedTo _target != _unit) exitWith {};
+        detach _target;
+        [format ["You let go of %1.", _them], "info"] call _fnc_reply;
+    };
+    case "putIn": {
+        if (_faction != "cop") exitWith {};
+        if (!_restrained) exitWith { format ["Restrain %1 first.", _them] call _fnc_reply; };
+        private _vehicle = objNull;
+        {
+            if (alive _x && { (_x emptyPositions "cargo") > 0 } && { locked _x < 2 || { (_x getVariable ["alife_owner", ""]) == _uid } }) exitWith { _vehicle = _x; };
+        } forEach (nearestObjects [_unit, ["LandVehicle", "Air", "Ship"], 8]);
+        if (isNull _vehicle) exitWith { "No vehicle with a free back seat within 8 m (and unlocked)." call _fnc_reply; };
+        if (!isNull attachedTo _target) then { detach _target; };
+        ["putIn", _me, _vehicle] remoteExecCall ["ALife_fnc_personApply", owner _target];
+        diag_log format ["[ALife] %1 put %2 in %3", _uid, getPlayerUID _target, typeOf _vehicle];
+        [format ["You put %1 in the %2.", _them, getText (configFile >> "CfgVehicles" >> typeOf _vehicle >> "displayName")], "success"] call _fnc_reply;
+    };
+    case "takeOut": {
+        if (_faction != "cop") exitWith {};
+        if (!_restrained || { vehicle _target == _target }) exitWith {};
+        ["takeOut", _me] remoteExecCall ["ALife_fnc_personApply", owner _target];
+        [format ["You took %1 out.", _them], "success"] call _fnc_reply;
     };
     case "fine": {
         if (_faction != "cop") exitWith {};

@@ -12,7 +12,8 @@
         Refuel          - with a Fuel Can
         Lockpick        - with a Lockpick, when it's locked
 
-    Police also get Impound. The server checks everything again
+    Police also get Impound, Put in (the restrained player they're
+    escorting) and Take out (restrained players inside). The server checks everything again
     (ALife_fnc_vehicleLock, ALife_fnc_containerOpen, ALife_fnc_useItem,
     ALife_fnc_vehicleAction).
 
@@ -38,6 +39,16 @@ switch (_mode) do {
             _options pushBack [["Lock", "Unlock"] select (locked _vehicle >= 2), { [player, _this] remoteExecCall ["ALife_fnc_vehicleLock", 2]; }, _vehicle];
         };
         _options pushBack ["Trunk", { [player, _this] remoteExecCall ["ALife_fnc_containerOpen", 2]; }, _vehicle];
+        if ((missionNamespace getVariable ["ALife_faction", "civ"]) == "cop") then {
+            private _escorted = (attachedObjects player) select { _x isKindOf "CAManBase" && { _x getVariable ["alife_restrained", false] } };
+            if (_escorted isNotEqualTo []) then {
+                _options pushBack ["Put in", { [player, "putIn", _this] remoteExecCall ["ALife_fnc_personAction", 2]; }, _escorted select 0];
+            };
+            private _inside = (crew _vehicle) select { isPlayer _x && { _x getVariable ["alife_restrained", false] } };
+            if (_inside isNotEqualTo []) then {
+                _options pushBack ["Take out", { { [player, "takeOut", _x] remoteExecCall ["ALife_fnc_personAction", 2]; } forEach _this; }, _inside];
+            };
+        };
         _options pushBack ["Repair", { ["toolkit", _this] call ALife_fnc_useItem; }, _vehicle];
         if (crew _vehicle isEqualTo []) then {
             _options pushBack ["Push", { [player, "push", _this] remoteExecCall ["ALife_fnc_vehicleAction", 2]; }, _vehicle];

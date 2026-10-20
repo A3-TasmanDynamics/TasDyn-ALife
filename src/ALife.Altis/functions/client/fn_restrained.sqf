@@ -29,6 +29,9 @@ ALife_restrainLoop = [] spawn {
         if (dialog && { isNull (findDisplay 5700) }) then { closeDialog 0; };
         if (!isNull (findDisplay 602)) then { (findDisplay 602) closeDisplay 2; };
         if (currentWeapon _unit != "") then { _unit action ["SwitchWeapon", _unit, _unit, 100]; };
+        // Escorted by someone who went down (or left): free of them.
+        private _escort = attachedTo _unit;
+        if (!isNull _escort && { !alive _escort }) then { detach _unit; };
         // Keep the hands behind the back (re-started after 2 s out of it).
         if (vehicle _unit == _unit) then {
             if ((animationState _unit) find "amovpercmstpsnonwnondnon_ease" == 0) then { _outSince = -1; } else {
@@ -39,5 +42,6 @@ ALife_restrainLoop = [] spawn {
         sleep 0.25;
     };
 
+    if (!isNull attachedTo _unit) then { detach _unit; };
     if (alive _unit && { vehicle _unit == _unit }) then { _unit playMoveNow "AmovPercMstpSnonWnonDnon_EaseOut"; };
 };
