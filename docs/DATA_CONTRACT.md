@@ -198,6 +198,16 @@ Response: the array for `load`, otherwise `OK` or `ERROR:reason`.
   `classname` must be a config class name.
 - `["status", id, status]` sets a vehicle's status: `spawned`, `garaged`, `impounded` or `destroyed`.
   Response: `OK`, or `ERROR:no such vehicle`.
+- `add` takes an optional sixth argument, the **skin** (`tex:<row>` / `src:<class>` / `""`), kept in
+  `vehicles.skin` so the garage brings it back in the same colour.
+- The garage (`ALife_fnc_garage`):
+  - `["list", uid, faction]` -> `[[id, class, plate, status], ...]`, that faction's vehicles, not destroyed;
+  - `["get", id]` -> `[id, ownerUid, scope, class, plate, status, fuel, damage, inventory, skin]`;
+  - `["store", id, status, fuel, damageJson, inventoryJson]` -> `OK` (`garaged` or `impounded`; damage is
+    `[[hitpoint, damage], ...]`, inventory `[["items", [[class, count], ...]], ["cash", n]]`);
+  - `["inventory", id, inventoryJson]` -> `OK`: the trunk, saved whenever it changes;
+  - `["reset"]` -> `OK:<count>`: every `spawned` vehicle back to `garaged` (server start);
+  - `["log", id, uid, action, amount]` -> `OK`: a `vehicle_logs` row, `impound` or `return` (fee).
 
 Validation errors (`ERROR:invalid uid` / `faction` / `classname` / `price` / `id` / `status`) are
 returned before anything reaches the database.

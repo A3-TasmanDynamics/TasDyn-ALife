@@ -109,6 +109,9 @@ addMissionEventHandler ["EntityRespawned", {
             ["session", ["reset"]] call ALife_fnc_extension;
             // Current market prices (saved across restarts) before anyone can shop.
             ["init"] call ALife_fnc_market;
+            // Vehicles left out in the world when the server went down are
+            // back in their owners' garages (with what was last saved).
+            diag_log format ["[ALife] vehicles back in the garage: %1", ["vehicle", ["reset"]] call ALife_fnc_extension];
             // The people you deal with: shop NPCs placed in Eden (CfgShops
             // npcs[]) and a worker at each processor marker (CfgProcessing).
             // They stand still and can't be hurt.

@@ -125,4 +125,13 @@ if ((_container get "kind") == "ground" && { count _stock == 0 } && { (_containe
     ALife_containers deleteAt _id;
 };
 
+// An owned vehicle's trunk is saved with the vehicle (vehicles.inventory).
+if (_isVehicle && { _moved isNotEqualTo [] }) then {
+    private _vid = _object getVariable ["alife_vehicleId", ""];
+    if (_vid != "") then {
+        private _trunk = ([_object] call ALife_fnc_vehicleState) select 2;
+        private _r = ["vehicle", ["inventory", _vid, str _trunk]] call ALife_fnc_extension;
+        if (_r != "OK") then { diag_log format ["[ALife] trunk save for vehicle %1 failed: %2", _vid, _r]; };
+    };
+};
 [_unit, _id] call ALife_fnc_containerSend;
