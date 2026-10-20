@@ -238,6 +238,21 @@ rows the website writes for the same action.
 - `["clear", uid]` -> `OK:<count>`: marks them cleared (on arrest).
 - `["board"]` -> `[[uid, name, bounty, crimes], ...]`: everyone wanted, highest bounty first.
 
+## `locker` — police / EMS personal lockers
+
+`faction_lockers` (one row per player per faction, `cop` / `medic`, created on the first save). The game
+keeps an officer's gear and virtual items there (`ALife_fnc_locker`).
+
+- `["get", uid, faction, part]` → `OK:<parts>:<text>`: the text `[gear, items]`, split into parts of
+  8000 characters because a locker's gear can be more than one `callExtension` answer holds. Ask for
+  part 0, then 1 … `parts - 1`, and join them. A locker that was never saved is `[[],[]]`.
+- `["setGear", uid, faction, json]` → `OK`: replaces the gear. It's the server's reading of the locker
+  crate: `[["items", [[class, n], ...]], ["mags", [[class, ammo], ...]], ["weapons", [weapon arrays]],
+  ["containers", [[class, items, mags, weapons], ...]]]`.
+- `["setItems", uid, faction, json]` → `OK`: replaces the virtual items, `[[class, count], ...]`.
+
+Errors: `ERROR:invalid uid`, `ERROR:invalid faction`, `ERROR:no such player`, `ERROR:no such part`.
+
 ## Gear
 
 `<faction>_gear` is saved by the game server's autosave while the player is alive, as pairs:

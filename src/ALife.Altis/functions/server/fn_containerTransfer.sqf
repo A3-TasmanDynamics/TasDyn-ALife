@@ -49,6 +49,9 @@ if (count _container == 0 || { isNull (_container get "object") }) exitWith {
 };
 private _object = _container get "object";
 private _isVehicle = (_container get "kind") == "vehicle";
+private _isLocker = (_container get "kind") == "locker";
+if (_isLocker && { (_container get "owner") != _uid || { (_container get "faction") != _faction } }) exitWith {};
+if (_isLocker) then { _cash = 0; }; // lockers hold items, not money
 if (_unit distance _object > ([4, 8] select _isVehicle)) exitWith { "Get closer." call _fnc_reply; };
 
 private _stock = _container get "items";
@@ -124,6 +127,9 @@ if ((_container get "kind") == "ground" && { count _stock == 0 } && { (_containe
     deleteVehicle _object;
     ALife_containers deleteAt _id;
 };
+
+// A locker's items are saved with it (faction_lockers.items).
+if (_isLocker && { _moved isNotEqualTo [] }) then { ["saveItems", _id] call ALife_fnc_locker; };
 
 // An owned vehicle's trunk is saved with the vehicle (vehicles.inventory).
 if (_isVehicle && { _moved isNotEqualTo [] }) then {

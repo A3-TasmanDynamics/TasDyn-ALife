@@ -91,6 +91,16 @@ if (!isNull _target && { ((_target getVariable ["alife_placed", []]) param [1, "
     true
 };
 
+// One of your faction's lockers (police / EMS): your gear, or your items.
+if (!isNull _target && { _faction in ["cop", "medic"] } && { (vehicleVarName _target) in getArray (missionConfigFile >> "CfgALife" >> "Lockers" >> _faction) }
+    && { player distance _target <= getNumber (missionConfigFile >> "CfgALife" >> "Lockers" >> "range") + 1 }) exitWith {
+    ["open", "Your locker", [
+        ["Weapons and clothing", { ["open", player, _this] remoteExecCall ["ALife_fnc_locker", 2]; }, _target],
+        ["Items", { ["items", player, _this] remoteExecCall ["ALife_fnc_locker", 2]; }, _target]
+    ]] call ALife_fnc_radial;
+    true
+};
+
 // A shop / processor NPC you're looking at.
 private _near = !isNull _target && { !isPlayer _target } && { player distance _target <= 5 };
 private _process = if (_near) then { _target getVariable ["alife_process", ""] } else { "" };

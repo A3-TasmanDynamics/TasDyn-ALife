@@ -91,6 +91,20 @@ class CfgALife
         };
     };
 
+    // ---- Lockers (police / EMS, ALife_fnc_locker) ---------------------------
+    // Your own locker, the same at every locker of your faction: objects you
+    // place in Eden with these names (Windows on one). Weapons and clothing
+    // go in a crate (Arma's inventory; its size is how much fits), virtual
+    // items in our inventory screen.
+    class Lockers
+    {
+        cop[] = { "police_locker_1", "police_locker_2", "police_locker_3", "police_locker_4", "police_locker_5", "police_locker_6" };
+        medic[] = { "medic_locker_1", "medic_locker_2", "medic_locker_3", "medic_locker_4", "medic_locker_5", "medic_locker_6" };
+        range = 3;                      // metres from the locker object
+        crate = "Box_NATO_Equip_F";     // what your gear sits in while it's open
+        itemCapacity = 300;             // weight of virtual items it holds
+    };
+
     // ---- Police slots -----------------------------------------------------
     // mission.sqm police_1 .. police_10: the first copPublicSlots are open to
     // anyone; the rest need players.cop_level >= copWhitelistLevel.
