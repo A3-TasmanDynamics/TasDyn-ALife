@@ -3,7 +3,8 @@
 
     Lights and sirens on police and EMS vehicles (any vehicle their shops
     sell -- CarShops with side "cop" / "medic"). The driver toggles them:
-    Left Shift + L the light bar, F the siren (CfgALife >> Emergency). The
+    Left Shift + L the light bar, Left Shift + F the siren (CfgALife >>
+    Emergency). The
     state is on the vehicle (alife_lights / alife_siren, public), and every
     player's machine shows the flashing lights and plays the siren for
     vehicles near them -- so it's right for players who join later too.
@@ -35,9 +36,11 @@ switch (_mode) do {
 
         waitUntil { !isNull (findDisplay 46) };
         (findDisplay 46) displayAddEventHandler ["KeyDown", {
-            params ["", "_key", "_shift", "_ctrl", "_alt"];
+            params ["", "_key", "", "_ctrl", "_alt"];
             private _cfg = missionConfigFile >> "CfgALife" >> "Emergency";
-            if (_ctrl || _alt || { !(_key in [getNumber (_cfg >> "lightsKey"), getNumber (_cfg >> "sirenKey")]) }) exitWith { false };
+            // Left Shift (initPlayerLocal.sqf tracks it; Arma's _shift is either one).
+            if (_ctrl || _alt || { !(missionNamespace getVariable ["ALife_leftShift", false]) }
+                || { !(_key in [getNumber (_cfg >> "lightsKey"), getNumber (_cfg >> "sirenKey")]) }) exitWith { false };
             private _veh = vehicle player;
             if (_veh == player || { driver _veh != player } || { !alive player }) exitWith { false };
             private _type = ALife_emergencyTypes getOrDefault [toLower typeOf _veh, ""];
@@ -46,9 +49,8 @@ switch (_mode) do {
             if (isNil "ALife_emergencyKeys") then { ALife_emergencyKeys = createHashMap; };
             private _repeat = diag_tickTime - (ALife_emergencyKeys getOrDefault [_key, -10]) < 0.6;
             ALife_emergencyKeys set [_key, diag_tickTime];
-            if (_shift && { _key == getNumber (_cfg >> "lightsKey") }) exitWith { if (!_repeat) then { ["lights", _veh] call ALife_fnc_emergency; }; true };
-            if (!_shift && { _key == getNumber (_cfg >> "sirenKey") }) exitWith { if (!_repeat) then { ["siren", _veh] call ALife_fnc_emergency; }; true };
-            false
+            if (!_repeat) then { [["siren", "lights"] select (_key == getNumber (_cfg >> "lightsKey")), _veh] call ALife_fnc_emergency; };
+            true
         }];
         (findDisplay 46) displayAddEventHandler ["KeyUp", {
             if (!isNil "ALife_emergencyKeys") then { ALife_emergencyKeys deleteAt (_this select 1); };

@@ -59,7 +59,7 @@ class CfgALife
     class Emergency
     {
         lightsKey = 38;         // Left Shift + L (DIK 38): light bar on / off
-        sirenKey = 33;          // F (DIK 33): siren on / off
+        sirenKey = 33;          // Left Shift + F (DIK 33): siren on / off
         lightRange = 1200;      // metres: you see a vehicle's lights from this far
         sirenRange = 600;       // metres: you hear its siren from this far
         flash = 0.25;           // seconds each side of the light bar stays lit
