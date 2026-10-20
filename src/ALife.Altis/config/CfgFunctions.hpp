@@ -31,6 +31,9 @@ class CfgFunctions
             class requestRevive {};  // medic's client -> server: revive finished
             class completeRevive {}; // revived player's client -> server: put me back
             class requestUseItem {}; // client -> server: the Use button finished
+            class jail {};           // the jail: arrest, sentence clock, release, bail
+            class jailBail {};       // client -> server: pay bail
+            class wantedBoard {};    // client -> server: the Wanted app (police)
             class placeables {};     // police placeables: spike strips, picking up
             class vehicleAction {};  // client -> server: push / give a key / impound
             class personAction {};   // client -> server: restrain / fine / strip / heal
@@ -77,6 +80,8 @@ class CfgFunctions
             class revive {};          // medic: the Revive action
             class revived {};         // server -> downed client: a medic revived you
             class reviveApplied {};   // server -> client: back up where you fell
+            class jailClient {};      // server -> client: into / out of jail
+            class wanted {};          // the phone's Wanted app data (police)
             class useItem {};         // the Use button: progress bar, then the server
             class radial {};          // the Windows-key radial menu
             class vehicleMenu {};     // a vehicle's radial menu

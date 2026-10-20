@@ -4,9 +4,9 @@
     The radial menu for a player you're looking at (Windows key,
     ALife_fnc_interact):
 
-        Police:   Restrain / Unrestrain (also Left Shift + R), Fine; when
-                  they're restrained: Escort / Stop escorting, Put in
-                  vehicle, Strip down
+        Police:   Restrain / Unrestrain (also Left Shift + R), Fine, Wanted
+                  (add a crime); when they're restrained: Arrest (at the
+                  jail), Escort / Stop escorting, Put in vehicle, Strip down
         Everyone: Restrain with Zip Ties; Untie someone zip-tied
         Medics:   Revive (a downed player), Heal (a hurt one, uses a Medkit)
 
@@ -16,9 +16,10 @@
     Modes:
         ["open", unit]
         ["fine", unit]      - how much to fine them (CfgALife >> fines[])
+        ["wanted", unit, page] - which crime to add (CfgCrimes), 6 a page
 */
 
-params ["_mode", ["_target", objNull]];
+params ["_mode", ["_target", objNull], ["_page", 0]];
 
 if (isNull _target || { _target == player }) exitWith {};
 private _faction = missionNamespace getVariable ["ALife_faction", "civ"];
@@ -39,7 +40,11 @@ switch (_mode) do {
             if (_faction == "cop") then {
                 _options pushBack [["Restrain", "Unrestrain"] select _restrained, { [player, ["restrain", "unrestrain"] select (_this getVariable ["alife_restrained", false]), _this] remoteExecCall ["ALife_fnc_personAction", 2]; }, _target];
                 _options pushBack ["Fine", { ["fine", _this] call ALife_fnc_personMenu; }, _target];
+                _options pushBack ["Wanted", { ["wanted", _this, 0] call ALife_fnc_personMenu; }, _target];
                 if (_restrained) then {
+                    if ([player, missionConfigFile >> "CfgJail"] call ALife_fnc_atPlace) then {
+                        _options pushBack ["Arrest", { [player, "arrest", _this] remoteExecCall ["ALife_fnc_personAction", 2]; }, _target];
+                    };
                     private _escorting = attachedTo _target == player;
                     _options pushBack [["Escort", "Stop escorting"] select _escorting, { [player, ["escort", "stopEscort"] select (attachedTo _this == player), _this] remoteExecCall ["ALife_fnc_personAction", 2]; }, _target];
                     _options pushBack ["Put in vehicle", { [player, "putIn", _this] remoteExecCall ["ALife_fnc_personAction", 2]; }, _target];
@@ -60,7 +65,22 @@ switch (_mode) do {
         if (_options isEqualTo []) exitWith {
             [format ["Nothing to do with %1 right now.", _name], "info"] call ALife_fnc_toast;
         };
-        ["open", _name, _options] call ALife_fnc_radial;
+        // Police see a civilian's bounty under their name.
+        private _bounty = _target getVariable ["alife_bounty", 0];
+        ["open", _name, _options, if (_faction == "cop" && { _bounty > 0 }) then { format ["Wanted %1", _bounty call _fnc_money] } else { "" }] call ALife_fnc_radial;
+    };
+
+    case "wanted": {
+        if (_faction != "cop") exitWith {};
+        private _crimes = "true" configClasses (missionConfigFile >> "CfgCrimes");
+        private _pages = ceil (count _crimes / 6);
+        _page = (_page max 0) min (_pages - 1);
+        private _options = (_crimes select [_page * 6, 6]) apply {
+            [getText (_x >> "name"), { [player, "wanted", _this select 0, _this select 1] remoteExecCall ["ALife_fnc_personAction", 2]; }, [_target, configName _x]]
+        };
+        _options pushBack [["More", "First page"] select (_page >= _pages - 1), { ["wanted", _this select 0, _this select 1] call ALife_fnc_personMenu; }, [_target, [_page + 1, 0] select (_page >= _pages - 1)]];
+        _options pushBack ["Back", { ["open", _this] call ALife_fnc_personMenu; }, _target];
+        ["open", format ["Add a crime: %1", _name], _options, format ["Page %1 of %2", _page + 1, _pages]] call ALife_fnc_radial;
     };
 
     case "fine": {

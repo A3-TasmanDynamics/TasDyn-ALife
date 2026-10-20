@@ -21,6 +21,8 @@ class CfgRemoteExec
         class ALife_fnc_sendMessage { allowedTargets = 2; };
         class ALife_fnc_requestRevive { allowedTargets = 2; };
         class ALife_fnc_requestUseItem { allowedTargets = 2; };
+        class ALife_fnc_jailBail { allowedTargets = 2; };
+        class ALife_fnc_wantedBoard { allowedTargets = 2; };
         class ALife_fnc_placeables { allowedTargets = 2; };
         class ALife_fnc_vehicleAction { allowedTargets = 2; };
         class ALife_fnc_personAction { allowedTargets = 2; };
@@ -46,6 +48,8 @@ class CfgRemoteExec
         class ALife_fnc_messageReceived { allowedTargets = 1; };
         class ALife_fnc_revived { allowedTargets = 1; };
         class ALife_fnc_itemUsed { allowedTargets = 1; };
+        class ALife_fnc_jailClient { allowedTargets = 1; };
+        class ALife_fnc_wanted { allowedTargets = 1; };
         class ALife_fnc_vehicleApply { allowedTargets = 1; };
         class ALife_fnc_restrained { allowedTargets = 1; };
         class ALife_fnc_fine { allowedTargets = 1; };

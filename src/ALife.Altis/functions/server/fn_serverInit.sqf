@@ -39,6 +39,12 @@ addMissionEventHandler ["HandleDisconnect", {
         ALife_online deleteAt _uid;
     };
     _unit setVariable ["alife_downed", false, true]; // a body nobody's coming back to
+    // In jail: the time left is saved and the clock stops until they're back.
+    if (!isNil "ALife_jail" && { _uid in ALife_jail }) then {
+        private _left = ["remaining", _uid] call ALife_fnc_jail;
+        ["save", [_uid, "civ_jail", str (round _left), "-"]] call ALife_fnc_extension;
+        ALife_jail deleteAt _uid;
+    };
     ALife_revives deleteAt _uid;
     // Leaving while incapacitated (on the death screen) is combat logging --
     // against the rules. Recorded as an anti-cheat flag + staff log entry,
@@ -109,6 +115,7 @@ addMissionEventHandler ["EntityRespawned", {
             ["session", ["reset"]] call ALife_fnc_extension;
             // Current market prices (saved across restarts) before anyone can shop.
             ["init"] call ALife_fnc_market;
+            ["loop"] call ALife_fnc_jail; // releases prisoners when their time's up
             // Vehicles left out in the world when the server went down are
             // back in their owners' garages (with what was last saved).
             diag_log format ["[ALife] vehicles back in the garage: %1", ["vehicle", ["reset"]] call ALife_fnc_extension];

@@ -67,7 +67,7 @@ struct SaveFieldSpec {
     const char* sql;  // $1 = uid, $2 = value
 };
 
-constexpr std::array<SaveFieldSpec, 20> kSaveFields{{
+constexpr std::array<SaveFieldSpec, 22> kSaveFields{{
     {"name", "UPDATE players SET name = $2, updated_at = now() WHERE uid = $1"},
     {"civ_licence", "UPDATE players SET civ_licence = $2::jsonb, updated_at = now() WHERE uid = $1"},
     {"cop_licence", "UPDATE players SET cop_licence = $2::jsonb, updated_at = now() WHERE uid = $1"},
@@ -88,6 +88,9 @@ constexpr std::array<SaveFieldSpec, 20> kSaveFields{{
     {"civ_items", "UPDATE players SET civ_items = $2::jsonb, updated_at = now() WHERE uid = $1"},
     {"cop_items", "UPDATE players SET cop_items = $2::jsonb, updated_at = now() WHERE uid = $1"},
     {"medic_items", "UPDATE players SET medic_items = $2::jsonb, updated_at = now() WHERE uid = $1"},
+    // Jail (ALife_fnc_jail): seconds left to serve, and the bail to get out early.
+    {"civ_jail", "UPDATE players SET civ_jail_seconds = $2::integer, updated_at = now() WHERE uid = $1"},
+    {"civ_bail", "UPDATE players SET civ_bail = $2::bigint, updated_at = now() WHERE uid = $1"},
 }};
 
 }  // namespace
@@ -266,7 +269,8 @@ bool Database::LoadPlayer(const std::string& uid, std::string& outResponse, std:
         "       p.civ_items::text, p.cop_items::text, p.medic_items::text, "
         "       COALESCE(g.tag, ''), COALESCE(g.name, ''), "
         "       COALESCE((SELECT name FROM faction_rank_names WHERE faction = 'police' AND level = p.cop_level), ''), "
-        "       COALESCE((SELECT name FROM faction_rank_names WHERE faction = 'ems' AND level = p.medic_level), '') "
+        "       COALESCE((SELECT name FROM faction_rank_names WHERE faction = 'ems' AND level = p.medic_level), ''), "
+        "       p.civ_jail_seconds, p.civ_bail "
         "FROM players p LEFT JOIN staff_ranks sr ON sr.id = p.staff_rank_id "
         "LEFT JOIN gang_members gm ON gm.player_id = p.id "
         "LEFT JOIN gangs g ON g.id = gm.gang_id "
@@ -321,6 +325,9 @@ bool Database::LoadPlayer(const std::string& uid, std::string& outResponse, std:
     // website), "" if their level has no name: shown on player tags.
     AppendStringKv(out, first, "cop_rank", col(32));
     AppendStringKv(out, first, "medic_rank", col(33));
+    // Jail: seconds still to serve (0 = free) and the bail for getting out early.
+    AppendRawKv(out, first, "civ_jail", col(34));
+    AppendRawKv(out, first, "civ_bail", col(35));
     PQclear(res);
 
     // Their effective staff permissions, resolved exactly like the website's
@@ -1215,4 +1222,84 @@ bool Database::VehicleLog(const std::string& id, const std::string& uid, const s
         "INSERT INTO vehicle_logs (vehicle_id, player_id, action, amount) "
         "VALUES ($1::bigint, (SELECT id FROM players WHERE uid = NULLIF($2, '')), $3, NULLIF($4, '')::bigint)",
         4, params, inserted, outError);
+}
+
+// Wanted list (wanted_crimes; players.civ_bounty is its trigger-kept cache).
+// ---------------------------------------------------------------------------
+
+namespace {
+
+// Runs one statement; `out` = first column of the first row for a query, or
+// the affected-row count for a command.
+bool WantedQuery(PGconn* conn, const char* sql, int n, const char* const* params, std::string& out,
+                 std::string& outError) {
+    PGresult* res = PQexecParams(conn, sql, n, nullptr, params, nullptr, nullptr, 0);
+    ExecStatusType st = PQresultStatus(res);
+    if (st != PGRES_TUPLES_OK && st != PGRES_COMMAND_OK) {
+        outError = PQerrorMessage(conn);
+        PQclear(res);
+        return false;
+    }
+    out = st == PGRES_COMMAND_OK ? std::string(PQcmdTuples(res)) : (PQntuples(res) > 0 ? PQgetvalue(res, 0, 0) : "");
+    PQclear(res);
+    return true;
+}
+
+}  // namespace
+
+bool Database::Wanted(const std::string& op, const std::vector<std::string>& args, std::string& outResponse,
+                      std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    if (op == "add") {  // uid, crime, bounty, issuerUid
+        const char* params[4] = {args[0].c_str(), args[1].c_str(), args[2].c_str(), args[3].c_str()};
+        std::string id;
+        if (!WantedQuery(conn_,
+                "INSERT INTO wanted_crimes (player_id, crime_key, bounty_amount, issued_by) "
+                "SELECT p.id, $2, $3::bigint, (SELECT id FROM players WHERE uid = NULLIF($4, '')) "
+                "FROM players p WHERE p.uid = $1 RETURNING id::text",
+                4, params, id, outError)) {
+            return false;
+        }
+        if (id.empty()) {
+            outError = "no such player";
+            return false;
+        }
+        outResponse = "OK:" + id;
+        return true;
+    }
+    if (op == "list") {  // uid
+        const char* params[1] = {args[0].c_str()};
+        if (!WantedQuery(conn_,
+                "SELECT COALESCE(json_agg(json_build_array(w.id::text, w.crime_key, w.bounty_amount) ORDER BY w.id)::text, '[]') "
+                "FROM wanted_crimes w JOIN players p ON p.id = w.player_id WHERE p.uid = $1 AND w.cleared_at IS NULL",
+                1, params, outResponse, outError)) {
+            return false;
+        }
+        return true;
+    }
+    if (op == "clear") {  // uid
+        const char* params[1] = {args[0].c_str()};
+        std::string count;
+        if (!WantedQuery(conn_,
+                "UPDATE wanted_crimes w SET cleared_at = now() FROM players p "
+                "WHERE p.id = w.player_id AND p.uid = $1 AND w.cleared_at IS NULL",
+                1, params, count, outError)) {
+            return false;
+        }
+        outResponse = "OK:" + count;
+        return true;
+    }
+    if (op == "board") {
+        return WantedQuery(conn_,
+            "SELECT COALESCE(json_agg(json_build_array(p.uid, p.name, p.civ_bounty, "
+            "       (SELECT count(*) FROM wanted_crimes w WHERE w.player_id = p.id AND w.cleared_at IS NULL)) "
+            "       ORDER BY p.civ_bounty DESC)::text, '[]') FROM players p WHERE p.civ_bounty > 0",
+            0, nullptr, outResponse, outError);
+    }
+    outError = "unknown wanted op";
+    return false;
 }

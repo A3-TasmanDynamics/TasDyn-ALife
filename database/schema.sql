@@ -101,6 +101,8 @@ CREATE TABLE players (
     civ_alive      BOOLEAN NOT NULL DEFAULT true,
     civ_position   JSONB NOT NULL DEFAULT '[]'::jsonb,   -- [] until the first death is ever recorded
     civ_bounty     BIGINT NOT NULL DEFAULT 0,            -- cache of wanted_crimes, see below
+    civ_jail_seconds INTEGER NOT NULL DEFAULT 0 CHECK (civ_jail_seconds >= 0),  -- jail time left to serve (0 = free)
+    civ_bail         BIGINT NOT NULL DEFAULT 0 CHECK (civ_bail >= 0),           -- bail to get out early
     civ_playtime_seconds BIGINT NOT NULL DEFAULT 0,
 
     cop_level      INTEGER NOT NULL DEFAULT 0,

@@ -9,6 +9,7 @@
     (ALife_fnc_phoneData) -- that refreshes the open app.
 
     Apps: Messages, Bank, Inventory, Player ID, Settings, Market (live prices),
+    Wanted (police: the wanted list),
     Admin (staff); Perks, Gang, Keys
     and Admin are "coming soon".
 
@@ -27,8 +28,8 @@
 #define IDC_STATUS   5003
 #define IDC_CLOCK    5005
 #define IDC_ICON     5110
-#define IDC_LABEL    5120
-#define IDC_TILE     5130
+#define IDC_LABEL    5150
+#define IDC_TILE     5170
 #define IDC_HEADER   5201
 #define IDC_BACK     5202
 #define IDC_TITLE    5203
@@ -48,8 +49,8 @@ params ["_mode"];
 private _args = _this select [1];
 private _display = uiNamespace getVariable ["ALife_phoneDisplay", displayNull];
 
-private _apps = ["messages", "bank", "inventory", "playerid", "perks", "gang", "keys", "admin", "settings", "market"];
-private _titles = ["Messages", "Bank", "Inventory", "Player ID", "Perks", "Gang", "Keys", "Admin", "Settings", "Market"];
+private _apps = ["messages", "bank", "inventory", "playerid", "perks", "gang", "keys", "admin", "settings", "market", "wanted"];
+private _titles = ["Messages", "Bank", "Inventory", "Player ID", "Perks", "Gang", "Keys", "Admin", "Settings", "Market", "Wanted"];
 private _data = missionNamespace getVariable ["ALife_phone", createHashMap];
 private _faction = _data getOrDefault ["faction", missionNamespace getVariable ["ALife_faction", "civ"]];
 private _factionName = switch (_faction) do { case "cop": { "Police" }; case "medic": { "EMS" }; default { "Civilian" }; };
@@ -267,6 +268,23 @@ switch (_mode) do {
                 [2, "Use", 0.87, 0.07, 0, 0.49] call _fnc_button;
                 [1, "Drop", 0.87, 0.07, 0.51, 0.49] call _fnc_button;
             };
+            case "wanted": {
+                // Police: everyone on the wanted list; the selected player's crimes.
+                if (_faction != "cop") exitWith {
+                    [0, 0, 0.42] call _fnc_card;
+                    ([IDC_INFO, 0.03, 0.38, 0.05, 0.9] call _fnc_place) ctrlSetStructuredText parseText format [
+                        "<t size='%1' color='#fca5a5' font='RobotoCondensedBold'>POLICE ONLY</t><br/><br/><t size='%2' color='#d6dbe2'>The wanted list is for the police.</t>",
+                        22 call _fnc_px, 27 call _fnc_px];
+                };
+                [0, "WANTED", 0] call _fnc_label;
+                [IDC_LIST, 0.05, 0.5] call _fnc_place;
+                (_display displayCtrl IDC_LIST) lnbSetColumnsPos [0.02, 0.62];
+                [1, 0.57, 0.41] call _fnc_card;
+                [IDC_INFO, 0.58, 0.39, 0.04, 0.92] call _fnc_place;
+                ALife_wantedBoard = [];
+                ALife_wantedCrimes = [];
+                [player, ""] remoteExecCall ["ALife_fnc_wantedBoard", 2];
+            };
             case "market": {
                 // Live market prices: a filter, the items, and the selected one's details.
                 [0, "SHOW", 0] call _fnc_label;
@@ -425,6 +443,42 @@ switch (_mode) do {
                 [[getNumber (missionConfigFile >> "CfgALife" >> "giveDistance")] call _fnc_players, "Nobody nearby"] call _fnc_fillPlayers;
             };
 
+            case "wanted": {
+                if (_faction != "cop") exitWith {};
+                private _list = _display displayCtrl IDC_LIST;
+                private _keep = _list lnbData [(lnbCurSelRow _list) max 0, 0];
+                private _board = missionNamespace getVariable ["ALife_wantedBoard", []];
+                lnbClear _list;
+                {
+                    _x params ["_uid", "_who", "_bounty", "_count"];
+                    private _online = (allPlayers findIf { getPlayerUID _x == _uid }) >= 0;
+                    private _row = _list lnbAddRow [(_who call _fnc_safe) + (["", "  (online)"] select _online), _bounty call _fnc_money];
+                    _list lnbSetData [[_row, 0], _uid];
+                    _list lnbSetColor [[_row, 1], [0.97, 0.44, 0.41, 1]];
+                    if (_uid == _keep) then { _list lnbSetCurSelRow _row; };
+                } forEach _board;
+                private _info = _display displayCtrl IDC_INFO;
+                if (_board isEqualTo []) exitWith {
+                    _list lnbAddRow ["Nobody is wanted", ""];
+                    _list lnbSetColor [[0, 0], [0.545, 0.596, 0.702, 1]];
+                    _info ctrlSetStructuredText parseText format ["<t size='%1' color='#8b98b3'>Add crimes to a civilian: Windows on them, Wanted.</t>", 22 call _fnc_px];
+                };
+                if (lnbCurSelRow _list < 0) then { _list lnbSetCurSelRow 0; };
+                // The selected player's crimes (fetched when selected).
+                (missionNamespace getVariable ["ALife_wantedCrimes", []]) params [["_for", ""], ["_crimes", []]];
+                private _sel = _list lnbData [lnbCurSelRow _list, 0];
+                if (_for != _sel) exitWith {
+                    _info ctrlSetStructuredText parseText format ["<t size='%1' color='#8b98b3'>Loading...</t>", 22 call _fnc_px];
+                    [player, _sel] remoteExecCall ["ALife_fnc_wantedBoard", 2];
+                };
+                _info ctrlSetStructuredText parseText format ["<t size='%1' font='RobotoCondensedBold'>CRIMES</t><br/>%2", 22 call _fnc_px,
+                    (_crimes apply {
+                        _x params ["", "_key", "_amount"];
+                        format ["<t size='%3'>%1</t><t size='%3' color='#fca5a5' align='right'>%2</t>",
+                            getText (missionConfigFile >> "CfgCrimes" >> _key >> "name"), _amount call _fnc_money, 22 call _fnc_px]
+                    }) joinString "<br/>"];
+            };
+
             case "market": {
                 private _list = _display displayCtrl IDC_LIST;
                 private _keep = _list lnbData [(lnbCurSelRow _list) max 0, 0];
@@ -503,6 +557,7 @@ switch (_mode) do {
             ALife_marketFilter = (_display displayCtrl IDC_COMBO) lbData _row;
             ["refresh"] call ALife_fnc_phone;
         };
+        if (ALife_phoneApp == "wanted" && { _idc == IDC_LIST }) exitWith { ["refresh"] call ALife_fnc_phone; };
         if (ALife_phoneApp == "market" && { _idc == IDC_LIST }) exitWith {
             private _class = (_display displayCtrl IDC_LIST) lnbData [_row, 0];
             private _cfg = missionConfigFile >> "CfgMarket" >> _class;

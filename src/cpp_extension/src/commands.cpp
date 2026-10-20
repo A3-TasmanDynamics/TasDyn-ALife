@@ -291,6 +291,35 @@ std::string HandleAdmin(Database& db, const std::vector<std::string>& args) {
     return "ERROR:unknown admin op";
 }
 
+// The police wanted list -- see Database::Wanted.
+std::string HandleWanted(Database& db, const std::vector<std::string>& args) {
+    if (args.empty()) return "ERROR:expected [op, ...]";
+    const std::string& op = args[0];
+    std::vector<std::string> rest(args.begin() + 1, args.end());
+    auto crimeOk = [](const std::string& s) {
+        if (s.empty() || s.size() > 40) return false;
+        for (char c : s) {
+            if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_') return false;
+        }
+        return true;
+    };
+    if (op == "add") {
+        if (rest.size() < 4 || !IsSteam64(rest[0]) || !crimeOk(rest[1])) return "ERROR:expected [add, uid, crime, bounty, issuerUid]";
+        if (rest[2].empty() || rest[2].size() > 9) return "ERROR:invalid bounty";
+        for (char c : rest[2]) {
+            if (!std::isdigit(static_cast<unsigned char>(c))) return "ERROR:invalid bounty";
+        }
+        if (!rest[3].empty() && !IsSteam64(rest[3])) return "ERROR:invalid issuer";
+    } else if (op == "list" || op == "clear") {
+        if (rest.empty() || !IsSteam64(rest[0])) return "ERROR:invalid uid";
+    } else if (op != "board") {
+        return "ERROR:unknown wanted op";
+    }
+    std::string out, error;
+    if (!db.Wanted(op, rest, out, error)) return "ERROR:" + error;
+    return out;
+}
+
 }  // namespace
 
 std::string UnwrapArmaString(const std::string& arg) {
@@ -327,6 +356,7 @@ std::string DispatchCommand(Database& db, const std::string& command,
     if (command == "market") return HandleMarket(db, args);
     if (command == "vehicle") return HandleVehicle(db, args);
     if (command == "admin") return HandleAdmin(db, args);
+    if (command == "wanted") return HandleWanted(db, args);
 
     return "ERROR:unknown command";
 }

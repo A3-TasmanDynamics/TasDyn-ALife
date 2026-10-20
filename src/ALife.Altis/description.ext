@@ -59,6 +59,7 @@ corpseRemovalMaxTime = 900;
 #include "config\CfgClothing.hpp"
 #include "config\CfgMarket.hpp"
 #include "config\CfgResources.hpp"
+#include "config\CfgCrimes.hpp"
 #include "config\CfgLicences.hpp"
 #include "config\CfgPhone.hpp"
 #include "ui\base.hpp"

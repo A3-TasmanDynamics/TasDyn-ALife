@@ -73,7 +73,7 @@ class ALife_Phone
         };
         class TileLabel0: ALife_RscText
         {
-            idc = 5120;
+            idc = 5150;
             style = 2;
             sizeEx = 0.026;
             colorText[] = { 0.945, 0.961, 0.976, 1 };
@@ -85,7 +85,7 @@ class ALife_Phone
         };
         class Tile0: ALife_RscButton
         {
-            idc = 5130;
+            idc = 5170;
             colorBackground[] = { 0, 0, 0, 0 };
             colorBackgroundActive[] = { 1, 1, 1, 0.06 };
             colorFocused[] = { 0, 0, 0, 0 };
@@ -109,7 +109,7 @@ class ALife_Phone
         };
         class TileLabel1: ALife_RscText
         {
-            idc = 5121;
+            idc = 5151;
             style = 2;
             sizeEx = 0.026;
             colorText[] = { 0.945, 0.961, 0.976, 1 };
@@ -121,7 +121,7 @@ class ALife_Phone
         };
         class Tile1: ALife_RscButton
         {
-            idc = 5131;
+            idc = 5171;
             colorBackground[] = { 0, 0, 0, 0 };
             colorBackgroundActive[] = { 1, 1, 1, 0.06 };
             colorFocused[] = { 0, 0, 0, 0 };
@@ -145,7 +145,7 @@ class ALife_Phone
         };
         class TileLabel2: ALife_RscText
         {
-            idc = 5122;
+            idc = 5152;
             style = 2;
             sizeEx = 0.026;
             colorText[] = { 0.945, 0.961, 0.976, 1 };
@@ -157,7 +157,7 @@ class ALife_Phone
         };
         class Tile2: ALife_RscButton
         {
-            idc = 5132;
+            idc = 5172;
             colorBackground[] = { 0, 0, 0, 0 };
             colorBackgroundActive[] = { 1, 1, 1, 0.06 };
             colorFocused[] = { 0, 0, 0, 0 };
@@ -181,7 +181,7 @@ class ALife_Phone
         };
         class TileLabel3: ALife_RscText
         {
-            idc = 5123;
+            idc = 5153;
             style = 2;
             sizeEx = 0.026;
             colorText[] = { 0.945, 0.961, 0.976, 1 };
@@ -193,7 +193,7 @@ class ALife_Phone
         };
         class Tile3: ALife_RscButton
         {
-            idc = 5133;
+            idc = 5173;
             colorBackground[] = { 0, 0, 0, 0 };
             colorBackgroundActive[] = { 1, 1, 1, 0.06 };
             colorFocused[] = { 0, 0, 0, 0 };
@@ -217,7 +217,7 @@ class ALife_Phone
         };
         class TileLabel4: ALife_RscText
         {
-            idc = 5124;
+            idc = 5154;
             style = 2;
             sizeEx = 0.026;
             colorText[] = { 0.945, 0.961, 0.976, 1 };
@@ -229,7 +229,7 @@ class ALife_Phone
         };
         class Tile4: ALife_RscButton
         {
-            idc = 5134;
+            idc = 5174;
             colorBackground[] = { 0, 0, 0, 0 };
             colorBackgroundActive[] = { 1, 1, 1, 0.06 };
             colorFocused[] = { 0, 0, 0, 0 };
@@ -253,7 +253,7 @@ class ALife_Phone
         };
         class TileLabel5: ALife_RscText
         {
-            idc = 5125;
+            idc = 5155;
             style = 2;
             sizeEx = 0.026;
             colorText[] = { 0.945, 0.961, 0.976, 1 };
@@ -265,7 +265,7 @@ class ALife_Phone
         };
         class Tile5: ALife_RscButton
         {
-            idc = 5135;
+            idc = 5175;
             colorBackground[] = { 0, 0, 0, 0 };
             colorBackgroundActive[] = { 1, 1, 1, 0.06 };
             colorFocused[] = { 0, 0, 0, 0 };
@@ -289,7 +289,7 @@ class ALife_Phone
         };
         class TileLabel6: ALife_RscText
         {
-            idc = 5126;
+            idc = 5156;
             style = 2;
             sizeEx = 0.026;
             colorText[] = { 0.945, 0.961, 0.976, 1 };
@@ -301,7 +301,7 @@ class ALife_Phone
         };
         class Tile6: ALife_RscButton
         {
-            idc = 5136;
+            idc = 5176;
             colorBackground[] = { 0, 0, 0, 0 };
             colorBackgroundActive[] = { 1, 1, 1, 0.06 };
             colorFocused[] = { 0, 0, 0, 0 };
@@ -325,7 +325,7 @@ class ALife_Phone
         };
         class TileLabel7: ALife_RscText
         {
-            idc = 5127;
+            idc = 5157;
             style = 2;
             sizeEx = 0.026;
             colorText[] = { 0.945, 0.961, 0.976, 1 };
@@ -337,7 +337,7 @@ class ALife_Phone
         };
         class Tile7: ALife_RscButton
         {
-            idc = 5137;
+            idc = 5177;
             colorBackground[] = { 0, 0, 0, 0 };
             colorBackgroundActive[] = { 1, 1, 1, 0.06 };
             colorFocused[] = { 0, 0, 0, 0 };
@@ -361,7 +361,7 @@ class ALife_Phone
         };
         class TileLabel8: ALife_RscText
         {
-            idc = 5128;
+            idc = 5158;
             style = 2;
             sizeEx = 0.026;
             colorText[] = { 0.945, 0.961, 0.976, 1 };
@@ -373,7 +373,7 @@ class ALife_Phone
         };
         class Tile8: ALife_RscButton
         {
-            idc = 5138;
+            idc = 5178;
             colorBackground[] = { 0, 0, 0, 0 };
             colorBackgroundActive[] = { 1, 1, 1, 0.06 };
             colorFocused[] = { 0, 0, 0, 0 };
@@ -397,7 +397,7 @@ class ALife_Phone
         };
         class TileLabel9: ALife_RscText
         {
-            idc = 5129;
+            idc = 5159;
             style = 2;
             sizeEx = 0.026;
             colorText[] = { 0.945, 0.961, 0.976, 1 };
@@ -409,7 +409,7 @@ class ALife_Phone
         };
         class Tile9: ALife_RscButton
         {
-            idc = 5139;
+            idc = 5179;
             colorBackground[] = { 0, 0, 0, 0 };
             colorBackgroundActive[] = { 1, 1, 1, 0.06 };
             colorFocused[] = { 0, 0, 0, 0 };
@@ -418,6 +418,42 @@ class ALife_Phone
             offsetPressedX = 0; offsetPressedY = 0;
             action = "['app', 9] call ALife_fnc_phone";
             x = "safezoneX + safezoneW * 0.756";
+            y = "safezoneY + safezoneH * 0.794";
+            w = "safezoneW * 0.0557";
+            h = "safezoneH * 0.112";
+        };
+        class TileIcon10: ALife_RscPicture
+        {
+            idc = 5120;
+            text = "ui\icons\wanted_ca.paa";
+            x = "safezoneX + safezoneW * 0.8285";
+            y = "safezoneY + safezoneH * 0.805";
+            w = "safezoneW * 0.038";
+            h = "safezoneH * 0.067";
+        };
+        class TileLabel10: ALife_RscText
+        {
+            idc = 5160;
+            style = 2;
+            sizeEx = 0.026;
+            colorText[] = { 0.945, 0.961, 0.976, 1 };
+            text = "Wanted";
+            x = "safezoneX + safezoneW * 0.8157";
+            y = "safezoneY + safezoneH * 0.876";
+            w = "safezoneW * 0.0637";
+            h = "safezoneH * 0.028";
+        };
+        class Tile10: ALife_RscButton
+        {
+            idc = 5180;
+            colorBackground[] = { 0, 0, 0, 0 };
+            colorBackgroundActive[] = { 1, 1, 1, 0.06 };
+            colorFocused[] = { 0, 0, 0, 0 };
+            colorShadow[] = { 0, 0, 0, 0 };
+            colorBorder[] = { 0, 0, 0, 0 };
+            offsetPressedX = 0; offsetPressedY = 0;
+            action = "['app', 10] call ALife_fnc_phone";
+            x = "safezoneX + safezoneW * 0.8197";
             y = "safezoneY + safezoneH * 0.794";
             w = "safezoneW * 0.0557";
             h = "safezoneH * 0.112";
