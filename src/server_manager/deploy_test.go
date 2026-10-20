@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -51,6 +52,34 @@ func TestDeployMission(t *testing.T) {
 		}
 	}
 
-	warnings := deployExtension(repoRoot, armaPath)
+	warnings := deployExtension(repoRoot, armaPath, "")
 	t.Logf("deployExtension warnings: %v", warnings)
+}
+
+func TestWriteExtensionConfig(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "in.ini")
+	dest := filepath.Join(dir, "out.ini")
+	in := "[database]\r\nhost=127.0.0.1\r\ndbname=alife_db\r\n\r\n[server]\r\ncommand_password=old\r\n"
+	if err := os.WriteFile(src, []byte(in), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeExtensionConfig(src, dest, "s3cret"); err != nil {
+		t.Fatal(err)
+	}
+	out, _ := os.ReadFile(dest)
+	got := string(out)
+	if !strings.Contains(got, "dbname=alife_db") {
+		t.Errorf("database section lost: %q", got)
+	}
+	if strings.Contains(got, "old") || strings.Count(got, "[server]") != 1 || !strings.Contains(got, "command_password=s3cret") {
+		t.Errorf("server section not replaced: %q", got)
+	}
+	if err := writeExtensionConfig(src, dest, ""); err != nil {
+		t.Fatal(err)
+	}
+	out, _ = os.ReadFile(dest)
+	if strings.Contains(string(out), "[server]") {
+		t.Errorf("no password should mean no [server] section: %q", out)
+	}
 }

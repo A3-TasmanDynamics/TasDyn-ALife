@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // runtimeDeps mirrors tools/test_local_server.ps1's $runtimeDeps exactly --
@@ -75,13 +76,17 @@ func deployMission(repoRoot, armaServerPath, missionTemplate string) error {
 
 // deployExtension best-effort copies the built C++ extension DLL, its
 // runtime dependencies, and config.ini into the Arma 3 Server install.
+// The deployed config.ini also gets a [server] section with the server's
+// command password (serverCommandPassword), so the mission can really kick
+// players (serverCommand "#kick") -- it's only ever in the server's own
+// files, never sent to clients or logged.
 // Unlike deployMission, this never blocks a launch -- a user testing
 // mission/mission-config changes shouldn't be stopped by not having run
 // cpp_extension/build.ps1 yet, since the mission still loads without it
 // (only ALife_fnc_load/save calls would fail once a player actually
 // joins). Returns human-readable warnings for anything it couldn't copy,
 // for the caller to surface rather than fail on.
-func deployExtension(repoRoot, armaServerPath string) []string {
+func deployExtension(repoRoot, armaServerPath, commandPassword string) []string {
 	var warnings []string
 
 	extensionBuild := filepath.Join(repoRoot, "src", "cpp_extension", "build")
@@ -100,11 +105,36 @@ func deployExtension(repoRoot, armaServerPath string) []string {
 	configSrc := filepath.Join(repoRoot, "config.ini")
 	if _, err := os.Stat(configSrc); err != nil {
 		warnings = append(warnings, "config.ini not found at repo root -- copy config.ini.example and fill in real values if you need database save/load")
-	} else if err := copyFile(configSrc, filepath.Join(armaServerPath, "config.ini")); err != nil {
+	} else if err := writeExtensionConfig(configSrc, filepath.Join(armaServerPath, "config.ini"), commandPassword); err != nil {
 		warnings = append(warnings, fmt.Sprintf("failed to copy config.ini: %v", err))
 	}
 
 	return warnings
+}
+
+// writeExtensionConfig copies the repo's config.ini, minus any [server]
+// section it has, and appends [server] command_password.
+func writeExtensionConfig(src, dest, commandPassword string) error {
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	var out []string
+	inServer := false
+	for _, line := range strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
+			inServer = strings.EqualFold(trimmed, "[server]")
+		}
+		if !inServer {
+			out = append(out, line)
+		}
+	}
+	text := strings.TrimRight(strings.Join(out, "\r\n"), "\r\n") + "\r\n"
+	if commandPassword != "" {
+		text += "\r\n[server]\r\ncommand_password=" + commandPassword + "\r\n"
+	}
+	return os.WriteFile(dest, []byte(text), 0o600)
 }
 
 func copyFile(src, dest string) error {

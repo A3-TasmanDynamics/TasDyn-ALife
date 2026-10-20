@@ -6,3 +6,7 @@ port=5432
 dbname=alife_db
 user=alife_admin
 password=CHANGE_ME
+
+; [server] is written by the Server Manager when it deploys the extension:
+; command_password = the server's serverCommandPassword (its admin password),
+; used by the mission to really kick players. Don't put it here by hand.
