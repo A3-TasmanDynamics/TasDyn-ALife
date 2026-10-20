@@ -36,8 +36,9 @@ class CfgFunctions
             class wantedBoard {};    // client -> server: the Wanted app (police)
             class placeables {};     // police placeables: spike strips, picking up
             class vehicleAction {};  // client -> server: push / give a key / impound
-            class personAction {};
-            class dropGear {};        // a player's Arma gear onto the ground (strip)   // client -> server: restrain / fine / strip / heal
+            class personAction {};   // client -> server: restrain / fine / strip / heal
+            class dropGear {};        // a player's Arma gear onto the ground (strip)
+            class locker {};          // police / EMS personal lockers (gear crate, items)
             class adminAction {};    // client -> server: the admin menu (checked against website permissions)
             class shopSell {};       // client -> server: sell to a trader
             class requestGather {};  // client -> server: gather a resource (timed)
@@ -93,6 +94,7 @@ class CfgFunctions
             class surrender {};       // Left Shift + B: hands on your head
             class holster {};         // Left Shift + H: weapon away / out
             class jump {};            // Left Shift + Space: jump while running
+            class lockerClient {};    // your locker's gear crate is open
             class placeMode {};       // choosing where a police object goes
             class emergency {};       // police / EMS lights and sirens (keys, watcher)
             class emergencyLights {}; // one vehicle's flashing light bar, here

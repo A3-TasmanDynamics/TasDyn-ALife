@@ -129,6 +129,12 @@ public:
     bool Wanted(const std::string& op, const std::vector<std::string>& args, std::string& outResponse,
                 std::string& outError);
 
+    // Personal lockers (faction_lockers): ["get", uid, faction] -> the text
+    // [gear, items] ([[],[]] if they have none yet); ["setGear" | "setItems",
+    // uid, faction, json] -> "OK" (created on first save).
+    bool Locker(const std::string& op, const std::vector<std::string>& args, std::string& outResponse,
+                std::string& outError);
+
 private:
     PGconn* conn_ = nullptr;
     mutable std::mutex mutex_;

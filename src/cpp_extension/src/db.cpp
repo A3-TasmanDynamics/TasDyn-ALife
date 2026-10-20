@@ -1303,3 +1303,36 @@ bool Database::Wanted(const std::string& op, const std::vector<std::string>& arg
     outError = "unknown wanted op";
     return false;
 }
+
+// Personal lockers (faction_lockers) -- police / EMS keep gear and items
+// at the station. Rows appear on the first save.
+bool Database::Locker(const std::string& op, const std::vector<std::string>& args, std::string& outResponse,
+                      std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    if (op == "get") {  // uid, faction
+        const char* params[2] = {args[0].c_str(), args[1].c_str()};
+        return QueryOne(conn_,
+            "SELECT COALESCE((SELECT json_build_array(l.gear, l.items)::text FROM faction_lockers l "
+            "JOIN players p ON p.id = l.player_id WHERE p.uid = $1 AND l.faction = $2), '[[],[]]')",
+            2, params, outResponse, outError);
+    }
+    // setGear / setItems: uid, faction, json
+    const char* sql = op == "setGear"
+        ? "INSERT INTO faction_lockers (player_id, faction, gear) SELECT id, $2, $3::jsonb FROM players WHERE uid = $1 "
+          "ON CONFLICT (player_id, faction) DO UPDATE SET gear = EXCLUDED.gear, updated_at = now()"
+        : "INSERT INTO faction_lockers (player_id, faction, items) SELECT id, $2, $3::jsonb FROM players WHERE uid = $1 "
+          "ON CONFLICT (player_id, faction) DO UPDATE SET items = EXCLUDED.items, updated_at = now()";
+    const char* params[3] = {args[0].c_str(), args[1].c_str(), args[2].c_str()};
+    std::string count;
+    if (!QueryOne(conn_, sql, 3, params, count, outError)) return false;
+    if (count == "0") {
+        outError = "no such player";
+        return false;
+    }
+    outResponse = "OK";
+    return true;
+}

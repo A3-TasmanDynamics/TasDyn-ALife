@@ -320,6 +320,40 @@ std::string HandleWanted(Database& db, const std::vector<std::string>& args) {
     return out;
 }
 
+// Personal lockers -- see Database::Locker. "get" answers in parts (a
+// locker's gear can be more than one callExtension answer holds):
+//   ["get", uid, faction, part] -> "OK:<parts>:<that part of [gear, items]>"
+//   ["setGear" | "setItems", uid, faction, json] -> "OK"
+std::string HandleLocker(Database& db, const std::vector<std::string>& args) {
+    if (args.size() < 3) return "ERROR:expected [op, uid, faction, ...]";
+    const std::string& op = args[0];
+    if (!IsSteam64(args[1])) return "ERROR:invalid uid";
+    if (args[2] != "cop" && args[2] != "medic") return "ERROR:invalid faction";
+    std::vector<std::string> rest(args.begin() + 1, args.end());
+    std::string out, error;
+    if (op == "get") {
+        size_t part = 0;
+        if (args.size() >= 4) {
+            if (args[3].empty() || args[3].size() > 4) return "ERROR:invalid part";
+            for (char c : args[3]) {
+                if (!std::isdigit(static_cast<unsigned char>(c))) return "ERROR:invalid part";
+            }
+            part = static_cast<size_t>(std::stoul(args[3]));
+        }
+        if (!db.Locker("get", rest, out, error)) return "ERROR:" + error;
+        const size_t chunk = 8000;
+        const size_t parts = out.empty() ? 1 : (out.size() + chunk - 1) / chunk;
+        if (part >= parts) return "ERROR:no such part";
+        return "OK:" + std::to_string(parts) + ":" + out.substr(part * chunk, chunk);
+    }
+    if (op == "setGear" || op == "setItems") {
+        if (args.size() < 4 || args[3].empty() || args[3].front() != '[' || args[3].size() > 1000000) return "ERROR:expected [" + op + ", uid, faction, json]";
+        if (!db.Locker(op, rest, out, error)) return "ERROR:" + error;
+        return out;
+    }
+    return "ERROR:unknown locker op";
+}
+
 }  // namespace
 
 std::string UnwrapArmaString(const std::string& arg) {
@@ -357,6 +391,7 @@ std::string DispatchCommand(Database& db, const std::string& command,
     if (command == "vehicle") return HandleVehicle(db, args);
     if (command == "admin") return HandleAdmin(db, args);
     if (command == "wanted") return HandleWanted(db, args);
+    if (command == "locker") return HandleLocker(db, args);
 
     return "ERROR:unknown command";
 }

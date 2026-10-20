@@ -25,10 +25,11 @@ params [["_object", objNull, [objNull]]];
 if (isNull _object) exitWith { "" };
 if (isNil "ALife_containers") then { ALife_containers = createHashMap; ALife_containerCount = 0; };
 
-// A dropped bag: find its container by the object.
+// A dropped bag: find its container by the object. (Not a locker: those
+// are opened only through ALife_fnc_locker, by their owner.)
 private _bagId = "";
 {
-    if ((_y get "object") isEqualTo _object) exitWith { _bagId = _x; };
+    if ((_y get "object") isEqualTo _object && { (_y get "kind") != "locker" }) exitWith { _bagId = _x; };
 } forEach ALife_containers;
 if (_bagId != "") exitWith { _bagId };
 

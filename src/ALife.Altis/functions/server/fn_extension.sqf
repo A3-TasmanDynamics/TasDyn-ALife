@@ -3,7 +3,8 @@
 
     The only place that talks to the database DLL (tasdyn_alife_x64.dll,
     src/cpp_extension). Commands: "ping", "load", "save", "combatlog", "bank", "session", "market",
-    "vehicle", "admin", "server" (the command password -- never log it).
+    "vehicle", "admin", "wanted", "locker", "server" (the command password --
+    never log it).
 
     Arguments:
         0: STRING - command
