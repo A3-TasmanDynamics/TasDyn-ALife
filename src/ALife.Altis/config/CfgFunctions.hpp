@@ -89,6 +89,8 @@ class CfgFunctions
             class personMenu {};      // a player's radial menu
             class personAct {};       // timed things done to a player (heal)
             class restrained {};      // server -> client: you're restrained
+            class surrender {};       // Left Shift + B: hands on your head
+            class holster {};         // Left Shift + H: weapon away / out
             class fine {};            // server -> client: a fine to pay or refuse
             class personApply {};     // server -> client: police strip you
             class admin {};           // the admin menu (phone -> Admin)
