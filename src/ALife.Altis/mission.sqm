@@ -8,18 +8,18 @@ class EditorData
 	toggles=1;
 	class ItemIDProvider
 	{
-		nextID=109;
+		nextID=118;
 	};
 	class MarkerIDProvider
 	{
-		nextID=19;
+		nextID=22;
 	};
 	class Camera
 	{
-		pos[]={15377.19,213.76318,15688.14};
-		dir[]={0.15751225,-0.50354117,0.8495611};
-		up[]={0.091797777,0.86394811,0.49511972};
-		aside[]={0.98329622,3.0866795e-07,-0.18231001};
+		pos[]={16777.572,67.130508,13423.114};
+		dir[]={-0.037114594,-0.39044461,0.91989458};
+		up[]={-0.015740512,0.92062318,0.39013207};
+		aside[]={0.9992007,-8.8950401e-08,0.04031508};
 	};
 };
 binarizationWanted=0;
@@ -31,13 +31,14 @@ addons[]=
 	"A3_Characters_F_Exp_Civil",
 	"A3_Structures_F_Kart_Civ_SportsGrounds",
 	"A3_Structures_F_Households_House_Small01",
-	"A3_Characters_F_Orange"
+	"A3_Characters_F_Orange",
+	"A3_Characters_F_AoW"
 };
 class AddonsMetaData
 {
 	class List
 	{
-		items=6;
+		items=7;
 		class Item0
 		{
 			className="A3_Ui_F";
@@ -80,12 +81,20 @@ class AddonsMetaData
 			author="Bohemia Interactive";
 			url="https://www.arma3.com";
 		};
+		class Item6
+		{
+			className="A3_Characters_F_AoW";
+			name="Arma 3 Art of War - Characters and Clothing";
+			author="Bohemia Interactive";
+			url="https://www.arma3.com";
+		};
 	};
 };
 dlcs[]=
 {
 	"Kart",
-	"ORANGE"
+	"ORANGE",
+	"Expansion"
 };
 randomSeed=14442464;
 class ScenarioData
@@ -116,7 +125,7 @@ class Mission
 	};
 	class Entities
 	{
-		items=50;
+		items=56;
 		class Item0
 		{
 			dataType="Marker";
@@ -545,7 +554,7 @@ class Mission
 					};
 					id=21;
 					type="B_RangeMaster_F";
-					atlOffset=-0.23799896;
+					atlOffset=-0.23799133;
 					class CustomAttributes
 					{
 						class Attribute0
@@ -746,7 +755,7 @@ class Mission
 					};
 					id=26;
 					type="I_medic_F";
-					atlOffset=-0.3710022;
+					atlOffset=-0.37099457;
 					class CustomAttributes
 					{
 						class Attribute0
@@ -942,7 +951,7 @@ class Mission
 					};
 					id=30;
 					type="I_medic_F";
-					atlOffset=0.069007874;
+					atlOffset=0.069015503;
 					class CustomAttributes
 					{
 						class Attribute0
@@ -991,7 +1000,7 @@ class Mission
 					};
 					id=31;
 					type="I_medic_F";
-					atlOffset=0.15299988;
+					atlOffset=0.15300751;
 					class CustomAttributes
 					{
 						class Attribute0
@@ -2011,7 +2020,7 @@ class Mission
 					};
 					id=96;
 					type="C_man_p_fugitive_F";
-					atlOffset=0.084000111;
+					atlOffset=0.084000587;
 					class CustomAttributes
 					{
 						class Attribute0
@@ -2074,7 +2083,7 @@ class Mission
 			{
 			};
 			id=95;
-			atlOffset=0.084000111;
+			atlOffset=0.084000587;
 		};
 		class Item43
 		{
@@ -2364,6 +2373,309 @@ class Mission
 			{
 			};
 			id=107;
+		};
+		class Item50
+		{
+			dataType="Group";
+			side="Civilian";
+			class Entities
+			{
+				items=1;
+				class Item0
+				{
+					dataType="Object";
+					class PositionInfo
+					{
+						position[]={3663.895,10.415931,13108.943};
+						angles[]={0,4.7791653,0};
+					};
+					side="Civilian";
+					flags=7;
+					class Attributes
+					{
+						name="licence_vendor_1";
+						disableSimulation=1;
+						ignoreByDynSimulGrid=1;
+					};
+					id=110;
+					type="C_Man_formal_1_F";
+					atlOffset=-9.5367432e-07;
+					class CustomAttributes
+					{
+						class Attribute0
+						{
+							property="allowDamage";
+							expression="_this allowdamage _value;";
+							class Value
+							{
+								class data
+								{
+									singleType="BOOL";
+									value=0;
+								};
+							};
+						};
+						class Attribute1
+						{
+							property="speaker";
+							expression="_this setspeaker _value;";
+							class Value
+							{
+								class data
+								{
+									singleType="STRING";
+									value="Male01GRE";
+								};
+							};
+						};
+						class Attribute2
+						{
+							property="pitch";
+							expression="_this setpitch _value;";
+							class Value
+							{
+								class data
+								{
+									singleType="SCALAR";
+									value=1;
+								};
+							};
+						};
+						class Attribute3
+						{
+							property="enableStamina";
+							expression="_this enablestamina _value;";
+							class Value
+							{
+								class data
+								{
+									singleType="BOOL";
+									value=0;
+								};
+							};
+						};
+						nAttributes=4;
+					};
+				};
+			};
+			class Attributes
+			{
+			};
+			id=109;
+			atlOffset=-9.5367432e-07;
+		};
+		class Item51
+		{
+			dataType="Group";
+			side="Civilian";
+			class Entities
+			{
+				items=1;
+				class Item0
+				{
+					dataType="Object";
+					class PositionInfo
+					{
+						position[]={14032.936,25.726185,18747.516};
+						angles[]={0,2.0542781,-0};
+					};
+					side="Civilian";
+					flags=7;
+					class Attributes
+					{
+						name="licence_vendor_2";
+						disableSimulation=1;
+						ignoreByDynSimulGrid=1;
+					};
+					id=112;
+					type="C_Man_formal_1_F";
+					class CustomAttributes
+					{
+						class Attribute0
+						{
+							property="allowDamage";
+							expression="_this allowdamage _value;";
+							class Value
+							{
+								class data
+								{
+									singleType="BOOL";
+									value=0;
+								};
+							};
+						};
+						class Attribute1
+						{
+							property="speaker";
+							expression="_this setspeaker _value;";
+							class Value
+							{
+								class data
+								{
+									singleType="STRING";
+									value="Male01GRE";
+								};
+							};
+						};
+						class Attribute2
+						{
+							property="pitch";
+							expression="_this setpitch _value;";
+							class Value
+							{
+								class data
+								{
+									singleType="SCALAR";
+									value=1;
+								};
+							};
+						};
+						class Attribute3
+						{
+							property="enableStamina";
+							expression="_this enablestamina _value;";
+							class Value
+							{
+								class data
+								{
+									singleType="BOOL";
+									value=0;
+								};
+							};
+						};
+						nAttributes=4;
+					};
+				};
+			};
+			class Attributes
+			{
+			};
+			id=111;
+		};
+		class Item52
+		{
+			dataType="Group";
+			side="Civilian";
+			class Entities
+			{
+				items=1;
+				class Item0
+				{
+					dataType="Object";
+					class PositionInfo
+					{
+						position[]={16784.543,23.089207,12653.941};
+						angles[]={0,1.8317678,-0};
+					};
+					side="Civilian";
+					flags=7;
+					class Attributes
+					{
+						name="licence_vendor_3";
+						disableSimulation=1;
+						ignoreByDynSimulGrid=1;
+					};
+					id=114;
+					type="C_Man_formal_1_F";
+					atlOffset=0.16387367;
+					class CustomAttributes
+					{
+						class Attribute0
+						{
+							property="allowDamage";
+							expression="_this allowdamage _value;";
+							class Value
+							{
+								class data
+								{
+									singleType="BOOL";
+									value=0;
+								};
+							};
+						};
+						class Attribute1
+						{
+							property="speaker";
+							expression="_this setspeaker _value;";
+							class Value
+							{
+								class data
+								{
+									singleType="STRING";
+									value="Male01GRE";
+								};
+							};
+						};
+						class Attribute2
+						{
+							property="pitch";
+							expression="_this setpitch _value;";
+							class Value
+							{
+								class data
+								{
+									singleType="SCALAR";
+									value=1;
+								};
+							};
+						};
+						class Attribute3
+						{
+							property="enableStamina";
+							expression="_this enablestamina _value;";
+							class Value
+							{
+								class data
+								{
+									singleType="BOOL";
+									value=0;
+								};
+							};
+						};
+						nAttributes=4;
+					};
+				};
+			};
+			class Attributes
+			{
+			};
+			id=113;
+			atlOffset=0.16387367;
+		};
+		class Item53
+		{
+			dataType="Marker";
+			position[]={16696.949,14.161,13594.398};
+			name="jail";
+			text="Jail";
+			markerType="RECTANGLE";
+			type="";
+			colorName="ColorOrange";
+			a=50;
+			b=50;
+			angle=316.909;
+			id=115;
+			atlOffset=-0.00030994415;
+		};
+		class Item54
+		{
+			dataType="Marker";
+			position[]={16696.965,14.144,13593.677};
+			name="jail_title";
+			text="Jail";
+			type="mil_box";
+			colorName="ColorBrown";
+			id=116;
+			atlOffset=-0.00020980835;
+		};
+		class Item55
+		{
+			dataType="Marker";
+			position[]={16787.543,7.2940001,13580.246};
+			name="jail_release";
+			type="Empty";
+			id=117;
+			atlOffset=-0.00028324127;
 		};
 	};
 };
