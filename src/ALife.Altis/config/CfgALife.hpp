@@ -24,6 +24,8 @@ class CfgALife
 
     // ---- Players (Windows key on a player, ALife_fnc_personMenu) ----------
     restrainKey = 19;                   // police: Left Shift + R (DIK 19) restrains / releases
+    surrenderKey = 48;                  // Left Shift + B (DIK 48): hands on your head / down
+    holsterKey = 35;                    // Left Shift + H (DIK 35): put your weapon away / draw it
     fines[] = { 500, 1000, 2500, 5000, 10000, 25000 }; // what police can fine (max 7)
     fineTimeout = 60;                   // seconds the fined player has to pay or refuse
     healTime = 6;                       // seconds a medic takes to heal a player (one medkit)

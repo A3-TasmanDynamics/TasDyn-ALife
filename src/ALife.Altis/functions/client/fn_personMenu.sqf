@@ -67,7 +67,10 @@ switch (_mode) do {
         };
         // Police see a civilian's bounty under their name.
         private _bounty = _target getVariable ["alife_bounty", 0];
-        ["open", _name, _options, if (_faction == "cop" && { _bounty > 0 }) then { format ["Wanted %1", _bounty call _fnc_money] } else { "" }] call ALife_fnc_radial;
+        private _sub = [];
+        if (_target getVariable ["alife_surrendered", false]) then { _sub pushBack "Surrendered"; };
+        if (_faction == "cop" && { _bounty > 0 }) then { _sub pushBack format ["Wanted %1", _bounty call _fnc_money]; };
+        ["open", _name, _options, _sub joinString "  -  "] call ALife_fnc_radial;
     };
 
     case "wanted": {
