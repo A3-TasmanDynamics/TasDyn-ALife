@@ -9,8 +9,11 @@
 */
 
 if (!hasInterface) exitWith {};
-if (player getVariable ["alife_setUp", false]) exitWith {};
-player setVariable ["alife_setUp", true];
+// Once per unit. Kept in a global, not on the unit: Arma copies a unit's
+// variables onto the new one when you respawn (so a flag on the unit would
+// skip the setup for every life after the first).
+if (!isNil "ALife_setUpUnit" && { ALife_setUpUnit isEqualTo player }) exitWith {};
+ALife_setUpUnit = player;
 
 ALife_spawned = true;
 
