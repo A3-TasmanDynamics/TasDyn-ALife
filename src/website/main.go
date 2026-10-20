@@ -277,6 +277,7 @@ func run() error {
 	r.Get("/status", d.Status)
 	r.Get("/rules", d.Rules)
 	r.Get("/leaderboards", d.Leaderboards)
+	r.Get("/roster/{faction}", d.PublicRoster) // public faction rosters (police)
 
 	r.Get("/auth/steam/login", d.SteamLogin)
 	r.Get("/auth/steam/callback", d.SteamCallback)
