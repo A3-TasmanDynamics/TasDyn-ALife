@@ -91,6 +91,7 @@ class CfgFunctions
             class restrained {};      // server -> client: you're restrained
             class surrender {};       // Left Shift + B: hands on your head
             class holster {};         // Left Shift + H: weapon away / out
+            class placeMode {};       // choosing where a police object goes
             class fine {};            // server -> client: a fine to pay or refuse
             class personApply {};     // server -> client: police strip you
             class admin {};           // the admin menu (phone -> Admin)
