@@ -92,6 +92,9 @@ class CfgFunctions
             class surrender {};       // Left Shift + B: hands on your head
             class holster {};         // Left Shift + H: weapon away / out
             class placeMode {};       // choosing where a police object goes
+            class emergency {};       // police / EMS lights and sirens (keys, watcher)
+            class emergencyLights {}; // one vehicle's flashing light bar, here
+            class emergencySiren {};  // one vehicle's siren, here
             class fine {};            // server -> client: a fine to pay or refuse
             class personApply {};     // server -> client: police strip you
             class admin {};           // the admin menu (phone -> Admin)

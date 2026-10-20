@@ -67,6 +67,30 @@ class CfgALife
         turnRightKey = 18;      // E: turn it 15 degrees
     };
 
+    // ---- Lights and sirens (police / EMS vehicles, ALife_fnc_emergency) ----
+    // Any vehicle the faction's shops sell; the driver toggles them. Where
+    // the lights sit: CfgVehicles >> <class> >> lights[], else the roof.
+    class Emergency
+    {
+        lightsKey = 38;         // Left Shift + L (DIK 38): light bar on / off
+        sirenKey = 33;          // Left Shift + F (DIK 33): siren on / off
+        lightRange = 1200;      // metres: you see a vehicle's lights from this far
+        sirenRange = 600;       // metres: you hear its siren from this far
+        flash = 0.25;           // seconds each side of the light bar stays lit
+        class cop
+        {
+            colours[] = { { 1, 0.05, 0.05 }, { 0.05, 0.15, 1 } };   // red / blue
+            siren = "ALife_SirenPolice";                              // CfgSounds (description.ext)
+            sirenLength = 2.17;                                       // seconds, one loop of it
+        };
+        class medic
+        {
+            colours[] = { { 1, 0.05, 0.05 }, { 1, 1, 1 } };          // red / white
+            siren = "ALife_SirenEMS";
+            sirenLength = 3.28;
+        };
+    };
+
     // ---- Police slots -----------------------------------------------------
     // mission.sqm police_1 .. police_10: the first copPublicSlots are open to
     // anyone; the rest need players.cop_level >= copWhitelistLevel.

@@ -8,6 +8,7 @@ waitUntil { !isNil "ALife_fnc_startSession" };
 [] spawn ALife_fnc_groupMarkers; // your police / EMS / gang on the map and GPS
 [] spawn ALife_fnc_survival;     // food, water and the health / food / water HUD
 [] spawn ALife_fnc_playerTags;   // names (and police ranks) over players you can see
+[] spawn { ["init"] call ALife_fnc_emergency; }; // police / EMS lights and sirens
 
 // Phone key (CfgALife >> phoneKey, Y by default), the interaction key
 // (CfgALife >> interactKeys, Windows): open a bag / trunk you're looking at,
