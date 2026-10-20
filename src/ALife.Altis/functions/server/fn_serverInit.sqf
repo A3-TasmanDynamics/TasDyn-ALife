@@ -90,6 +90,10 @@ addMissionEventHandler ["EntityKilled", {
 addMissionEventHandler ["EntityRespawned", {
     params ["_new", "_old"];
     if (!isNull _old) then { _old setVariable ["alife_downed", false, true]; };
+    // Arma copies the old unit's variables onto the new one: it isn't down,
+    // and nobody killed it yet.
+    _new setVariable ["alife_downed", false, true];
+    { _new setVariable [_x, nil]; } forEach ["alife_downedAt", "alife_downedBy", "alife_downedFaction"];
     // What a death costs (gear, items, cash) is settled when they pick a
     // spawn for their new life (ALife_fnc_requestSpawn).
 }];

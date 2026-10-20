@@ -68,7 +68,10 @@ private _theirUid = if (isNull _target) then { "" } else { getPlayerUID _target 
 private _them = if (isNull _target) then { "" } else { _target getVariable ["alife_name", name _target] };
 private _targeted = _action in ["bring", "heal", "freeze", "message", "warn", "kick", "ban", "compensate", "give", "giveCash", "giveLicence", "licences"];
 if (_targeted && { _theirUid == "" }) exitWith { "That player has left." call _fnc_reply; };
-private _reason = _args param [0, "", [""]];
+// The first argument is the reason / message for most actions; vehicle
+// actions send the vehicle there instead.
+private _reason = _args param [0, ""];
+if !(_reason isEqualType "") then { _reason = ""; };
 _reason = (_reason splitString "<>") joinString "";
 if (count _reason > 300) then { _reason = _reason select [0, 300]; };
 // Off the server: they see why for a few seconds, then a real kick
