@@ -184,6 +184,7 @@ var moderationPhrases = map[string]string{
 	"game.give_item":      "gave items",
 	"game.give_cash":      "gave cash",
 	"game.give_licence":   "gave a licence",
+	"game.take_licence":   "took away a licence",
 	"game.vehicle_pull":   "pulled out a player's vehicle",
 	"game.vehicle_store":  "sent a player's vehicle to their garage",
 	"game.arsenal":        "opened the arsenal",
