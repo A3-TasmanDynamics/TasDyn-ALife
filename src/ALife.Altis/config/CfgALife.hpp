@@ -26,6 +26,12 @@ class CfgALife
     restrainKey = 19;                   // police: Left Shift + R (DIK 19) restrains / releases
     surrenderKey = 48;                  // Left Shift + B (DIK 48): hands on your head / down
     holsterKey = 35;                    // Left Shift + H (DIK 35): put your weapon away / draw it
+
+    // ---- Dying (and not being revived) ------------------------------------
+    // A new life starts with the spawn point's kit: the gear stays on the
+    // body. These also go (your bank never does):
+    deathLosesItems = 1;                // virtual items you were carrying (1 = lost)
+    deathLosesCash = 1;                 // cash on hand (1 = lost)
     fines[] = { 500, 1000, 2500, 5000, 10000, 25000 }; // what police can fine (max 7)
     fineTimeout = 60;                   // seconds the fined player has to pay or refuse
     healTime = 6;                       // seconds a medic takes to heal a player (one medkit)
