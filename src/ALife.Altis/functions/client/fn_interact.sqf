@@ -60,7 +60,18 @@ private _openShop = {
         case "clothing": { ["open", _this] call ALife_fnc_clothingShop; };
         case "vehicles": { ["open", _this] call ALife_fnc_vehicleShop; };
         case "licences": { ["open", _this] call ALife_fnc_licenceShop; };
-        default { ["open", _this] call ALife_fnc_shop; };
+        default {
+            // A market that buys and sells (the Resource Trader): which way.
+            private _shopCfg = ([_this] call ALife_fnc_shopInfo) param [2, configNull];
+            if (getArray (_shopCfg >> "items") isNotEqualTo [] && { getArray (_shopCfg >> "buys") isNotEqualTo [] }) then {
+                ["open", getText (_shopCfg >> "name"), [
+                    ["Buy", { ["open", _this, "buy"] call ALife_fnc_shop; }, _this],
+                    ["Sell", { ["open", _this, "sell"] call ALife_fnc_shop; }, _this]
+                ]] call ALife_fnc_radial;
+            } else {
+                ["open", _this] call ALife_fnc_shop;
+            };
+        };
     };
 };
 
