@@ -42,6 +42,15 @@ class CfgALife
         gangColour[] = { 0.98, 0.75, 0.14, 1 }; // gang name
     };
 
+    // ---- Police placeables (CfgItems use = "place") ---------------------------
+    class Placeables
+    {
+        max = 20;               // placed at once, per player
+        lifetime = 3600;        // seconds before a placed object is cleared (the item is gone)
+        pickupRange = 4;        // metres: Windows on it to pick it up (police)
+        spikeRange = 3.5;       // metres: vehicles this close to a spike strip lose their tyres
+    };
+
     // ---- Police slots -----------------------------------------------------
     // mission.sqm police_1 .. police_10: the first copPublicSlots are open to
     // anyone; the rest need players.cop_level >= copWhitelistLevel.

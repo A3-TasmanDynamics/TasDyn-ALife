@@ -31,6 +31,7 @@ class CfgFunctions
             class requestRevive {};  // medic's client -> server: revive finished
             class completeRevive {}; // revived player's client -> server: put me back
             class requestUseItem {}; // client -> server: the Use button finished
+            class placeables {};     // police placeables: spike strips, picking up
             class vehicleAction {};  // client -> server: push / give a key / impound
             class personAction {};   // client -> server: restrain / fine / strip / heal
             class adminAction {};    // client -> server: the admin menu (checked against website permissions)
@@ -100,6 +101,7 @@ class CfgFunctions
         {
             file = "functions\common";
             class sideToFaction {};   // west/independent/civilian -> "cop"/"medic"/"civ"
+            class vehicleTyres {};    // pop a vehicle's tyres (spike strips)
             class atPlace {};         // is a unit at a shop / processor / gathering area (markers or NPCs)
             class parsePosition {};   // stored DB position -> [x,y,z]
             class killInfo {};        // killer name, weapon, distance

@@ -21,6 +21,7 @@ class CfgRemoteExec
         class ALife_fnc_sendMessage { allowedTargets = 2; };
         class ALife_fnc_requestRevive { allowedTargets = 2; };
         class ALife_fnc_requestUseItem { allowedTargets = 2; };
+        class ALife_fnc_placeables { allowedTargets = 2; };
         class ALife_fnc_vehicleAction { allowedTargets = 2; };
         class ALife_fnc_personAction { allowedTargets = 2; };
         class ALife_fnc_adminAction { allowedTargets = 2; };

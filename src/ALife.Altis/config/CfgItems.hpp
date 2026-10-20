@@ -15,6 +15,8 @@
 //                    "repair"   fully repair the vehicle you're next to
 //                    "refuel"   add `fuel` (0-1 of a tank) to the vehicle you're next to
 //                    "lockpick" unlock the locked vehicle you're next to, with `chance`
+//                    "place"    put `object` down in front of you (police placeables);
+//                               spikes = 1: it pops the tyres of vehicles driving over it
 //                  useTime: seconds with a progress bar (moving cancels). No `use`
 //                  = not usable from the inventory.
 //   anim        -- the looped kneeling move played while using it (one the
@@ -119,9 +121,44 @@ class CfgItems
     class spikestrip
     {
         displayName = "Spike Strip";
-        description = "Police only. Deploy across a road to stop a vehicle.";
+        description = "Police only. Lay it across a road: it pops the tyres of anything driving over it.";
         icon = "ui\items\spikestrip_ca.paa";
         weight = 5;
+        use = "place"; useTime = 2; object = "Land_Razorwire_F"; spikes = 1;
+    };
+
+    // ---- Police placeables (Use to put down; Windows on it to pick up) ----
+    class cone
+    {
+        displayName = "Road Cone";
+        description = "Police only. A traffic cone with a light.";
+        icon = "ui\items\cone_ca.paa";
+        weight = 1;
+        use = "place"; useTime = 1; object = "RoadCone_L_F";
+    };
+    class barrier
+    {
+        displayName = "Road Barrier";
+        description = "Police only. A red and white road barrier.";
+        icon = "ui\items\barrier_ca.paa";
+        weight = 3;
+        use = "place"; useTime = 2; object = "RoadBarrier_F";
+    };
+    class roadlight
+    {
+        displayName = "Portable Light";
+        description = "Police only. A floodlight on a stand.";
+        icon = "ui\items\roadlight_ca.paa";
+        weight = 3;
+        use = "place"; useTime = 2; object = "Land_PortableLight_single_F";
+    };
+    class arrowsign
+    {
+        displayName = "Arrow Sign";
+        description = "Police only. A lit arrow board to steer traffic.";
+        icon = "ui\items\arrowsign_ca.paa";
+        weight = 3;
+        use = "place"; useTime = 2; object = "ArrowDesk_L_F";
     };
 
     // ---- Medical ----

@@ -24,7 +24,7 @@ private _use = getText (_cfg >> "use");
 private _name = getText (_cfg >> "displayName");
 
 if (_class == "cash") exitWith { ["Cash can't be used: give it or drop it.", "warning"] call ALife_fnc_toast; };
-if !(_use in ["consume", "heal", "repair", "refuel", "lockpick"]) exitWith { [format ["%1 can't be used from the inventory.", _name], "warning"] call ALife_fnc_toast; };
+if !(_use in ["consume", "heal", "repair", "refuel", "lockpick", "place"]) exitWith { [format ["%1 can't be used from the inventory.", _name], "warning"] call ALife_fnc_toast; };
 if (!alive player || { player getVariable ["alife_downed", false] }) exitWith {};
 
 private _have = 0;
@@ -64,6 +64,7 @@ private _label = switch (_use) do {
     case "repair": { format ["Repairing the %1...", _vehName] };
     case "refuel": { format ["Refuelling the %1...", _vehName] };
     case "lockpick": { format ["Picking the lock of the %1...", _vehName] };
+    case "place": { format ["Putting down the %1...", _name] };
 };
 private _duration = getNumber (_cfg >> "useTime") max 0.5;
 private _still = _use != "consume"; // eating and drinking you can do on the move
