@@ -39,6 +39,10 @@ switch (_mode) do {
             private _zipTied = (_target getVariable ["alife_restrainedBy", ""]) == "zipties";
             if (_faction == "cop") then {
                 _options pushBack [["Restrain", "Unrestrain"] select _restrained, { [player, ["restrain", "unrestrain"] select (_this getVariable ["alife_restrained", false]), _this] remoteExecCall ["ALife_fnc_personAction", 2]; }, _target];
+                // Soft cuff: hands behind their back but they can walk (slowly).
+                if (!_restrained) then {
+                    _options pushBack ["Soft cuff", { [player, "restrain", _this, "soft"] remoteExecCall ["ALife_fnc_personAction", 2]; }, _target];
+                };
                 _options pushBack ["Fine", { ["fine", _this] call ALife_fnc_personMenu; }, _target];
                 _options pushBack ["Wanted", { ["wanted", _this, 0] call ALife_fnc_personMenu; }, _target];
                 if (_restrained) then {
