@@ -63,6 +63,21 @@
         </div>
       </div>
 
+      {{if $.CanAct}}
+      <div class="card lookup-points">
+        <div class="card-label">Staff actions</div>
+        {{with $.Actions .Status}}
+        <form class="veh-action veh-action-3" method="post" action="/admin/vehicles/{{$.V.ID}}/action">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="back" value="/admin/vehicles?id={{$.V.ID}}">
+          <select name="action" aria-label="Action">{{range .}}<option value="{{.}}">{{$.ActionLabel .}}</option>{{end}}</select>
+          <input name="reason" aria-label="Reason" placeholder="Reason (in the Staff Log)" required maxlength="300">
+          <button class="btn btn-sm" type="submit">Apply</button>
+        </form>
+        {{else}}
+        <p class="muted small">{{if eq .Status "spawned"}}It's out in the world: use the in-game admin menu (Their vehicles) to send it to the garage.{{else}}Nothing to do in this state.{{end}}</p>
+        {{end}}
+      </div>
+      {{end}}
       <div class="card lookup-audit">
         {{range .History}}
         <div class="audit-row veh-history-row"><span class="muted">{{.When.Format "2 Jan 2006 15:04"}}</span><span>{{.What}}</span><span class="muted audit-by">{{.By}}</span></div>

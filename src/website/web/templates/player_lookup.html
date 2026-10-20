@@ -47,18 +47,25 @@
           <div>
             {{if $.CanCompensate}}<button class="btn" type="button" data-dialog-open="dlg-comp">Compensate…</button>{{end}}
             {{if or $.CanPolice $.CanEMS}}<button class="btn" type="button" data-dialog-open="dlg-level">Faction level…</button>{{end}}
+            {{if $.CanLicences}}<button class="btn" type="button" data-dialog-open="dlg-licences">Licences…</button>{{end}}
+            {{if and $.CanBan (not $.Ban)}}<button class="btn btn-danger-soft" type="button" data-dialog-open="dlg-ban">Ban…</button>{{end}}
+            {{if and $.CanLiftBan $.Ban}}<button class="btn" type="button" data-dialog-open="dlg-lift">Lift ban…</button>{{end}}
           </div>
           {{if $.CanOpenCase}}<a class="btn btn-primary" href="/admin/cases/new?player={{.ID}}">Open a case</a>{{end}}
         </div>
       </div>
 
       {{if .BanActive}}
-      <div class="alert-strip alert-danger"><strong>Banned</strong><span>{{.BanReason}}{{if .BanExpires}} &middot; until {{.BanExpires.Format "2 Jan 2006 15:04"}}{{else}} &middot; permanent{{end}}</span></div>
+      <div class="alert-strip alert-danger"><strong>Banned</strong><span>{{.BanReason}}{{if .BanExpires}} &middot; until {{.BanExpires.Format "2 Jan 2006 15:04"}}{{else}} &middot; permanent{{end}}{{if and $.Ban $.Ban.CaseID}} &middot; <a href="/admin/cases/{{$.Ban.CaseID}}">case #{{$.Ban.CaseID}}</a>{{end}}</span></div>
       {{end}}
 
       <nav class="tabbar lookup-tabs" aria-label="Profile sections">
         <a class="tab {{if eq $.Tab "overview"}}active{{end}}" href="/admin/players{{qset $.Query "tab" ""}}">Overview</a>
+        <a class="tab {{if eq $.Tab "money"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "money"}}">Money</a>
+        <a class="tab {{if eq $.Tab "inventory"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "inventory"}}">Inventory</a>
+        <a class="tab {{if eq $.Tab "sessions"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "sessions"}}">Sessions</a>
         {{if $.CanVehicles}}<a class="tab {{if eq $.Tab "vehicles"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "vehicles"}}">Vehicles</a>{{end}}
+        {{if $.CanNotes}}<a class="tab {{if eq $.Tab "notes"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "notes"}}">Notes</a>{{end}}
         <a class="tab {{if eq $.Tab "audit"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "audit"}}">Audit trail</a>
       </nav>
 
@@ -104,6 +111,21 @@
         {{end}}
       </div>
       <div class="card lookup-points">
+        <div class="card-label">Wanted &amp; jail</div>
+        {{with $.Wanted}}
+        <div class="wanted-head">
+          <div><span class="muted small">Bounty</span><strong{{if .Bounty}} class="warn-text"{{end}}>${{$.Money .Bounty}}</strong></div>
+          <div><span class="muted small">Jail</span><strong>{{if .Jail}}{{$.Dur .Jail}} left{{else}}Free{{end}}</strong></div>
+          {{if .Jail}}<div><span class="muted small">Bail</span><strong>{{if .Bail}}${{$.Money .Bail}}{{else}}none{{end}}</strong></div>{{end}}
+        </div>
+        {{range .Crimes}}
+        <div class="points-row"><strong>{{.Name}}</strong><span>${{$.Money .Bounty}}</span><span class="muted small">{{if .By}}by {{.By}}{{else}}system{{end}}</span><span class="muted small">{{.When.Format "2 Jan 2006 15:04"}}</span></div>
+        {{else}}
+        <p class="muted small">No outstanding crimes.</p>
+        {{end}}
+        {{end}}
+      </div>
+      <div class="card lookup-points">
         <div class="card-label">Houses</div>
         {{range $.Houses}}
         <a class="points-row points-case" href="/admin/houses?id={{.ID}}"><strong>{{.Name}}</strong><span class="muted small mono">{{.Key}}</span><span class="muted small">{{if .Locked}}locked{{else}}unlocked{{end}}</span><span class="muted small">${{$.Money .Price}}</span></a>
@@ -130,11 +152,115 @@
         <a class="lookup-veh-row lookup-veh-link" href="/admin/vehicles?id={{.ID}}"><span class="strong">{{.Name}}</span><span>{{.Side}}</span><span><span class="mono">{{if .Plate}}{{.Plate}}{{else}}—{{end}}</span> <span class="muted">&middot; {{.Fuel}}%</span></span><span><span class="veh-state veh-{{.Status}}">{{.StatusText}}</span></span></a>
         {{else}}<p class="empty-state">No vehicles.</p>{{end}}
       </div>
+      {{if $.CanVehActions}}
+      <div class="card lookup-points">
+        <div class="card-label">Vehicle actions</div>
+        {{range $.Vehicles}}{{$v := .}}{{with $.VehActions .Status}}
+        <form class="veh-action" method="post" action="/admin/vehicles/{{$v.ID}}/action">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="back" value="/admin/players?id={{$.P.ID}}&tab=vehicles">
+          <span class="strong">{{$v.Name}} <span class="mono muted">{{$v.Plate}}</span></span>
+          <select name="action" aria-label="Action">{{range .}}<option value="{{.}}">{{$.VehActionLabel .}}</option>{{end}}</select>
+          <input name="reason" aria-label="Reason" placeholder="Reason" required maxlength="300">
+          <button class="btn btn-sm" type="submit">Apply</button>
+        </form>
+        {{end}}{{end}}
+        <p class="muted small">Release from impound (no fee), mark destroyed, or restore a destroyed one to its garage. Vehicles that are out in the world are handled in game (admin menu &rarr; Their vehicles).</p>
+      </div>
+      {{end}}
       <div class="card lookup-points">
         <div class="card-label">Vehicle history</div>
         {{range $.VehLog}}<div class="kv"><span>{{.When.Format "2 Jan 15:04"}}</span><span>{{.What}}</span></div>{{else}}<p class="muted small">No vehicle history.</p>{{end}}
       </div>
       <p class="hint">Read-only. Requires players.vehicles. Pick a vehicle for its trunk, damage and history in <a href="/admin/vehicles?q={{.UID}}">Vehicle Lookup</a>. In game, the admin menu's "Their vehicles" pulls them out or sends them back to the garage.</p>
+      {{end}}
+
+      {{if eq $.Tab "money"}}
+      <div class="lookup-cards">
+        {{range $.Accounts}}
+        <div class="card mini-card">
+          <div class="card-label">{{.Side}}</div>
+          <div class="kv"><span>Cash</span><strong>${{$.Money .Cash}}</strong></div>
+          <div class="kv"><span>Bank</span><strong>${{$.Money .Bank}}</strong></div>
+        </div>
+        {{end}}
+      </div>
+      <div class="card lookup-audit">
+        <div class="audit-row money-row stafflog-th"><span>When</span><span>Account</span><span>What</span><span class="money-amt">Amount</span><span class="money-amt">Balance</span></div>
+        {{range $.BankTx}}
+        <div class="audit-row money-row"><span class="muted">{{.When.Format "2 Jan 2006 15:04"}}</span><span>{{.Side}}</span>
+          <span>{{.TypeLabel}}{{if .Other}} &middot; {{.Other}}{{end}}{{if .Memo}} <span class="muted">&middot; {{.Memo}}</span>{{end}}{{if .By}} <span class="muted small">(by {{.By}})</span>{{end}}</span>
+          <span class="money-amt {{if lt .Amount 0}}warn-text{{else}}ok-text{{end}}">{{$.Signed .Amount}}</span><span class="money-amt muted">${{$.Money .Balance}}</span></div>
+        {{else}}<p class="empty-state">No bank transactions yet.</p>{{end}}
+      </div>
+      <p class="hint">Cash is what they're carrying (saved by the game); bank is the sum of their transactions. Newest 200 shown.</p>
+      {{end}}
+
+      {{if eq $.Tab "inventory"}}
+      <div class="inv-grid">
+        {{range $.Inv}}
+        <div class="card mini-card">
+          <div class="card-label">{{.Side}}{{if not .Alive}} &middot; <span class="warn-text">dead</span>{{end}}</div>
+          {{if .Saved}}
+          {{if or .Food .Water}}<div class="kv"><span>Food &middot; water</span><strong>{{.Food}}% &middot; {{.Water}}%</strong></div>{{end}}
+          {{range .Slots}}
+          <div class="inv-slot"><span class="muted small">{{.Label}}</span><strong>{{.Name}}</strong>
+            {{if .Extra}}<div class="muted small">{{range $i, $e := .Extra}}{{if $i}}, {{end}}{{$e}}{{end}}</div>{{end}}
+            {{range .Items}}<div class="trunk-row"><span>{{.Name}}</span><span>&times;{{.Count}}</span></div>{{end}}
+          </div>
+          {{end}}
+          {{if .Links}}<div class="inv-slot"><span class="muted small">Items</span><div class="chips">{{range .Links}}<span class="chip">{{.}}</span>{{end}}</div></div>{{end}}
+          <div class="inv-slot"><span class="muted small">Virtual items</span>
+            {{range .Items}}<div class="trunk-row"><span>{{.Name}}</span><span>&times;{{.Count}}</span></div>{{else}}<div class="muted small">None</div>{{end}}
+          </div>
+          {{else}}
+          <p class="muted small">Nothing saved for this faction yet.</p>
+          {{end}}
+        </div>
+        {{end}}
+      </div>
+      <p class="hint">As of the last save (on leaving, dying, or the game's periodic save), so it can be behind if they're online.</p>
+      {{end}}
+
+      {{if eq $.Tab "sessions"}}
+      {{with $.Sess}}
+      <div class="lookup-cards">
+        <div class="card mini-card">
+          <div class="card-label">Status</div>
+          <div class="strong">{{if .Online}}<span class="ok-text">Online</span> since {{.Online.Format "15:04, 2 Jan"}}{{else}}Offline{{end}}</div>
+        </div>
+        <div class="card mini-card">
+          <div class="card-label">Playtime by faction</div>
+          {{range .Playtime}}<div class="kv"><span>{{.Side}}</span><strong>{{$.Dur .Time}}</strong></div>{{end}}
+        </div>
+        <div class="card mini-card">
+          <div class="card-label">Last 30 days</div>
+          <div class="kv"><span>Sessions</span><strong>{{.Count30}}</strong></div>
+          <div class="kv"><span>Time online</span><strong>{{$.Dur .Last30}}</strong></div>
+        </div>
+      </div>
+      <div class="card lookup-audit">
+        <div class="audit-row sess-row stafflog-th"><span>Connected</span><span>Disconnected</span><span>Length</span></div>
+        {{range .Sessions}}
+        <div class="audit-row sess-row"><span>{{.Start.Format "2 Jan 2006 15:04"}}</span><span class="muted">{{if .End}}{{.End.Format "2 Jan 2006 15:04"}}{{else}}<span class="ok-text">still online</span>{{end}}</span><span>{{$.Dur .Length}}</span></div>
+        {{else}}<p class="empty-state">Never connected.</p>{{end}}
+      </div>
+      <p class="hint">Newest 100 sessions. IP addresses are recorded but not shown here.</p>
+      {{end}}
+      {{end}}
+
+      {{if eq $.Tab "notes"}}
+      <form class="card note-form" method="post" action="/admin/players/{{.ID}}/notes">
+        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="q" value="{{$.Q}}">
+        <label class="card-label" for="note-body">Add a note</label>
+        <textarea id="note-body" name="body" rows="3" maxlength="4000" required placeholder="Anything other staff should know about this player. Only staff can see notes."></textarea>
+        <div><button class="btn btn-primary" type="submit">Add note</button></div>
+      </form>
+      <div class="card lookup-audit">
+        {{range $.Notes}}
+        <div class="note-row"><div class="muted small">{{.Author}} &middot; {{.When.Format "2 Jan 2006 15:04"}}</div><div class="note-body">{{.Body}}</div></div>
+        {{else}}<p class="empty-state">No notes yet.</p>{{end}}
+      </div>
+      <p class="hint">Notes can't be edited or deleted, so the history stays complete.</p>
       {{end}}
 
       {{if eq $.Tab "audit"}}
@@ -159,6 +285,55 @@
             <p class="hint">Adds a <code>bank_transactions</code> row (admin adjustment). The balance is never overwritten directly. Amounts above ${{$.LargeLimit}} need players.compensate_large{{if not $.CanLarge}}, which you don't have{{end}}.</p>
           </div>
           <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Add transaction</button></div>
+        </form>
+      </dialog>
+      {{end}}
+      {{if $.CanLicences}}
+      <dialog id="dlg-licences" class="modal" aria-labelledby="dlg-lic-title">
+        <div class="modal-head"><h2 id="dlg-lic-title">Licences for {{.Name}}</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+        <div class="modal-body">
+          {{if eq .Status "online"}}<p class="alert-strip alert-danger"><span>They're in game right now. Licences can only be changed here while they're offline: use the in-game admin menu (Give / take licence) instead.</span></p>{{end}}
+          {{range $.Licences}}
+          <form method="post" action="/admin/players/{{$.P.ID}}/licences" class="mod-fieldset licence-form">
+            <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="q" value="{{$.Q}}"><input type="hidden" name="faction" value="{{.Faction}}">
+            <div class="card-label">{{.Side}}</div>
+            <div class="licence-checks">{{range .Choices}}<label class="mod-check"><input type="checkbox" name="licence" value="{{.Key}}" {{if .Has}}checked{{end}}> {{.Name}}</label>{{end}}</div>
+            <button class="btn btn-sm" type="submit" {{if eq $.P.Status "online"}}disabled{{end}}>Save {{.Side}} licences</button>
+          </form>
+          {{end}}
+          <p class="hint">Each change is in the Staff Log. They see it the next time they load in.</p>
+        </div>
+        <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Close</button></div>
+      </dialog>
+      {{end}}
+      {{if and $.CanBan (not $.Ban)}}
+      <dialog id="dlg-ban" class="modal" aria-labelledby="dlg-ban-title">
+        <form method="post" action="/admin/bans/issue">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="player" value="{{.ID}}"><input type="hidden" name="back" value="/admin/players?id={{.ID}}">
+          <div class="modal-head"><h2 id="dlg-ban-title">Ban {{.Name}}</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+          <div class="modal-body">
+            <div class="field"><label for="ban-case">Case</label>
+              <select id="ban-case" name="case" required>
+                {{if $.CanOpenCase}}<option value="new">Open a new case for this ban</option>{{end}}
+                {{range $.Cases}}{{if eq .Status "open"}}<option value="{{.ID}}">#{{.ID}} &middot; {{.Summary}}</option>{{end}}{{end}}
+              </select></div>
+            {{template "ban_fields" dict "Players" nil "Reasons" $.BanReasons "Durations" $.BanDurations "CanPerm" $.CanPermBan}}
+            <p class="hint">Every ban belongs to a case. It applies the next time they connect (use Kick in game to remove them now).</p>
+          </div>
+          <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-danger" type="submit">Ban</button></div>
+        </form>
+      </dialog>
+      {{end}}
+      {{if and $.CanLiftBan $.Ban}}
+      <dialog id="dlg-lift" class="modal" aria-labelledby="dlg-lift-title">
+        <form method="post" action="/admin/bans/{{$.Ban.ID}}/lift">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="back" value="/admin/players?id={{.ID}}">
+          <div class="modal-head"><h2 id="dlg-lift-title">Lift {{.Name}}'s ban</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+          <div class="modal-body">
+            <p class="muted small">{{$.Ban.Reason}}{{if $.Ban.ExpiresAt}} &middot; until {{$.Ban.ExpiresAt.Format "2 Jan 2006 15:04"}}{{else}} &middot; permanent{{end}}</p>
+            <div class="field"><label for="lift-reason">Reason (required)</label><input id="lift-reason" name="reason" maxlength="1000" required></div>
+          </div>
+          <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Lift ban</button></div>
         </form>
       </dialog>
       {{end}}

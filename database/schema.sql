@@ -437,6 +437,9 @@ JOIN (VALUES
     ('anticheat.review', 20),
     ('players.view', 10),
     ('players.vehicles', 20),
+    ('players.notes', 10),
+    ('players.licences', 40),
+    ('players.vehicle_actions', 40),
     ('players.edit_police', 100),
     ('players.edit_medic', 100),
     ('players.compensate', 40),
@@ -1008,7 +1011,9 @@ CREATE TABLE staff_notes (
     id          BIGSERIAL PRIMARY KEY,
     player_id   BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
     author_id   BIGINT REFERENCES players(id) ON DELETE SET NULL,
-    kind        TEXT NOT NULL CHECK (kind IN ('note', 'promotion')),
+    -- note / promotion: about a staff member (Staff Directory profile);
+    -- player: about a player (Player Lookup's Notes tab).
+    kind        TEXT NOT NULL CHECK (kind IN ('note', 'promotion', 'player')),
     body        TEXT NOT NULL,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
