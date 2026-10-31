@@ -2,8 +2,9 @@
     ALife_fnc_locker (server; "open" / "items" / "save" / "close" are
     called by the client)
 
-    Personal lockers for police and EMS (faction_lockers): open one at any
-    of your faction's locker objects (CfgALife >> Lockers, placed in Eden).
+    Personal lockers for police and EMS (faction_lockers): open yours at
+    any of your faction's receptionists (CfgALife >> Lockers, units placed
+    in Eden; Windows on one).
 
       Weapons and clothing: a crate with your stored gear appears at the
       locker, hidden from everyone else, and Arma's inventory opens on it.
@@ -16,8 +17,8 @@
       cash, saved after each move (ALife_fnc_containerTransfer).
 
     Modes:
-        ["open", unit, lockerObject]   - the gear crate
-        ["items", unit, lockerObject]  - the items
+        ["open", unit, receptionist]   - the gear crate
+        ["items", unit, receptionist]  - the items
         ["save", unit]                 - save the open crate (Take / Put)
         ["close", unit]                - save it and take it away
         ["close", uid]                 - (server) the same, they may be gone
