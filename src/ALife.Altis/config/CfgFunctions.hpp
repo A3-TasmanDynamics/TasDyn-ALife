@@ -95,6 +95,7 @@ class CfgFunctions
             class holster {};         // Left Shift + H: weapon away / out
             class jump {};            // Left Shift + Space: jump while running
             class lockerClient {};    // your locker's gear crate is open
+            class lockerPanel {};     // your locker's virtual items, inside Arma's inventory
             class taser {};           // police tasers: a hit drops you, no damage
             class placeMode {};       // choosing where a police object goes
             class emergency {};       // police / EMS lights and sirens (keys, watcher)

@@ -95,8 +95,7 @@ if (!isNull _target && { ((_target getVariable ["alife_placed", []]) param [1, "
 if (!isNull _target && { _faction in ["cop", "medic"] } && { (vehicleVarName _target) in getArray (missionConfigFile >> "CfgALife" >> "Lockers" >> _faction) }
     && { player distance _target <= getNumber (missionConfigFile >> "CfgALife" >> "Lockers" >> "range") + 1 }) exitWith {
     ["open", ["Police Reception", "EMS Reception"] select (_faction == "medic"), [
-        ["Locker: weapons and clothing", { ["open", player, _this] remoteExecCall ["ALife_fnc_locker", 2]; }, _target],
-        ["Locker: items", { ["items", player, _this] remoteExecCall ["ALife_fnc_locker", 2]; }, _target]
+        ["Locker", { ["open", player, _this] remoteExecCall ["ALife_fnc_locker", 2]; }, _target]
     ], "Your own locker, the same at every station"] call ALife_fnc_radial;
     true
 };
