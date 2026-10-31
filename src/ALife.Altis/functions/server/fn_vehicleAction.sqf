@@ -5,7 +5,9 @@
 
         "push"     - an empty vehicle within 10 m, pushed away from the
                      player (where it's local: ALife_fnc_vehicleApply)
-        "giveKey"  - the owner gives a key to a player within 10 m of both;
+        "giveKey"  - the owner gives a key to a player within Keys >> giveRange
+                     of them, wherever the vehicle is (also from the phone's
+                     Keys app);
                      key holders can lock / unlock it and open the trunk
                      when it's locked (alife_keys, a list of Steam UIDs)
         "impound"  - police: an empty vehicle within 10 m is removed and
@@ -32,7 +34,7 @@ private _faction = _unit getVariable ["alife_faction", ""];
 private _name = getText (configFile >> "CfgVehicles" >> typeOf _vehicle >> "displayName");
 
 if (!alive _unit || { _faction == "" } || { !alive _vehicle }) exitWith {};
-if (_unit distance _vehicle > 10) exitWith { "Get closer to the vehicle." call _fnc_reply; };
+if (_action != "giveKey" && { _unit distance _vehicle > 10 }) exitWith { "Get closer to the vehicle." call _fnc_reply; };
 
 switch (_action) do {
     case "push": {
@@ -49,8 +51,9 @@ switch (_action) do {
 
     case "giveKey": {
         if ((_vehicle getVariable ["alife_owner", ""]) != _uid) exitWith { "Only the owner can give keys." call _fnc_reply; };
-        if (isNull _target || { !isPlayer _target } || { !alive _target } || { _target == _unit } || { _unit distance _target > 10 }) exitWith {
-            "They need to be within 10 m of you." call _fnc_reply;
+        private _giveRange = getNumber (missionConfigFile >> "CfgALife" >> "Keys" >> "giveRange");
+        if (isNull _target || { !isPlayer _target } || { !alive _target } || { _target == _unit } || { _unit distance _target > _giveRange }) exitWith {
+            format ["They need to be within %1 m of you.", _giveRange] call _fnc_reply;
         };
         private _keys = +(_vehicle getVariable ["alife_keys", []]);
         private _theirs = getPlayerUID _target;
