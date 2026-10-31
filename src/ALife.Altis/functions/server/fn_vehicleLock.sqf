@@ -1,5 +1,6 @@
 /*
-    ALife_fnc_vehicleLock (server, called by the client: U near your vehicle)
+    ALife_fnc_vehicleLock (server, called by the client: U near your vehicle,
+    or the phone's Keys app -- a key fob, within CfgALife >> Keys >> range)
 
     Locks or unlocks a vehicle for its owner (alife_owner = their Steam UID)
     or someone they gave a key to (alife_keys).
@@ -15,7 +16,7 @@ params [["_unit", objNull, [objNull]], ["_vehicle", objNull, [objNull]]];
 
 if (!isServer || { isNull _unit } || { isNull _vehicle }) exitWith {};
 if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith {};
-if (!alive _unit || { !alive _vehicle } || { _unit distance _vehicle > 15 }) exitWith {};
+if (!alive _unit || { !alive _vehicle } || { _unit distance _vehicle > (getNumber (missionConfigFile >> "CfgALife" >> "Keys" >> "range") max 15) + 5 }) exitWith {};
 private _uid = getPlayerUID _unit;
 if ((_vehicle getVariable ["alife_owner", ""]) != _uid && { !(_uid in (_vehicle getVariable ["alife_keys", []])) }) exitWith {
     ["You don't have the keys to this vehicle.", "warning"] remoteExecCall ["ALife_fnc_notify", owner _unit];

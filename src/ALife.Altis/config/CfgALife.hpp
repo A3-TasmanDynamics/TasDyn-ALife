@@ -127,6 +127,13 @@ class CfgALife
         range = 60;             // metres: further than this, it doesn't take
     };
 
+    // ---- Keys (the phone's Keys app, the U key) -----------------------------
+    class Keys
+    {
+        range = 100;            // metres: a key locks / unlocks from this far (the app's key fob)
+        giveRange = 10;         // metres: give a key to someone this close to you
+    };
+
     // ---- Police slots -----------------------------------------------------
     // mission.sqm police_1 .. police_10: the first copPublicSlots are open to
     // anyone; the rest need players.cop_level >= copWhitelistLevel.

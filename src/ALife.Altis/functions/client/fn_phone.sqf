@@ -340,7 +340,24 @@ switch (_mode) do {
             };
             case "perks": { ["A talent tree: earn perk points as you play and spend them on perks for your faction -- faster repairs, better prices, quicker revives and more."] call _fnc_comingSoon; };
             case "gang": { ["Create or join a gang, invite members, manage ranks and the gang bank."] call _fnc_comingSoon; };
-            case "keys": { ["Your vehicle keys: give a key to someone within 10 m. Arrives with vehicles."] call _fnc_comingSoon; };
+            case "keys": {
+                // Your vehicles and the ones you have a key to, out in the
+                // world: "{car} - {distance}", nearest first (live).
+                [0, "YOUR KEYS", 0] call _fnc_label;
+                [IDC_LIST, 0.05, 0.36] call _fnc_place;
+                [IDC_INFO, 0.43, 0.13] call _fnc_place;
+                [1, format ["GIVE A KEY TO (WITHIN %1 M)", getNumber (missionConfigFile >> "CfgALife" >> "Keys" >> "giveRange")], 0.57] call _fnc_label;
+                [IDC_LIST2, 0.62, 0.17] call _fnc_place;
+                [0, "Lock / Unlock", 0.82, 0.075, 0, 0.49, true] call _fnc_button;
+                [1, "Give key", 0.82, 0.075, 0.51, 0.49] call _fnc_button;
+                [2, "Show on map", 0.91, 0.065] call _fnc_button;
+                [] spawn {
+                    while { (missionNamespace getVariable ["ALife_phoneApp", ""]) == "keys" && { !isNull (findDisplay IDD_PHONE) } } do {
+                        uiSleep 1;
+                        if ((missionNamespace getVariable ["ALife_phoneApp", ""]) == "keys") then { ["refresh"] call ALife_fnc_phone; };
+                    };
+                };
+            };
             case "admin": {
                 // Staff with game.admin (website permissions): open the admin menu.
                 private _perms = _data getOrDefault ["perms", []];
@@ -414,6 +431,49 @@ switch (_mode) do {
                 [[] call _fnc_players, "Nobody else is online"] call _fnc_fillPlayers;
             };
 
+            case "keys": {
+                private _uid = getPlayerUID player;
+                private _cars = vehicles select {
+                    alive _x && { (_x getVariable ["alife_owner", ""]) == _uid || { _uid in (_x getVariable ["alife_keys", []]) } }
+                };
+                _cars = [_cars, [], { player distance _x }] call BIS_fnc_sortBy;
+                private _fnc_dist = {
+                    private _m = player distance _this;
+                    if (_m < 1000) then { format ["%1 m", round _m] } else { format ["%1 km", (round (_m / 100)) / 10] }
+                };
+                private _list = _display displayCtrl IDC_LIST;
+                private _row = lnbCurSelRow _list;
+                private _keep = if (_row < 0) then { "" } else { _list lnbData [_row, 0] };
+                ALife_phoneFilling = true;
+                lnbClear _list;
+                {
+                    private _name = getText (configFile >> "CfgVehicles" >> typeOf _x >> "displayName");
+                    private _r = _list lnbAddRow [format ["%1 - %2", _name, _x call _fnc_dist], ["Unlocked", "Locked"] select (locked _x >= 2)];
+                    _list lnbSetData [[_r, 0], netId _x];
+                    _list lnbSetPicture [[_r, 0], getText (configFile >> "CfgVehicles" >> typeOf _x >> "picture")];
+                    _list lnbSetColor [[_r, 1], [[0.29, 0.81, 0.59, 1], [0.98, 0.75, 0.14, 1]] select (locked _x >= 2)];
+                    if (netId _x == _keep) then { _list lnbSetCurSelRow _r; };
+                } forEach _cars;
+                if (_cars isEqualTo []) then {
+                    _list lnbAddRow ["No vehicles out", ""];
+                    _list lnbSetColor [[0, 0], [0.545, 0.596, 0.702, 1]];
+                } else {
+                    if (lnbCurSelRow _list < 0) then { _list lnbSetCurSelRow 0; };
+                };
+                ALife_phoneFilling = false;
+                // The selected one.
+                private _veh = if (_cars isEqualTo []) then { objNull } else { objectFromNetId (_list lnbData [(lnbCurSelRow _list) max 0, 0]) };
+                (_display displayCtrl IDC_INFO) ctrlSetStructuredText parseText (if (isNull _veh) then {
+                    format ["<t size='%1' color='#8b98b3'>Vehicles you own or have a key to show here when they're out of the garage.</t>", 22 call _fnc_px]
+                } else {
+                    private _mine = (_veh getVariable ["alife_owner", ""]) == _uid;
+                    format ["<t size='%1' font='RobotoCondensedBold'>%2</t><t size='%3' color='#8b98b3'>   %4</t><br/><t size='%3' color='#8b98b3'>%5   Fuel %6%%   %7</t>",
+                        26 call _fnc_px, getText (configFile >> "CfgVehicles" >> typeOf _veh >> "displayName") call _fnc_safe, 22 call _fnc_px,
+                        (_veh getVariable ["alife_plate", ""]) call _fnc_safe, ["A key you were given", "Yours"] select _mine,
+                        round (fuel _veh * 100), _veh call _fnc_dist]
+                });
+                [[getNumber (missionConfigFile >> "CfgALife" >> "Keys" >> "giveRange")] call _fnc_players, "Nobody nearby"] call _fnc_fillPlayers;
+            };
             case "inventory": {
                 private _list = _display displayCtrl IDC_LIST;
                 private _keep = lnbCurSelRow _list;
@@ -558,6 +618,9 @@ switch (_mode) do {
             ["refresh"] call ALife_fnc_phone;
         };
         if (ALife_phoneApp == "wanted" && { _idc == IDC_LIST }) exitWith { ["refresh"] call ALife_fnc_phone; };
+        if (ALife_phoneApp == "keys" && { _idc == IDC_LIST }) exitWith {
+            if (!(missionNamespace getVariable ["ALife_phoneFilling", false])) then { ["refresh"] call ALife_fnc_phone; };
+        };
         if (ALife_phoneApp == "market" && { _idc == IDC_LIST }) exitWith {
             private _class = (_display displayCtrl IDC_LIST) lnbData [_row, 0];
             private _cfg = missionConfigFile >> "CfgMarket" >> _class;
@@ -599,6 +662,36 @@ switch (_mode) do {
         if (isNull _display) exitWith {};
 
         switch (ALife_phoneApp) do {
+            case "keys": {
+                private _list = _display displayCtrl IDC_LIST;
+                private _row = lnbCurSelRow _list;
+                private _veh = if (_row < 0) then { objNull } else { objectFromNetId (_list lnbData [_row, 0]) };
+                if (isNull _veh || { !alive _veh }) exitWith { ["Pick a vehicle first.", "warning"] call ALife_fnc_toast; };
+                switch (_n) do {
+                    case 0: {
+                        // Lock / unlock: a key fob, within Keys >> range.
+                        if (player distance _veh > getNumber (missionConfigFile >> "CfgALife" >> "Keys" >> "range")) exitWith { ["It's too far away for the key to reach.", "warning"] call ALife_fnc_toast; };
+                        [player, _veh] remoteExecCall ["ALife_fnc_vehicleLock", 2];
+                        [] spawn { uiSleep 0.6; ["refresh"] call ALife_fnc_phone; };
+                    };
+                    case 1: {
+                        if ((_veh getVariable ["alife_owner", ""]) != getPlayerUID player) exitWith { ["Only the owner can give keys.", "warning"] call ALife_fnc_toast; };
+                        private _target = call _fnc_target;
+                        if (isNull _target) exitWith { ["Pick who to give a key to.", "warning"] call ALife_fnc_toast; };
+                        [player, "giveKey", _veh, _target] remoteExecCall ["ALife_fnc_vehicleAction", 2];
+                    };
+                    case 2: {
+                        // A marker on your map for a minute.
+                        deleteMarkerLocal "alife_keyMarker";
+                        private _m = createMarkerLocal ["alife_keyMarker", getPosWorld _veh];
+                        _m setMarkerTypeLocal "mil_pickup";
+                        _m setMarkerColorLocal "ColorOrange";
+                        _m setMarkerTextLocal format ["%1 %2", getText (configFile >> "CfgVehicles" >> typeOf _veh >> "displayName"), _veh getVariable ["alife_plate", ""]];
+                        ["It's marked on your map.", "info"] call ALife_fnc_toast;
+                        [] spawn { uiSleep 60; deleteMarkerLocal "alife_keyMarker"; };
+                    };
+                };
+            };
             case "inventory": {
                 private _list = _display displayCtrl IDC_LIST;
                 private _row = lnbCurSelRow _list;
