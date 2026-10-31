@@ -1,10 +1,11 @@
 /*
     ALife_fnc_lockerClient (client, called by the server)
 
-    Your locker's gear crate is ready (ALife_fnc_locker): it's shown on your
-    screen only, and Arma's inventory opens on it. Taking or putting
-    anything saves it; closing the inventory saves it and the server takes
-    the crate away.
+    Your locker is ready (ALife_fnc_locker): its gear crate is shown on
+    your screen only, Arma's inventory opens on it, and the virtual items
+    panel is added to the same screen (ALife_fnc_lockerPanel). Taking or
+    putting anything saves it; closing the inventory saves it and the
+    server takes the crate away.
 
         ["opened", crate]
 */
@@ -17,6 +18,11 @@ ALife_lockerBox = _box;
 _box hideObject false; // hidden for everyone else
 if (dialog) then { closeDialog 0; };
 player action ["Gear", _box];
+[] spawn {
+    private _until = diag_tickTime + 5;
+    waitUntil { uiSleep 0.05; !isNull (findDisplay 602) || { diag_tickTime > _until } };
+    ["build"] call ALife_fnc_lockerPanel;
+};
 
 // Saved on every change, and on closing (once).
 if (!isNil "ALife_lockerHandlers") then { { player removeEventHandler _x; } forEach ALife_lockerHandlers; };

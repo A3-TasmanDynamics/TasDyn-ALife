@@ -143,6 +143,12 @@ addMissionEventHandler ["EntityRespawned", {
                     };
                 } forEach getArray (_x >> "npcs");
             } forEach ("true" configClasses (missionConfigFile >> "CfgShops"));
+            // Police / EMS receptionists (CfgALife >> Lockers): they keep
+            // your locker.
+            {
+                private _npc = missionNamespace getVariable [_x, objNull];
+                if (!isNull _npc && { _npc isKindOf "CAManBase" }) then { _npc call _fnc_static; };
+            } forEach (getArray (missionConfigFile >> "CfgALife" >> "Lockers" >> "cop") + getArray (missionConfigFile >> "CfgALife" >> "Lockers" >> "medic"));
             private _workerClass = getText (missionConfigFile >> "CfgProcessing" >> "npcClass");
             {
                 private _process = configName _x;

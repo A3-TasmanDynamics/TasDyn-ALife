@@ -102,15 +102,16 @@ class CfgALife
     };
 
     // ---- Lockers (police / EMS, ALife_fnc_locker) ---------------------------
-    // Your own locker, the same at every locker of your faction: objects you
-    // place in Eden with these names (Windows on one). Weapons and clothing
-    // go in a crate (Arma's inventory; its size is how much fits), virtual
-    // items in our inventory screen.
+    // Your own locker, the same at every station of your faction, kept by
+    // the receptionists: units you place in Eden with these names (they
+    // stand still and can't be hurt). Windows on one: Reception, with your
+    // locker -- weapons and clothing go in a crate (Arma's inventory; its
+    // size is how much fits), virtual items in our inventory screen.
     class Lockers
     {
-        cop[] = { "police_locker_1", "police_locker_2", "police_locker_3", "police_locker_4", "police_locker_5", "police_locker_6" };
-        medic[] = { "medic_locker_1", "medic_locker_2", "medic_locker_3", "medic_locker_4", "medic_locker_5", "medic_locker_6" };
-        range = 3;                      // metres from the locker object
+        cop[] = { "police_receptionist_1", "police_receptionist_2", "police_receptionist_3", "police_receptionist_4", "police_receptionist_5", "police_receptionist_6" };
+        medic[] = { "medic_receptionist_1", "medic_receptionist_2", "medic_receptionist_3", "medic_receptionist_4", "medic_receptionist_5", "medic_receptionist_6" };
+        range = 4;                      // metres from the receptionist
         crate = "Box_NATO_Equip_F";     // what your gear sits in while it's open
         itemCapacity = 300;             // weight of virtual items it holds
     };

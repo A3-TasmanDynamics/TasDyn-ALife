@@ -2,22 +2,24 @@
     ALife_fnc_locker (server; "open" / "items" / "save" / "close" are
     called by the client)
 
-    Personal lockers for police and EMS (faction_lockers): open one at any
-    of your faction's locker objects (CfgALife >> Lockers, placed in Eden).
+    Personal lockers for police and EMS (faction_lockers): open yours at
+    any of your faction's receptionists (CfgALife >> Lockers, units placed
+    in Eden; Windows on one).
 
-      Weapons and clothing: a crate with your stored gear appears at the
-      locker, hidden from everyone else, and Arma's inventory opens on it.
+      One locker for everything. Weapons, clothing and gear: a crate with
+      your stored gear appears at the locker, hidden from everyone else, and
+      Arma's inventory opens on it.
       What's in the crate is saved (read here, on the server) each time you
       take or put something, and when you close it -- then it's removed.
       How much fits: the crate's own space (Lockers >> crate).
 
-      Items: our inventory screen (ALife_fnc_containerData) with your
-      locker's virtual items -- container kind "locker", only yours, no
+      Virtual items, in a panel drawn inside that same screen
+      (ALife_fnc_lockerPanel): container kind "locker", only yours, no
       cash, saved after each move (ALife_fnc_containerTransfer).
 
     Modes:
-        ["open", unit, lockerObject]   - the gear crate
-        ["items", unit, lockerObject]  - the items
+        ["open", unit, receptionist]   - your locker: the gear crate and its items
+        ["items", unit, receptionist]  - the items alone
         ["save", unit]                 - save the open crate (Take / Put)
         ["close", unit]                - save it and take it away
         ["close", uid]                 - (server) the same, they may be gone
@@ -160,7 +162,7 @@ private _data = [_uid, _faction] call _fnc_load;
 if (_data isEqualTo []) exitWith { "Your locker couldn't be opened. Try again." call _fnc_reply; };
 _data params ["_gear", "_items"];
 
-if (_mode == "items") exitWith {
+private _fnc_items = {
     if (isNil "ALife_containers") then { ALife_containers = createHashMap; ALife_containerCount = 0; };
     private _id = format ["locker_%1_%2", _uid, _faction];
     private _stock = createHashMap;
@@ -178,8 +180,9 @@ if (_mode == "items") exitWith {
     ]];
     [_unit, _id] call ALife_fnc_containerSend;
 };
+if (_mode == "items") exitWith { call _fnc_items; };
 
-// open: the gear crate, hidden from everyone but its owner.
+// open: the gear crate, hidden from everyone but its owner, and the items.
 private _pos = _unit modelToWorld [0, 1, 0];
 private _box = createVehicle [getText (_cfg >> "crate"), [_pos select 0, _pos select 1, 0], [], 0, "CAN_COLLIDE"];
 _box allowDamage false;
@@ -192,6 +195,7 @@ _box hideObjectGlobal true;
 _box setVariable ["alife_lockerOwner", _uid, true];
 ALife_lockerBoxes set [_uid, [_box, _faction]];
 ["opened", _box] remoteExecCall ["ALife_fnc_lockerClient", _owner];
+call _fnc_items;
 diag_log format ["[ALife] %1 opened their %2 locker", _uid, _faction];
 
 // Walked off, left or died with it open: saved and removed.

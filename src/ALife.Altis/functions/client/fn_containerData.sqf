@@ -17,6 +17,12 @@
 
 params ["_id", "_title", "_kind", ["_items", []], ["_cash", 0], ["_weight", 0], ["_capacity", 0]];
 
+// Your locker's items: the panel inside Arma's inventory (ALife_fnc_lockerPanel).
+if (_kind == "locker") exitWith {
+    ALife_lockerItems = [_id, _title, _kind, _items, _cash, _weight, _capacity];
+    ["refresh"] call ALife_fnc_lockerPanel;
+};
+
 private _open = !isNull (findDisplay 5300);
 
 if (_kind == "closed") exitWith {
