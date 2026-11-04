@@ -165,11 +165,13 @@ if (_resource != "") exitWith {
 
 // Nothing to interact with: your own wheel -- inventory, surrender, holster.
 private _restrained = player getVariable ["alife_restrained", false];
-private _surrendered = player getVariable ["alife_surrendered", false];
+private _surrendered = (player getVariable ["alife_surrendered", false]) || { (animationState player) == "amovpercmstpssurwnondnon" };
 private _options = [["Inventory", { ["openGround"] call ALife_fnc_transfer; }, []]];
-if (!_restrained && { vehicle player == player }) then {
-    _options pushBack [["Surrender", "Hands down"] select _surrendered, { call ALife_fnc_surrender; }, []];
-    if (!_surrendered) then {
+if (_surrendered) then {
+    _options pushBack ["Hands down", { [] call ALife_fnc_surrender; }, []];
+} else {
+    if (!_restrained && { vehicle player == player }) then {
+        _options pushBack ["Surrender", { [] call ALife_fnc_surrender; }, []];
         _options pushBack [["Draw weapon", "Holster weapon"] select (currentWeapon player != ""), { call ALife_fnc_holster; }, []];
     };
 };

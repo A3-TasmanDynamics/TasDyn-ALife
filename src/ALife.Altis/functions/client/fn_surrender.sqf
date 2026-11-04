@@ -6,18 +6,43 @@
     (alife_surrendered), so others can see it in your person menu, and
     the hands stay up if something knocks you out of the pose.
 
+    Pressing it again puts the hands down -- done here, not by the loop, so
+    it works even if the loop is gone (and it frees you from the pose if
+    you're stuck in it without being surrendered).
+
+    Arguments:
+        "down" - (spawned) the move out of the pose; otherwise the key press
+
     Returns:
         BOOL - true if the key press was used
 */
 
-if (!alive player || { dialog } || { !(missionNamespace getVariable ["ALife_spawned", false]) }) exitWith { false };
-if (player getVariable ["alife_restrained", false]) exitWith { false };
+#define POSE "amovpercmstpssurwnondnon"
 
-// Already surrendered: hands down (the loop below sees it and lowers them).
-if (player getVariable ["alife_surrendered", false]) exitWith {
+// The move out of the pose; if it doesn't take, stand normally.
+if (_this isEqualTo "down") exitWith {
+    private _unit = player;
+    _unit playMoveNow "AmovPercMstpSsurWnonDnon_AmovPercMstpSnonWnonDnon";
+    uiSleep 2;
+    if (alive _unit && { (animationState _unit) == POSE } && { !(_unit getVariable ["alife_surrendered", false]) }) then {
+        diag_log format ["[ALife] hands down: still in %1 after the move out -- switchMove", animationState _unit];
+        _unit switchMove "AmovPercMstpSnonWnonDnon";
+    };
+};
+
+if (!alive player || { dialog } || { !(missionNamespace getVariable ["ALife_spawned", false]) }) exitWith { false };
+
+// Surrendered (or stuck in the pose): hands down.
+if ((player getVariable ["alife_surrendered", false]) || { (animationState player) == POSE }) exitWith {
+    if (!isNil "ALife_surrenderLoop" && { !scriptDone ALife_surrenderLoop }) then { terminate ALife_surrenderLoop; };
+    diag_log format ["[ALife] hands down (surrendered %1, anim %2)", player getVariable ["alife_surrendered", false], animationState player];
     player setVariable ["alife_surrendered", false, true];
+    // (Restrained for real: their pose takes over again straight after.)
+    if (vehicle player == player) then { ALife_surrenderLoop = "down" spawn ALife_fnc_surrender; };
     true
 };
+
+if (player getVariable ["alife_restrained", false]) exitWith { false };
 
 if (vehicle player != player) exitWith { ["You can't surrender in a vehicle.", "warning"] call ALife_fnc_toast; true };
 if (surfaceIsWater getPosASL player && { (getPosASL player select 2) < 0.5 }) exitWith { false };
@@ -41,21 +66,12 @@ ALife_surrenderLoop = [] spawn {
         };
         if (currentWeapon _unit != "") then { _unit action ["SwitchWeapon", _unit, _unit, 100]; };
         // Keep the hands up (re-started after 2 s out of the pose).
-        if ((animationState _unit) find "amovpercmstpssurwnondnon" == 0) then { _outSince = -1; } else {
+        if ((animationState _unit) == POSE) then { _outSince = -1; } else {
             if (_outSince < 0) then { _outSince = diag_tickTime; };
             if (diag_tickTime - _outSince > 2) then { _unit playMoveNow _anim; _outSince = diag_tickTime; };
         };
         uiSleep 0.2;
     };
-
-    // Hands down -- unless restrained (that pose takes over), dead or in a
-    // vehicle. If the move out of the pose doesn't take, stand normally.
-    if (!alive _unit || { vehicle _unit != _unit } || { _unit getVariable ["alife_restrained", false] }) exitWith {};
-    if (_unit getVariable ["alife_surrendered", false]) exitWith {};
-    private _stuck = { alive _unit && { (animationState _unit) find "amovpercmstpssurwnondnon" == 0 } && { !(_unit getVariable ["alife_surrendered", false]) } };
-    _unit playMoveNow "AmovPercMstpSsurWnonDnon_AmovPercMstpSnonWnonDnon";
-    uiSleep 2.5;
-    if (call _stuck) then { _unit playMoveNow "AmovPercMstpSnonWnonDnon"; uiSleep 1.5; };
-    if (call _stuck) then { _unit switchMove ""; }; // last resort, like after a revive
+    // Ended by the key (it lowers the hands), restraints, death or a vehicle.
 };
 true
