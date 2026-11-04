@@ -7,7 +7,7 @@
         Police:   Restrain / Unrestrain (also Left Shift + R), Fine, Wanted
                   (add a crime); when they're restrained: Arrest (at the
                   jail), Escort / Stop escorting, Put in vehicle, Strip down
-        Everyone: Restrain with Zip Ties; Untie someone zip-tied
+        Everyone: Restrain with Zip Ties; Untie someone zip-tied; Give cash
         Medics:   Revive (a downed player), Heal (a hurt one, uses a Medkit)
 
     The server checks everything again (ALife_fnc_personAction,
@@ -17,6 +17,7 @@
         ["open", unit]
         ["fine", unit]      - how much to fine them (CfgALife >> fines[])
         ["wanted", unit, page] - which crime to add (CfgCrimes), 6 a page
+        ["giveCash", unit]  - how much cash to hand them (CfgALife >> giveCashAmounts[])
 */
 
 params ["_mode", ["_target", objNull], ["_page", 0]];
@@ -65,6 +66,9 @@ switch (_mode) do {
             if (_faction == "medic") then {
                 _options pushBack ["Heal", { ["heal", _this] spawn ALife_fnc_personAct; }, _target];
             };
+            if (isPlayer _target && { !(_target getVariable ["alife_downed", false]) }) then {
+                _options pushBack ["Give cash", { ["giveCash", _this] call ALife_fnc_personMenu; }, _target];
+            };
         };
         if (_options isEqualTo []) exitWith {
             [format ["Nothing to do with %1 right now.", _name], "info"] call ALife_fnc_toast;
@@ -88,6 +92,18 @@ switch (_mode) do {
         _options pushBack [["More", "First page"] select (_page >= _pages - 1), { ["wanted", _this select 0, _this select 1] call ALife_fnc_personMenu; }, [_target, [_page + 1, 0] select (_page >= _pages - 1)]];
         _options pushBack ["Back", { ["open", _this] call ALife_fnc_personMenu; }, _target];
         ["open", format ["Add a crime: %1", _name], _options, format ["Page %1 of %2", _page + 1, _pages]] call ALife_fnc_radial;
+    };
+
+    case "giveCash": {
+        // Cash in your pocket, handed over (ALife_fnc_giveItem checks it all again).
+        private _cash = (missionNamespace getVariable ["ALife_phone", createHashMap]) getOrDefault ["cash", 0];
+        if (_cash < 1) exitWith { ["You don't have any cash on you.", "warning"] call ALife_fnc_toast; };
+        private _options = ((getArray (missionConfigFile >> "CfgALife" >> "giveCashAmounts") select { _x < _cash }) select [0, 6]) apply {
+            [_x call _fnc_money, { [player, _this select 0, "cash", _this select 1] remoteExec ["ALife_fnc_giveItem", 2]; }, [_target, _x]]
+        };
+        _options pushBack [format ["All (%1)", _cash call _fnc_money], { [player, _this select 0, "cash", _this select 1] remoteExec ["ALife_fnc_giveItem", 2]; }, [_target, _cash]];
+        _options pushBack ["Back", { ["open", _this] call ALife_fnc_personMenu; }, _target];
+        ["open", format ["Give cash: %1", _name], _options, format ["You have %1", _cash call _fnc_money]] call ALife_fnc_radial;
     };
 
     case "fine": {

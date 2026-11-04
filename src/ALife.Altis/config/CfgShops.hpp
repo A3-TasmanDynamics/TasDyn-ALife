@@ -24,9 +24,9 @@
 //   vehicleSpawns[] -- vehicle shops: where bought vehicles appear
 //   mapMarker -- optional: a map marker with this text on each of its NPCs
 //
-// Shops sit on the town spawn markers for now; give each its own marker in
-// Eden when they get placed properly. Only markets can be bought from so far;
-// weapons, clothing and vehicles are priced and ready for the next step.
+// Shops are reached through their NPCs only (markers[] left empty): the
+// Windows key on one, within its radius (the server checks it again on
+// every purchase).
 
 class CfgShops
 {
@@ -57,72 +57,72 @@ class CfgShops
     {
         type = "market";
         shop = "general";
-        markers[] = { "spawn_civ_kavala", "spawn_civ_athira", "spawn_civ_pyrgos", "spawn_civ_sofia" };
+        markers[] = {};
         npcs[] = { "civ_generalstore_1", "civ_generalstore_2", "civ_generalstore_3", "civ_generalstore_4", "civ_generalstore_5", "civ_generalstore_6" };
-        radius = 30;
+        radius = 8;
     };
 
     class general_store
     {
         type = "weapons";
         shop = "genstore";
-        markers[] = { "spawn_civ_kavala", "spawn_civ_athira", "spawn_civ_pyrgos", "spawn_civ_sofia" };
+        markers[] = {};
         npcs[] = { "civ_generalstore_1", "civ_generalstore_2", "civ_generalstore_3", "civ_generalstore_4", "civ_generalstore_5", "civ_generalstore_6" };
-        radius = 30;
+        radius = 8;
     };
 
     class civ_clothing
     {
         type = "clothing";
         shop = "civ";
-        markers[] = { "spawn_civ_kavala", "spawn_civ_athira", "spawn_civ_pyrgos", "spawn_civ_sofia" };
+        markers[] = {};
         npcs[] = { "civ_clothing_1", "civ_clothing_2", "civ_clothing_3", "civ_clothing_4", "civ_clothing_5", "civ_clothing_6" };
-        radius = 30;
+        radius = 8;
     };
 
     class gun_store
     {
         type = "weapons";
         shop = "gun";
-        markers[] = { "spawn_civ_kavala", "spawn_civ_athira", "spawn_civ_pyrgos" };
+        markers[] = {};
         npcs[] = { "civ_gunstore_1", "civ_gunstore_2", "civ_gunstore_3", "civ_gunstore_4", "civ_gunstore_5", "civ_gunstore_6" };
-        radius = 30;
+        radius = 8;
     };
 
     class rebel_market
     {
         type = "market";
         shop = "rebel";
-        markers[] = { "spawn_civ_sofia" };
+        markers[] = {};
         npcs[] = { "rebel_trader_1", "rebel_trader_2", "rebel_trader_3", "rebel_trader_4", "rebel_trader_5", "rebel_trader_6" };
-        radius = 30;
+        radius = 8;
     };
 
     class rebel_armoury
     {
         type = "weapons";
         shop = "rebel";
-        markers[] = { "spawn_civ_sofia" };
+        markers[] = {};
         npcs[] = { "rebel_trader_1", "rebel_trader_2", "rebel_trader_3", "rebel_trader_4", "rebel_trader_5", "rebel_trader_6" };
-        radius = 30;
+        radius = 8;
     };
 
     class rebel_clothing
     {
         type = "clothing";
         shop = "rebel";
-        markers[] = { "spawn_civ_sofia" };
+        markers[] = {};
         npcs[] = { "rebel_trader_1", "rebel_trader_2", "rebel_trader_3", "rebel_trader_4", "rebel_trader_5", "rebel_trader_6" };
-        radius = 30;
+        radius = 8;
     };
 
     class rebel_vehicles
     {
         type = "vehicles";
         shop = "rebel";
-        markers[] = { "spawn_civ_sofia" };
+        markers[] = {};
         npcs[] = { "rebel_trader_1", "rebel_trader_2", "rebel_trader_3", "rebel_trader_4", "rebel_trader_5", "rebel_trader_6" };
-        radius = 30;
+        radius = 8;
         vehicleSpawns[] = { "spawn_civ_sofia" };
     };
 
@@ -130,9 +130,9 @@ class CfgShops
     {
         type = "vehicles";
         shop = "civ_car";
-        markers[] = { "spawn_civ_kavala", "spawn_civ_athira", "spawn_civ_pyrgos", "spawn_civ_sofia" };
+        markers[] = {};
         npcs[] = { "civ_vehicleshop_1", "civ_vehicleshop_2", "civ_vehicleshop_3", "civ_vehicleshop_4", "civ_vehicleshop_5", "civ_vehicleshop_6" };
-        radius = 30;
+        radius = 8;
         vehicleSpawns[] = { "spawn_civ_kavala", "spawn_civ_athira", "spawn_civ_pyrgos", "spawn_civ_sofia" };
     };
 
@@ -140,9 +140,9 @@ class CfgShops
     {
         type = "vehicles";
         shop = "civ_truck";
-        markers[] = { "spawn_civ_kavala", "spawn_civ_pyrgos" };
+        markers[] = {};
         npcs[] = { "civ_vehicleshop_1", "civ_vehicleshop_2", "civ_vehicleshop_3", "civ_vehicleshop_4", "civ_vehicleshop_5", "civ_vehicleshop_6" };
-        radius = 30;
+        radius = 8;
         vehicleSpawns[] = { "spawn_civ_kavala", "spawn_civ_pyrgos" };
     };
 
@@ -150,9 +150,9 @@ class CfgShops
     {
         type = "vehicles";
         shop = "civ_air";
-        markers[] = { "spawn_civ_athira", "spawn_civ_pyrgos" };
+        markers[] = {};
         npcs[] = { "civ_airshop_1", "civ_airshop_2", "civ_airshop_3", "civ_airshop_4", "civ_airshop_5", "civ_airshop_6" };
-        radius = 30;
+        radius = 8;
         vehicleSpawns[] = { "spawn_civ_athira", "spawn_civ_pyrgos" };
     };
 
@@ -160,9 +160,9 @@ class CfgShops
     {
         type = "vehicles";
         shop = "civ_ship";
-        markers[] = { "spawn_civ_kavala", "spawn_civ_pyrgos" };
+        markers[] = {};
         npcs[] = { "civ_boatshop_1", "civ_boatshop_2", "civ_boatshop_3", "civ_boatshop_4", "civ_boatshop_5", "civ_boatshop_6" };
-        radius = 30;
+        radius = 8;
         vehicleSpawns[] = { "spawn_civ_kavala", "spawn_civ_pyrgos" };
     };
 
@@ -170,45 +170,45 @@ class CfgShops
     {
         type = "market";
         shop = "cop";
-        markers[] = { "spawn_cop_kavala", "spawn_cop_athira", "spawn_cop_pyrgos" };
+        markers[] = {};
         npcs[] = { "police_receptionist_1", "police_receptionist_2", "police_receptionist_3", "police_receptionist_4", "police_receptionist_5", "police_receptionist_6" };
-        radius = 30;
+        radius = 8;
     };
 
     class cop_supplies
     {
         type = "weapons";
         shop = "cop_kit";
-        markers[] = { "spawn_cop_kavala", "spawn_cop_athira", "spawn_cop_pyrgos" };
+        markers[] = {};
         npcs[] = { "police_receptionist_1", "police_receptionist_2", "police_receptionist_3", "police_receptionist_4", "police_receptionist_5", "police_receptionist_6" };
-        radius = 30;
+        radius = 8;
     };
 
     class cop_armoury
     {
         type = "weapons";
         shop = "cop";
-        markers[] = { "spawn_cop_kavala", "spawn_cop_athira", "spawn_cop_pyrgos" };
+        markers[] = {};
         npcs[] = { "police_receptionist_1", "police_receptionist_2", "police_receptionist_3", "police_receptionist_4", "police_receptionist_5", "police_receptionist_6" };
-        radius = 30;
+        radius = 8;
     };
 
     class cop_clothing
     {
         type = "clothing";
         shop = "cop";
-        markers[] = { "spawn_cop_kavala", "spawn_cop_athira", "spawn_cop_pyrgos" };
+        markers[] = {};
         npcs[] = { "police_receptionist_1", "police_receptionist_2", "police_receptionist_3", "police_receptionist_4", "police_receptionist_5", "police_receptionist_6" };
-        radius = 30;
+        radius = 8;
     };
 
     class cop_cars
     {
         type = "vehicles";
         shop = "cop_car";
-        markers[] = { "spawn_cop_kavala", "spawn_cop_athira", "spawn_cop_pyrgos" };
-        npcs[] = { "police_receptionist_1", "police_receptionist_2", "police_receptionist_3", "police_receptionist_4", "police_receptionist_5", "police_receptionist_6" };
-        radius = 30;
+        markers[] = {};
+        npcs[] = { "police_shop_kavala", "police_shop_athira", "police_shop_pyrgos" };
+        radius = 8;
         vehicleSpawns[] = { "spawn_cop_kavala", "spawn_cop_athira", "spawn_cop_pyrgos" };
     };
 
@@ -216,9 +216,9 @@ class CfgShops
     {
         type = "vehicles";
         shop = "cop_air";
-        markers[] = { "spawn_cop_kavala", "spawn_cop_athira" };
-        npcs[] = { "police_receptionist_1", "police_receptionist_2", "police_receptionist_3", "police_receptionist_4", "police_receptionist_5", "police_receptionist_6" };
-        radius = 30;
+        markers[] = {};
+        npcs[] = { "police_air_kavala", "police_air_athira" };
+        radius = 8;
         vehicleSpawns[] = { "spawn_cop_kavala", "spawn_cop_athira" };
     };
 
@@ -226,9 +226,9 @@ class CfgShops
     {
         type = "vehicles";
         shop = "cop_ship";
-        markers[] = { "spawn_cop_kavala", "spawn_cop_pyrgos" };
-        npcs[] = { "police_receptionist_1", "police_receptionist_2", "police_receptionist_3", "police_receptionist_4", "police_receptionist_5", "police_receptionist_6" };
-        radius = 30;
+        markers[] = {};
+        npcs[] = { "police_ship_kavala", "police_ship_athira", "police_ship_pyrgos" };
+        radius = 8;
         vehicleSpawns[] = { "spawn_cop_kavala", "spawn_cop_pyrgos" };
     };
 
@@ -236,36 +236,36 @@ class CfgShops
     {
         type = "market";
         shop = "medic";
-        markers[] = { "spawn_medic_kavala", "spawn_medic_athira", "spawn_medic_pyrgos" };
+        markers[] = {};
         npcs[] = { "medic_receptionist_1", "medic_receptionist_2", "medic_receptionist_3", "medic_receptionist_4", "medic_receptionist_5", "medic_receptionist_6" };
-        radius = 30;
+        radius = 8;
     };
 
     class medic_equipment
     {
         type = "weapons";
         shop = "medic_kit";
-        markers[] = { "spawn_medic_kavala", "spawn_medic_athira", "spawn_medic_pyrgos" };
+        markers[] = {};
         npcs[] = { "medic_receptionist_1", "medic_receptionist_2", "medic_receptionist_3", "medic_receptionist_4", "medic_receptionist_5", "medic_receptionist_6" };
-        radius = 30;
+        radius = 8;
     };
 
     class medic_clothing
     {
         type = "clothing";
         shop = "medic";
-        markers[] = { "spawn_medic_kavala", "spawn_medic_athira", "spawn_medic_pyrgos" };
+        markers[] = {};
         npcs[] = { "medic_receptionist_1", "medic_receptionist_2", "medic_receptionist_3", "medic_receptionist_4", "medic_receptionist_5", "medic_receptionist_6" };
-        radius = 30;
+        radius = 8;
     };
 
     class medic_vehicles
     {
         type = "vehicles";
         shop = "med_car";
-        markers[] = { "spawn_medic_kavala", "spawn_medic_athira", "spawn_medic_pyrgos" };
+        markers[] = {};
         npcs[] = { "medic_receptionist_1", "medic_receptionist_2", "medic_receptionist_3", "medic_receptionist_4", "medic_receptionist_5", "medic_receptionist_6" };
-        radius = 30;
+        radius = 8;
         vehicleSpawns[] = { "spawn_medic_kavala", "spawn_medic_athira", "spawn_medic_pyrgos" };
     };
 
@@ -273,9 +273,9 @@ class CfgShops
     {
         type = "vehicles";
         shop = "med_air";
-        markers[] = { "spawn_medic_kavala", "spawn_medic_athira" };
+        markers[] = {};
         npcs[] = { "medic_receptionist_1", "medic_receptionist_2", "medic_receptionist_3", "medic_receptionist_4", "medic_receptionist_5", "medic_receptionist_6" };
-        radius = 30;
+        radius = 8;
         vehicleSpawns[] = { "spawn_medic_kavala", "spawn_medic_athira" };
     };
 };

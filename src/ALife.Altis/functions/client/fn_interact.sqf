@@ -163,26 +163,15 @@ if (_resource != "") exitWith {
     true
 };
 
-// Your faction's shops you're standing at (CfgShops markers / NPCs + radius).
-private _shops = [];
-{
-    private _info = [configName _x] call ALife_fnc_shopInfo;
-    if (_info isNotEqualTo []) then {
-        _info params ["_type", "_place", "_shop"];
-        if (_type in ["market", "clothing", "vehicles"] && { getText (_shop >> "side") == _faction } && { [player, _place] call ALife_fnc_atPlace }) then {
-            _shops pushBack [getText (_shop >> "name"), _openShop, configName _place];
-            // Every vehicle shop is a garage too (one entry per spot).
-            if (_type == "vehicles" && { (_shops findIf { (_x select 0) == "Garage" }) < 0 }) then {
-                _shops pushBack ["Garage", { ["open", _this] call ALife_fnc_garageMenu; }, configName _place];
-            };
-        };
+// Nothing to interact with: your own wheel -- inventory, surrender, holster.
+private _restrained = player getVariable ["alife_restrained", false];
+private _surrendered = player getVariable ["alife_surrendered", false];
+private _options = [["Inventory", { ["openGround"] call ALife_fnc_transfer; }, []]];
+if (!_restrained && { vehicle player == player }) then {
+    _options pushBack [["Surrender", "Hands down"] select _surrendered, { call ALife_fnc_surrender; }, []];
+    if (!_surrendered) then {
+        _options pushBack [["Draw weapon", "Holster weapon"] select (currentWeapon player != ""), { call ALife_fnc_holster; }, []];
     };
-} forEach ("true" configClasses (missionConfigFile >> "CfgShops"));
-
-if (_shops isNotEqualTo []) exitWith {
-    ["open", "Shop", (_shops select [0, 7]) + [["Inventory", { ["openGround"] call ALife_fnc_transfer; }, []]]] call ALife_fnc_radial;
-    true
 };
-
-["openGround"] call ALife_fnc_transfer;
+["open", "You", _options, ["", "Surrendered"] select _surrendered] call ALife_fnc_radial;
 true
