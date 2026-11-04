@@ -149,14 +149,10 @@ switch (_mode) do {
         (_row select 0) params ["", "_class", "_plate", "_status", "_fee"];
         if (_status == "spawned") exitWith { format ["Your %1 is already out.", _class call _name] call _fnc_reply; };
 
-        // The shop's spawn point nearest the player, and it must be clear.
-        private _spawns = getArray (_place >> "vehicleSpawns") apply { [_unit distance2D getMarkerPos _x, _x] };
-        _spawns sort true;
-        if (_spawns isEqualTo []) exitWith { "This garage has nowhere to put vehicles." call _fnc_reply; };
-        private _marker = (_spawns select 0) select 1;
-        if ((nearestObjects [getMarkerPos _marker, ["LandVehicle", "Air", "Ship"], 7]) isNotEqualTo []) exitWith {
-            "The spawn point is blocked. Move the vehicle that's on it and try again." call _fnc_reply;
-        };
+        // The shop's spawn point nearest the player (clear), or a clear spot
+        // near them when there's none close (a shop NPC away from the markers).
+        ([_unit, _place, _class] call ALife_fnc_vehicleSpawnPoint) params ["_marker", "_spotError"];
+        if (_marker isEqualTo "") exitWith { _spotError call _fnc_reply; };
 
         private _raw = ["vehicle", ["get", _id]] call ALife_fnc_extension;
         if (_raw select [0, 6] == "ERROR:") exitWith { diag_log format ["[ALife] garage get %1 failed: %2", _id, _raw]; "Couldn't get that vehicle out. Try again." call _fnc_reply; };

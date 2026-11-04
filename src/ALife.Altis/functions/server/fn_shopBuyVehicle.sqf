@@ -56,15 +56,10 @@ if (_colour select [0, 4] == "tex:") then {
 };
 if (_name == "") then { _name = getText (configFile >> "CfgVehicles" >> _class >> "displayName"); };
 
-// The shop's spawn point nearest the player, and it must be clear.
-private _spawns = getArray (_place >> "vehicleSpawns") apply { [_unit distance2D getMarkerPos _x, _x] };
-_spawns sort true;
-if (_spawns isEqualTo []) exitWith { "This shop has nowhere to put vehicles." call _fnc_reply; };
-private _marker = (_spawns select 0) select 1;
-private _pos = getMarkerPos _marker;
-if ((nearestObjects [_pos, ["LandVehicle", "Air", "Ship"], 7]) isNotEqualTo []) exitWith {
-    "The spawn point is blocked. Move the vehicle that's on it and try again." call _fnc_reply;
-};
+// The shop's spawn point nearest the player (clear), or a clear spot near
+// them when there's none close (a shop NPC away from the markers).
+([_unit, _place, _class] call ALife_fnc_vehicleSpawnPoint) params ["_marker", "_spotError"];
+if (_marker isEqualTo "") exitWith { _spotError call _fnc_reply; };
 
 private _paid = [_uid, _faction, _record, _price, _method, _name] call ALife_fnc_shopCharge;
 if (_paid != "OK") exitWith {

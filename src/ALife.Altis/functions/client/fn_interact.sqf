@@ -91,14 +91,6 @@ if (!isNull _target && { ((_target getVariable ["alife_placed", []]) param [1, "
     true
 };
 
-// Your faction's receptionist (police / EMS): your locker -- gear or items.
-if (!isNull _target && { _faction in ["cop", "medic"] } && { (vehicleVarName _target) in getArray (missionConfigFile >> "CfgALife" >> "Lockers" >> _faction) }
-    && { player distance _target <= getNumber (missionConfigFile >> "CfgALife" >> "Lockers" >> "range") + 1 }) exitWith {
-    ["open", ["Police Reception", "EMS Reception"] select (_faction == "medic"), [
-        ["Locker", { ["open", player, _this] remoteExecCall ["ALife_fnc_locker", 2]; }, _target]
-    ], "Your own locker, the same at every station"] call ALife_fnc_radial;
-    true
-};
 
 // A shop / processor NPC you're looking at.
 private _near = !isNull _target && { !isPlayer _target } && { player distance _target <= 5 };
@@ -117,13 +109,40 @@ if (_process != "") exitWith {
     ["open", getText (_cfg >> "name"), _options] call ALife_fnc_radial;
     true
 };
-private _npcShop = "";
-if (_near && { vehicleVarName _target != "" }) then {
-    private _shops = "true" configClasses (missionConfigFile >> "CfgShops");
-    private _i = _shops findIf { (vehicleVarName _target) in getArray (_x >> "npcs") };
-    if (_i >= 0) then { _npcShop = configName (_shops select _i); };
+// A shop NPC (CfgShops npcs[]) or your faction's receptionist: the one
+// shop it serves, or a wheel of them -- your faction's only, with the
+// Garage for vehicle shops and, at a receptionist, your locker.
+private _npcName = if (_near) then { vehicleVarName _target } else { "" };
+private _isReception = _npcName != "" && { _faction in ["cop", "medic"] } && { _npcName in getArray (missionConfigFile >> "CfgALife" >> "Lockers" >> _faction) };
+private _npcShops = [];
+if (_npcName != "") then {
+    {
+        if (_npcName in getArray (_x >> "npcs")) then {
+            private _info = [configName _x] call ALife_fnc_shopInfo;
+            private _side = if (_info isEqualTo []) then { getText (_x >> "side") } else { getText ((_info select 2) >> "side") };
+            if (_side == _faction) then { _npcShops pushBack [configName _x, _info param [0, getText (_x >> "type")], if (_info isEqualTo []) then { getText (_x >> "name") } else { getText ((_info select 2) >> "name") }]; };
+        };
+    } forEach ("true" configClasses (missionConfigFile >> "CfgShops"));
 };
-if (_npcShop != "") exitWith { _npcShop call _openShop; true };
+if (_npcName != "" && { _npcShops isNotEqualTo [] || { _isReception } }) exitWith {
+    if (count _npcShops == 1 && { !_isReception } && { ((_npcShops select 0) select 1) != "vehicles" }) exitWith { ((_npcShops select 0) select 0) call _openShop; true };
+    private _options = [];
+    if (_isReception) then { _options pushBack ["Locker", { ["open", player, _this] remoteExecCall ["ALife_fnc_locker", 2]; }, _target]; };
+    private _vehicleShops = _npcShops select { (_x select 1) == "vehicles" };
+    { _options pushBack [_x select 2, _openShop, _x select 0]; } forEach (_npcShops select { (_x select 1) != "vehicles" });
+    // Vehicle shops (and the garage) together on a second wheel when they'd overflow this one.
+    private _garage = ["Garage", { ["open", _this] call ALife_fnc_garageMenu; }, (_vehicleShops param [0, [""]]) select 0];
+    if (count _options + count _vehicleShops + 1 <= 8) then {
+        { _options pushBack [_x select 2, _openShop, _x select 0]; } forEach _vehicleShops;
+        if (_vehicleShops isNotEqualTo []) then { _options pushBack _garage; };
+    } else {
+        private _sub = (_vehicleShops apply { [_x select 2, _openShop, _x select 0] }) + [_garage];
+        _options pushBack ["Vehicles", { ["open", "Vehicles", _this] call ALife_fnc_radial; }, _sub];
+    };
+    ["open", if (_isReception) then { ["Police Reception", "EMS Reception"] select (_faction == "medic") } else { name _target }, _options select [0, 8],
+        if (_isReception) then { "Your own locker, the same at every station" } else { "" }] call ALife_fnc_radial;
+    true
+};
 
 if (!isNull _target && { _target != player } && { _target isKindOf "CAManBase" } && { player distance _target < 3.5 }
     && { (alive _target && { isPlayer _target }) || { _target getVariable ["alife_downed", false] } }) exitWith {
