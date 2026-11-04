@@ -163,26 +163,6 @@ if (_resource != "") exitWith {
     true
 };
 
-// Your faction's shops you're standing at (CfgShops markers / NPCs + radius).
-private _shops = [];
-{
-    private _info = [configName _x] call ALife_fnc_shopInfo;
-    if (_info isNotEqualTo []) then {
-        _info params ["_type", "_place", "_shop"];
-        if (_type in ["market", "clothing", "vehicles"] && { getText (_shop >> "side") == _faction } && { [player, _place] call ALife_fnc_atPlace }) then {
-            _shops pushBack [getText (_shop >> "name"), _openShop, configName _place];
-            // Every vehicle shop is a garage too (one entry per spot).
-            if (_type == "vehicles" && { (_shops findIf { (_x select 0) == "Garage" }) < 0 }) then {
-                _shops pushBack ["Garage", { ["open", _this] call ALife_fnc_garageMenu; }, configName _place];
-            };
-        };
-    };
-} forEach ("true" configClasses (missionConfigFile >> "CfgShops"));
-
-if (_shops isNotEqualTo []) exitWith {
-    ["open", "Shop", (_shops select [0, 7]) + [["Inventory", { ["openGround"] call ALife_fnc_transfer; }, []]]] call ALife_fnc_radial;
-    true
-};
-
+// Nothing else here: the ground / your inventory.
 ["openGround"] call ALife_fnc_transfer;
 true
