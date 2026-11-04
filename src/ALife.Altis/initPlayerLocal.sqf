@@ -16,7 +16,7 @@ waitUntil { !isNil "ALife_fnc_startSession" };
 // lock / unlock your vehicle; police: Left Shift + R (restrainKey) to
 // restrain / release the player you're looking at; anyone: Left Shift + B
 // (surrenderKey) hands on head, Left Shift + H (holsterKey) weapon away /
-// out. While restrained, the phone, Windows key, lock key and Arma's
+// out; staff: Left Shift + F1 (adminKey) the admin menu. While restrained, the phone, Windows key, lock key and Arma's
 // inventory don't work.
 [] spawn {
     waitUntil { !isNull (findDisplay 46) };
@@ -44,6 +44,7 @@ waitUntil { !isNil "ALife_fnc_startSession" };
         };
         if ((missionNamespace getVariable ["ALife_leftShift", false]) && { !_ctrl } && { !_alt } && { _key == getNumber (_cfg >> "surrenderKey") }) exitWith { call ALife_fnc_surrender };
         if ((missionNamespace getVariable ["ALife_leftShift", false]) && { !_ctrl } && { !_alt } && { _key == getNumber (_cfg >> "holsterKey") }) exitWith { call ALife_fnc_holster };
+        if ((missionNamespace getVariable ["ALife_leftShift", false]) && { !_ctrl } && { !_alt } && { _key == getNumber (_cfg >> "adminKey") }) exitWith { ["hotkey"] call ALife_fnc_admin };
         if ((missionNamespace getVariable ["ALife_leftShift", false]) && { !_ctrl } && { !_alt } && { _key == getNumber (_cfg >> "Jump" >> "key") }) exitWith { call ALife_fnc_jump };
         if (_shift || _ctrl || _alt) exitWith { false };
         if (_key in getArray (missionConfigFile >> "CfgALife" >> "interactKeys")) exitWith { call ALife_fnc_interact };

@@ -162,7 +162,9 @@ switch (_mode) do {
     };
 
     case "keyDown": {
-        _args params ["", "_key"];
+        _args params ["", "_key", ["_shift", false], ["_ctrl", false], ["_alt", false]];
+        // Staff: Shift + F1, the admin menu on top of this screen.
+        if (_shift && { !_ctrl } && { !_alt } && { _key == getNumber (missionConfigFile >> "CfgALife" >> "adminKey") }) exitWith { ["hotkey"] call ALife_fnc_admin };
         _key == 1 // Esc does nothing here
     };
 };
