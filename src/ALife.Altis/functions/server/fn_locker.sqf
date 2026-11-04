@@ -183,7 +183,7 @@ private _fnc_items = {
 if (_mode == "items") exitWith { call _fnc_items; };
 
 // open: the gear crate, hidden from everyone but its owner, and the items.
-private _pos = _unit modelToWorld [0, 1, 0];
+private _pos = _unit modelToWorld [0, 0.8, 0];
 private _box = createVehicle [getText (_cfg >> "crate"), [_pos select 0, _pos select 1, 0], [], 0, "CAN_COLLIDE"];
 _box allowDamage false;
 clearWeaponCargoGlobal _box;
@@ -191,8 +191,11 @@ clearMagazineCargoGlobal _box;
 clearItemCargoGlobal _box;
 clearBackpackCargoGlobal _box;
 [_box, _gear] call _fnc_fill;
-_box hideObjectGlobal true;
+// Hidden on everyone else's screen only (and for anyone joining while it's
+// out): hiding it globally could reach the owner after their own unhide,
+// and Arma won't take gear into a hidden crate.
 _box setVariable ["alife_lockerOwner", _uid, true];
+["hide", _box] remoteExecCall ["ALife_fnc_lockerClient", -_owner, _box];
 ALife_lockerBoxes set [_uid, [_box, _faction]];
 ["opened", _box] remoteExecCall ["ALife_fnc_lockerClient", _owner];
 call _fnc_items;
