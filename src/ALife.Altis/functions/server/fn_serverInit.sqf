@@ -60,6 +60,11 @@ addMissionEventHandler ["HandleDisconnect", {
     };
     [_unit, _uid] call ALife_fnc_savePlayer;
     ALife_sessions deleteAt _uid;
+    // Arma kills the unit they left behind (EntityKilled, right after this):
+    // that's not a death -- it would start a new life next time and wipe
+    // their gear. Already saved above (alive or not), so forget whose it was.
+    _unit setVariable ["alife_uid", nil];
+    _unit setVariable ["alife_faction", nil];
     false // don't hand the body to AI
 }];
 
