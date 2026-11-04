@@ -8,19 +8,26 @@
     server takes the crate away.
 
         ["opened", crate]
+        ["hide", crate]     - someone else's locker crate: not shown here
 */
 
 params [["_mode", "", [""]], ["_box", objNull, [objNull]]];
 
-if (_mode != "opened" || { isNull _box } || { !hasInterface }) exitWith {};
+if (isNull _box || { !hasInterface }) exitWith {};
+if (_mode == "hide") exitWith {
+    if ((_box getVariable ["alife_lockerOwner", ""]) != getPlayerUID player) then { _box hideObject true; };
+};
+if (_mode != "opened") exitWith {};
 
 ALife_lockerBox = _box;
-_box hideObject false; // hidden for everyone else
+_box hideObject false; // (only ever hidden on other players' screens)
 if (dialog) then { closeDialog 0; };
 player action ["Gear", _box];
 [] spawn {
     private _until = diag_tickTime + 5;
     waitUntil { uiSleep 0.05; !isNull (findDisplay 602) || { diag_tickTime > _until } };
+    diag_log format ["[ALife] locker: inventory %1 on %2 (crate %3, hidden %4, %5 m)", ["didn't open", "open"] select !isNull (findDisplay 602),
+        typeOf ALife_lockerBox, netId ALife_lockerBox, isObjectHidden ALife_lockerBox, round ((player distance ALife_lockerBox) * 10) / 10];
     ["build"] call ALife_fnc_lockerPanel;
 };
 
