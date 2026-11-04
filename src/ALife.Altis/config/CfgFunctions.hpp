@@ -26,6 +26,7 @@ class CfgFunctions
             class vehicleLock {};     // client -> server: U on your own vehicle         // the dynamic market: prices, trades, recovery (CfgMarket)
             class shopBuy {};        // client -> server: buy from a shop
             class giveItem {};       // client -> server: give/discard items
+            class animSync {};       // client -> server: a switchMove shown to everyone (surrender)
             class bankTransfer {};   // client -> server: send money to a player
             class sendMessage {};    // client -> server: phone message
             class requestRevive {};  // medic's client -> server: revive finished
@@ -93,6 +94,7 @@ class CfgFunctions
             class personAct {};       // timed things done to a player (heal)
             class restrained {};      // server -> client: you're restrained
             class surrender {};       // Left Shift + B: hands on your head
+            class animApply {};       // server -> client: another player's switchMove
             class holster {};         // Left Shift + H: weapon away / out
             class jump {};            // Left Shift + Space: jump while running
             class lockerClient {};    // your locker's gear crate is open
