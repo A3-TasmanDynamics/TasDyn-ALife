@@ -22,6 +22,7 @@ class CfgFunctions
             class market {};
             class shopCharge {};      // take a shop payment (cash or bank)
             class shopBuyClothing {}; // client -> server: buy the clothing being tried on
+            class shopBuyWeapon {};   // client -> server: buy from a weapon shop
             class shopBuyVehicle {};  // client -> server: buy a vehicle (spawned, owned, recorded)
             class vehicleLock {};     // client -> server: U on your own vehicle         // the dynamic market: prices, trades, recovery (CfgMarket)
             class shopBuy {};        // client -> server: buy from a shop
@@ -75,6 +76,7 @@ class CfgFunctions
             class messageReceived {}; // server -> client: phone message
             class shop {};
             class clothingShop {};    // clothing shop: 3D try-on
+            class weaponShop {};      // weapon shop window (armouries, gun store, kit)
             class applySkins {};      // uniform textures by group; hidden cop / medic backpacks
             class survival {};        // food, water and the player HUD
             class playerTags {};      // name tags (police: rank under the name)
