@@ -4,7 +4,8 @@
     Surrender: weapon away and hands on your head until you press it again,
     get restrained, die or end up in a vehicle. It's public
     (alife_surrendered), so others can see it in your person menu, and
-    the hands stay up if something knocks you out of the pose.
+    the hands stay up if something knocks you out of the pose. You can't
+    walk with your hands up: pressing a movement key puts them down.
 
     Pressing it again puts the hands down: the game's move out of the pose,
     switched to on every machine (ALife_fnc_animSync) -- the pose can't be
@@ -61,12 +62,16 @@ ALife_surrenderLoop = [] spawn {
     private _outSince = -1;
     _unit action ["SwitchWeapon", _unit, _unit, 100]; // weapon away
     _unit playMove _anim;
-    ["You've surrendered. Left Shift + B to put your hands down.", "info"] call ALife_fnc_toast;
+    ["You've surrendered. Left Shift + B or moving puts your hands down.", "info"] call ALife_fnc_toast;
 
     while { alive _unit && { _unit == player } && { _unit getVariable ["alife_surrendered", false] } } do {
         // Restrained or in a vehicle: no longer surrendered.
         if (vehicle _unit != _unit || { _unit getVariable ["alife_restrained", false] }) exitWith {
             _unit setVariable ["alife_surrendered", false, true];
+        };
+        // Moving (W / A / S / D): hands down.
+        if (!dialog && { ["MoveForward", "MoveBack", "TurnLeft", "TurnRight", "MoveLeft", "MoveRight"] findIf { inputAction _x > 0.5 } >= 0 }) exitWith {
+            [] call ALife_fnc_surrender;
         };
         if (currentWeapon _unit != "") then { _unit action ["SwitchWeapon", _unit, _unit, 100]; };
         // Keep the hands up (re-started after 2 s out of the pose).
