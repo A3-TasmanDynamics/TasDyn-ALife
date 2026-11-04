@@ -26,6 +26,7 @@ class CfgALife
     restrainKey = 19;                   // police: Left Shift + R (DIK 19) restrains / releases
     surrenderKey = 48;                  // Left Shift + B (DIK 48): hands on your head / down
     holsterKey = 35;                    // Left Shift + H (DIK 35): put your weapon away / draw it
+    adminKey = 59;                      // staff: Left Shift + F1 (DIK 59) opens / closes the admin menu (dead too)
 
     // Jumping: Left Shift + Space while running on foot (ALife_fnc_jump).
     class Jump

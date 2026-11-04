@@ -1,7 +1,9 @@
 /*
     ALife_fnc_admin (client)
 
-    The admin menu (ui\admin.hpp), opened from the phone's Admin app. What
+    The admin menu (ui\admin.hpp), opened from the phone's Admin app or
+    Left Shift + F1 (CfgALife >> adminKey; also on the death and spawn
+    screens, where it opens on top of them). What
     a staff member can do comes from their website permissions (loaded with
     their character: ALife_phone "perms") -- server owners (CfgALife >>
     owners[]) get everything: only those buttons are shown, and
@@ -32,6 +34,7 @@
 
     Modes:
         ["open"] / ["onLoad", display] / ["refresh"] / ["select"]
+        ["hotkey"]  - Left Shift + F1: open it, or close it if it's open
         ["action", id]
 */
 
@@ -108,13 +111,27 @@ private _fnc_toggleText = {
 switch (_mode) do {
     case "open": {
         if !("game.admin" call _can) exitWith { ["You're not on the staff team.", "warning"] call ALife_fnc_toast; };
-        if (dialog) then { closeDialog 0; };
+        // The death / spawn screens stay underneath; anything else is closed.
+        if (dialog && { isNull (findDisplay 4900) } && { isNull (findDisplay 4800) }) then { closeDialog 0; };
         createDialog "ALife_Admin";
+    };
+
+    case "hotkey": {
+        if !("game.admin" call _can) exitWith { false }; // not staff: the key does nothing
+        if (!isNull _display) exitWith { _display closeDisplay 2; true };
+        ["open"] call ALife_fnc_admin;
+        true
     };
 
     case "onLoad": {
         _display = _arg;
         ALife_adminOpen = true;
+        // Shift + F1 again closes it (this screen takes the keyboard).
+        _display displayAddEventHandler ["KeyDown", {
+            params ["_d", "_key", "_shift", "_ctrl", "_alt"];
+            if (_shift && { !_ctrl } && { !_alt } && { _key == getNumber (missionConfigFile >> "CfgALife" >> "adminKey") }) exitWith { _d closeDisplay 2; true };
+            false
+        }];
         ALife_adminLicences = [];
         ALife_adminLicencesAsked = [];
         private _rank = _data getOrDefault ["staffRank", ""];
