@@ -148,6 +148,7 @@ class CfgALife
 
     // ---- Phone ------------------------------------------------------------
     giveDistance = 5;                   // metres: give items / money to players this close
+    giveCashAmounts[] = { 100, 500, 1000, 5000, 10000, 50000 }; // person menu > Give cash (max 6; "All" is added)
     messageCooldown = 3;                // seconds between messages
     messageMaxLength = 300;             // characters per message
 

@@ -163,6 +163,15 @@ if (_resource != "") exitWith {
     true
 };
 
-// Nothing else here: the ground / your inventory.
-["openGround"] call ALife_fnc_transfer;
+// Nothing to interact with: your own wheel -- inventory, surrender, holster.
+private _restrained = player getVariable ["alife_restrained", false];
+private _surrendered = player getVariable ["alife_surrendered", false];
+private _options = [["Inventory", { ["openGround"] call ALife_fnc_transfer; }, []]];
+if (!_restrained && { vehicle player == player }) then {
+    _options pushBack [["Surrender", "Hands down"] select _surrendered, { call ALife_fnc_surrender; }, []];
+    if (!_surrendered) then {
+        _options pushBack [["Draw weapon", "Holster weapon"] select (currentWeapon player != ""), { call ALife_fnc_holster; }, []];
+    };
+};
+["open", "You", _options, ["", "Surrendered"] select _surrendered] call ALife_fnc_radial;
 true
