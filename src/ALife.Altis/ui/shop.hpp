@@ -143,3 +143,29 @@ class ALife_Shop
         };
     };
 };
+
+// Weapon shop window (Police Armoury, Gun Store, ...): the same window,
+// driven by ALife_fnc_weaponShop. Sections in the list (Weapons, Magazines,
+// Attachments, Items), price, and what's needed (licence / rank).
+class ALife_WeaponShop: ALife_Shop
+{
+    idd = 5150;
+    onLoad = "['onLoad', _this select 0] call ALife_fnc_weaponShop";
+
+    class controls: controls
+    {
+        class List: List
+        {
+            columns[] = { 0, 0.62, 0.8 };
+            onLBSelChanged = "['select'] call ALife_fnc_weaponShop";
+        };
+        class PayCash: PayCash
+        {
+            action = "['buy', 'cash'] call ALife_fnc_weaponShop";
+        };
+        class PayBank: PayBank
+        {
+            action = "['buy', 'bank'] call ALife_fnc_weaponShop";
+        };
+    };
+};

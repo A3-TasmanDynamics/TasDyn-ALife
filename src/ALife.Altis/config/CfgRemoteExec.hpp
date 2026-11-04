@@ -39,6 +39,7 @@ class CfgRemoteExec
         class ALife_fnc_containerTransfer { allowedTargets = 2; };
         class ALife_fnc_atmAction { allowedTargets = 2; };
         class ALife_fnc_shopBuyClothing { allowedTargets = 2; };
+        class ALife_fnc_shopBuyWeapon { allowedTargets = 2; };
         class ALife_fnc_shopBuyVehicle { allowedTargets = 2; };
         class ALife_fnc_vehicleLock { allowedTargets = 2; };
 
@@ -66,6 +67,7 @@ class CfgRemoteExec
         class ALife_fnc_reviveApplied { allowedTargets = 1; };
         class ALife_fnc_containerData { allowedTargets = 1; };
         class ALife_fnc_clothingShop { allowedTargets = 1; };
+        class ALife_fnc_weaponShop { allowedTargets = 1; };
         class ALife_fnc_vehicleShop { allowedTargets = 1; };
         class ALife_fnc_vehicleLockApply { allowedTargets = 1; };
     };

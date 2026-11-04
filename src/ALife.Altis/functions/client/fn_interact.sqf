@@ -58,6 +58,7 @@ if (!isNull _target && { _target in (missionNamespace getVariable ["ALife_ground
 private _openShop = {
     switch (getText (missionConfigFile >> "CfgShops" >> _this >> "type")) do {
         case "clothing": { ["open", _this] call ALife_fnc_clothingShop; };
+        case "weapons": { ["open", _this] call ALife_fnc_weaponShop; };
         case "vehicles": { ["open", _this] call ALife_fnc_vehicleShop; };
         case "licences": { ["open", _this] call ALife_fnc_licenceShop; };
         default {
