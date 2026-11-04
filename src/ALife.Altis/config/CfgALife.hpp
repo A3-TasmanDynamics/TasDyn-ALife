@@ -128,6 +128,11 @@ class CfgALife
         range = 60;             // metres: further than this, it doesn't take
     };
 
+    // Vehicles bought or taken out of a garage appear at the shop's nearest
+    // vehicleSpawns marker within this many metres, else at a clear spot near
+    // the player (a shop NPC placed away from the markers).
+    vehicleSpawnRange = 150;
+
     // ---- Keys (the phone's Keys app, the U key) -----------------------------
     class Keys
     {

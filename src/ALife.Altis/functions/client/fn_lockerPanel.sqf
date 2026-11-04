@@ -3,9 +3,10 @@
 
     One locker for everything: while your locker is open in Arma's inventory
     (the gear crate, ALife_fnc_lockerClient), this panel is drawn inside the
-    same screen, at its left edge, for your virtual items -- what you carry,
-    what's in the locker, a quantity, and Store / Take (the server moves and
-    saves them, ALife_fnc_containerTransfer, container kind "locker").
+    same screen, attached to the left of Arma's inventory window, the same
+    height and in its look, for your virtual items -- what you carry, what's
+    in the locker, a quantity, and Store / Take (the server moves and saves
+    them, ALife_fnc_containerTransfer, container kind "locker").
 
     Modes:
         ["build"]   - once Arma's inventory (display 602) is open
@@ -27,33 +28,81 @@ if (isNull _display) exitWith {};
 switch (_mode) do {
     case "build": {
         if (!isNull (_display displayCtrl IDC_MINE)) exitWith { ["refresh"] call ALife_fnc_lockerPanel; };
-        private _x0 = safezoneX + safezoneW * 0.008;
-        private _w = safezoneW * 0.15;
-        private _y = safezoneY + safezoneH * 0.16;
+        // Where Arma's inventory window is on this screen: its leftmost
+        // control, and the top / bottom of the whole window.
+        private _left = safezoneX + safezoneW * 0.27;
+        private _top = safezoneY + safezoneH * 0.25;
+        private _bottom = safezoneY + safezoneH * 0.75;
+        private _parts = (allControls _display) select {
+            // Arma's own controls only: ours (this panel, notifications) are ALife_ classes.
+            ctrlShown _x && { (ctrlClassName _x) find "ALife_" != 0 } && {
+                (ctrlPosition _x) params ["_cx", "_cy", "_cw", "_ch"];
+                _cw > 0.01 && { _ch > 0.01 } && { _cw < safezoneW * 0.9 } && { _ch < safezoneH * 0.9 } && { _cx >= safezoneX } && { _cy >= safezoneY }
+            }
+        };
+        if (_parts isNotEqualTo []) then {
+            _left = selectMin (_parts apply { (ctrlPosition _x) select 0 });
+            _top = selectMin (_parts apply { (ctrlPosition _x) select 1 });
+            _bottom = selectMax (_parts apply { ((ctrlPosition _x) select 1) + ((ctrlPosition _x) select 3) });
+        };
+        private _gap = safezoneW * 0.006;
+        private _w = (safezoneW * 0.15) min (_left - _gap - (safezoneX + safezoneW * 0.005));
+        if (_w < safezoneW * 0.1) then { _w = safezoneW * 0.15; }; // no room beside it: overlap rather than squash
+        private _x0 = _left - _gap - _w;
+        private _h = _bottom - _top;
+        private _pad = _w * 0.04;
+        private _line = safezoneH * 0.026;     // one row, like Arma's inventory
+        private _fh = safezoneH * 0.021;       // text height
+
         private _place = {
-            params ["_class", "_idc", "_yy", "_h", ["_dx", 0], ["_ww", 1]];
+            params ["_class", "_idc", "_yy", "_hh", ["_dx", 0], ["_ww", -1]];
             private _c = _display ctrlCreate [_class, _idc];
-            _c ctrlSetPosition [_x0 + _w * _dx, _yy, _w * _ww, _h];
+            _c ctrlSetPosition [_x0 + _dx, _yy, [_ww, _w] select (_ww < 0), _hh];
             _c ctrlCommit 0;
             _c
         };
-        (["ALife_RscBackground", -1, _y, safezoneH * 0.66] call _place) ctrlSetBackgroundColor [0.059, 0.09, 0.165, 0.94];
-        (["ALife_RscBackground", -1, _y, safezoneH * 0.004] call _place) ctrlSetBackgroundColor [0.984, 0.749, 0.141, 1];
-        private _head = ["ALife_RscStructuredText", IDC_HEAD, _y + safezoneH * 0.012, safezoneH * 0.05, 0.05, 0.9] call _place;
-        _head ctrlSetStructuredText parseText "<t font='RobotoCondensedBold' size='1.1'>LOCKER ITEMS</t><br/><t size='0.8' color='#8b98b3'>Virtual items. Gear goes in the crate.</t>";
-        (["ALife_RscText", -1, _y + safezoneH * 0.07, safezoneH * 0.025, 0.05, 0.9] call _place) ctrlSetText "You carry";
-        private _mine = ["ALife_RscListBox", IDC_MINE, _y + safezoneH * 0.095, safezoneH * 0.2, 0.05, 0.9] call _place;
-        (["ALife_RscText", -1, _y + safezoneH * 0.305, safezoneH * 0.025, 0.05, 0.9] call _place) ctrlSetText "In your locker";
-        private _theirs = ["ALife_RscListBox", IDC_THEIRS, _y + safezoneH * 0.33, safezoneH * 0.2, 0.05, 0.9] call _place;
-        (["ALife_RscText", -1, _y + safezoneH * 0.545, safezoneH * 0.03, 0.05, 0.22] call _place) ctrlSetText "Qty";
-        private _qty = ["ALife_RscEdit", IDC_QTY, _y + safezoneH * 0.545, safezoneH * 0.03, 0.27, 0.2] call _place;
+        // The window: translucent black with a black title bar, like Arma's.
+        (["ALife_RscBackground", 9300, _top, _h] call _place) ctrlSetBackgroundColor [0, 0, 0, 0.6];
+        (["ALife_RscBackground", 9301, _top, _line] call _place) ctrlSetBackgroundColor [0, 0, 0, 0.85];
+        private _inner = _w - 2 * _pad;
+        (["ALife_RscStructuredText", IDC_HEAD, _top, _line, _pad, _inner] call _place) ctrlSetFontHeight _fh;
+
+        private _label = {
+            params ["_text", "_yy"];
+            private _c = ["ALife_RscText", -1, _yy, _line, _pad, _inner] call _place;
+            _c ctrlSetText _text;
+            _c ctrlSetFontHeight (_fh * 0.9);
+            _c ctrlSetTextColor [0.75, 0.78, 0.84, 1];
+        };
+        private _btnH = _line * 1.4;
+        private _listH = (_h - _line - 2 * _line - _btnH - 4 * _pad) / 2;
+        private _y = _top + _line + _pad;
+        ["You carry", _y] call _label;
+        private _mine = ["ALife_RscListBox", IDC_MINE, _y + _line, _listH, _pad, _inner] call _place;
+        _y = _y + _line + _listH + _pad;
+        ["In your locker", _y] call _label;
+        private _theirs = ["ALife_RscListBox", IDC_THEIRS, _y + _line, _listH, _pad, _inner] call _place;
+        {
+            _x ctrlSetFontHeight _fh;
+            _x ctrlSetBackgroundColor [0, 0, 0, 0.35];
+        } forEach [_mine, _theirs];
+
+        // Qty, Store and Take along the bottom.
+        private _by = _bottom - _pad - _btnH;
+        private _qty = ["ALife_RscEdit", IDC_QTY, _by, _btnH, _pad, _inner * 0.22] call _place;
         _qty ctrlSetText "1";
-        private _store = ["ALife_RscButton", -1, _y + safezoneH * 0.59, safezoneH * 0.04, 0.05, 0.43] call _place;
-        _store ctrlSetText "Store";
-        _store ctrlAddEventHandler ["ButtonClick", { ["move", "store"] call ALife_fnc_lockerPanel; }];
-        private _take = ["ALife_RscButton", -1, _y + safezoneH * 0.59, safezoneH * 0.04, 0.52, 0.43] call _place;
-        _take ctrlSetText "Take";
-        _take ctrlAddEventHandler ["ButtonClick", { ["move", "take"] call ALife_fnc_lockerPanel; }];
+        _qty ctrlSetFontHeight _fh;
+        _qty ctrlSetTooltip "How many";
+        {
+            _x params ["_idc", "_text", "_dx", "_dir", "_primary"];
+            private _b = ["ALife_RscButton", _idc, _by, _btnH, _pad + _inner * _dx, _inner * 0.37] call _place;
+            _b ctrlSetText _text;
+            _b ctrlSetFontHeight _fh;
+            _b ctrlSetBackgroundColor ([[1, 1, 1, 0.12], [0.96, 0.62, 0.04, 0.9]] select _primary);
+            _b ctrlSetTextColor ([[1, 1, 1, 1], [0.118, 0.071, 0, 1]] select _primary);
+            _b setVariable ["alife_dir", _dir];
+            _b ctrlAddEventHandler ["ButtonClick", { ["move", (_this select 0) getVariable "alife_dir"] call ALife_fnc_lockerPanel; }];
+        } forEach [[9314, "Store", 0.25, "store", true], [9315, "Take", 0.63, "take", false]];
         ["refresh"] call ALife_fnc_lockerPanel;
     };
 
@@ -78,8 +127,9 @@ switch (_mode) do {
         [_mine, ((missionNamespace getVariable ["ALife_phone", createHashMap]) getOrDefault ["items", []]) select { _x isEqualTypeParams ["", 0] }, "Nothing"] call _fill;
         private _locker = missionNamespace getVariable ["ALife_lockerItems", []];
         [_display displayCtrl IDC_THEIRS, (_locker param [3, []]) select { _x isEqualTypeParams ["", 0] }, "Empty"] call _fill;
+        // Title bar: "Locker items" and the space used, like Arma's header.
         (_display displayCtrl IDC_HEAD) ctrlSetStructuredText parseText format [
-            "<t font='RobotoCondensedBold' size='1.1'>LOCKER ITEMS</t><br/><t size='0.8' color='#8b98b3'>%1 / %2 space used. Gear goes in the crate.</t>",
+            "<t valign='middle'>Locker items</t><t align='right' valign='middle' color='#aeb4c0'>%1 / %2</t>",
             _locker param [5, 0], _locker param [6, 0]];
     };
 
