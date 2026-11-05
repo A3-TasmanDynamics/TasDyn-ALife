@@ -9,7 +9,7 @@
 //   |    Taser Pistol                 $2,000  |  | [Remove]      [Clear]    |
 //   |    ...                                  |  | [Pay cash] [Pay bank]    |
 //   | Taser Pistol  Takes: Taser Cartridges   |  | [Close]                  |
-//   | Qty [1]                 [Add to cart]   |  +--------------------------+
+//   | Qty [1]  [Mags & attachments] [Add to cart] +--------------------------+
 //   +-----------------------------------------+
 //
 // Control IDs match the #defines in functions\client\fn_weaponShop.sqf.
@@ -160,7 +160,7 @@ class ALife_WeaponShop
             rowHeight = 0.045;
             columns[] = { 0, 0.72 };
             onLBSelChanged = "['select'] call ALife_fnc_weaponShop";
-            onLBDblClick = "['add'] call ALife_fnc_weaponShop";
+            onLBDblClick = "['add', 'list'] call ALife_fnc_weaponShop";
             x = WS_IX;
             y = "safezoneY + safezoneH * 0.7";
             w = WS_IW;
@@ -194,6 +194,22 @@ class ALife_WeaponShop
             x = "safezoneX + safezoneW * 0.242";
             y = "safezoneY + safezoneH * 0.927";
             w = "safezoneW * 0.025";
+            h = "safezoneH * 0.03";
+        };
+        class ForWeapon: ALife_RscButton
+        {
+            idc = 5169;
+            text = "Mags & attachments";
+            sizeEx = 0.03;
+            colorBackground[] = { 1, 1, 1, 0.1 };
+            colorBackgroundActive[] = { 1, 1, 1, 0.2 };
+            colorFocused[] = { 1, 1, 1, 0.14 };
+            colorDisabled[] = { 1, 1, 1, 0.3 };
+            colorBackgroundDisabled[] = { 1, 1, 1, 0.04 };
+            action = "['for'] call ALife_fnc_weaponShop";
+            x = "safezoneX + safezoneW * 0.344";
+            y = "safezoneY + safezoneH * 0.927";
+            w = "safezoneW * 0.108";
             h = "safezoneH * 0.03";
         };
         class Add: ALife_RscButton

@@ -8,10 +8,11 @@
     The selected item lies on a dark table in 3D filling the screen (a local
     scene high above the player: a camera looking down on it; drag to turn
     it, scroll to zoom). Along the bottom, the shop -- tabs (Weapons,
-    Magazines, Attachments, Items), a search box, the items in groups
-    (Tasers, Pistols, SMGs, Rifles...; magazines by the weapon they fit;
-    attachments by kind), greyed out with what's needed when you can't buy
-    them -- and your cart. Pay cash / Pay bank buys the whole cart at once
+    Magazines, Attachments, Items), a search box, the items in groups that
+    open and close with a click (Tasers, Pistols, SMGs, Rifles...; magazines
+    by the weapon they fit; attachments by kind), greyed out with what's
+    needed when you can't buy them; "Mags & attachments" lists what fits the
+    selected weapon -- and your cart. Pay cash / Pay bank buys the whole cart at once
     (ALife_fnc_shopBuyWeapon checks everything again, including that it fits
     on you); the goods are then put on you here ("bought").
 
@@ -24,7 +25,8 @@
     Modes:
         ["open", placement]
         ["onLoad", display] / ["unload"] / ["refresh"]
-        ["tab", 0-3] / ["list"] / ["select"] / ["preview"]
+        ["tab", 0-3] / ["list"] / ["select"] (a click) / ["show"] / ["preview"]
+        ["for"]     - the selected weapon's magazines and attachments, or back
         ["add"] / ["remove"] / ["clear"] / ["cart"]
         ["checkout", "cash" | "bank"]
         ["bought", [[list, class, qty], ...]]   - (from the server) put it on you
@@ -38,6 +40,7 @@
 #define IDC_LIST 5165
 #define IDC_INFO 5166
 #define IDC_QTY 5168
+#define IDC_FOR 5169
 #define IDC_CART_TITLE 5170
 #define IDC_CART 5171
 #define IDC_HINT 5180
@@ -64,10 +67,7 @@ private _fnc_root = { configFile >> (["CfgWeapons", "CfgMagazines"] select ((_th
 private _fnc_type = { getNumber (configFile >> "CfgWeapons" >> _this >> "type") };
 // The selected catalogue entry: [tab, group, list, class, name, price, need], or [].
 private _fnc_selected = {
-    private _list = _display displayCtrl IDC_LIST;
-    private _row = lnbCurSelRow _list;
-    if (_row < 0) exitWith { [] };
-    private _i = _list lnbValue [_row, 0];
+    private _i = missionNamespace getVariable ["ALife_wsSelected", -1];
     if (_i < 0) exitWith { [] };
     (missionNamespace getVariable ["ALife_wsCatalogue", []]) param [_i, []]
 };
@@ -143,6 +143,9 @@ switch (_mode) do {
         ALife_wsCatalogue = _catalogue;
         ALife_wsCart = [];
         ALife_wsSearch = "";
+        ALife_wsFor = "";
+        ALife_wsSelected = -1;
+        ALife_wsOpen = createHashMap; // which groups are open
 
         // ---- The scene: a dark table under a camera looking down ------------
         ALife_wsStage = (getPosASL player) vectorAdd [0, 0, STAGE_UP];
@@ -160,11 +163,12 @@ switch (_mode) do {
             _p setPosASL (ALife_wsStage vectorDiff [_off select 0, _off select 1, (_off select 2) + 0.01 + 0.01 * _forEachIndex]);
             _table pushBack _p;
         } forEach [1, -1];
-        private _light = "#lightpoint" createVehicleLocal (ASLToAGL (ALife_wsStage vectorAdd [0, -0.5, 2]));
-        _light setLightBrightness 0.6;
-        _light setLightColor [1, 0.97, 0.9];
-        _light setLightAmbient [0.5, 0.5, 0.55];
-        _light setLightDayLight true;
+        // Lit by the sun by day; at night a soft light from above (off by day).
+        private _light = "#lightpoint" createVehicleLocal (ASLToAGL (ALife_wsStage vectorAdd [0, -1, 4]));
+        _light setLightBrightness 0.12;
+        _light setLightColor [0.9, 0.92, 1];
+        _light setLightAmbient [0.35, 0.36, 0.4];
+        _light setLightDayLight false;
         ALife_wsScene = _table + [_light];
         private _cam = "camera" camCreate (ASLToAGL (ALife_wsStage vectorAdd [0, 0, 1]));
         _cam cameraEffect ["internal", "back"];
@@ -188,6 +192,7 @@ switch (_mode) do {
         }];
         _display displayAddEventHandler ["MouseZChanged", {
             params ["", "_scroll"];
+            if ((getMousePosition select 1) > safezoneY + safezoneH * 0.54) exitWith {}; // over the panels: the list scrolls
             ALife_wsZoom = ((ALife_wsZoom * (1 - 0.12 * _scroll)) max 0.25) min 3;
             ["zoom"] call ALife_fnc_weaponShop;
         }];
@@ -227,6 +232,8 @@ switch (_mode) do {
     case "tab": {
         if (isNull _display) exitWith {};
         ALife_wsTab = _arg;
+        ALife_wsFor = "";
+        ALife_wsSelected = -1; // the first item of the tab
         for "_t" from 0 to 3 do {
             private _b = _display displayCtrl (IDC_TAB0 + _t);
             private _on = _t == _arg;
@@ -237,59 +244,137 @@ switch (_mode) do {
         ["list"] call ALife_fnc_weaponShop;
     };
 
+    case "for": {
+        // A weapon's magazines and attachments, or back to the tab.
+        if (isNull _display) exitWith {};
+        if ((missionNamespace getVariable ["ALife_wsFor", ""]) != "") exitWith {
+            private _keep = ALife_wsSelected;
+            ["tab", ALife_wsTab] call ALife_fnc_weaponShop;
+            ALife_wsSelected = _keep;
+            ["list"] call ALife_fnc_weaponShop;
+            ["show"] call ALife_fnc_weaponShop;
+        };
+        private _entry = call _fnc_selected;
+        if (_entry isEqualTo [] || { (_entry select 2) != "items" } || { !(((_entry select 3) call _fnc_type) in [1, 2, 4]) }) exitWith {
+            ["Pick a weapon first.", "warning"] call ALife_fnc_toast;
+        };
+        ALife_wsFor = _entry select 3;
+        ["list"] call ALife_fnc_weaponShop;
+        ["show"] call ALife_fnc_weaponShop;
+    };
+
     case "list": {
         if (isNull _display) exitWith {};
         private _list = _display displayCtrl IDC_LIST;
-        lnbClear _list;
         private _search = missionNamespace getVariable ["ALife_wsSearch", ""];
         private _tab = missionNamespace getVariable ["ALife_wsTab", 0];
+        private _for = missionNamespace getVariable ["ALife_wsFor", ""];
         private _catalogue = missionNamespace getVariable ["ALife_wsCatalogue", []];
+        private _open = missionNamespace getVariable ["ALife_wsOpen", createHashMap];
+        // What's listed: the tab, or what fits the weapon picked for "for".
         private _shown = [];
-        { if ((_x select 0) == _tab && { _search == "" || { _search in toLower (_x select 4) } }) then { _shown pushBack _forEachIndex; }; } forEach _catalogue;
+        if (_for != "") then {
+            private _mags = (compatibleMagazines _for) apply { toLower _x };
+            private _accs = (compatibleItems _for) apply { toLower _x };
+            {
+                if (((_x select 2) == "mags" && { toLower (_x select 3) in _mags }) || { (_x select 2) == "accs" && { toLower (_x select 3) in _accs } }) then { _shown pushBack _forEachIndex; };
+            } forEach _catalogue;
+        } else {
+            { if ((_x select 0) == _tab) then { _shown pushBack _forEachIndex; }; } forEach _catalogue;
+        };
+        _shown = _shown select { _search == "" || { _search in toLower ((_catalogue select _x) select 4) } };
+        private _groupOf = { if (_for != "" && { ((_catalogue select _this) select 2) == "mags" }) then { "Magazines" } else { (_catalogue select _this) select 1 } };
         // Groups in the order they first come in the shop.
         private _groups = [];
-        { _groups pushBackUnique ((_catalogue select _x) select 1); } forEach _shown;
+        { _groups pushBackUnique (_x call _groupOf); } forEach _shown;
+
+        ALife_wsListing = true; // (selecting rows below isn't a click)
+        lnbClear _list;
+        if (_for != "") then {
+            private _row = _list lnbAddRow [format ["FITS THE %1", toUpper getText (configFile >> "CfgWeapons" >> _for >> "displayName")], ""];
+            _list lnbSetValue [[_row, 0], -2];
+            _list lnbSetColor [[_row, 0], [1, 1, 1, 1]];
+        };
         {
             private _group = _x;
-            private _head = _list lnbAddRow [toUpper _group, ""];
+            private _members = _shown select { (_x call _groupOf) == _group };
+            // Each group opens and closes with a click; the first one starts
+            // open (all of them for a weapon's fits).
+            private _key = format ["%1|%2|%3", _tab, _for, _group];
+            if (isNil { _open get _key }) then { _open set [_key, _forEachIndex == 0 || { _for != "" }]; };
+            private _isOpen = (_open get _key) || { _search != "" };
+            private _head = _list lnbAddRow [format ["%1   %2  (%3)", ["+", "-"] select _isOpen, toUpper _group, count _members], ""];
             _list lnbSetValue [[_head, 0], -1];
+            _list lnbSetData [[_head, 0], _key];
             _list lnbSetColor [[_head, 0], [0.984, 0.749, 0.141, 1]];
-            {
-                (_catalogue select _x) params ["", "_g", "_key", "_class", "_name", "_price", "_need"];
-                if (_g == _group) then {
-                    private _row = _list lnbAddRow ["   " + _name, _price call _fnc_money];
+            if (_isOpen) then {
+                {
+                    (_catalogue select _x) params ["", "", "_key", "_class", "_name", "_price", "_need"];
+                    private _row = _list lnbAddRow ["      " + _name, _price call _fnc_money];
                     _list lnbSetValue [[_row, 0], _x];
                     _list lnbSetPicture [[_row, 0], getText ([_key, _class] call _fnc_root >> "picture")];
                     if (_need != "") then { _list lnbSetColor [[_row, 0], [1, 1, 1, 0.4]]; _list lnbSetColor [[_row, 1], [1, 1, 1, 0.4]]; };
-                };
-            } forEach _shown;
+                } forEach _members;
+            };
         } forEach _groups;
+        ALife_wsOpen = _open;
         if (_shown isEqualTo []) then {
             private _row = _list lnbAddRow [["Nothing here.", "Nothing matches your search."] select (_search != ""), ""];
-            _list lnbSetValue [[_row, 0], -1];
+            _list lnbSetValue [[_row, 0], -2];
             _list lnbSetColor [[_row, 0], [0.545, 0.596, 0.702, 1]];
         };
-        // The first item.
-        for "_r" from 0 to ((lnbSize _list) select 0) - 1 do {
-            if ((_list lnbValue [_r, 0]) >= 0) exitWith { _list lnbSetCurSelRow _r; };
+        // Keep the selected item highlighted; on a new tab, the first item.
+        private _rows = (lnbSize _list) select 0;
+        private _row = -1;
+        for "_r" from 0 to _rows - 1 do { if ((_list lnbValue [_r, 0]) == (missionNamespace getVariable ["ALife_wsSelected", -1])) exitWith { _row = _r; }; };
+        private _changed = false;
+        if (_row < 0 && { (missionNamespace getVariable ["ALife_wsSelected", -1]) < 0 }) then {
+            for "_r" from 0 to _rows - 1 do { if ((_list lnbValue [_r, 0]) >= 0) exitWith { _row = _r; }; };
+            if (_row >= 0) then { ALife_wsSelected = _list lnbValue [_row, 0]; _changed = true; };
         };
-        if (_shown isEqualTo []) then { ["select"] call ALife_fnc_weaponShop; };
+        _list lnbSetCurSelRow _row;
+        ALife_wsListing = false;
+        if (_changed) then { ["show"] call ALife_fnc_weaponShop; };
     };
 
     case "select": {
+        // A click in the list: a group header opens / closes it, an item shows it.
+        if (isNull _display || { missionNamespace getVariable ["ALife_wsListing", false] }) exitWith {};
+        private _list = _display displayCtrl IDC_LIST;
+        private _row = lnbCurSelRow _list;
+        if (_row < 0) exitWith {};
+        private _value = _list lnbValue [_row, 0];
+        if (_value == -1) exitWith {
+            private _key = _list lnbData [_row, 0];
+            private _open = missionNamespace getVariable ["ALife_wsOpen", createHashMap];
+            _open set [_key, !(_open getOrDefault [_key, false])];
+            ["list"] call ALife_fnc_weaponShop;
+        };
+        if (_value < 0) exitWith {};
+        ALife_wsSelected = _value;
+        ["show"] call ALife_fnc_weaponShop;
+    };
+
+    case "show": {
         if (isNull _display) exitWith {};
         private _entry = call _fnc_selected;
+        private _forBtn = _display displayCtrl IDC_FOR;
+        private _for = missionNamespace getVariable ["ALife_wsFor", ""];
         if (_entry isEqualTo []) exitWith {
             (_display displayCtrl IDC_INFO) ctrlSetStructuredText parseText "";
             deleteVehicle (missionNamespace getVariable ["ALife_wsHolder", objNull]);
+            _forBtn ctrlEnable (_for != "");
         };
         _entry params ["", "", "_key", "_class", "_name", "_price", "_need"];
+        private _isWeapon = _key == "items" && { (_class call _fnc_type) in [1, 2, 4] };
+        _forBtn ctrlSetText (["Mags & attachments", "Back to the list"] select (_for != ""));
+        _forBtn ctrlEnable (_isWeapon || { _for != "" });
         // What it is: the magazines a weapon takes (that this shop sells), or what's needed.
         private _extra = "";
         if (_need != "") then {
             _extra = format ["<t color='#fbbf24'>%1 needed</t>", _need call _fnc_safe];
         } else {
-            if (_key == "items" && { (_class call _fnc_type) in [1, 2, 4] }) then {
+            if (_isWeapon) then {
                 private _fits = (compatibleMagazines _class) apply { toLower _x };
                 private _sold = (missionNamespace getVariable ["ALife_wsCatalogue", []]) select { (_x select 2) == "mags" && { toLower (_x select 3) in _fits } };
                 if (_sold isNotEqualTo []) then { _extra = format ["<t color='#8b98b3'>Takes </t>%1", ((_sold apply { _x select 4 }) joinString ", ") call _fnc_safe]; };
@@ -332,6 +417,8 @@ switch (_mode) do {
 
     case "add": {
         if (isNull _display) exitWith {};
+        // A double-click on a group header only opens / closes it.
+        if (_arg isEqualTo "list" && { ((_display displayCtrl IDC_LIST) lnbValue [lnbCurSelRow (_display displayCtrl IDC_LIST), 0]) < 0 }) exitWith {};
         private _entry = call _fnc_selected;
         if (_entry isEqualTo []) exitWith { ["Pick something first.", "warning"] call ALife_fnc_toast; };
         _entry params ["", "", "_key", "_class", "_name", "_price", "_need"];
