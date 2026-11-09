@@ -678,6 +678,16 @@ type commandRanksData struct {
 	Why         string
 	Settings    factions.Settings
 	CanConfig   bool // top rank: settings
+	// Adding / deleting ranks: cabinet (below their own rank) and Management.
+	CanManage bool
+	AddAt     []rankPlace // where a new rank can go
+	MaxLevel  int         // highest level the viewer may delete (Management: all)
+}
+
+// rankPlace is one "where does the new rank go" option.
+type rankPlace struct {
+	Level int
+	Label string
 }
 
 func (d *Deps) CommandRanks(w http.ResponseWriter, r *http.Request) {
@@ -734,7 +744,67 @@ func (d *Deps) CommandRanks(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	data.CanConfig = !cb.ReadOnly
+	data.CanManage = cb.Management || (!cb.ReadOnly && cb.Command.CanManageRanks())
+	if data.CanManage {
+		// New rank: at the bottom, or above any rank (cabinet: not above their own).
+		top := len(ranks) + 1
+		data.MaxLevel = len(ranks)
+		if !cb.Management {
+			top, data.MaxLevel = cb.Command.Level, cb.Command.Level-1
+		}
+		for l := top; l >= 1; l-- {
+			label := "At the bottom (level 1)"
+			if l > 1 {
+				label = fmt.Sprintf("Above %s (level %d)", factions.RankFor(ranks, l-1).Label(), l)
+			}
+			data.AddAt = append(data.AddAt, rankPlace{Level: l, Label: label})
+		}
+	}
 	d.Render.Render(w, "command_ranks.html", data)
+}
+
+// rankManager is who adds / deletes ranks: Management as a staff override
+// unless they're faction cabinet themselves.
+func (d *Deps) rankManager(r *http.Request, faction string) factions.Actor {
+	actor := commandActor(r)
+	if c, _, _ := factions.CommandIn(r.Context(), d.Pool, actor.PlayerID, faction); !c.Cabinet && d.can(r, "factions.configure") {
+		actor.Via = factions.ViaStaffOverride
+	}
+	return actor
+}
+
+func (d *Deps) CommandRankAdd(w http.ResponseWriter, r *http.Request) {
+	faction, ok := postFaction(w, r)
+	if !ok {
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad form.", http.StatusBadRequest)
+		return
+	}
+	at, _ := strconv.Atoi(r.FormValue("at"))
+	err := factions.AddRank(r.Context(), d.Pool, d.rankManager(r, faction), faction, at, r.FormValue("name"), r.FormValue("short"))
+	finishCommandAction(w, r, fmt.Sprintf("/command/%s/ranks?level=%d", faction, at), err,
+		"Rank added. Ranks above it moved up one level; everyone kept their rank. Logged in the Command log.")
+}
+
+func (d *Deps) CommandRankDelete(w http.ResponseWriter, r *http.Request) {
+	faction, ok := postFaction(w, r)
+	if !ok {
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad form.", http.StatusBadRequest)
+		return
+	}
+	level, _ := strconv.Atoi(chi.URLParam(r, "level"))
+	if r.FormValue("confirm") != "1" {
+		finishCommandAction(w, r, fmt.Sprintf("/command/%s/ranks?level=%d", faction, level), fmt.Errorf("%w: tick the box to confirm deleting the rank", factions.ErrNotAllowed), "")
+		return
+	}
+	err := factions.DeleteRank(r.Context(), d.Pool, d.rankManager(r, faction), faction, level)
+	finishCommandAction(w, r, "/command/"+faction+"/ranks", err,
+		"Rank deleted. Ranks above it moved down one level; everyone kept their rank. Logged in the Command log.")
 }
 
 func (d *Deps) CommandRankSave(w http.ResponseWriter, r *http.Request) {

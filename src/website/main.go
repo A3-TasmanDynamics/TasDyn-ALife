@@ -356,7 +356,9 @@ func run() error {
 		r.Post("/command/{faction}/quals/{key}/head", d.CommandQualHead)
 		r.Post("/command/{faction}/members/{id}/quals", d.CommandMemberQual)
 		r.Get("/command/{faction}/ranks", d.CommandRanks)
+		r.Post("/command/{faction}/ranks/add", d.CommandRankAdd)
 		r.Post("/command/{faction}/ranks/{level}", d.CommandRankSave)
+		r.Post("/command/{faction}/ranks/{level}/delete", d.CommandRankDelete)
 		r.Post("/command/{faction}/settings", d.CommandSettingsSave)
 
 		// Notifications (GAMEPANEL_PARITY §7.3).
