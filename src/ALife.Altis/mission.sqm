@@ -5,21 +5,21 @@ class EditorData
 	angleGridStep=0.2617994;
 	scaleGridStep=1;
 	autoGroupingDist=10;
-	toggles=1;
+	toggles=513;
 	class ItemIDProvider
 	{
-		nextID=118;
+		nextID=130;
 	};
 	class MarkerIDProvider
 	{
-		nextID=22;
+		nextID=23;
 	};
 	class Camera
 	{
-		pos[]={16777.572,67.130508,13423.114};
-		dir[]={-0.037114594,-0.39044461,0.91989458};
-		up[]={-0.015740512,0.92062318,0.39013207};
-		aside[]={0.9992007,-8.8950401e-08,0.04031508};
+		pos[]={3241.7993,24.62965,12928.845};
+		dir[]={0.16624503,-0.53631091,0.82757235};
+		up[]={0.10563155,0.84399468,0.52583385};
+		aside[]={0.98047465,-7.4389391e-07,-0.19696128};
 	};
 };
 binarizationWanted=0;
@@ -32,13 +32,14 @@ addons[]=
 	"A3_Structures_F_Kart_Civ_SportsGrounds",
 	"A3_Structures_F_Households_House_Small01",
 	"A3_Characters_F_Orange",
-	"A3_Characters_F_AoW"
+	"A3_Characters_F_AoW",
+	"A3_Structures_F_Civ_InfoBoards"
 };
 class AddonsMetaData
 {
 	class List
 	{
-		items=7;
+		items=8;
 		class Item0
 		{
 			className="A3_Ui_F";
@@ -88,6 +89,13 @@ class AddonsMetaData
 			author="Bohemia Interactive";
 			url="https://www.arma3.com";
 		};
+		class Item7
+		{
+			className="A3_Structures_F";
+			name="Arma 3 - Buildings and Structures";
+			author="Bohemia Interactive";
+			url="https://www.arma3.com";
+		};
 	};
 };
 dlcs[]=
@@ -125,7 +133,7 @@ class Mission
 	};
 	class Entities
 	{
-		items=56;
+		items=63;
 		class Item0
 		{
 			dataType="Marker";
@@ -2477,7 +2485,7 @@ class Mission
 					class PositionInfo
 					{
 						position[]={14032.936,25.726185,18747.516};
-						angles[]={0,2.0542781,-0};
+						angles[]={0,2.0542781,0};
 					};
 					side="Civilian";
 					flags=7;
@@ -2565,7 +2573,7 @@ class Mission
 					class PositionInfo
 					{
 						position[]={16784.543,23.089207,12653.941};
-						angles[]={0,1.8317678,-0};
+						angles[]={0,1.8317678,0};
 					};
 					side="Civilian";
 					flags=7;
@@ -2676,6 +2684,202 @@ class Mission
 			type="Empty";
 			id=117;
 			atlOffset=-0.00028324127;
+		};
+		class Item56
+		{
+			dataType="Group";
+			side="West";
+			class Entities
+			{
+				items=1;
+				class Item0
+				{
+					dataType="Object";
+					class PositionInfo
+					{
+						position[]={3273.844,2.544683,12973.648};
+						angles[]={0,3.0996523,0};
+					};
+					side="West";
+					flags=3;
+					class Attributes
+					{
+						name="police_receptionist_1";
+						disableSimulation=1;
+						ignoreByDynSimulGrid=1;
+					};
+					id=119;
+					type="B_RangeMaster_F";
+					atlOffset=0.34599996;
+					class CustomAttributes
+					{
+						class Attribute0
+						{
+							property="allowDamage";
+							expression="_this allowdamage _value;";
+							class Value
+							{
+								class data
+								{
+									singleType="BOOL";
+									value=0;
+								};
+							};
+						};
+						class Attribute1
+						{
+							property="pitch";
+							expression="_this setpitch _value;";
+							class Value
+							{
+								class data
+								{
+									singleType="SCALAR";
+									value=0.95999998;
+								};
+							};
+						};
+						nAttributes=2;
+					};
+				};
+			};
+			class Attributes
+			{
+			};
+			id=118;
+			atlOffset=0.34599996;
+		};
+		class Item57
+		{
+			dataType="Object";
+			class PositionInfo
+			{
+				position[]={3250.6572,2.79322,12961.968};
+				angles[]={6.2631092,1.522119,0.0032754918};
+			};
+			side="Empty";
+			flags=4;
+			class Attributes
+			{
+				name="police_shop_kavala";
+				disableSimulation=1;
+			};
+			id=122;
+			type="Land_InfoStand_V2_F";
+			class CustomAttributes
+			{
+				class Attribute0
+				{
+					property="allowDamage";
+					expression="_this allowdamage _value;";
+					class Value
+					{
+						class data
+						{
+							singleType="BOOL";
+							value=0;
+						};
+					};
+				};
+				nAttributes=1;
+			};
+		};
+		class Item58
+		{
+			dataType="Object";
+			class PositionInfo
+			{
+				position[]={3190.6914,2.8674066,12928.192};
+				angles[]={6.2818413,6.082263,6.2805324};
+			};
+			side="Empty";
+			flags=4;
+			class Attributes
+			{
+				name="police_air_kavala";
+				disableSimulation=1;
+			};
+			id=124;
+			type="Land_InfoStand_V2_F";
+			atlOffset=2.3841858e-07;
+			class CustomAttributes
+			{
+				class Attribute0
+				{
+					property="allowDamage";
+					expression="_this allowdamage _value;";
+					class Value
+					{
+						class data
+						{
+							singleType="BOOL";
+							value=0;
+						};
+					};
+				};
+				nAttributes=1;
+			};
+		};
+		class Item59
+		{
+			dataType="Object";
+			class PositionInfo
+			{
+				position[]={3164.4971,2.0882845,12886.394};
+				angles[]={6.2465858,5.4767733,0.045867253};
+			};
+			side="Empty";
+			flags=4;
+			class Attributes
+			{
+				name="police_ship_kavala";
+				disableSimulation=1;
+			};
+			id=125;
+			type="Land_InfoStand_V2_F";
+			atlOffset=0.00018239021;
+			class CustomAttributes
+			{
+				class Attribute0
+				{
+					property="allowDamage";
+					expression="_this allowdamage _value;";
+					class Value
+					{
+						class data
+						{
+							singleType="BOOL";
+							value=0;
+						};
+					};
+				};
+				nAttributes=1;
+			};
+		};
+		class Item60
+		{
+			dataType="Marker";
+			position[]={3243.7498,2.115,12961.533};
+			name="police_car_spawn_kavala";
+			type="Empty";
+			id=126;
+		};
+		class Item61
+		{
+			dataType="Marker";
+			position[]={3194.9741,2,12903.734};
+			name="police_air_spawn_kavala";
+			type="Empty";
+			id=127;
+		};
+		class Item62
+		{
+			dataType="Marker";
+			position[]={3164.7881,0,12856.32};
+			name="police_ship_spawn_kavala";
+			type="Empty";
+			id=129;
+			atlOffset=12.22533;
 		};
 	};
 };
