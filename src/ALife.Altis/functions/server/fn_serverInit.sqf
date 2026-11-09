@@ -65,6 +65,15 @@ addMissionEventHandler ["HandleDisconnect", {
     // their gear. Already saved above (alive or not), so forget whose it was.
     _unit setVariable ["alife_uid", nil];
     _unit setVariable ["alife_faction", nil];
+    // And the body goes: nobody can loot the gear they just saved (it's
+    // theirs when they come back). Out of a vehicle seat too.
+    _unit spawn {
+        sleep 0.1;
+        if (isNull _this) exitWith {};
+        detach _this;
+        { detach _x; } forEach attachedObjects _this; // someone they were escorting
+        if (vehicle _this != _this) then { (vehicle _this) deleteVehicleCrew _this; } else { deleteVehicle _this; };
+    };
     false // don't hand the body to AI
 }];
 
