@@ -5,7 +5,7 @@
     <div class="cmd-head">
       <div>
         <h1>Ranks &amp; gear</h1>
-        <p class="cmd-sub">Rank rules drive the roster: slots, time in rank, required qualifications and who can promote whom. Tick a rank as <strong>Command</strong> (CMD) to give it this panel, and as <strong>Cabinet</strong> (CAB) for senior leadership. Command, cabinet and the Administration division maintain these rules; only cabinet and Management change the rank type and "promotes up to".</p>
+        <p class="cmd-sub">Rank rules drive the roster: slots, time in rank, required qualifications and who can promote whom. Tick a rank as <strong>Command</strong> (CMD) to give it this panel, and as <strong>Cabinet</strong> (CAB) for senior leadership. Command, cabinet and the Administration division maintain these rules; only cabinet and Management change the rank type and "promotes up to", and add or delete ranks.</p>
       </div>
     </div>
 
@@ -24,7 +24,7 @@
       {{end}}
     </div>
     {{else}}
-    <p class="cmd-empty cmd-card">{{.FactionName}} has no ranks set up yet. Staff add them on Roles &amp; Permissions → Faction rank names.</p>
+    <p class="cmd-empty cmd-card">{{.FactionName}} has no ranks set up yet.{{if .CanManage}} Add the first one below.{{else}} Cabinet or Management add them here.{{end}}</p>
     {{end}}
 
     {{with .Sel}}
@@ -71,12 +71,40 @@
         {{if .Description}}<p class="cmd-dim">{{.Description}}</p>{{end}}
         <p class="hint">{{$.Why}}</p>
         {{end}}
+        {{if and $.CanManage (le .Level $.MaxLevel)}}
+        <form method="post" action="/command/{{$.Faction}}/ranks/{{.Level}}/delete" class="cmd-form rank-delete">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+          <h3>Delete this rank</h3>
+          {{if .Filled}}
+          <p class="hint">{{.Filled}} member{{if gt .Filled 1}}s{{end}} hold{{if eq .Filled 1}}s{{end}} {{.Label}}. Move them to another rank on the roster first.</p>
+          {{else}}
+          <label class="disc-check"><input type="checkbox" name="confirm" value="1" required> <span>Delete <strong>{{.Label}}</strong>. The ranks above it move down one level (everyone keeps their rank) and its Discord / TeamSpeak roles are removed.</span></label>
+          <button class="btn btn-danger" type="submit">Delete rank</button>
+          {{end}}
+        </form>
+        {{end}}
       </section>
       <section class="cmd-card cmd-pad">
         <h2>Gear unlocked at this rank</h2>
         <p class="cmd-dim">Rank gear comes from the mission's loadout config, so it isn't listed here yet. It'll show here once loadouts move to the database. Each rank also keeps everything from the ranks below it.</p>
       </section>
     </div>
+    {{end}}
+
+    {{if .CanManage}}
+    <section class="cmd-card cmd-pad" id="add-rank" aria-labelledby="ar-h">
+      <h2 id="ar-h">Add a rank</h2>
+      <form method="post" action="/command/{{.Faction}}/ranks/add" class="cmd-form">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <div class="mod-form-row">
+          <div class="field mod-grow"><label for="ar-name">Rank name</label><input id="ar-name" name="name" required maxlength="60" placeholder="e.g. Senior Constable"></div>
+          <div class="field"><label for="ar-short">Short name</label><input id="ar-short" name="short" maxlength="12" placeholder="e.g. SC"></div>
+          <div class="field mod-grow"><label for="ar-at">Where</label><select id="ar-at" name="at">{{range .AddAt}}<option value="{{.Level}}">{{.Label}}</option>{{end}}</select></div>
+        </div>
+        <button class="btn btn-primary" type="submit">Add rank</button>
+        <p class="hint">Ranks above the new one move up one level and everyone keeps their rank, Discord / TeamSpeak roles included. Set its slots, rules and type after adding it. In game, shop items locked to a rank use level numbers, so check those after adding or deleting a rank in the middle.{{if not .Management}} Cabinet can add and delete ranks below their own; Management can change any.{{end}}</p>
+      </form>
+    </section>
     {{end}}
 
     {{if .CanConfig}}
