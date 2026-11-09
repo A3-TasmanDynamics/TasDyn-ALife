@@ -23,12 +23,15 @@ params ["_unit", "_place", ["_class", "", [""]]];
 private _spawns = (getArray (_place >> "vehicleSpawns") select { _x in allMapMarkers }) apply { [_unit distance2D getMarkerPos _x, _x] };
 _spawns sort true;
 private _range = getNumber (missionConfigFile >> "CfgALife" >> "vehicleSpawnRange") max 50;
-if (_spawns isNotEqualTo [] && { ((_spawns select 0) select 0) <= _range }) exitWith {
-    private _marker = (_spawns select 0) select 1;
-    if ((nearestObjects [getMarkerPos _marker, ["LandVehicle", "Air", "Ship"], 7]) isNotEqualTo []) exitWith {
-        ["", "The spawn point is blocked. Move the vehicle that's on it and try again."]
+// The nearest clear one of the shop's markers within range (a station can
+// have several: the next is used when one is taken).
+private _near = _spawns select { (_x select 0) <= _range };
+if (_near isNotEqualTo []) exitWith {
+    private _i = _near findIf { (nearestObjects [getMarkerPos (_x select 1), ["LandVehicle", "Air", "Ship"], 7]) isEqualTo [] };
+    if (_i < 0) exitWith {
+        ["", ["The spawn point is blocked. Move the vehicle that's on it and try again.", "Every spawn point here is blocked. Move a vehicle off one and try again."] select (count _near > 1)]
     };
-    [_marker, ""]
+    [(_near select _i) select 1, ""]
 };
 
 // No spawn point here: a clear spot in front of them.

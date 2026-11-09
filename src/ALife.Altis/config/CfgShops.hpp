@@ -20,6 +20,11 @@
 //                  EMS shop, and their lockers).
 //                Vehicles appear at the nearest vehicleSpawns marker within
 //                CfgALife >> vehicleSpawnRange, else at a clear spot nearby.
+//   Police vehicle spawn markers (empty markers in Eden, facing the way the
+//   vehicle should): police_car_spawn_<town>_1..3 (kavala / athira /
+//   pyrgos), police_air_spawn_<town>_1..2 (kavala / athira, on a helipad),
+//   police_boat_spawn_<town>_1..2 (on the water). Any not placed are skipped;
+//   the nearest clear one is used.
 //   radius    -- metres from a marker / NPC
 //   vehicleSpawns[] -- vehicle shops: where bought vehicles appear
 //   mapMarker -- optional: a map marker with this text on each of its NPCs
@@ -209,7 +214,7 @@ class CfgShops
         markers[] = {};
         npcs[] = { "police_shop_kavala", "police_shop_athira", "police_shop_pyrgos" };
         radius = 8;
-        vehicleSpawns[] = { "spawn_cop_kavala", "spawn_cop_athira", "spawn_cop_pyrgos" };
+        vehicleSpawns[] = { "police_car_spawn_kavala_1", "police_car_spawn_kavala_2", "police_car_spawn_kavala_3", "police_car_spawn_athira_1", "police_car_spawn_athira_2", "police_car_spawn_athira_3", "police_car_spawn_pyrgos_1", "police_car_spawn_pyrgos_2", "police_car_spawn_pyrgos_3" };
     };
 
     class cop_air
@@ -219,7 +224,7 @@ class CfgShops
         markers[] = {};
         npcs[] = { "police_air_kavala", "police_air_athira" };
         radius = 8;
-        vehicleSpawns[] = { "spawn_cop_kavala", "spawn_cop_athira" };
+        vehicleSpawns[] = { "police_air_spawn_kavala_1", "police_air_spawn_kavala_2", "police_air_spawn_athira_1", "police_air_spawn_athira_2" };
     };
 
     class cop_boats
@@ -229,7 +234,7 @@ class CfgShops
         markers[] = {};
         npcs[] = { "police_ship_kavala", "police_ship_athira", "police_ship_pyrgos" };
         radius = 8;
-        vehicleSpawns[] = { "spawn_cop_kavala", "spawn_cop_pyrgos" };
+        vehicleSpawns[] = { "police_boat_spawn_kavala_1", "police_boat_spawn_kavala_2", "police_boat_spawn_athira_1", "police_boat_spawn_athira_2", "police_boat_spawn_pyrgos_1", "police_boat_spawn_pyrgos_2" };
     };
 
     class medic_market
