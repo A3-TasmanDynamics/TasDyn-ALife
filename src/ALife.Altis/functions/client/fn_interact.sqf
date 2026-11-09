@@ -48,6 +48,14 @@ if (_isVehicle && { player distance _target < 8 } && { vehicle player == player 
     true
 };
 
+// Escorting someone: they're attached in front of you, so they're never the
+// thing you're looking at -- their menu (Stop escorting, Put in vehicle...).
+private _escorted = (attachedObjects player) select { _x isKindOf "CAManBase" && { alive _x } && { _x getVariable ["alife_restrained", false] } };
+if (_escorted isNotEqualTo []) exitWith {
+    ["open", _escorted select 0] call ALife_fnc_personMenu;
+    true
+};
+
 if (!isNull _target && { _target in (missionNamespace getVariable ["ALife_groundBags", []]) } && { player distance _target < 4 }) exitWith {
     player playActionNow "PutDown"; // reach down to it
     [player, _target] remoteExecCall ["ALife_fnc_containerOpen", 2];
