@@ -53,4 +53,29 @@
   // Keep the current page's link in view in a long sidebar.
   var cur = sidebar && sidebar.querySelector('[aria-current="page"]');
   if (cur && cur.scrollIntoView && sidebar.scrollHeight > sidebar.clientHeight) cur.scrollIntoView({ block: "nearest" });
+
+  // Theme: Dark (default), Light, or System (follows the OS). The <head>
+  // script applies it before the first paint; this keeps it in step.
+  var THEME = "alife.theme";
+  var media = window.matchMedia ? matchMedia("(prefers-color-scheme: light)") : null;
+  function theme() {
+    try { return localStorage.getItem(THEME) || "dark"; } catch (e) { return "dark"; }
+  }
+  function applyTheme() {
+    var t = theme();
+    var light = t === "light" || (t === "system" && media && media.matches);
+    if (light) document.documentElement.setAttribute("data-theme", "light");
+    else document.documentElement.removeAttribute("data-theme");
+    document.querySelectorAll("[data-theme-set]").forEach(function (b) {
+      b.setAttribute("aria-pressed", b.getAttribute("data-theme-set") === t ? "true" : "false");
+    });
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-theme-set]");
+    if (!b) return;
+    try { localStorage.setItem(THEME, b.getAttribute("data-theme-set")); } catch (err) { /* not remembered */ }
+    applyTheme();
+  });
+  if (media && media.addEventListener) media.addEventListener("change", applyTheme);
+  applyTheme();
 })();

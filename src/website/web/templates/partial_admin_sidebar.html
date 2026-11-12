@@ -25,7 +25,7 @@
   {{range .Nav}}
   <details class="admin-nav-section" data-nav-section="{{.Key}}" open{{if .Active}} data-active{{end}}>
     <summary class="admin-nav-group">{{.Name}}<svg class="admin-nav-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>
-    {{range .Items}}<a href="{{.URL}}" class="admin-nav-item{{if .Active}} active{{end}}"{{if .Active}} aria-current="page"{{end}}>{{.Label}}{{if .New}} <span class="admin-nav-new">NEW</span>{{end}}{{if .Count}}<span class="admin-nav-count{{if .Hot}} admin-nav-count-hot{{end}}">{{.Count}}</span>{{end}}</a>
+    {{range .Items}}<a href="{{.URL}}" class="admin-nav-item{{if .Active}} active{{end}}"{{if .Active}} aria-current="page"{{end}}><svg class="admin-nav-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{.Icon}}"/></svg><span class="admin-nav-label">{{.Label}}</span>{{if .New}} <span class="admin-nav-new">NEW</span>{{end}}{{if .Count}}<span class="admin-nav-count{{if .Hot}} admin-nav-count-hot{{end}}">{{.Count}}</span>{{end}}</a>
     {{end}}
   </details>
   {{end}}
@@ -34,6 +34,9 @@
   <div class="admin-sidebar-foot">
     <div class="admin-sidebar-foot-label">Signed in as</div>
     <div class="admin-sidebar-foot-name">{{.Session.Name}}{{if .StaffRank}} &middot; {{.StaffRank}}{{end}}</div>
+    <div class="theme-switch" role="group" aria-label="Theme">
+      <button type="button" data-theme-set="dark" aria-pressed="false">Dark</button><button type="button" data-theme-set="light" aria-pressed="false">Light</button><button type="button" data-theme-set="system" aria-pressed="false">System</button>
+    </div>
     <div class="admin-sidebar-foot-links">
       <a href="/dashboard">View site</a>
       <form method="post" action="/auth/logout" class="inline-form"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="link-button" type="submit">Sign out</button></form>
