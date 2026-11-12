@@ -1434,6 +1434,31 @@ bool Database::Wanted(const std::string& op, const std::vector<std::string>& arg
 
 // Personal lockers (faction_lockers) -- police / EMS keep gear and items
 // at the station. Rows appear on the first save.
+bool Database::Evidence(const std::string& op, const std::vector<std::string>& args, std::string& outResponse,
+                        std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    if (op == "get") {
+        return QueryOne(conn_,
+            "SELECT COALESCE((SELECT json_build_array(gear, items, cash)::text FROM evidence_vault WHERE id = 1), '[[],[],0]')",
+            0, nullptr, outResponse, outError);
+    }
+    // set: gear, items, cash
+    const char* params[3] = {args[0].c_str(), args[1].c_str(), args[2].c_str()};
+    std::string ignored;
+    if (!QueryOne(conn_,
+            "INSERT INTO evidence_vault (id, gear, items, cash) VALUES (1, $1::jsonb, $2::jsonb, $3::bigint) "
+            "ON CONFLICT (id) DO UPDATE SET gear = EXCLUDED.gear, items = EXCLUDED.items, cash = EXCLUDED.cash, updated_at = now()",
+            3, params, ignored, outError)) {
+        return false;
+    }
+    outResponse = "OK";
+    return true;
+}
+
 bool Database::Locker(const std::string& op, const std::vector<std::string>& args, std::string& outResponse,
                       std::string& outError) {
     std::lock_guard<std::mutex> lock(mutex_);

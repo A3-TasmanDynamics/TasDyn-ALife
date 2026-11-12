@@ -202,6 +202,26 @@ ITEMS = {
                capsule(74, 50, 64, 104, 1.4), capsule(30, 50, 98, 50, 1.6)), (220, 245, 255)),  # facets
     ],
     "rock": ore((140, 140, 145), (105, 105, 110), (165, 165, 170)),
+    # ---- evidence vault break-in ----
+    "boltcutter": [
+        (union(capsule(28, 104, 58, 66, 6), capsule(52, 108, 66, 70, 6)), (200, 40, 40)),   # red handles
+        (union(capsule(58, 66, 92, 32, 5), capsule(66, 70, 100, 40, 5)), (150, 155, 165)),  # steel arms
+        (union(poly([(88, 26), (106, 20), (96, 38)]), poly([(98, 36), (112, 30), (104, 46)])), (205, 210, 220)),  # jaws
+        (circle(62, 68, 6), (90, 95, 105)),                                                  # pivot
+    ],
+    "blastingcharge": [
+        (union(*[rrect(x, 70, 16, 56, 4) for x in (40, 58, 76)]), (190, 120, 60)),          # sticks
+        (rrect(58, 70, 62, 12, 2), (40, 40, 45)),                                            # tape
+        (rrect(88, 70, 26, 22, 4), (50, 55, 60)),                                            # timer box
+        (rrect(88, 70, 18, 10, 2), (230, 60, 60)),                                           # red display
+        (capsule(40, 42, 54, 22, 2), (220, 200, 60)),                                        # fuse wire
+    ],
+    "keypaddecoder": [
+        (rrect(64, 66, 64, 84, 10), (45, 50, 60)),                                           # body
+        (rrect(64, 42, 48, 20, 4), (60, 200, 120)),                                          # green screen
+        (union(*[rrect(x, y, 10, 9, 2) for x in (48, 64, 80) for y in (66, 80, 94)]), (190, 195, 205)),  # keys
+        (capsule(96, 24, 110, 10, 3), (150, 155, 165)),                                      # antenna
+    ],
     "cement": [
         (poly([(30, 34), (98, 34), (104, 104), (24, 104)]), (175, 172, 165)),         # bag
         (rrect(64, 34, 64, 8, 3), (145, 142, 135)),                                   # folded top

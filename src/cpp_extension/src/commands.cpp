@@ -368,6 +368,43 @@ std::string HandleWanted(Database& db, const std::vector<std::string>& args) {
 // locker's gear can be more than one callExtension answer holds):
 //   ["get", uid, faction, part] -> "OK:<parts>:<that part of [gear, items]>"
 //   ["setGear" | "setItems", uid, faction, json] -> "OK"
+// The evidence vault: ["get", part] (answered in 8000-character parts:
+// "OK:<parts>:<text>") / ["set", gearJson, itemsJson, cash].
+std::string HandleEvidence(Database& db, const std::vector<std::string>& args) {
+    if (args.empty()) return "ERROR:expected [op, ...]";
+    const std::string& op = args[0];
+    std::string out, error;
+    if (op == "get") {
+        size_t part = 0;
+        if (args.size() >= 2) {
+            if (args[1].empty() || args[1].size() > 4) return "ERROR:invalid part";
+            for (char c : args[1]) {
+                if (!std::isdigit(static_cast<unsigned char>(c))) return "ERROR:invalid part";
+            }
+            part = static_cast<size_t>(std::stoul(args[1]));
+        }
+        if (!db.Evidence("get", {}, out, error)) return "ERROR:" + error;
+        const size_t chunk = 8000;
+        const size_t parts = out.empty() ? 1 : (out.size() + chunk - 1) / chunk;
+        if (part >= parts) return "ERROR:no such part";
+        return "OK:" + std::to_string(parts) + ":" + out.substr(part * chunk, chunk);
+    }
+    if (op == "set") {
+        if (args.size() < 4) return "ERROR:expected [set, gear, items, cash]";
+        for (int i = 1; i <= 2; ++i) {
+            if (args[i].empty() || args[i].front() != '[' || args[i].size() > 2000000) return "ERROR:invalid json";
+        }
+        if (args[3].empty() || args[3].size() > 12) return "ERROR:invalid cash";
+        for (char c : args[3]) {
+            if (!std::isdigit(static_cast<unsigned char>(c))) return "ERROR:invalid cash";
+        }
+        std::vector<std::string> rest(args.begin() + 1, args.end());
+        if (!db.Evidence("set", rest, out, error)) return "ERROR:" + error;
+        return out;
+    }
+    return "ERROR:unknown evidence op";
+}
+
 std::string HandleLocker(Database& db, const std::vector<std::string>& args) {
     if (args.size() < 3) return "ERROR:expected [op, uid, faction, ...]";
     const std::string& op = args[0];
@@ -437,6 +474,7 @@ std::string DispatchCommand(Database& db, const std::string& command,
     if (command == "admin") return HandleAdmin(db, args);
     if (command == "wanted") return HandleWanted(db, args);
     if (command == "locker") return HandleLocker(db, args);
+    if (command == "evidence") return HandleEvidence(db, args);
 
     return "ERROR:unknown command";
 }

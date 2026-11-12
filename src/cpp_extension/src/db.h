@@ -148,6 +148,11 @@ public:
     // Personal lockers (faction_lockers): ["get", uid, faction] -> the text
     // [gear, items] ([[],[]] if they have none yet); ["setGear" | "setItems",
     // uid, faction, json] -> "OK" (created on first save).
+    // The police evidence vault (ALife_fnc_evidence): one row of seized
+    // gear (locker gear format), virtual items and cash.
+    //   "get" -> [gear, items, cash] as JSON text;  "set": gearJson, itemsJson, cash
+    bool Evidence(const std::string& op, const std::vector<std::string>& args, std::string& outResponse,
+                  std::string& outError);
     bool Locker(const std::string& op, const std::vector<std::string>& args, std::string& outResponse,
                 std::string& outError);
 
