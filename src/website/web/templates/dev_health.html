@@ -17,6 +17,8 @@
       <a class="dev-tile dev-tile-link" href="/admin/dev/logs"><span class="dev-tile-label">Logged since start</span><span class="dev-tile-value"><span class="{{if .Errors}}dev-bad{{end}}">{{.Errors}} errors</span></span><span class="dev-tile-sub">{{.Warns}} warnings &middot; view logs &rarr;</span></a>
     </div>
 
+    {{template "game_server_card" .Game}}
+
     <div class="dev-grid">
       <section class="card dev-card" aria-labelledby="dh-db">
         <h2 class="card-label" id="dh-db">Database</h2>

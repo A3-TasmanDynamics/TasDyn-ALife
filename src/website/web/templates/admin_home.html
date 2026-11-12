@@ -14,6 +14,8 @@
       <a class="admin-stat stat-link" href="/admin/anticheat?open=1"><div class="label">Anti-cheat flags (24 h)</div><div class="value {{if .FlagsLast24h}}value-amber{{end}}">{{.FlagsLast24h}}</div></a>
     </section>
 
+    {{template "game_server_card" .Game}}
+
     <section aria-label="Economy and population">
       <h2 class="card-label">Economy &amp; population</h2>
       <div class="admin-stats">

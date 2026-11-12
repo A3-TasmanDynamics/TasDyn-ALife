@@ -61,6 +61,7 @@ type devHealthData struct {
 	DBLatency  string
 	Players    int64
 	Tables     int64
+	Game       gameServerCard
 	Checks     []healthCheck
 	// How many integrations are in each state (problems sort first).
 	CheckOK, CheckWarn, CheckBad, CheckOff int
@@ -114,7 +115,7 @@ func humanUptime(d time.Duration) string {
 func (d *Deps) DevHealth(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	data := devHealthData{Base: baseFrom(r, "System health"), AdminShell: d.adminShell(r, "dev-health"),
-		Commit: buildCommit(), GoVersion: runtime.Version(), Started: d.StartedAt, Goroutine: runtime.NumGoroutine()}
+		Commit: buildCommit(), GoVersion: runtime.Version(), Started: d.StartedAt, Goroutine: runtime.NumGoroutine(), Game: d.gameServer(r)}
 	if !d.StartedAt.IsZero() {
 		data.Uptime = humanUptime(time.Since(d.StartedAt))
 	}
