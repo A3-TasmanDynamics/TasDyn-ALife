@@ -4,7 +4,7 @@ package handlers
 // pages each holds, who can see them (permission keys), their badges, and
 // which sections show their pages as tabs across the top of each page.
 // partial_admin_sidebar.html draws Nav; partial_admin_header.html draws
-// the breadcrumb and tabs from Section / Page / Tabs.
+// the breadcrumb and tabs from NavSection / NavPage / NavTabs.
 
 import "website/internal/auth"
 
@@ -98,9 +98,9 @@ var navDefs = []navSectionDef{
 	}},
 }
 
-// buildNav fills s.Nav, s.Section, s.Page and s.Tabs for the viewer.
+// buildNav fills s.Nav, s.NavSection, s.NavPage and s.NavTabs for the viewer.
 func buildNav(s *AdminShell, sess *auth.Session) {
-	s.Nav, s.Tabs, s.Section, s.Page = nil, nil, nil, nil
+	s.Nav, s.NavTabs, s.NavSection, s.NavPage = nil, nil, nil, nil
 	if sess == nil {
 		return
 	}
@@ -141,9 +141,9 @@ func buildNav(s *AdminShell, sess *auth.Session) {
 		sec := &s.Nav[i]
 		for j := range sec.Items {
 			if sec.Items[j].Active {
-				s.Section, s.Page = sec, &sec.Items[j]
+				s.NavSection, s.NavPage = sec, &sec.Items[j]
 				if sec.Tabs && len(sec.Items) > 1 {
-					s.Tabs = sec.Items
+					s.NavTabs = sec.Items
 				}
 			}
 		}
