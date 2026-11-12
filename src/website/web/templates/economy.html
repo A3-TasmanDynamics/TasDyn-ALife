@@ -1,0 +1,106 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content">
+    <div class="eco-head">
+      <div>
+        <h1 class="page-title admin-title">Economy &amp; Crime</h1>
+        <p class="admin-sub">Where the money is, what put it into the game and took it out, the market, crime, and the police evidence vault.</p>
+      </div>
+      <nav class="seg" aria-label="Time window">
+        {{range .Windows}}<a class="seg-item {{if eq .Key $.Window}}active{{end}}" href="/admin/economy?range={{.Key}}" {{if eq .Key $.Window}}aria-current="true"{{end}}>{{.Label}}</a>{{end}}
+      </nav>
+    </div>
+
+    <section class="admin-stats" aria-label="Summary">
+      <div class="admin-stat"><div class="label">Money in the game</div><div class="value">${{money .SupplyTotal}}</div><div class="eco-stat-sub">${{money .SupplyCash}} cash &middot; ${{money .SupplyBank}} bank</div></div>
+      <div class="admin-stat"><div class="label">Net change &middot; window</div><div class="value {{if gt .Net 0}}value-green{{else if lt .Net 0}}value-red{{end}}">{{if lt .Net 0}}-{{else if gt .Net 0}}+{{end}}${{money .NetAbs}}</div><div class="eco-stat-sub">${{money .InTotal}} in &middot; ${{money .OutTotal}} out</div></div>
+      <div class="admin-stat"><div class="label">Wanted players</div><div class="value {{if .Crime.WantedPlayers}}value-amber{{end}}">{{.Crime.WantedPlayers}}</div><div class="eco-stat-sub">${{money .Crime.Bounties}} in bounties</div></div>
+      <div class="admin-stat"><div class="label">Evidence vault</div><div class="value">{{index .VaultCounts 0}} <span class="eco-stat-unit">gear</span> &middot; {{index .VaultCounts 1}} <span class="eco-stat-unit">items</span></div><div class="eco-stat-sub">${{money .Vault.Cash}} cash</div></div>
+    </section>
+
+    <div class="dash-grid">
+      <div class="dash-col">
+        <section class="card dash-card" aria-labelledby="eco-supply">
+          <div class="dash-card-head"><h2 id="eco-supply">Money by faction</h2><span class="muted small">Cash is what players carry (as last saved); bank is their accounts.</span></div>
+          {{range .Supply}}
+          <div class="eco-fac">
+            <div class="eco-fac-top"><span class="strong">{{.Label}}</span><span class="strong">${{money .Total}}</span></div>
+            <div class="eco-bar" role="img" aria-label="{{.Label}}: {{$.Pct .Cash .Total}}% cash, {{$.Pct .Bank .Total}}% bank"><span class="eco-bar-cash" style="width: {{$.Pct .Cash .Total}}%"></span><span class="eco-bar-bank" style="width: {{$.Pct .Bank .Total}}%"></span></div>
+            <div class="eco-fac-split muted small"><span><span class="eco-key eco-key-cash" aria-hidden="true"></span>Cash ${{money .Cash}}</span><span><span class="eco-key eco-key-bank" aria-hidden="true"></span>Bank ${{money .Bank}}</span></div>
+          </div>
+          {{end}}
+        </section>
+
+        <section class="card dash-card" aria-labelledby="eco-flow">
+          <div class="dash-card-head"><h2 id="eco-flow">Money in and out</h2><span class="muted small">This window, from the game's event log and bank payouts</span></div>
+          <div class="eco-flows">
+            <div>
+              <div class="eco-flow-head"><span class="card-label">In (created)</span><strong class="ok-text">${{money .InTotal}}</strong></div>
+              {{range .In}}{{if .Count}}<div class="eco-flow"><span>{{.Label}} <span class="muted small">&times;{{.Count}}</span></span><span>${{money .Amount}}</span></div>{{end}}{{end}}
+              {{if not .InTotal}}<p class="muted small eco-pad">Nothing in this window.</p>{{end}}
+            </div>
+            <div>
+              <div class="eco-flow-head"><span class="card-label">Out (spent)</span><strong class="warn-text">${{money .OutTotal}}</strong></div>
+              {{range .Out}}{{if .Count}}<div class="eco-flow"><span>{{.Label}} <span class="muted small">&times;{{.Count}}</span></span><span>${{money .Amount}}</span></div>{{end}}{{end}}
+              {{if not .OutTotal}}<p class="muted small eco-pad">Nothing in this window.</p>{{end}}
+            </div>
+          </div>
+          <p class="hint eco-pad">Player-to-player gives and bank transfers move money without creating it, so they aren't counted. Events are logged since the anti-cheat update; older history isn't included.</p>
+        </section>
+
+        <section class="card dash-card" aria-labelledby="eco-market">
+          <div class="dash-card-head"><h2 id="eco-market">Market prices</h2><span class="muted small">Buy prices against base, biggest moves first</span><a class="dash-link" href="/admin/events?cat=shops">Shop events &rarr;</a></div>
+          <div class="eco-mkt eco-mkt-th"><span>Item</span><span>Now</span><span>Base</span><span>Change</span></div>
+          <div class="eco-mkt-body">
+          {{range .Market}}
+          <div class="eco-mkt"><span class="ellipsis">{{.Name}}</span><span class="strong">${{money .Current}}</span><span class="muted">${{money .Base}}</span>
+            <span class="{{if gt .Change 0}}warn-text{{else if lt .Change 0}}ok-text{{else}}muted{{end}}">{{if gt .Change 0}}+{{end}}{{.Change}}%{{if eq .Current .Max}} <span class="eco-cap">max</span>{{else if eq .Current .Min}} <span class="eco-cap">min</span>{{end}}</span></div>
+          {{end}}
+          </div>
+        </section>
+      </div>
+
+      <div class="dash-col">
+        <section class="card dash-card" aria-labelledby="eco-rich">
+          <div class="dash-card-head"><h2 id="eco-rich">Richest players</h2><span class="muted small">All factions, cash + bank</span></div>
+          {{range $i, $r := .Rich}}
+          <a class="eco-rich" href="/admin/players?id={{$r.ID}}&amp;tab=money">
+            <span class="muted">{{inc $i}}</span>
+            <span class="strong ellipsis">{{$r.Name}}{{if $r.Flagged}} <span class="flag-tag" title="Has an unreviewed anti-cheat flag">FLAG</span>{{end}}</span>
+            <span class="eco-rich-amt"><strong>${{money $r.Total}}</strong><span class="muted small">${{money $r.Cash}} cash &middot; ${{money $r.Bank}} bank</span></span>
+          </a>
+          {{else}}<p class="empty-state">No players yet.</p>{{end}}
+        </section>
+
+        <section class="card dash-card" aria-labelledby="eco-crime">
+          <div class="dash-card-head"><h2 id="eco-crime">Crime</h2><span class="muted small">This window</span><a class="dash-link" href="/admin/events?cat=crime&amp;range={{.Window}}">All crime events &rarr;</a></div>
+          <div class="eco-crime-stats">
+            <div><span class="muted small">Gas station robberies</span><strong>{{.Crime.GasRobberies}}</strong></div>
+            <div><span class="muted small">Vault break-ins &middot; robberies</span><strong>{{.Crime.VaultBreakins}} &middot; {{.Crime.VaultRobberies}}</strong></div>
+            <div><span class="muted small">Cash stolen</span><strong>${{money .Crime.RobbedCash}}</strong></div>
+            <div><span class="muted small">Police seizures</span><strong>{{.Crime.Seizures}}</strong></div>
+          </div>
+          {{if .Crime.MostWanted}}
+          <div class="eco-sub-head card-label">Most wanted</div>
+          {{range .Crime.MostWanted}}<a class="eco-flow eco-link" href="/admin/players?id={{.ID}}"><span>{{.Name}} <span class="muted small">&middot; {{.Crimes}} crime{{if ne .Crimes 1}}s{{end}}</span></span><span class="warn-text">${{money .Bounty}}</span></a>{{end}}
+          {{end}}
+          <div class="eco-sub-head card-label">Latest</div>
+          {{if .Robberies}}{{template "event_rows" (dict "Events" .Robberies "ShowPlayer" true)}}{{else}}<p class="empty-state">No robberies or break-ins in this window.</p>{{end}}
+        </section>
+
+        <section class="card dash-card" aria-labelledby="eco-vault">
+          <div class="dash-card-head"><h2 id="eco-vault">Evidence vault</h2><span class="muted small">{{if .Vault.Exists}}Saved {{.Vault.Updated.Format "2 Jan 15:04"}}{{else}}Never used{{end}}</span><a class="dash-link" href="/admin/events?cat=police&amp;range=all">Seizures &rarr;</a></div>
+          {{if or .Vault.Gear .Vault.Items .Vault.Cash}}
+          <div class="eco-flow eco-pad-top"><span class="strong">Cash</span><span class="strong">${{money .Vault.Cash}}</span></div>
+          {{if .Vault.Items}}<div class="eco-sub-head card-label">Virtual items</div>
+          {{range .Vault.Items}}<div class="eco-flow"><span>{{.Name}}</span><span>&times;{{.N}}</span></div>{{end}}{{end}}
+          {{if .Vault.Gear}}<div class="eco-sub-head card-label">Gear</div>
+          {{range .Vault.Gear}}<div class="eco-flow"><span>{{.Name}}</span><span>&times;{{.N}}</span></div>{{end}}{{end}}
+          {{else}}<p class="empty-state">Empty. Seized items, gear and cash show here until they're robbed or cleared.</p>{{end}}
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}
