@@ -1,0 +1,59 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div id="admin-main" tabindex="-1" class="admin-content mod-page">
+    {{template "admin_header" .}}
+    <div>
+      <h1 class="page-title admin-title">Scheduled Messages</h1>
+      <p class="admin-sub">In-game announcements that go out on their own: once, or repeating. Times are server time ({{.TZ}}). A message missed by more than 5 minutes (the website was down) is skipped, not sent late.</p>
+    </div>
+
+    <div class="dash-grid">
+      <div class="dash-col">
+        <form class="card sched-form" method="post" action="/admin/schedule">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="op" value="add">
+          <h2 class="card-label">New announcement</h2>
+          <div class="field"><label for="s-text">Message</label><input id="s-text" name="text" maxlength="300" required placeholder="e.g. Join our Discord: discord.gg/..."></div>
+          <div class="sched-row">
+            <div class="field"><label for="s-at">First at</label><input id="s-at" type="datetime-local" name="at" value="{{.Default}}" required></div>
+            <div class="field"><label for="s-repeat">Repeat</label>
+              <select id="s-repeat" name="repeat"><option value="0">Once</option><option value="30">Every 30 min</option><option value="60">Every hour</option><option value="120">Every 2 hours</option><option value="240">Every 4 hours</option><option value="1440">Every day</option></select></div>
+            <div class="field"><label for="s-until">Until (optional)</label><input id="s-until" type="datetime-local" name="until"></div>
+          </div>
+          <button class="btn btn-primary" type="submit">Schedule</button>
+        </form>
+      </div>
+      <div class="dash-col">
+        <form class="card sched-form" method="post" action="/admin/schedule">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="op" value="countdown">
+          <h2 class="card-label">Restart countdown</h2>
+          <p class="hint">Warns players {{range $i, $m := .Countdown}}{{if $i}}, {{end}}{{$m}}{{end}} minutes before. Scheduling a restart on Server Control does this for you; use this for a restart planned another way. It doesn't restart anything.</p>
+          <div class="sched-row">
+            <div class="field"><label for="c-at">Restart at</label><input id="c-at" type="datetime-local" name="at" required></div>
+            <div class="field sched-grow"><label for="c-reason">Reason (optional)</label><input id="c-reason" name="reason" maxlength="200" placeholder="e.g. update"></div>
+          </div>
+          <button class="btn" type="submit">Set countdown</button>
+        </form>
+      </div>
+    </div>
+
+    <section class="card dash-card" aria-labelledby="s-list">
+      <div class="dash-card-head"><h2 id="s-list">Scheduled</h2><span class="muted small">Upcoming first</span></div>
+      {{if .Messages}}<div class="lrow sched-list lrow-head"><span>Next</span><span>Message</span><span>Repeat</span><span>Sent</span><span></span></div>{{end}}
+      {{range .Messages}}
+      <div class="lrow sched-list{{if not .Active}} sched-off{{end}}">
+        <span>{{if .Active}}<span class="strong">{{.NextAt.Local.Format "Mon 2 Jan 15:04"}}</span>{{else}}<span class="muted">{{if .Repeat}}paused{{else}}done{{end}}</span>{{end}}</span>
+        <span class="ellipsis" title="{{.Text}}">{{if eq .Kind "restart"}}<span class="gt-status gt-pending">restart</span> {{end}}{{.Text}} <span class="muted small">· {{.By}}</span></span>
+        <span class="muted small">{{$.Every .Repeat}}{{with .Until}} until {{.Local.Format "2 Jan 15:04"}}{{end}}</span>
+        <span class="muted small">{{.SentCount}}×{{with .LastSent}}, last {{.Local.Format "2 Jan 15:04"}}{{end}}</span>
+        <span class="sched-actions">
+          <form method="post" action="/admin/schedule"><input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="id" value="{{.ID}}">
+            {{if .Active}}<button class="btn btn-sm" name="op" value="pause">Pause</button>{{else if .Repeat}}<button class="btn btn-sm" name="op" value="resume">Resume</button>{{end}}
+            <button class="btn btn-sm" name="op" value="delete" onclick="return confirm('Delete this scheduled message?')">Delete</button></form>
+        </span>
+      </div>
+      {{else}}<p class="empty">Nothing scheduled.</p>{{end}}
+    </section>
+  </div>
+</div>
+{{end}}

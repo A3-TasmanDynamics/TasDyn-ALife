@@ -198,6 +198,8 @@ var moderationPhrases = map[string]string{
 	"game.vehicle_delete": "deleted a vehicle",
 	"game.announce":       "made an in-game announcement",
 	"game.message":        "messaged a player in game",
+	"schedule.add":        "scheduled an in-game announcement",
+	"schedule.remove":     "removed a scheduled announcement",
 }
 
 // discordModeration are the staff_log actions the bot writes for

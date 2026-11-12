@@ -3244,3 +3244,16 @@ a.lrow:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
 .reply-edit form { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
 .reply-edit .field { margin: 0; }
 .reply-edit-actions { display: flex; gap: 8px; }
+/* ---- Scheduled messages ---- */
+.sched-form { padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+.sched-form .field { margin: 0; }
+.sched-form .card-label { margin: 0; }
+.sched-form .hint { margin: 0; }
+.sched-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.sched-row .field { min-width: 160px; }
+.sched-grow { flex: 1; }
+.sched-list { grid-template-columns: 150px minmax(0, 1fr) 150px 140px 150px; }
+.sched-off { opacity: 0.7; }
+.sched-actions form { display: flex; gap: 6px; justify-content: flex-end; }
+.sched-form input[type="datetime-local"] { color-scheme: dark; }
+:root[data-theme="light"] .sched-form input[type="datetime-local"] { color-scheme: light; }

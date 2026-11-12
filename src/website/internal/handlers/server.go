@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"website/internal/schedule"
 
 	"website/internal/audit"
 	"website/internal/auth"
@@ -202,11 +203,26 @@ func (d *Deps) ServerAction(w http.ResponseWriter, r *http.Request) {
 				msg += " Announced in #server-status."
 			}
 			d.logServerAction(r, "server.restart", reason, map[string]any{"server": ServerID, "in_minutes": mins})
+			// In game too: a warning now and the countdown (15 / 10 / 5 / 1 min).
+			if mins > 0 {
+				sess, _ := auth.FromContext(r.Context())
+				if n, err := schedule.QueueCountdown(r.Context(), d.Pool, sess.PlayerID, at, reason); err != nil {
+					slog.Warn("server: in-game restart countdown failed", "error", err)
+				} else if n > 0 {
+					msg += " Players get in-game warnings before it."
+				}
+			}
 		}
 	case "cancel":
 		if err = d.ServerMgr.CancelRestart(ctx); err == nil {
 			msg = "Scheduled restart cancelled."
 			d.announce(r, "The scheduled server restart was cancelled.")
+			if n, err := schedule.CancelCountdown(r.Context(), d.Pool); err != nil {
+				slog.Warn("server: cancelling the in-game countdown failed", "error", err)
+			} else if n > 0 {
+				sess, _ := auth.FromContext(r.Context())
+				_, _ = d.Pool.Exec(r.Context(), `INSERT INTO game_commands (action, text, issued_by) VALUES ('announce', 'The scheduled server restart was cancelled.', $1)`, sess.PlayerID)
+			}
 			d.logServerAction(r, "server.restart_cancel", reason, map[string]any{"server": ServerID})
 		}
 	case "stop":
