@@ -388,6 +388,7 @@ func run() error {
 	r.Group(func(r chi.Router) {
 		r.Use(d.Auth.RequireAdminPanel)
 		r.Get("/admin/search", d.QuickSearch)
+		r.Post("/admin/game/command", d.GameCommand) // permission per action, checked inside
 		r.Get("/admin/devlog/new", d.DevlogNewForm)
 		r.Post("/admin/devlog/new", d.DevlogCreate)
 

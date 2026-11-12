@@ -818,6 +818,65 @@ bool Database::RecordSession(const std::string& op, const std::string& uid, cons
     return ok;
 }
 
+// Website -> game commands. The website queues a staff message, warning,
+// kick or announcement (game_commands, already permission-checked and in the
+// staff log); the server claims them here every few seconds and runs them.
+bool Database::GameCommandsClaim(std::string& outResponse, std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    PGresult* res = PQexec(conn_,
+        "WITH expired AS ("
+        "  UPDATE game_commands SET status = 'expired', done_at = now() "
+        "  WHERE status = 'pending' AND created_at < now() - interval '2 minutes' RETURNING id), "
+        "c AS ("
+        "  UPDATE game_commands g SET status = 'claimed', claimed_at = now() "
+        "  WHERE g.id IN (SELECT id FROM game_commands WHERE status = 'pending' AND created_at >= now() - interval '2 minutes' "
+        "                 ORDER BY id LIMIT 10 FOR UPDATE SKIP LOCKED) "
+        "  RETURNING g.id, g.action, g.target_player_id, g.text, g.issued_by) "
+        "SELECT c.id, c.action, COALESCE(t.uid, ''), c.text, "
+        "       COALESCE(NULLIF(s.name, ''), NULLIF(s.steam_name, ''), 'Staff') "
+        "FROM c LEFT JOIN players t ON t.id = c.target_player_id LEFT JOIN players s ON s.id = c.issued_by ORDER BY c.id");
+    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+        outError = PQerrorMessage(conn_);
+        PQclear(res);
+        return false;
+    }
+    std::string out = "[";
+    for (int i = 0; i < PQntuples(res); ++i) {
+        if (i) out += ",";
+        // The id as a string: SQF numbers are floats, and str() of a large one
+        // goes to scientific notation.
+        out += "[\"" + std::string(PQgetvalue(res, i, 0)) + "\"";
+        for (int col = 1; col <= 4; ++col) {
+            out += ",\"" + EscapeStringLiteral(PQgetvalue(res, i, col)) + "\"";
+        }
+        out += "]";
+    }
+    out += "]";
+    PQclear(res);
+    outResponse = out;
+    return true;
+}
+
+bool Database::GameCommandDone(const std::string& id, const std::string& status, const std::string& result, std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    const char* params[3] = {id.c_str(), status.c_str(), result.c_str()};
+    PGresult* res = PQexecParams(conn_,
+        "UPDATE game_commands SET status = $2, result = NULLIF($3, ''), done_at = now() WHERE id = $1::bigint AND status = 'claimed'",
+        3, nullptr, params, nullptr, nullptr, 0);
+    bool ok = PQresultStatus(res) == PGRES_COMMAND_OK;
+    if (!ok) outError = PQerrorMessage(conn_);
+    PQclear(res);
+    return ok;
+}
+
 // Dynamic market (market_prices): the current price of each virtual item.
 // Items with no row are at their CfgMarket base price (a wipe or economy
 // reset empties the table).

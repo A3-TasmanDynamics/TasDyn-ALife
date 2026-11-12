@@ -78,4 +78,14 @@
   });
   if (media && media.addEventListener) media.addEventListener("change", applyTheme);
   applyTheme();
+
+  // In-game tools: confirm before a kick goes out.
+  document.addEventListener("submit", function (e) {
+    var f = e.target;
+    var act = f.querySelector && f.querySelector('select[name="action"], input[name="action"]');
+    if (!act || act.value !== "kick" || f.getAttribute("action") !== "/admin/game/command") return;
+    var who = f.querySelector('select[name="player"]');
+    var name = who && who.selectedIndex > 0 ? who.options[who.selectedIndex].text : (f.getAttribute("data-player") || "this player");
+    if (!window.confirm("Kick " + name + " from the game server?")) e.preventDefault();
+  });
 })();

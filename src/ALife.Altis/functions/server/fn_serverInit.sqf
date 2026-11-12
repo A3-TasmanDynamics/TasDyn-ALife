@@ -184,5 +184,6 @@ addMissionEventHandler ["EntityRespawned", {
 
     ["start"] call ALife_fnc_anticheat;
     [objNull, "load"] call ALife_fnc_evidence;
+    [] spawn ALife_fnc_gameCommands; // the website's admin panel -> players in game
     [] call ALife_fnc_syncLoop;
 };

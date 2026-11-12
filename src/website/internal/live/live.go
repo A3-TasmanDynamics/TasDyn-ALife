@@ -50,7 +50,10 @@ type Toast struct {
 	Level string `json:"level"` // critical / warning / info
 }
 
-type cursor struct{ flag, ticket, kase, session int64 }
+type cursor struct {
+	flag, ticket, kase, session int64
+	gameDone                    float64 // the latest game_commands.done_at (epoch)
+}
 
 // Hub runs the poller and fans messages out to subscribers.
 type Hub struct {
@@ -146,9 +149,10 @@ func (h *Hub) Poll(ctx context.Context) ([]Msg, error) {
 		       COALESCE((SELECT max(id) FROM anti_cheat_flags), 0),
 		       COALESCE((SELECT max(id) FROM support_tickets), 0),
 		       COALESCE((SELECT max(id) FROM staff_cases), 0),
-		       COALESCE((SELECT max(id) FROM player_sessions), 0)`).Scan(
+		       COALESCE((SELECT max(id) FROM player_sessions), 0),
+		       COALESCE((SELECT EXTRACT(EPOCH FROM max(done_at)) FROM game_commands), 0)::float8`).Scan(
 		&c.OpenCases, &c.OpenFlags, &c.ActiveBans, &c.OpenApps, &c.OpenTickets, &c.UnassignedTickets, &c.Online,
-		&cur.flag, &cur.ticket, &cur.kase, &cur.session)
+		&cur.flag, &cur.ticket, &cur.kase, &cur.session, &cur.gameDone)
 	if err != nil {
 		return nil, err
 	}
@@ -163,6 +167,9 @@ func (h *Hub) Poll(ctx context.Context) ([]Msg, error) {
 	if primed {
 		if c.Online != prevCounts.Online || cur.session != prev.session {
 			msgs = append(msgs, Msg{Topic: "online", Perm: "players.view", Data: map[string]int{"online": c.Online}})
+		}
+		if cur.gameDone != prev.gameDone {
+			msgs = append(msgs, Msg{Topic: "gamecmd", Perm: "players.view", Data: map[string]float64{"at": cur.gameDone}})
 		}
 		more, err := h.news(ctx, prev, cur)
 		if err != nil {

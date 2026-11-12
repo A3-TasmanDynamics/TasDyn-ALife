@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"website/internal/chart"
+	"website/internal/gamecmd"
 	"website/internal/online"
 	"website/internal/watchlist"
 )
@@ -21,7 +22,12 @@ type onlineData struct {
 	Sum     online.Summary
 	Chart   chart.Chart
 	Watched map[int64]string // player id -> why they're on the watchlist
+	Game    map[string]bool  // in-game actions the viewer may send (gamecmd.Perms)
+	Recent  []gamecmd.Command
 }
+
+// CanSend is whether the viewer may send any targeted in-game action.
+func (d onlineData) CanSend() bool { return d.Game["message"] || d.Game["warn"] || d.Game["kick"] }
 
 func (d onlineData) Dur(t time.Duration) string { return hoursMinutes(t) }
 
@@ -58,6 +64,12 @@ func (d *Deps) OnlineNow(w http.ResponseWriter, r *http.Request) {
 	}
 	if data.Watched, err = watchlist.Reasons(ctx, d.Pool); err != nil {
 		slog.Error("online: watchlist failed", "error", err)
+	}
+	data.Game = d.gameCaps(r)
+	if len(data.Game) > 0 {
+		if data.Recent, err = gamecmd.Recent(ctx, d.Pool, 10); err != nil {
+			slog.Error("online: recent game commands failed", "error", err)
+		}
 	}
 	if data.Left, err = online.RecentlyLeft(ctx, d.Pool, 2*time.Hour, 12); err != nil {
 		slog.Error("online: recently left failed", "error", err)

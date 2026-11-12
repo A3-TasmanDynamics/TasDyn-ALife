@@ -289,6 +289,30 @@ std::string HandleVehicle(Database& db, const std::vector<std::string>& args) {
 //   ["kick",       staffUid, targetUid, reason] -> "OK"
 //   ["compensate", staffUid, targetUid, faction, amount, reason, "self"?] -> "OK:<balance>" / "NO_ACCOUNT"
 //      (staffUid == targetUid only with "self": a server owner, CfgALife >> owners[])
+// args = ["claim"] or ["done", id, "done"|"failed", result]
+std::string HandleGameCmd(Database& db, const std::vector<std::string>& args) {
+    if (args.empty()) return "ERROR:expected [op, ...]";
+    std::string error;
+    if (args[0] == "claim") {
+        std::string out;
+        if (!db.GameCommandsClaim(out, error)) return "ERROR:" + error;
+        return out;
+    }
+    if (args[0] == "done") {
+        if (args.size() < 4) return "ERROR:expected [done, id, status, result]";
+        const std::string& id = args[1];
+        if (id.empty() || id.size() > 18) return "ERROR:invalid id";
+        for (char c : id) {
+            if (c < '0' || c > '9') return "ERROR:invalid id";
+        }
+        if (args[2] != "done" && args[2] != "failed") return "ERROR:invalid status";
+        if (args[3].size() > 200) return "ERROR:result too long";
+        if (!db.GameCommandDone(id, args[2], args[3], error)) return "ERROR:" + error;
+        return "OK";
+    }
+    return "ERROR:unknown gamecmd op";
+}
+
 std::string HandleAdmin(Database& db, const std::vector<std::string>& args) {
     if (args.size() < 3) return "ERROR:expected [op, staffUid, targetUid, ...]";
     const std::string& op = args[0];
@@ -475,6 +499,7 @@ std::string DispatchCommand(Database& db, const std::string& command,
     if (command == "market") return HandleMarket(db, args);
     if (command == "vehicle") return HandleVehicle(db, args);
     if (command == "admin") return HandleAdmin(db, args);
+    if (command == "gamecmd") return HandleGameCmd(db, args);
     if (command == "wanted") return HandleWanted(db, args);
     if (command == "locker") return HandleLocker(db, args);
     if (command == "evidence") return HandleEvidence(db, args);

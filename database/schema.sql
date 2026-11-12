@@ -1083,6 +1083,27 @@ CREATE TABLE kick_log (
 
 CREATE INDEX idx_kick_log_target_player_id ON kick_log(target_player_id);
 
+-- Website -> game commands: staff on the admin panel message, warn, kick
+-- or announce to players in game. The website queues a row (after its own
+-- permission check, and logs it to staff_log); the game server claims
+-- pending rows every few seconds through the extension ("gamecmd"), runs
+-- them and records the outcome. Unclaimed after 2 minutes = expired.
+CREATE TABLE game_commands (
+    id                BIGSERIAL PRIMARY KEY,
+    action            TEXT NOT NULL CHECK (action IN ('message', 'warn', 'kick', 'announce')),
+    target_player_id  BIGINT REFERENCES players(id) ON DELETE CASCADE,  -- NULL for announce
+    text              TEXT NOT NULL CHECK (length(text) BETWEEN 1 AND 300),
+    issued_by         BIGINT REFERENCES players(id) ON DELETE SET NULL,
+    status            TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'claimed', 'done', 'failed', 'expired')),
+    result            TEXT,
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+    claimed_at        TIMESTAMPTZ,
+    done_at           TIMESTAMPTZ,
+    CHECK ((action = 'announce') = (target_player_id IS NULL))
+);
+CREATE INDEX idx_game_commands_pending ON game_commands(id) WHERE status = 'pending';
+CREATE INDEX idx_game_commands_created ON game_commands(created_at DESC);
+
 -- This project's own persistent banlist (docs/ADMIN_TOOLS.md §8) — not a
 -- literal multi-org shared/cloud ban service.
 CREATE TABLE banlist (
