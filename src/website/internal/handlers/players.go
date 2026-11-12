@@ -60,6 +60,7 @@ type playerLookupData struct {
 	EventsMore bool
 	EventCats  []events.Category
 	EventCat   string
+	Conn       players.Connections
 
 	CanVehicles   bool
 	CanCompensate bool
@@ -147,6 +148,12 @@ func (d *Deps) PlayerLookup(w http.ResponseWriter, r *http.Request) {
 			data.Tab = "events"
 			data.EventCats, data.EventCat = events.Categories, q.Get("cat")
 			data.Events, data.EventsMore, _ = events.List(r.Context(), d.Pool, events.Filter{PlayerID: data.P.ID, Category: data.EventCat, Limit: 200})
+		case "connections":
+			data.Tab = "connections"
+			var err error
+			if data.Conn, err = players.GetConnections(r.Context(), d.Pool, data.P.ID); err != nil {
+				slog.Error("player connections failed", "error", err)
+			}
 		case "audit":
 			data.Tab = "audit"
 			data.Audit, _ = players.Audit(r.Context(), d.Pool, data.P.ID)
