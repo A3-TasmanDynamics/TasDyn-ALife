@@ -1,36 +1,80 @@
 {{define "content"}}
 <div class="admin-shell">
   {{template "admin_sidebar" .}}
-  <div class="admin-content mod-page ac-page">
-    <div class="ac-list">
+  <div class="admin-content mod-page">
+    <div>
       <h1 class="page-title admin-title">Anti-Cheat Flags</h1>
       <p class="admin-sub">Server-side detections. Flags never punish on their own: a staff member reviews each one, and any action happens through a case.</p>
-      <form class="mod-filters" method="get" action="/admin/anticheat">
-        <nav class="seg" aria-label="Confidence">
-          <a class="seg-item {{if not .Confidence}}active{{end}}" href="/admin/anticheat{{if .OpenOnly}}?open=1{{end}}">All &middot; {{index .Counts ""}}</a>
-          <a class="seg-item {{if eq .Confidence "high"}}active{{end}}" href="/admin/anticheat?confidence=high{{if .OpenOnly}}&amp;open=1{{end}}">High &middot; {{index .Counts "high"}}</a>
-          <a class="seg-item {{if eq .Confidence "medium"}}active{{end}}" href="/admin/anticheat?confidence=medium{{if .OpenOnly}}&amp;open=1{{end}}">Medium &middot; {{index .Counts "medium"}}</a>
-        </nav>
-        {{if .Confidence}}<input type="hidden" name="confidence" value="{{.Confidence}}">{{end}}
-        <label class="mod-check"><input type="checkbox" name="open" value="1" {{if .OpenOnly}}checked{{end}} onchange="this.form.submit()"> Open flags only</label>
-        <noscript><button class="btn" type="submit">Filter</button></noscript>
+    </div>
+
+    <section class="admin-stats ac-stats" aria-label="Summary">
+      <a class="admin-stat stat-link" href="/admin/anticheat"><div class="label">Open flags</div><div class="value {{if .Stats.Open}}value-amber{{end}}">{{.Stats.Open}}</div></a>
+      <a class="admin-stat stat-link" href="/admin/anticheat?confidence=high"><div class="label">Open, high confidence</div><div class="value {{if .Stats.OpenHigh}}value-red{{end}}">{{.Stats.OpenHigh}}</div></a>
+      <a class="admin-stat stat-link" href="/admin/anticheat?status=watch"><div class="label">Players being watched</div><div class="value value-blue">{{.Stats.Watching}}</div></a>
+      <a class="admin-stat stat-link" href="/admin/anticheat?status=all"><div class="label">Raised in 24 h &middot; 7 days</div><div class="value">{{.Stats.Last24h}} <span class="ac-stat-sub">&middot; {{.Stats.Last7d}}</span></div></a>
+    </section>
+
+    {{if or .Stats.ByType .Stats.TopPlayers}}
+    <div class="ac-overview">
+      {{if .Stats.ByType}}
+      <div class="card ac-ov-card">
+        <div class="card-label">By detector &middot; open / all time</div>
+        {{range .Stats.ByType}}
+        <a class="ac-ov-row{{if eq .Type $.Type}} active{{end}}" href="/admin/anticheat{{qset $.Query "type" .Type "flag" ""}}"><span>{{.Title}}</span><span class="ac-ov-num">{{if .Open}}<strong class="warn-text">{{.Open}}</strong>{{else}}<span class="muted">0</span>{{end}} <span class="muted">/ {{.Total}}</span></span></a>
+        {{end}}
+      </div>
+      {{end}}
+      {{if .Stats.TopPlayers}}
+      <div class="card ac-ov-card">
+        <div class="card-label">Most flagged &middot; last 30 days</div>
+        {{range .Stats.TopPlayers}}
+        <a class="ac-ov-row" href="/admin/anticheat?status=all&amp;q={{.Name}}"><span>{{.Name}}</span><span class="ac-ov-num"><strong>{{.Flags}}</strong> <span class="muted">flag{{if ne .Flags 1}}s{{end}}{{if .Open}} &middot; {{.Open}} open{{end}}</span></span></a>
+        {{end}}
+      </div>
+      {{end}}
+    </div>
+    {{end}}
+
+    <div class="ac-page ac-body">
+    <div class="ac-list">
+      <nav class="seg" aria-label="Status">
+        <a class="seg-item {{if eq .Status "open"}}active{{end}}" href="/admin/anticheat{{qset .Query "status" "" "open" "" "flag" ""}}">Open</a>
+        <a class="seg-item {{if eq .Status "watch"}}active{{end}}" href="/admin/anticheat{{qset .Query "status" "watch" "open" "" "flag" ""}}">Watching</a>
+        <a class="seg-item {{if eq .Status "closed"}}active{{end}}" href="/admin/anticheat{{qset .Query "status" "closed" "open" "" "flag" ""}}">Closed</a>
+        <a class="seg-item {{if eq .Status "all"}}active{{end}}" href="/admin/anticheat{{qset .Query "status" "all" "open" "" "flag" ""}}">All</a>
+      </nav>
+      <form class="mod-filters ac-filters" method="get" action="/admin/anticheat">
+        {{if ne .Status "open"}}<input type="hidden" name="status" value="{{.Status}}">{{end}}
+        <label class="search-box"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input name="q" value="{{.Search}}" aria-label="Player name or Steam ID" placeholder="Player name or Steam ID"></label>
+        <select name="type" aria-label="Detector">
+          <option value="">Any detector</option>
+          {{range .Types}}<option value="{{index . 0}}" {{if eq (index . 0) $.Type}}selected{{end}}>{{index . 1}}</option>{{end}}
+        </select>
+        <select name="confidence" aria-label="Confidence">
+          <option value="">Any confidence</option>
+          <option value="high" {{if eq .Confidence "high"}}selected{{end}}>High</option>
+          <option value="medium" {{if eq .Confidence "medium"}}selected{{end}}>Medium</option>
+        </select>
+        <button class="btn" type="submit">Filter</button>
+        {{if or .Search .Type .Confidence}}<a class="btn" href="/admin/anticheat{{if ne .Status "open"}}?status={{.Status}}{{end}}">Clear</a>{{end}}
       </form>
       <div class="ac-items">
         {{range .Flags}}
-        <a class="ac-item{{if and $.Selected (eq .ID $.Selected.ID)}} active{{end}}" href="/admin/anticheat?flag={{.ID}}{{if $.Confidence}}&amp;confidence={{$.Confidence}}{{end}}{{if $.OpenOnly}}&amp;open=1{{end}}">
+        <a class="ac-item{{if and $.Selected (eq .ID $.Selected.ID)}} active{{end}}" href="/admin/anticheat{{qset $.Query "flag" (i64 .ID)}}">
           <span class="ac-item-top"><span class="ac-sev ac-sev-{{.Confidence}}">{{.Confidence}}</span><span class="mod-dim">#{{.ID}} &middot; {{.CreatedAt.Format "2 Jan 15:04"}}</span><span class="ac-status ac-status-{{if .Open}}open{{else}}closed{{end}}">{{.Status}}</span></span>
           <span class="strong">{{.Title}}</span>
           <span class="mod-dim">{{.Player}}</span>
         </a>
         {{else}}
-        <p class="mod-empty">No flags match these filters.</p>
+        <p class="mod-empty">No flags match these filters.{{if eq .Status "open"}} Nothing is waiting for review.{{end}}</p>
         {{end}}
       </div>
     </div>
 
     <div class="ac-detail card">
       {{with .Selected}}
-      <div class="ac-item-top"><span class="ac-sev ac-sev-{{.Confidence}}">{{.Confidence}} confidence</span><span class="ac-status ac-status-{{if .Open}}open{{else}}closed{{end}}">{{.Status}}</span><span class="mod-dim">Raised {{.CreatedAt.Format "2 Jan 2006 15:04"}}</span></div>
+      <div class="ac-item-top"><span class="ac-sev ac-sev-{{.Confidence}}">{{.Confidence}} confidence</span><span class="ac-status ac-status-{{if .Open}}open{{else}}closed{{end}}">{{.Status}}</span><span class="mod-dim">Raised {{.CreatedAt.Format "2 Jan 2006 15:04:05"}}</span></div>
       <h2 class="ac-title">#{{.ID}} &middot; {{.Title}}</h2>
       <p class="mod-dim">Player <a href="/admin/players?id={{.PlayerID}}">{{.Player}}</a> &middot; detector <code class="perm-key">{{.Type}}</code></p>
       <div class="ac-evidence">
@@ -45,6 +89,7 @@
           <button class="btn" type="submit" name="resolution" value="dismiss">Dismiss as false positive</button>
           <button class="btn" type="submit" name="resolution" value="watch">Watch player</button>
           {{if $.CanCase}}<a class="btn btn-primary" href="/admin/cases/new?flag={{.ID}}">Open a case</a>{{end}}
+          {{if $.CanBan}}<button class="btn btn-danger-soft" type="button" data-dialog-open="dlg-ac-ban">Ban…</button>{{end}}
         </div>
       </form>
       {{else}}
@@ -57,10 +102,41 @@
         {{end}}
       </div>
       {{end}}
-      {{else}}
-      <p class="mod-empty">No flags yet. They appear here when the server's detectors or the Steam ban check raise one.</p>
+
+      <div class="ac-context">
+        <div class="card-label">What they did &middot; {{$.AroundWindow}} either side</div>
+        {{if $.Around}}{{template "event_rows" (dict "Events" $.Around "ShowPlayer" false "Short" true)}}
+        {{else}}<p class="mod-dim">Nothing in the game's event log in that window.</p>{{end}}
+        <a class="small" href="/admin/players?id={{.PlayerID}}&amp;tab=events">All their events &rarr;</a>
+      </div>
+
+      <div class="ac-context">
+        <div class="card-label">Their other flags</div>
+        {{range $.PlayerFlags}}
+        <a class="ac-kv ac-other" href="/admin/anticheat?status=all&amp;flag={{.ID}}"><span class="mod-dim">{{.CreatedAt.Format "2 Jan 15:04"}}</span><span><span class="ac-sev ac-sev-{{.Confidence}}">{{.Confidence}}</span> {{.Title}} <span class="mod-dim">&middot; {{.Status}}</span></span></a>
+        {{else}}<p class="mod-dim">This is their only flag.</p>{{end}}
+      </div>
+
+      {{if and .Open $.CanBan}}
+      <dialog id="dlg-ac-ban" class="modal" aria-labelledby="dlg-ac-ban-title">
+        <form method="post" action="/admin/bans/issue">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="player" value="{{.PlayerID}}"><input type="hidden" name="case" value="new"><input type="hidden" name="flag" value="{{.ID}}">
+          <input type="hidden" name="back" value="/admin/anticheat?status=all&amp;flag={{.ID}}">
+          <div class="modal-head"><h2 id="dlg-ac-ban-title">Ban {{.Player}}</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+          <div class="modal-body">
+            {{template "ban_fields" dict "Players" nil "Reasons" $.BanReasons "Durations" $.BanDurations "CanPerm" $.CanPerm}}
+            <p class="hint">Opens a case for this flag (the flag is marked as handled in it) and issues the ban from that case. It applies the next time they connect: use Kick in game to remove them now.</p>
+          </div>
+          <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-danger" type="submit">Open case &amp; ban</button></div>
+        </form>
+      </dialog>
       {{end}}
+      {{else}}
+      <p class="mod-empty">No flags here. They appear when the server's detectors or the Steam ban check raise one.</p>
+      {{end}}
+    </div>
     </div>
   </div>
 </div>
+<script src="/static/admin.js" defer></script>
 {{end}}

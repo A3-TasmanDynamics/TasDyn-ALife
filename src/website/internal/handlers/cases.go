@@ -17,6 +17,7 @@ import (
 	"website/internal/audit"
 	"website/internal/auth"
 	"website/internal/cases"
+	"website/internal/events"
 )
 
 // Moderation pages (layout plan "Admin — Moderation"): Cases, Case view,
@@ -531,8 +532,16 @@ func (d *Deps) BanIssue(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		var err error
-		caseNum, err = cases.Open(r.Context(), d.Pool, caseActor(r), banCaseType(reason), "Ban: "+reason, []int64{pid}, 0,
-			"Opened from Player Lookup to ban them.")
+		// From an anti-cheat flag: the case is tied to the flag (which marks it handled).
+		flagID, _ := strconv.ParseInt(r.FormValue("flag"), 10, 64)
+		note := "Opened from Player Lookup to ban them."
+		if flagID > 0 {
+			note = fmt.Sprintf("Opened from anti-cheat flag #%d to ban them.", flagID)
+			if n := strings.TrimSpace(r.FormValue("note")); n != "" {
+				note += "\n\n" + n
+			}
+		}
+		caseNum, err = cases.Open(r.Context(), d.Pool, caseActor(r), banCaseType(reason), "Ban: "+reason, []int64{pid}, flagID, note)
 		if err != nil {
 			finishCaseAction(w, r, back, err, "")
 			return
@@ -616,33 +625,63 @@ func (d *Deps) AppealDecide(w http.ResponseWriter, r *http.Request) {
 type antiCheatData struct {
 	Base
 	AdminShell
+	Query      url.Values
 	Flags      []cases.Flag
 	Selected   *cases.Flag
 	Confidence string
-	OpenOnly   bool
+	Status     string // open (default) / watch / closed / all
+	Type       string
+	Search     string
+	Types      [][2]string
+	Stats      cases.FlagStats
 	CanCase    bool
-	Counts     map[string]int
+	CanBan     bool
+	CanPerm    bool
+
+	// The selected flag's context: the player's other flags, and what the
+	// game logged for them in the 15 minutes either side.
+	PlayerFlags  []cases.Flag
+	Around       []events.Event
+	AroundWindow string
+	BanReasons   []string
+	BanDurations []struct {
+		Days  int
+		Label string
+	}
 }
+
+// flagWindow is how far either side of a flag the Anti-Cheat page looks
+// for the player's game events.
+const flagWindow = 15 * time.Minute
 
 func (d *Deps) AntiCheat(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	data := antiCheatData{Base: baseFrom(r, "Anti-Cheat Flags"), AdminShell: d.adminShell(r, "anticheat"),
-		Confidence: q.Get("confidence"), OpenOnly: q.Get("open") == "1", CanCase: d.can(r, "cases.lead")}
+	data := antiCheatData{Base: baseFrom(r, "Anti-Cheat Flags"), AdminShell: d.adminShell(r, "anticheat"), Query: q,
+		Confidence: q.Get("confidence"), Status: q.Get("status"), Type: q.Get("type"), Search: strings.TrimSpace(q.Get("q")),
+		Types: cases.FlagTypes(), CanCase: d.can(r, "cases.lead"), CanBan: d.can(r, "bans.issue") && d.can(r, "cases.lead"),
+		CanPerm: d.can(r, "bans.permanent"), AroundWindow: "15 minutes"}
+	data.BanReasons, data.BanDurations = cases.BanReasons, cases.BanDurations
 	if data.Confidence != "high" && data.Confidence != "medium" {
 		data.Confidence = ""
 	}
+	if q.Get("open") == "1" { // old links
+		data.Status = "open"
+	}
+	if data.Status != "watch" && data.Status != "closed" && data.Status != "all" {
+		data.Status = "open"
+	}
+	filter := cases.FlagFilter{Confidence: data.Confidence, Status: data.Status, Type: data.Type, Search: data.Search}
+	if filter.Status == "all" {
+		filter.Status = ""
+	}
 	var err error
-	if data.Flags, err = cases.Flags(r.Context(), d.Pool, cases.FlagFilter{Confidence: data.Confidence, OpenOnly: data.OpenOnly}, 300); err != nil {
+	if data.Flags, err = cases.Flags(r.Context(), d.Pool, filter, 300); err != nil {
 		slog.Error("anticheat: list failed", "error", err)
 		http.Error(w, "Failed to load flags.", http.StatusInternalServerError)
 		return
 	}
-	data.Counts = map[string]int{}
-	if all, err := cases.Flags(r.Context(), d.Pool, cases.FlagFilter{}, 1000); err == nil {
-		for _, f := range all {
-			data.Counts[f.Confidence]++
-			data.Counts[""]++
-		}
+	if data.Stats, err = cases.FlagSummary(r.Context(), d.Pool); err != nil {
+		slog.Error("anticheat: stats failed", "error", err)
 	}
 	if sel, err := strconv.ParseInt(q.Get("flag"), 10, 64); err == nil {
 		if f, err := cases.GetFlag(r.Context(), d.Pool, sel); err == nil {
@@ -651,6 +690,17 @@ func (d *Deps) AntiCheat(w http.ResponseWriter, r *http.Request) {
 	}
 	if data.Selected == nil && len(data.Flags) > 0 {
 		data.Selected = &data.Flags[0]
+	}
+	if f := data.Selected; f != nil {
+		if all, err := cases.Flags(r.Context(), d.Pool, cases.FlagFilter{PlayerID: f.PlayerID}, 11); err == nil {
+			for _, o := range all {
+				if o.ID != f.ID && len(data.PlayerFlags) < 10 {
+					data.PlayerFlags = append(data.PlayerFlags, o)
+				}
+			}
+		}
+		data.Around, _, _ = events.List(r.Context(), d.Pool, events.Filter{PlayerID: f.PlayerID,
+			From: f.CreatedAt.Add(-flagWindow), To: f.CreatedAt.Add(flagWindow), Limit: 100})
 	}
 	d.Render.Render(w, "anticheat.html", data)
 }
