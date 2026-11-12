@@ -20,6 +20,7 @@ import (
 	"website/internal/factions"
 	"website/internal/lookup"
 	"website/internal/players"
+	"website/internal/replies"
 	"website/internal/timeline"
 	"website/internal/watchlist"
 )
@@ -64,6 +65,7 @@ type playerLookupData struct {
 	EventCat   string
 	Conn       players.Connections
 	Watch      *watchlist.Entry
+	NoteReplies  []replies.Reply // saved player-note templates
 	Timeline     []timeline.Item
 	TimelineMore bool
 	TimelineNext string          // the "before" cursor for Show older
@@ -213,6 +215,7 @@ func (d *Deps) PlayerLookup(w http.ResponseWriter, r *http.Request) {
 			if data.CanNotes {
 				data.Tab = "notes"
 				data.Notes, _ = players.Notes(r.Context(), d.Pool, data.P.ID)
+				data.NoteReplies = d.savedReplies(r, "note")
 			}
 		}
 	}

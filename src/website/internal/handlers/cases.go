@@ -17,6 +17,7 @@ import (
 	"website/internal/audit"
 	"website/internal/auth"
 	"website/internal/cases"
+	"website/internal/replies"
 	"website/internal/events"
 )
 
@@ -242,6 +243,7 @@ type caseViewData struct {
 	Entries    []cases.Entry
 	Bans       []cases.Ban
 	Correcting int
+	Replies    []replies.Reply // saved case-entry templates
 	CanWrite   bool
 	CanClose   bool
 	CanBan     bool
@@ -312,6 +314,7 @@ func (d *Deps) CaseView(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	data.Replies = d.savedReplies(r, "case")
 	d.Render.Render(w, "case_view.html", data)
 }
 

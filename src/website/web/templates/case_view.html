@@ -41,6 +41,7 @@
           {{if .Correcting}}<a href="/admin/cases/{{$c.ID}}#composer">Cancel correction</a>{{end}}
           <span class="hint">Entries can't be edited or deleted once added.</span>
         </div>
+        {{template "reply_menu" (dict "Replies" $.Replies "Target" "entry-body" "Player" "" "Staff" $.Session.Name "Ticket" "" "Case" (printf "#%d" $.Case.ID))}}
         <textarea id="entry-body" name="body" rows="3" maxlength="4000" required placeholder="What happened, what you checked, what you decided…"></textarea>
         <div class="mod-composer-foot"><button class="btn btn-primary" type="submit">Add entry</button></div>
       </form>

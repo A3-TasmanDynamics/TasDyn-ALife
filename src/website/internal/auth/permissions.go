@@ -62,6 +62,7 @@ var Catalogue = []Permission{
 	{Key: "players.view", Label: "Look up players", Group: "Players", SeedLevel: LevelTrialMod},
 	{Key: "players.vehicles", Label: "View vehicles tab", Group: "Players", SeedLevel: LevelModerator},
 	{Key: "players.notes", Label: "Read and add staff notes on players", Group: "Players", SeedLevel: LevelTrialMod},
+	{Key: "replies.manage", Label: "Add, edit and delete saved replies & templates", Group: "Players", SeedLevel: LevelAdmin},
 	{Key: "players.licences", Label: "Give and take licences (offline players)", Group: "Players", SeedLevel: LevelAdmin},
 	{Key: "players.vehicle_actions", Label: "Release, destroy and restore vehicles", Group: "Players", SeedLevel: LevelAdmin},
 	// Faction levels are faction command's job; these are the Management-only
