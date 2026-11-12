@@ -778,7 +778,7 @@ bool Database::BankCash(const std::string& op, const std::string& uid, const std
     return true;
 }
 
-bool Database::RecordSession(const std::string& op, const std::string& uid, std::string& outError) {
+bool Database::RecordSession(const std::string& op, const std::string& uid, const std::string& faction, std::string& outError) {
     std::lock_guard<std::mutex> lock(mutex_);
 
     if (!EnsureConnected()) {
@@ -788,6 +788,8 @@ bool Database::RecordSession(const std::string& op, const std::string& uid, std:
 
     PGresult* res = nullptr;
     const char* params[1] = {uid.c_str()};
+    // faction: "civ" / "cop" / "medic", or "" (unknown) -> NULL.
+    const char* startParams[2] = {uid.c_str(), faction.empty() ? nullptr : faction.c_str()};
     if (op == "start") {
         // Close anything left open for this player (a crash, a missed
         // disconnect), then open the new session -- one statement.
@@ -795,8 +797,8 @@ bool Database::RecordSession(const std::string& op, const std::string& uid, std:
             "WITH p AS (SELECT id FROM players WHERE uid = $1), "
             "closed AS (UPDATE player_sessions SET disconnected_at = now() "
             "           WHERE disconnected_at IS NULL AND player_id = (SELECT id FROM p)) "
-            "INSERT INTO player_sessions (player_id) SELECT id FROM p",
-            1, nullptr, params, nullptr, nullptr, 0);
+            "INSERT INTO player_sessions (player_id, faction) SELECT id, $2 FROM p",
+            2, nullptr, startParams, nullptr, nullptr, 0);
     } else if (op == "end") {
         res = PQexecParams(conn_,
             "UPDATE player_sessions SET disconnected_at = now() "

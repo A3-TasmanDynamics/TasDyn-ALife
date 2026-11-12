@@ -206,8 +206,10 @@ CREATE TABLE player_sessions (
     player_id        BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
     ip_address       INET,
     connected_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
-    disconnected_at  TIMESTAMPTZ
+    disconnected_at  TIMESTAMPTZ,
+    faction          TEXT CHECK (faction IS NULL OR faction IN ('civ', 'cop', 'medic'))  -- as joined (NULL: before this was recorded)
 );
+CREATE INDEX idx_player_sessions_open ON player_sessions(player_id) WHERE disconnected_at IS NULL;
 
 CREATE INDEX idx_player_sessions_player_id ON player_sessions(player_id);
 
