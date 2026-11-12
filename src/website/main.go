@@ -500,6 +500,13 @@ func run() error {
 			r.Post("/admin/applications/{id}", d.ApplicationAction)
 		})
 
+		// Live map of players in game (the in-game "see every player" right).
+		r.Group(func(r chi.Router) {
+			r.Use(d.Auth.RequirePermission("game.markers"))
+			r.Get("/admin/map", d.LiveMap)
+			r.Get("/admin/map.json", d.LiveMapData)
+		})
+
 		r.Group(func(r chi.Router) {
 			r.Use(d.Auth.RequirePermission("announce.post"))
 			r.Get("/admin/notices", d.AdminNotices)

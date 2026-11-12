@@ -1,0 +1,29 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div id="admin-main" tabindex="-1" class="admin-content mod-page">
+    {{template "admin_header" .}}
+    <div>
+      <h1 class="page-title admin-title">Live Map</h1>
+      <p class="admin-sub">Where the players in game are, from the positions the server saves about once a minute. Scroll or pinch to zoom, drag to move, click a player to open them.</p>
+    </div>
+    <div class="lm-bar">
+      <span class="lm-legend"><span class="lm-key lm-civ"></span>Civilian <span class="lm-key lm-cop"></span>Police <span class="lm-key lm-medic"></span>EMS <span class="lm-key lm-ring lm-ring-watch"></span>Watched <span class="lm-key lm-ring lm-ring-wanted"></span>Wanted</span>
+      <label class="lm-search"><input type="search" placeholder="Find a player on the map" aria-label="Find a player on the map" data-lm-find></label>
+      <span class="muted small" data-lm-status aria-live="polite">Loading…</span>
+      <button class="btn btn-sm" type="button" data-lm-reset>Whole map</button>
+    </div>
+    <div class="lm-wrap card">
+      <svg class="lm" data-world="{{.World}}" viewBox="0 0 {{.World}} {{.World}}" role="img" aria-label="Map of Altis with the players in game">
+        {{if .HasImage}}<image href="/static/map/altis.jpg" x="0" y="0" width="{{.World}}" height="{{.World}}" preserveAspectRatio="none"/>{{else}}<rect class="lm-sea" x="0" y="0" width="{{.World}}" height="{{.World}}"/>{{end}}
+        <g class="lm-grid" data-lm-grid></g>
+        <g class="lm-places" data-lm-places></g>
+        <g class="lm-players" data-lm-players></g>
+      </svg>
+      <div class="lm-tip" hidden data-lm-tip></div>
+    </div>
+    <details class="lm-list-wrap"><summary>Players on the map as a list</summary><ul class="lm-list" data-lm-list></ul></details>
+  </div>
+</div>
+<script src="/static/map.js" defer></script>
+{{end}}

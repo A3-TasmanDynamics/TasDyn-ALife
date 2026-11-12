@@ -3257,3 +3257,36 @@ a.lrow:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
 .sched-actions form { display: flex; gap: 6px; justify-content: flex-end; }
 .sched-form input[type="datetime-local"] { color-scheme: dark; }
 :root[data-theme="light"] .sched-form input[type="datetime-local"] { color-scheme: light; }
+/* ---- Live map ---- */
+.lm-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-bottom: 10px; }
+.lm-legend { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 12.5px; color: var(--text-dim); }
+.lm-key { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 2px; vertical-align: -1px; }
+.lm-key.lm-civ { background: #a78bfa; } .lm-key.lm-cop { background: #3b82f6; } .lm-key.lm-medic { background: #ef4444; }
+.lm-key.lm-ring { background: transparent; border: 2px solid; }
+.lm-key.lm-ring-watch { border-color: #c4b5fd; } .lm-key.lm-ring-wanted { border-color: #f59e0b; }
+.lm-search input { min-height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text); font: inherit; font-size: 13px; width: 220px; }
+.lm-bar .btn { margin-left: auto; }
+.lm-wrap { position: relative; padding: 0; overflow: hidden; aspect-ratio: 1 / 1; max-height: calc(100vh - 240px); width: 100%; max-width: calc(100vh - 240px); margin: 0 auto; }
+.lm { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; user-select: none; background: #0d1a2b; }
+.lm:active { cursor: grabbing; }
+.lm-sea { fill: #0d1a2b; }
+.lm-minor { stroke: rgb(255 255 255 / 0.05); }
+.lm-major { stroke: rgb(255 255 255 / 0.12); }
+.lm-gridlabel { fill: rgb(255 255 255 / 0.35); font-family: inherit; }
+.lm-town text { fill: #e2e8f0; font-weight: 700; text-anchor: middle; paint-order: stroke; stroke: #0d1a2b; stroke-width: 3px; stroke-linejoin: round; }
+.lm-poi circle { fill: #94a3b8; }
+.lm-poi text { fill: #cbd5e1; display: none; paint-order: stroke; stroke: #0d1a2b; stroke-width: 3px; stroke-linejoin: round; }
+.lm-close .lm-poi text { display: inline; }
+.lm-p { cursor: pointer; outline: none; }
+.lm-dot { stroke: #0b1220; }
+.lm-civ .lm-dot { fill: #a78bfa; } .lm-cop .lm-dot { fill: #3b82f6; } .lm-medic .lm-dot { fill: #ef4444; }
+.lm-ring { fill: none; }
+.lm-ring-watch { stroke: #c4b5fd; } .lm-ring-wanted { stroke: #f59e0b; }
+.lm-p:hover .lm-dot, .lm-p:focus .lm-dot, .lm-hit .lm-dot { stroke: #fff; }
+.lm-dim { opacity: 0.25; }
+.lm-tip { position: absolute; z-index: 5; pointer-events: none; display: flex; flex-direction: column; gap: 2px; max-width: 240px; padding: 8px 10px; border-radius: 8px; background: var(--bg-elevated); border: 1px solid var(--border); box-shadow: var(--shadow-card); font-size: 12.5px; }
+.lm-tip span { color: var(--text-dim); }
+.lm-list-wrap { margin-top: 12px; font-size: 13px; }
+.lm-list-wrap summary { cursor: pointer; color: var(--text-dim); }
+.lm-list { columns: 2 260px; padding-left: 18px; }
+.lm-list a { color: var(--text-2); }
