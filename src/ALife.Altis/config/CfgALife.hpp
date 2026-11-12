@@ -141,6 +141,11 @@ class CfgALife
     // the player (a shop NPC placed away from the markers).
     vehicleSpawnRange = 150;
 
+    // Weapon shops: the most of one weapon, attachment or piece of kit in
+    // one purchase (magazines: 20). Stops a leftover quantity buying a pile
+    // of scopes by mistake.
+    weaponShopGearMax = 3;
+
     // ---- Keys (the phone's Keys app, the U key) -----------------------------
     class Keys
     {
