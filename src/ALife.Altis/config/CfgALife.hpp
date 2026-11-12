@@ -145,6 +145,14 @@ class CfgALife
     // one purchase (magazines: 20). Stops a leftover quantity buying a pile
     // of scopes by mistake.
     weaponShopGearMax = 3;
+    // The weapon shop's 3D view (ALife_fnc_weaponShop).
+    class WeaponShop
+    {
+        turnSensitivity = 40;               // degrees the item turns per screen-width of mouse drag (higher = faster)
+        zoomStep = 0.06;                    // how much one scroll notch zooms (0.06 = 6%)
+        bench = "Land_Workbench_01_F";      // what the item lies on ("" = just the floor)
+        floorColour[] = { 0.045, 0.063, 0.11 }; // the floor around it (red, green, blue 0-1)
+    };
 
     // ---- Anti-cheat (ALife_fnc_anticheat, docs/ANTI_CHEAT.md) ----------------
     // Every economy action goes in the player's event log; what isn't normal

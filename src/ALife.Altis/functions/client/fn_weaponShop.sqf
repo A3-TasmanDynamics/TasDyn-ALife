@@ -64,7 +64,6 @@
 #define IDC_KIT_TOTAL 5197
 // The scene: how far up, the table's colour.
 #define STAGE_UP 500
-#define TABLE_TEXTURE "#(rgb,8,8,3)color(0.045,0.063,0.11,1)"
 // The kit's attachment slots: compatibleItems slot, label; in weaponsItems order.
 #define KIT_SLOTS [["MuzzleSlot", "Muzzle"], ["PointerSlot", "Light / laser"], ["CowsSlot", "Optic"], ["UnderBarrelSlot", "Bipod"]]
 
@@ -132,6 +131,11 @@ switch (_mode) do {
 
     case "onLoad": {
         _display = _arg;
+        // The 3D view's settings (CfgALife >> WeaponShop): drag turns turnSensitivity
+        // degrees per screen-width (mouse moves come in screen units), scroll zooms zoomStep a notch.
+        ALife_wsView = missionConfigFile >> "CfgALife" >> "WeaponShop";
+        ALife_wsTurn = (getNumber (ALife_wsView >> "turnSensitivity") max 1) / safezoneW;
+        ALife_wsZoomStep = ((getNumber (ALife_wsView >> "zoomStep")) max 0.01) min 0.5;
         (_display displayCtrl IDC_TITLE) ctrlSetText toUpper getText (_cfg >> "name");
         (_display displayCtrl IDC_HINT) ctrlSetStructuredText parseText
             "<t align='center' color='#8b98b3' shadow='1'>Drag to turn  ·  Scroll to zoom  ·  Double-click an item to add it</t>";
@@ -185,20 +189,40 @@ switch (_mode) do {
         ALife_wsKit = [];
         ALife_wsOpen = createHashMap; // which groups are open
 
-        // ---- The scene: a dark table under a camera looking down ------------
+        // ---- The scene: a workbench on a dark floor, a camera looking down --
+        // (CfgALife >> WeaponShop: the bench, the floor colour.)
+        private _view = missionNamespace getVariable ["ALife_wsView", configNull];
         ALife_wsStage = (getPosASL player) vectorAdd [0, 0, STAGE_UP];
         ALife_wsAngle = 90;
         ALife_wsZoom = 1;
         private _table = [];
-        // A flat panel; two, facing up and down, so one always shows.
+        private _bench = getText (_view >> "bench");
+        if (_bench != "" && { isClass (configFile >> "CfgVehicles" >> _bench) }) then {
+            private _b = createVehicleLocal [_bench, [0, 0, 0], [], 0, "CAN_COLLIDE"];
+            _b enableSimulation false;
+            _b setPosASL ALife_wsStage;
+            // Its middle under the stage, its top at the stage's height...
+            (boundingBoxReal _b) params ["_min", "_max"];
+            private _off = (_b modelToWorldWorld [((_min select 0) + (_max select 0)) / 2, ((_min select 1) + (_max select 1)) / 2, _max select 2]) vectorDiff ALife_wsStage;
+            _b setPosASL (ALife_wsStage vectorDiff _off);
+            _table pushBack _b;
+            // ...then the item lies on whatever surface is really there.
+            private _hit = lineIntersectsSurfaces [ALife_wsStage vectorAdd [0, 0, 1], ALife_wsStage vectorAdd [0, 0, -3], objNull, objNull, true, 1, "GEOM", "VIEW"];
+            if (_hit isNotEqualTo []) then { ALife_wsStage = (_hit select 0) select 0; };
+        };
+        // The floor: a flat panel; two, facing up and down, so one always shows.
+        private _colour = getArray (_view >> "floorColour");
+        if (count _colour < 3) then { _colour = [0.045, 0.063, 0.11]; };
+        private _texture = format ["#(rgb,8,8,3)color(%1,%2,%3,1)", _colour select 0, _colour select 1, _colour select 2];
+        private _floor = ALife_wsStage vectorAdd [0, 0, [-0.01, -1.2] select (_table isNotEqualTo [])];
         {
             private _p = createVehicleLocal ["UserTexture10m_F", [0, 0, 0], [], 0, "CAN_COLLIDE"];
-            _p setObjectTexture [0, TABLE_TEXTURE];
-            _p setPosASL ALife_wsStage;
+            _p setObjectTexture [0, _texture];
+            _p setPosASL _floor;
             _p setVectorDirAndUp [[0, 0, _x], [0, 1, 0]];
             // Centre it under the stage, whatever its model's origin.
-            private _off = (_p modelToWorldWorld (boundingCenter _p)) vectorDiff ALife_wsStage;
-            _p setPosASL (ALife_wsStage vectorDiff [_off select 0, _off select 1, (_off select 2) + 0.01 + 0.01 * _forEachIndex]);
+            private _off = (_p modelToWorldWorld (boundingCenter _p)) vectorDiff _floor;
+            _p setPosASL (_floor vectorDiff [_off select 0, _off select 1, (_off select 2) + 0.01 * _forEachIndex]);
             _table pushBack _p;
         } forEach [1, -1];
         // Lit by the sun by day; at night a soft light from above (off by day).
@@ -224,7 +248,7 @@ switch (_mode) do {
         _display displayAddEventHandler ["MouseMoving", {
             params ["", "_dx"];
             if !(missionNamespace getVariable ["ALife_wsDrag", false]) exitWith {};
-            ALife_wsAngle = ALife_wsAngle + _dx * 120;
+            ALife_wsAngle = ALife_wsAngle + _dx * (missionNamespace getVariable ["ALife_wsTurn", 40]);
             private _holder = missionNamespace getVariable ["ALife_wsHolder", objNull];
             if (!isNull _holder) then { _holder setDir ALife_wsAngle; };
         }];
@@ -232,7 +256,7 @@ switch (_mode) do {
             params ["", "_scroll"];
             getMousePosition params ["_x", "_y"];
             if !(_x > safezoneX + safezoneW * 0.28 && { _x < safezoneX + safezoneW * 0.72 } && { _y < safezoneY + safezoneH * 0.88 }) exitWith {}; // over a panel: it scrolls
-            ALife_wsZoom = ((ALife_wsZoom * (1 - 0.12 * _scroll)) max 0.25) min 3;
+            ALife_wsZoom = ((ALife_wsZoom * (1 - (missionNamespace getVariable ["ALife_wsZoomStep", 0.06]) * _scroll)) max 0.25) min 3;
             ["zoom"] call ALife_fnc_weaponShop;
         }];
         // Search as you type; the magazine count as you type.
