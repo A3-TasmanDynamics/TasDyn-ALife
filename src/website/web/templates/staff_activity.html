@@ -1,0 +1,56 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div id="admin-main" tabindex="-1" class="admin-content mod-page">
+    {{template "admin_header" .}}
+    <div>
+      <h1 class="page-title admin-title">Staff Activity</h1>
+      <p class="admin-sub">Who's doing the work and how quickly things get handled, from what the panel already records: Staff Log actions, flag reviews, case work, ticket replies and bans.</p>
+    </div>
+
+    <nav class="seg" aria-label="Window">
+      {{range .Windows}}<a class="seg-item {{if eq . $.Window}}active{{end}}" href="/admin/staff-activity?window={{.}}"{{if eq . $.Window}} aria-current="page"{{end}}>Last {{.}}</a>{{end}}
+    </nav>
+
+    <section class="admin-stats" aria-label="How quickly things get handled">
+      <div class="admin-stat"><div class="label">Flags reviewed</div><div class="value">{{.Team.FlagsReviewed}}</div>
+        <div class="sub">median {{$.Dur .Team.FlagReviewMedian}} from raised to reviewed</div></div>
+      <div class="admin-stat"><div class="label">Ticket first reply</div><div class="value">{{$.Dur .Team.TicketFirstMedian}}</div>
+        <div class="sub">median · {{.Team.TicketsAnswered}} of {{.Team.TicketsOpened}} new tickets answered</div></div>
+      <div class="admin-stat"><div class="label">Cases closed</div><div class="value">{{.Team.CasesClosed}}</div>
+        <div class="sub">median {{$.Dur .Team.CaseCloseMedian}} open</div></div>
+      <a class="admin-stat stat-link" href="/admin/anticheat"><div class="label">Waiting now</div><div class="value {{if or .Team.OpenFlags .Team.UnansweredTickets}}value-amber{{end}}">{{.Team.OpenFlags}} · {{.Team.UnansweredTickets}}</div>
+        <div class="sub">open flags{{with .Team.OldestOpenFlag}} (oldest {{$.Ago .}}){{end}} · tickets with no reply{{with .Team.OldestUnanswered}} (oldest {{$.Ago .}}){{end}}</div></a>
+    </section>
+
+    <section class="card dash-card" aria-labelledby="sa-team">
+      <div class="dash-card-head"><h2 id="sa-team">Staff</h2><span class="muted small">Busiest first · last {{.Window}}</span></div>
+      {{if .Members}}<div class="lrow sa-row lrow-head"><span>Staff member</span><span>Flags</span><span>Cases</span><span>Tickets</span><span>Bans</span><span>Log</span><span>Last active</span></div>{{end}}
+      {{range .Members}}
+      <a class="lrow sa-row" href="/admin/staff/{{.PlayerID}}">
+        <span class="sa-who"><span class="strong ellipsis">{{.Name}}</span><span class="muted small">{{.Rank}}</span><span class="sa-bar" aria-hidden="true"><span style="width: {{$.Bar .}}%"></span></span></span>
+        <span class="num">{{.FlagsReviewed}}</span>
+        <span class="num" title="{{.CaseEntries}} entries written · {{.CasesOpened}} opened / {{.CasesClosed}} closed as lead">{{.CaseEntries}} <span class="muted small">· {{.CasesOpened}}/{{.CasesClosed}}</span></span>
+        <span class="num" title="{{.TicketReplies}} replies to players · {{.TicketNotes}} internal notes">{{.TicketReplies}}{{if .TicketNotes}} <span class="muted small">+{{.TicketNotes}} notes</span>{{end}}</span>
+        <span class="num">{{.Bans}}</span>
+        <span class="num">{{.Actions}}</span>
+        <span class="muted small">{{$.Ago .LastActive}}</span>
+      </a>
+      {{else}}<p class="empty">No staff yet.</p>{{end}}
+    </section>
+
+    <section class="card dash-card" aria-labelledby="sa-weeks">
+      <div class="dash-card-head"><h2 id="sa-weeks">Week by week</h2><span class="muted small">Last 12 weeks</span></div>
+      <div class="on-chart">{{template "line_chart" (dict "C" .Chart "Label" "Flag reviews, ticket replies and case entries per week over the last 12 weeks" "Legend" true)}}</div>
+      <details class="sa-table">
+        <summary>Show as a table</summary>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Week of</th><th>Flag reviews</th><th>Ticket replies</th><th>Case entries</th><th>Staff Log actions</th></tr></thead>
+          <tbody>{{range .Weeks}}<tr><td>{{.Start.Local.Format "2 Jan 2006"}}</td><td>{{.FlagsReviewed}}</td><td>{{.TicketReplies}}</td><td>{{.CaseEntries}}</td><td>{{.Actions}}</td></tr>{{end}}</tbody>
+        </table></div>
+      </details>
+    </section>
+  </div>
+</div>
+<script src="/static/chart.js" defer></script>
+{{end}}
