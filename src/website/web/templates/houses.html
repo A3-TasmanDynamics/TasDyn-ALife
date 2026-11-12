@@ -2,7 +2,7 @@
 <div class="admin-shell">
   {{template "admin_sidebar" .}}
   {{if eq .Tab "garages"}}
-  <div class="admin-content lookup-wide">
+  <div id="admin-main" tabindex="-1" class="admin-content lookup-wide">
     {{template "admin_header" .}}
     <h1 class="page-title admin-title">Houses &amp; Garages</h1>
     <nav class="tabbar lookup-tabs" aria-label="Sections">
@@ -40,7 +40,7 @@
     <p class="hint">{{.Garages.Total}} vehicles in all. Every vehicle shop is a garage for its faction: a player's vehicles for that faction can be taken out at any of them. "Out" is as of the last save; vehicles left out when the server stops go back to the garage on the next start.</p>
   </div>
   {{else}}
-  <div class="admin-content lookup-page">
+  <div id="admin-main" tabindex="-1" class="admin-content lookup-page">
     {{template "admin_header" .}}
     <section class="lookup-search" aria-label="Search">
       <h1 class="page-title admin-title">Houses &amp; Garages</h1>

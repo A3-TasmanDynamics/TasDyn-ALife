@@ -2,7 +2,7 @@
 {{if .IsStaff}}
 <div class="admin-shell">
   {{template "admin_sidebar" .}}
-  <div class="admin-content">
+  <div id="admin-main" tabindex="-1" class="admin-content">
     {{template "admin_header" .}}
     <a class="cmd-back" href="/admin/tickets">&larr; Tickets</a>
     <h1 class="page-title admin-title">#{{.Ticket.ID}} {{.Ticket.Subject}}</h1>
@@ -36,7 +36,7 @@
       <form method="post" action="/tickets/{{.Ticket.ID}}/reply">
         <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
         <div class="field">
-          <textarea name="body" rows="3" required placeholder="Write a reply..."></textarea>
+          <textarea name="body" rows="3" required placeholder="Write a reply..." aria-label="Reply"></textarea>
         </div>
         {{if .IsStaff}}
         <div class="field row">
@@ -101,18 +101,18 @@
       <div id="ticket-edit-mode" hidden>
         <form method="post" action="/admin/tickets/{{.Ticket.ID}}/subject" class="field">
           <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-          <label>Subject</label>
+          <label for="tk-subject">Subject</label>
           <div class="edit-row">
-            <input type="text" name="subject" value="{{.Ticket.Subject}}" maxlength="200" required />
+            <input type="text" id="tk-subject" name="subject" value="{{.Ticket.Subject}}" maxlength="200" required />
             <button class="cta secondary" type="submit">Save</button>
           </div>
         </form>
 
         <div class="field">
-          <label>Priority</label>
+          <label for="tk-priority">Priority</label>
           <form method="post" action="/admin/tickets/{{.Ticket.ID}}/priority" class="inline-form">
             <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-            <select name="priority" onchange="this.form.submit()">
+            <select id="tk-priority" name="priority" onchange="this.form.submit()">
               <option value="low" {{if eq .Ticket.Priority "low"}}selected{{end}}>Low</option>
               <option value="normal" {{if eq .Ticket.Priority "normal"}}selected{{end}}>Normal</option>
               <option value="high" {{if eq .Ticket.Priority "high"}}selected{{end}}>High</option>
@@ -122,10 +122,10 @@
         </div>
 
         <div class="field">
-          <label>Assigned to</label>
+          <label for="tk-assigned">Assigned to</label>
           <form method="post" action="/admin/tickets/{{.Ticket.ID}}/assign" class="inline-form">
             <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-            <select name="staff_id" onchange="this.form.submit()">
+            <select id="tk-assigned" name="staff_id" onchange="this.form.submit()">
               <option value="">— Unassigned —</option>
               {{$assignedID := .Ticket.AssignedStaffID}}
               {{range .StaffOptions}}
@@ -137,11 +137,11 @@
 
         <form method="post" action="/admin/tickets/{{.Ticket.ID}}/category" class="field">
           <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-          <label>Category</label>
+          <label for="edit-category">Category</label>
           <select name="category_id" id="edit-category">
             {{range .TopCategories}}<option value="{{.ID}}">{{.Label}}</option>{{end}}
           </select>
-          <label style="margin-top:6px;">Sub-category</label>
+          <label for="edit-subcategory" style="margin-top:6px;">Sub-category</label>
           <select name="subcategory_id" id="edit-subcategory">
             <option value="">— None —</option>
           </select>

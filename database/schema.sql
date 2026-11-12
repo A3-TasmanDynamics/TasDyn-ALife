@@ -183,6 +183,7 @@ CREATE TABLE player_log (
 CREATE INDEX idx_player_log_player_id ON player_log(player_id);
 CREATE INDEX idx_player_log_player_time ON player_log(player_id, created_at DESC);
 CREATE INDEX idx_player_log_event_time ON player_log(event_type, created_at DESC);
+CREATE INDEX idx_player_log_time ON player_log(created_at DESC, id DESC);
 
 -- Name history, not a single overwritten column -- lets staff spot a UID
 -- cycling through names (alt-account/evasion pattern) instead of only ever
@@ -212,6 +213,7 @@ CREATE TABLE player_sessions (
 CREATE INDEX idx_player_sessions_open ON player_sessions(player_id) WHERE disconnected_at IS NULL;
 
 CREATE INDEX idx_player_sessions_player_id ON player_sessions(player_id);
+CREATE INDEX idx_player_sessions_disconnected ON player_sessions(disconnected_at);
 
 -- ---------------------------------------------------------------------------
 -- Wanted list (Police faction). players.civ_bounty is a CACHE of the sum of

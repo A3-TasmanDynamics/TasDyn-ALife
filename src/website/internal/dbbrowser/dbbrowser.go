@@ -74,7 +74,7 @@ type Table struct {
 func (b *Browser) Tables(ctx context.Context) ([]Table, error) {
 	var out []Table
 	err := b.readOnly(ctx, func(tx pgx.Tx) error {
-		rows, err := tx.Query(ctx, `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE' ORDER BY 1`)
+		rows, err := tx.Query(ctx, `SELECT tablename::text FROM pg_catalog.pg_tables WHERE schemaname = 'public' ORDER BY 1`)
 		if err != nil {
 			return err
 		}
