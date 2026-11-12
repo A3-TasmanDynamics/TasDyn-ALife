@@ -17,7 +17,7 @@
         ["onLoad", display]
         ["list", rows]          - from the server: [[id, class, plate, status, fee(, faction)], ...]
         ["select"]
-        ["retrieve"] / ["store"]
+        ["retrieve"] / ["store"] / ["sell"] (twice: the second confirms)
 */
 
 #define IDD 5900
@@ -65,9 +65,11 @@ switch (_mode) do {
     case "onLoad": {
         _display = _arg;
         (_display displayCtrl IDC_TITLE) ctrlSetText (if (_admin isEqualTo []) then { "GARAGE" } else { "GARAGE: " + toUpper (_admin select 1) });
+        ALife_garageSell = [];
         if (_admin isNotEqualTo []) then {
             (_display displayCtrl 5920) ctrlSetText "Pull out";
             (_display displayCtrl 5921) ctrlSetText "Send to garage";
+            (_display displayCtrl 5922) ctrlShow false; // staff don't sell for them
         };
         (_display displayCtrl IDC_BALANCE) ctrlSetStructuredText parseText format [
             "<t align='right'><t color='#8b98b3'>Bank </t><t font='RobotoCondensedBold'>%1</t></t>", (_data getOrDefault ["bank", 0]) call _fnc_money];
@@ -116,7 +118,8 @@ switch (_mode) do {
         private _id = _list lnbData [_row, 0];
         private _i = ALife_garageRows findIf { (_x select 0) == _id };
         if (_i < 0) exitWith {};
-        (ALife_garageRows select _i) params ["", "_class", "_plate", "_status", "_fee"];
+        (ALife_garageRows select _i) params ["", "_class", "_plate", "_status", "_fee", "", ["_sell", 0]];
+        ALife_garageSell = []; // a new pick: Sell asks again
         if (_admin isNotEqualTo []) exitWith {
             (_display displayCtrl IDC_DETAILS) ctrlSetStructuredText parseText format [
                 "<t font='RobotoCondensedBold'>%1</t>  <t color='#8b98b3'>%2</t><br/><t color='#8b98b3'>Pull out: it appears in front of you (no fee). Send to garage: back in their garage, from the map or the impound.</t>",
@@ -127,7 +130,7 @@ switch (_mode) do {
             "<t font='RobotoCondensedBold'>%1</t>  <t color='#8b98b3'>%2%3</t><br/><t color='#8b98b3'>%4</t>",
             _class call _name, _plate, if (_trunk > 0) then { format ["   Trunk %1", _trunk] } else { "" },
             switch (_status) do {
-                case "garaged": { "Take it out and it appears at the spawn point, locked, with what's in its trunk." };
+                case "garaged": { format ["Take it out and it appears at the spawn point, locked, with what's in its trunk.%1", ["", format ["<br/>Sell it back here for <t color='#fbbf24'>%1</t> (into your bank).", _sell call _fnc_money]] select (_sell > 0)] };
                 case "spawned": { "It's out somewhere on the map. Store it at any garage to bring it back here." };
                 case "impounded": { format ["The police impounded it. Pay %1 from your bank to take it out.", _fee call _fnc_money] };
                 default { "" };
@@ -141,6 +144,29 @@ switch (_mode) do {
         if (_row < 0 || { ALife_garageRows isEqualTo [] }) exitWith { ["Pick a vehicle first.", "warning"] call ALife_fnc_toast; };
         if (_admin isNotEqualTo []) exitWith { [player, "adminPull", _admin select 0, _list lnbData [_row, 0]] remoteExecCall ["ALife_fnc_garage", 2]; };
         [player, "retrieve", _place, _list lnbData [_row, 0]] remoteExecCall ["ALife_fnc_garage", 2];
+    };
+
+    case "sell": {
+        // The first press says what it pays; a second press on the same vehicle within 8 s sells it.
+        if (isNull _display || { _admin isNotEqualTo [] }) exitWith {};
+        private _list = _display displayCtrl IDC_LIST;
+        private _row = lnbCurSelRow _list;
+        if (_row < 0 || { ALife_garageRows isEqualTo [] }) exitWith { ["Pick a vehicle first.", "warning"] call ALife_fnc_toast; };
+        private _id = _list lnbData [_row, 0];
+        private _i = ALife_garageRows findIf { (_x select 0) == _id };
+        if (_i < 0) exitWith {};
+        (ALife_garageRows select _i) params ["", "_class", "_plate", "_status", "", "", ["_sell", 0]];
+        if (_status != "garaged") exitWith { [["It has to be in the garage to sell it.", "Get it out of the impound first."] select (_status == "impounded"), "warning"] call ALife_fnc_toast; };
+        if (_sell <= 0) exitWith { ["That vehicle can't be sold here.", "warning"] call ALife_fnc_toast; };
+        private _pending = missionNamespace getVariable ["ALife_garageSell", []];
+        if ((_pending param [0, ""]) == _id && { diag_tickTime - (_pending param [1, -10]) < 8 }) exitWith {
+            ALife_garageSell = [];
+            [player, "sell", _place, _id] remoteExecCall ["ALife_fnc_garage", 2];
+        };
+        ALife_garageSell = [_id, diag_tickTime];
+        (_display displayCtrl IDC_DETAILS) ctrlSetStructuredText parseText format [
+            "<t font='RobotoCondensedBold'>Sell your %1 (%2) for <t color='#fbbf24'>%3</t>?</t><br/><t color='#8b98b3'>Press Sell again to confirm. It's gone for good; the money goes into your bank.</t>",
+            _class call _name, _plate, _sell call _fnc_money];
     };
 
     case "store": {

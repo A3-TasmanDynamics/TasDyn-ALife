@@ -106,6 +106,14 @@ class ALife_Garage
             w = "safezoneW * 0.11";
             h = "safezoneH * 0.04";
         };
+        class Sell: Store
+        {
+            idc = 5922;
+            text = "Sell";
+            action = "['sell'] call ALife_fnc_garageMenu";
+            x = "safezoneX + safezoneW * 0.54";
+            w = "safezoneW * 0.055";
+        };
         class Close: Store
         {
             idc = -1;

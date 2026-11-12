@@ -97,6 +97,13 @@ public:
     bool VehicleLog(const std::string& id, const std::string& uid, const std::string& action,
                     const std::string& amount, std::string& outError);
     bool VehicleStatus(const std::string& id, const std::string& status, std::string& outError);
+    // Sells a garaged vehicle back: marks it sold (kept for its history) and
+    // pays price into the owner's bank (a 'payout', idempotent on token), in
+    // one transaction. outStatus "OK" / "NOT_YOURS" (not theirs, not in the
+    // garage, or another faction's) / "DUPLICATE" / "ERROR".
+    bool VehicleSell(const std::string& id, const std::string& uid, const std::string& faction,
+                     const std::string& price, const std::string& token, const std::string& memo,
+                     std::string& outStatus, std::string& outError);
 
     bool RecordCombatLog(const std::string& uid, const std::string& faction, const std::string& killer,
                          const std::string& weapon, const std::string& distance,

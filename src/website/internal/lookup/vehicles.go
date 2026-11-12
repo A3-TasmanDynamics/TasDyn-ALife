@@ -41,11 +41,13 @@ func StatusLabel(status string) string {
 		return "Impounded"
 	case "destroyed":
 		return "Destroyed"
+	case "sold":
+		return "Sold"
 	}
 	return status
 }
 
-var Statuses = []string{"garaged", "spawned", "impounded", "destroyed"}
+var Statuses = []string{"garaged", "spawned", "impounded", "destroyed", "sold"}
 
 type VehicleRow struct {
 	ID      int64
@@ -349,6 +351,8 @@ func GarageOverview(ctx context.Context, pool *pgxpool.Pool) (Garages, error) {
 			c.Impounded += n
 		case "destroyed":
 			c.Destroyed += n
+		case "sold":
+			continue // sold back: no longer anyone's
 		}
 		g.Total += n
 	}

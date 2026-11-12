@@ -324,8 +324,9 @@ CREATE TABLE vehicles (
     fuel             REAL NOT NULL DEFAULT 1.0,
     damage           JSONB NOT NULL DEFAULT '[]'::jsonb,  -- [[hitpointName,damage],...] pairs, e.g. [["hitengine",0.4]]
                                                             -- not a single float -- see getAllHitPointsDamage
+    -- 'sold': sold back at a garage (kept for its history).
     status           TEXT NOT NULL DEFAULT 'garaged'
-                         CHECK (status IN ('garaged', 'spawned', 'impounded', 'destroyed')),
+                         CONSTRAINT vehicles_status_check CHECK (status IN ('garaged', 'spawned', 'impounded', 'destroyed', 'sold')),
     garage_id        BIGINT REFERENCES garages(id) ON DELETE SET NULL,
     position         JSONB,           -- last known world position, NULL if garaged
     inventory        JSONB NOT NULL DEFAULT '[]'::jsonb,  -- [[key,value],...] pairs -- cargo
