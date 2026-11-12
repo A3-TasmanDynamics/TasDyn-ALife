@@ -392,6 +392,7 @@ func run() error {
 	r.Group(func(r chi.Router) {
 		r.Use(d.Auth.RequireAdminPanel)
 		r.Get("/admin/search", d.QuickSearch)
+		r.Get("/admin/inbox", d.Inbox) // each kind filtered by the viewer permissions inside
 		r.Get("/admin/replies", d.Replies)
 		r.Post("/admin/replies/save", d.RepliesSave)          // replies.manage, checked inside
 		r.Post("/admin/replies/{id}/delete", d.RepliesDelete) // replies.manage, checked inside

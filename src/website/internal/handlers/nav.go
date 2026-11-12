@@ -46,6 +46,7 @@ type navSectionDef struct {
 var navDefs = []navSectionDef{
 	{key: "overview", name: "Overview", items: []navDef{
 		{key: "dashboard", label: "Dashboard", url: "/admin"},
+		{key: "inbox", label: "Inbox", url: "/admin/inbox"},
 		{key: "online", label: "Online Now", url: "/admin/online", perm: "players.view"},
 		{key: "map", label: "Live Map", url: "/admin/map", perm: "game.markers"},
 	}},
@@ -177,6 +178,7 @@ var navIcons = map[string]string{
 	"staffactivity": "M3 3v18h18M7 15l4-4 3 3 5-6",
 	"map":           "M9 3L3 6v15l6-3 6 3 6-3V3l-6 3zM9 3v15M15 6v15",
 	"reports":       "M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7",
+	"inbox":         "M22 12h-6l-2 3h-4l-2-3H2M5.5 5h13l3.5 7v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z",
 	"schedule":      "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 7v5l3 2",
 	"replies":       "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2zM8 9h8M8 13h5",
 	"applications":  "M9 3h6v4H9zM9 5H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-3M9 12h6M9 16h4",
