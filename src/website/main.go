@@ -26,6 +26,7 @@ import (
 	"website/internal/csrf"
 	"website/internal/db"
 	"website/internal/economy"
+	"website/internal/live"
 	"website/internal/dbbrowser"
 	"website/internal/discord"
 	"website/internal/handlers"
@@ -220,6 +221,10 @@ func run() error {
 		// Steam profile/ban cache + BattlEye GUID backfill (internal/steam).
 		go d.Steam.Run(ctx)
 
+		// Live admin panel updates (/admin/live): one poller, while anyone listens.
+		d.LiveHub = live.NewHub(pool)
+		go d.LiveHub.Run(ctx)
+
 		// Economy history for Admin -> Economy & Crime: a snapshot an hour.
 		go economy.RunSnapshots(ctx, pool)
 
@@ -293,6 +298,7 @@ func run() error {
 
 	r.Group(func(r chi.Router) {
 		r.Use(auth.RequireLogin)
+		r.Get("/admin/live", d.Live) // panel access checked inside (admin or support)
 		r.Get("/dashboard", d.Dashboard)
 		r.Post("/dashboard/discord/link-code", d.GenerateDiscordLinkCode)
 		r.Post("/dashboard/transfer", d.Transfer)

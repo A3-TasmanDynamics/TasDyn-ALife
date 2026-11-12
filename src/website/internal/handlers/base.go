@@ -17,6 +17,7 @@ import (
 	"website/internal/csrf"
 	"website/internal/dbbrowser"
 	"website/internal/discord"
+	"website/internal/live"
 	"website/internal/logbuf"
 	"website/internal/render"
 	"website/internal/rolesync"
@@ -55,6 +56,8 @@ type Deps struct {
 	// ServerMgr reaches server_manager's control API (Admin → Server
 	// Control); unconfigured, the page says how to connect it.
 	ServerMgr *servercontrol.Client
+	// LiveHub feeds /admin/live (nil: live updates off).
+	LiveHub *live.Hub
 
 	// LogBuf holds recent log lines for Admin → Development → Website
 	// logs; StartedAt is when the website started (System health).

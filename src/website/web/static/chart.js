@@ -1,7 +1,11 @@
 // Hover for the admin panel's line charts (web/templates/partial_line_chart.html):
 // a crosshair at the nearest snapshot and a tooltip with every series' value.
+// Re-binds after live.js swaps a page's content (the "panel:updated" event).
 (function () {
-  document.querySelectorAll(".lc[data-hover]").forEach(function (box) {
+  function init(root) {
+  root.querySelectorAll(".lc[data-hover]").forEach(function (box) {
+    if (box.dataset.bound) return;
+    box.dataset.bound = "1";
     var data;
     try { data = JSON.parse(box.dataset.hover); } catch (e) { return; }
     if (!data || !data.x || data.x.length < 2) return;
@@ -41,4 +45,7 @@
     svg.addEventListener("touchmove", function (e) { show(e.touches[0].clientX); }, { passive: true });
     svg.addEventListener("touchend", hide);
   });
+  }
+  init(document);
+  document.addEventListener("panel:updated", function (e) { init(e.target); });
 })();
