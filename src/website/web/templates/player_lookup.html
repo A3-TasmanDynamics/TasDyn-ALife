@@ -32,6 +32,7 @@
             <h2>{{.Name}}</h2>
             <span class="status-pill status-pill-{{.Status}}">{{.Status}}</span>
             {{if .StaffRank}}<a class="staff-badge" href="/admin/staff/{{.StaffID}}">Staff &middot; {{.StaffRank}}</a>{{end}}
+            {{if $.Watch}}<a class="watch-badge" href="/admin/watchlist" title="{{$.Watch.Reason}}">Watched</a>{{end}}
           </div>
           <div class="profile-line small"><a class="mono" href="https://steamcommunity.com/profiles/{{.UID}}" target="_blank" rel="noopener">{{.UID}}</a> &middot; id {{.ID}}{{if .BEGUID}} &middot; GUID <span class="mono">{{.BEGUID}}</span>{{end}}{{if .Aliases}} &middot; also known as {{range $i, $a := .Aliases}}{{if $i}}, {{end}}{{$a}}{{end}}{{end}}</div>
           <div class="profile-facts">
@@ -48,6 +49,7 @@
             {{if $.CanCompensate}}<button class="btn" type="button" data-dialog-open="dlg-comp">Compensate…</button>{{end}}
             {{if or $.CanPolice $.CanEMS}}<button class="btn" type="button" data-dialog-open="dlg-level">Faction level…</button>{{end}}
             {{if $.CanLicences}}<button class="btn" type="button" data-dialog-open="dlg-licences">Licences…</button>{{end}}
+            {{if $.CanNotes}}<button class="btn" type="button" data-dialog-open="dlg-watch">{{if $.Watch}}Watchlist…{{else}}Watch…{{end}}</button>{{end}}
             {{if and $.CanBan (not $.Ban)}}<button class="btn btn-danger-soft" type="button" data-dialog-open="dlg-ban">Ban…</button>{{end}}
             {{if and $.CanLiftBan $.Ban}}<button class="btn" type="button" data-dialog-open="dlg-lift">Lift ban…</button>{{end}}
           </div>
@@ -57,6 +59,10 @@
 
       {{if .BanActive}}
       <div class="alert-strip alert-danger"><strong>Banned</strong><span>{{.BanReason}}{{if .BanExpires}} &middot; until {{.BanExpires.Format "2 Jan 2006 15:04"}}{{else}} &middot; permanent{{end}}{{if and $.Ban $.Ban.CaseID}} &middot; <a href="/admin/cases/{{$.Ban.CaseID}}">case #{{$.Ban.CaseID}}</a>{{end}}</span></div>
+      {{end}}
+
+      {{with $.Watch}}
+      <div class="alert-strip alert-watch"><strong>On the watchlist</strong><span>{{.Reason}} &middot; {{if .AddedBy}}added by {{.AddedBy}}, {{end}}{{.AddedAt.Format "2 Jan 2006"}}{{if .FlagID}} &middot; <a href="/admin/anticheat?flag={{.FlagID}}">flag #{{.FlagID}}</a>{{end}}</span></div>
       {{end}}
 
       <nav class="tabbar lookup-tabs" aria-label="Profile sections">
@@ -306,6 +312,22 @@
       </div>
       {{end}}
 
+      {{if $.CanNotes}}
+      <dialog id="dlg-watch" class="modal" aria-labelledby="dlg-watch-title">
+        <form method="post" action="/admin/players/{{.ID}}/watch">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="q" value="{{$.Q}}">
+          <div class="modal-head"><h2 id="dlg-watch-title">{{if $.Watch}}{{.Name}} is on the watchlist{{else}}Watch {{.Name}}{{end}}</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+          <div class="modal-body">
+            <div class="field"><label for="watch-reason">Why (required)</label><input id="watch-reason" name="reason" maxlength="500" required value="{{with $.Watch}}{{.Reason}}{{end}}" placeholder="e.g. Suspected duping, see case #12"></div>
+            <p class="hint">Watched players are tagged across the panel, listed on the Watchlist page, and #staff-alerts gets a line when they join or move money.</p>
+          </div>
+          <div class="modal-foot">
+            {{if $.Watch}}<button class="btn btn-danger-soft" type="submit" formaction="/admin/players/{{.ID}}/unwatch" formnovalidate>Take off the watchlist</button>{{end}}
+            <button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">{{if $.Watch}}Save reason{{else}}Add to watchlist{{end}}</button>
+          </div>
+        </form>
+      </dialog>
+      {{end}}
       {{if $.CanCompensate}}
       <dialog id="dlg-comp" class="modal" aria-labelledby="dlg-comp-title">
         <form method="post" action="/admin/players/{{.ID}}/compensate">

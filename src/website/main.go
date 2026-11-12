@@ -413,6 +413,9 @@ func run() error {
 			r.Get("/admin/players", d.PlayerLookup)
 			r.Get("/admin/events", d.EventLog)
 			r.Get("/admin/online", d.OnlineNow)
+			r.Get("/admin/watchlist", d.Watchlist)
+			r.Post("/admin/watchlist/add", d.WatchlistAdd)
+			r.Post("/admin/watchlist/{id}/remove", d.WatchlistRemove)
 			r.Get("/admin/economy", d.Economy)
 			r.Get("/admin/gangs", d.GangsBoard)
 			r.Get("/admin/wanted", d.WantedBoard)
@@ -420,6 +423,8 @@ func run() error {
 			r.Post("/admin/players/{id}/compensate", d.PlayerCompensate)
 			r.Post("/admin/players/{id}/licences", d.PlayerLicences)
 			r.Post("/admin/players/{id}/notes", d.PlayerAddNote)
+			r.Post("/admin/players/{id}/watch", d.PlayerWatch)
+			r.Post("/admin/players/{id}/unwatch", d.PlayerUnwatch)
 			// Houses & Garages (the Garages tab checks players.vehicles itself).
 			r.Get("/admin/houses", d.HousesGarages)
 		})

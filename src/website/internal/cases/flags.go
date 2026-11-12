@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"website/internal/audit"
+	"website/internal/watchlist"
 )
 
 // Flag is one anti-cheat flag (layout plan "Anti-Cheat Flags"). Flags never
@@ -230,6 +231,13 @@ func ReviewFlag(ctx context.Context, pool *pgxpool.Pool, actor Actor, id int64, 
 	}
 	if err != nil {
 		return err
+	}
+	if resolution == "watch" {
+		// Watching from a flag also puts the player on the watchlist (tags
+		// across the panel, #staff-alerts on join), unless they're on it.
+		if _, err := watchlist.AddFromFlag(ctx, tx, actor.PlayerID, playerID, id, fmt.Sprintf("Anti-cheat flag #%d: %s", id, note)); err != nil {
+			return err
+		}
 	}
 	action := map[string]string{"dismiss": "anticheat.dismiss", "watch": "anticheat.watch", "": "anticheat.reopen"}[resolution]
 	if err := audit.LogStaffAction(ctx, tx, audit.Entry{

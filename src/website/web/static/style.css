@@ -2894,3 +2894,16 @@ a.on-row:hover { background: rgba(255, 255, 255, 0.03); }
 .on-chart { padding: 8px 20px 16px; position: relative; }
 .lc-online { stroke: #22c55e; background: #22c55e; }
 @media (max-width: 900px) { .on-row { grid-template-columns: 1fr 1fr; gap: 4px 12px; } .on-row.stafflog-th { display: none; } }
+/* ---- Watchlist (/admin/watchlist, tags elsewhere) ---- */
+.watch-badge { font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.5); background: rgba(139, 92, 246, 0.1); text-decoration: none; }
+.alert-watch { background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.35); color: var(--text); }
+.alert-watch strong { color: #c4b5fd; white-space: nowrap; }
+.on-tag-watch { color: #c4b5fd; border-color: rgba(139, 92, 246, 0.5); }
+.watch-add { display: flex; gap: 12px; align-items: flex-end; padding: 16px 20px; flex-wrap: wrap; }
+.watch-add .field { margin: 0; min-width: 220px; }
+.watch-add .watch-add-reason { flex: 1; }
+.watch-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 1fr) 100px 90px; gap: 12px; align-items: center; padding: 10px 20px; font-size: 13px; border-bottom: 1px solid var(--border-soft); }
+.watch-row a { color: var(--text); text-decoration: none; }
+.watch-row a:hover { text-decoration: underline; }
+.watch-actions { text-align: right; }
+@media (max-width: 900px) { .watch-row { grid-template-columns: 1fr; gap: 4px; } .watch-row.stafflog-th { display: none; } .watch-actions { text-align: left; } }

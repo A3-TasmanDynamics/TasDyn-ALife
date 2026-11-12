@@ -7,6 +7,7 @@ import (
 
 	"website/internal/chart"
 	"website/internal/online"
+	"website/internal/watchlist"
 )
 
 // ---- /admin/online ----
@@ -19,6 +20,7 @@ type onlineData struct {
 	Left    []online.Left
 	Sum     online.Summary
 	Chart   chart.Chart
+	Watched map[int64]string // player id -> why they're on the watchlist
 }
 
 func (d onlineData) Dur(t time.Duration) string { return hoursMinutes(t) }
@@ -28,6 +30,9 @@ func (d onlineData) Since(p online.Player) string { return hoursMinutes(p.For(d.
 
 // Ago is how long ago something happened.
 func (d onlineData) Ago(t time.Time) string { return hoursMinutes(d.Now.Sub(t)) }
+
+// WatchReason is why the player is on the watchlist ("" if they aren't).
+func (d onlineData) WatchReason(id int64) string { return d.Watched[id] }
 
 // FactionName is the faction for display.
 func (d onlineData) FactionName(f string) string {
@@ -50,6 +55,9 @@ func (d *Deps) OnlineNow(w http.ResponseWriter, r *http.Request) {
 		slog.Error("online now failed", "error", err)
 		http.Error(w, "Failed to load who's online.", http.StatusInternalServerError)
 		return
+	}
+	if data.Watched, err = watchlist.Reasons(ctx, d.Pool); err != nil {
+		slog.Error("online: watchlist failed", "error", err)
 	}
 	if data.Left, err = online.RecentlyLeft(ctx, d.Pool, 2*time.Hour, 12); err != nil {
 		slog.Error("online: recently left failed", "error", err)

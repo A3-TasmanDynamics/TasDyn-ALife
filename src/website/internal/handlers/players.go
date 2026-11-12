@@ -20,6 +20,7 @@ import (
 	"website/internal/factions"
 	"website/internal/lookup"
 	"website/internal/players"
+	"website/internal/watchlist"
 )
 
 type playerLookupData struct {
@@ -61,6 +62,7 @@ type playerLookupData struct {
 	EventCats  []events.Category
 	EventCat   string
 	Conn       players.Connections
+	Watch      *watchlist.Entry
 
 	CanVehicles   bool
 	CanCompensate bool
@@ -122,6 +124,11 @@ func (d *Deps) PlayerLookup(w http.ResponseWriter, r *http.Request) {
 		data.Houses, _ = lookup.PlayerHouses(r.Context(), d.Pool, data.P.ID)
 		data.Wanted, _ = players.WantedInfo(r.Context(), d.Pool, data.P.ID)
 		data.CanNotes = d.can(r, "players.notes")
+		if w, ok, err := watchlist.Get(r.Context(), d.Pool, data.P.ID); err != nil {
+			slog.Error("watchlist lookup failed", "error", err)
+		} else if ok {
+			data.Watch = &w
+		}
 		data.CanLicences = d.can(r, "players.licences")
 		data.CanVehActions = d.can(r, "players.vehicle_actions")
 		data.CanBan = d.can(r, "bans.issue")
@@ -294,6 +301,49 @@ func (d *Deps) PlayerAddNote(w http.ResponseWriter, r *http.Request) {
 	}
 	err := players.AddNote(r.Context(), d.Pool, playerActor(r), id, r.FormValue("body"))
 	finishPlayerAction(w, r, back, err, "Note added.")
+}
+
+// PlayerWatch puts the player on the watchlist or changes why
+// (players.notes).
+func (d *Deps) PlayerWatch(w http.ResponseWriter, r *http.Request) {
+	d.playerWatchlist(w, r, true)
+}
+
+// PlayerUnwatch takes the player off the watchlist (players.notes).
+func (d *Deps) PlayerUnwatch(w http.ResponseWriter, r *http.Request) {
+	d.playerWatchlist(w, r, false)
+}
+
+func (d *Deps) playerWatchlist(w http.ResponseWriter, r *http.Request, add bool) {
+	id, ok := profileID(r)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	back := playerBack(r, id)
+	if !d.can(r, "players.notes") {
+		http.Redirect(w, r, back+"&error="+errMsg("You don't have permission to do that."), http.StatusSeeOther)
+		return
+	}
+	actor := watchlist.Actor{PlayerID: playerActor(r).PlayerID, Source: audit.SourceWebsite}
+	var err error
+	msg := "Added to the watchlist."
+	if add {
+		err = watchlist.Add(r.Context(), d.Pool, actor, id, r.FormValue("reason"))
+	} else {
+		err = watchlist.Remove(r.Context(), d.Pool, actor, id, "")
+		msg = "Taken off the watchlist."
+	}
+	finishWatchAction(w, r, back, err, msg)
+}
+
+func finishWatchAction(w http.ResponseWriter, r *http.Request, back string, err error, success string) {
+	if errors.Is(err, watchlist.ErrNotAllowed) {
+		msg := strings.TrimPrefix(err.Error(), watchlist.ErrNotAllowed.Error()+": ")
+		http.Redirect(w, r, back+"&error="+errMsg(strings.ToUpper(msg[:1])+msg[1:]+"."), http.StatusSeeOther)
+		return
+	}
+	finishPlayerAction(w, r, back, err, success)
 }
 
 // VehicleActionPost releases, destroys or restores a vehicle

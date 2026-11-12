@@ -38,6 +38,7 @@
   {{if index .Perms "players.view"}}<div class="admin-nav-group">Players</div>{{end}}
   {{if index .Perms "players.view"}}<a href="/admin/players" class="admin-nav-item {{if eq .AdminTab "players"}}active{{end}}" {{if eq .AdminTab "players"}}aria-current="page"{{end}}>Player Lookup</a>{{end}}
   {{if index .Perms "players.view"}}<a href="/admin/online" class="admin-nav-item {{if eq .AdminTab "online"}}active{{end}}" {{if eq .AdminTab "online"}}aria-current="page"{{end}}>Online Now</a>{{end}}
+  {{if index .Perms "players.view"}}<a href="/admin/watchlist" class="admin-nav-item {{if eq .AdminTab "watchlist"}}active{{end}}" {{if eq .AdminTab "watchlist"}}aria-current="page"{{end}}>Watchlist</a>{{end}}
   {{if index .Perms "players.view"}}<a href="/admin/events" class="admin-nav-item {{if eq .AdminTab "events"}}active{{end}}" {{if eq .AdminTab "events"}}aria-current="page"{{end}}>Event Log</a>{{end}}
   {{if index .Perms "players.view"}}<a href="/admin/economy" class="admin-nav-item {{if eq .AdminTab "economy"}}active{{end}}" {{if eq .AdminTab "economy"}}aria-current="page"{{end}}>Economy &amp; Crime</a>{{end}}
   {{if index .Perms "players.view"}}<a href="/admin/gangs" class="admin-nav-item {{if eq .AdminTab "gangs"}}active{{end}}" {{if eq .AdminTab "gangs"}}aria-current="page"{{end}}>Gangs</a>{{end}}

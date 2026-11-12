@@ -2,7 +2,8 @@ package discord
 
 // Staff alerts: the bot posts to #staff-alerts when something needs a
 // staff member's eyes -- a high-confidence anti-cheat flag, a large amount
-// of money moving in one go, or the evidence vault being broken into.
+// of money moving in one go, the evidence vault being broken into, or a
+// watched player joining or moving money (watch_alerts.go).
 // It polls the database every 30 s and remembers how far it got
 // (state.alerts_flag / state.alerts_log), so each alert is posted once and
 // a restart doesn't repost or flood old history.
@@ -182,10 +183,11 @@ func (b *Bot) pollAlerts(ctx context.Context) error {
 		return n
 	}
 	flagCur, logCur := cursor(stateAlertsFlag), cursor(stateAlertsLog)
+	wSessCur, wLogCur := cursor(stateWatchSession), cursor(stateWatchLog)
 	if ch == "" {
 		// Nowhere to post: keep the cursors at "now" so setting a channel
 		// later doesn't post a backlog.
-		flagCur, logCur = -1, -1
+		flagCur, logCur, wSessCur, wLogCur = -1, -1, -1, -1
 	}
 	money, _ := strconv.ParseInt(s.Get(ctx, NumberAlertMoney), 10, 64)
 	cfg := AlertConfig{Flags: s.On(ctx, ToggleAlertFlags), Vault: s.On(ctx, ToggleAlertVault), Money: money, SiteBase: b.deps.SiteBaseURL}
@@ -193,17 +195,25 @@ func (b *Bot) pollAlerts(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	watchMoney, _ := strconv.ParseInt(s.Get(ctx, NumberAlertWatch), 10, 64)
+	wcfg := WatchConfig{Join: s.On(ctx, ToggleAlertWatch), Money: watchMoney, General: money, SiteBase: b.deps.SiteBaseURL}
+	watch, newWSess, newWLog, err := CollectWatchAlerts(ctx, s.pool, wcfg, wSessCur, wLogCur)
+	if err != nil {
+		return err
+	}
 	if ch != "" {
-		for _, a := range alerts {
+		for _, a := range append(alerts, watch...) {
 			if err := EnqueueNow(ctx, s.pool, OutboxMessage{Kind: KindChannelPost, Target: ch, Content: a.Text, DedupeKey: a.Key}); err != nil {
 				return err // cursors not moved: they're retried (dedupe keys stop doubles)
 			}
 		}
 	}
-	if err := s.setValue(ctx, stateAlertsFlag, strconv.FormatInt(newFlag, 10)); err != nil {
-		return err
+	for key, v := range map[string]int64{stateAlertsFlag: newFlag, stateAlertsLog: newLog, stateWatchSession: newWSess, stateWatchLog: newWLog} {
+		if err := s.setValue(ctx, key, strconv.FormatInt(v, 10)); err != nil {
+			return err
+		}
 	}
-	return s.setValue(ctx, stateAlertsLog, strconv.FormatInt(newLog, 10))
+	return nil
 }
 
 // setValue writes an internal state value.
