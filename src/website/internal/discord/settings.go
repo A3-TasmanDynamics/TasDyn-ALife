@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 
 	"github.com/bwmarrin/discordgo"
 
@@ -26,8 +27,8 @@ type SettingDef struct {
 	Key     string
 	Label   string
 	Help    string
-	Kind    string // "channel" or "toggle"
-	Default string // for toggles: "on" or "off"
+	Kind    string // "channel", "toggle" or "number" (a whole number, 0 or more)
+	Default string // for toggles: "on" or "off"; for numbers, the number
 }
 
 // Setting keys.
@@ -38,6 +39,10 @@ const (
 	ChannelBotAdmin     = "channel.bot_admin"
 	ToggleLogModeration = "toggle.log_discord_moderation"
 	ToggleRevertDrift   = "toggle.revert_role_drift"
+	ChannelStaffAlerts  = "channel.staff_alerts"
+	ToggleAlertFlags    = "toggle.alert_flags"
+	ToggleAlertVault    = "toggle.alert_vault"
+	NumberAlertMoney    = "number.alert_money"
 
 	// Internal state, not shown on the settings page: where the bot's own
 	// long-lived messages are, as "channelID/messageID", so they're edited
@@ -51,9 +56,13 @@ var SettingDefs = []SettingDef{
 	{ChannelWelcome, "#welcome", "Onboarding message with the Link account button. Post it from this page once the channel is set.", "channel", ""},
 	{ChannelServerStatus, "#server-status", "One live status message, edited every minute, plus a post when something goes down or comes back.", "channel", ""},
 	{ChannelStaffLog, "#staff-log", "Every staff action, posted by the bot. If unset, DISCORD_STAFF_LOG_WEBHOOK is used instead.", "channel", ""},
+	{ChannelStaffAlerts, "#staff-alerts", "Things that need a staff member's eyes, as they happen: high-confidence anti-cheat flags, big money moves and evidence vault robberies (choose which below).", "channel", ""},
 	{ChannelBotAdmin, "#bot-admin", "Role drift that was reverted, role sync failures and messages that couldn't be delivered.", "channel", ""},
 	{ToggleLogModeration, "Log moderation done in Discord", "Kicks, bans and timeouts done directly in Discord are written to the Staff Log (source: discord).", "toggle", "on"},
 	{ToggleRevertDrift, "Revert hand-edited synced roles", "If someone adds or removes a synced role by hand, put it back straight away and report it in #bot-admin.", "toggle", "on"},
+	{ToggleAlertFlags, "Alert: high-confidence anti-cheat flags", "Post each new high-confidence flag (dupes, cheat states, gear no shop gives...) to #staff-alerts.", "toggle", "on"},
+	{ToggleAlertVault, "Alert: evidence vault break-ins", "Post when someone breaks into the evidence building or vault, and when it's robbed.", "toggle", "on"},
+	{NumberAlertMoney, "Alert: money moves of at least ($)", "A bank transfer, cash handed over, a sale or a robbery of this much or more in one go is posted to #staff-alerts. 0 turns it off.", "number", "500000"},
 }
 
 func settingDef(key string) (SettingDef, bool) {
@@ -132,6 +141,11 @@ func (s *Settings) Save(ctx context.Context, actorID int64, values map[string]st
 		v := values[k]
 		if d.Kind == "toggle" && v != "on" && v != "off" {
 			return fmt.Errorf("%w: %s must be on or off", ErrUnknownSetting, k)
+		}
+		if d.Kind == "number" {
+			if n, err := strconv.ParseInt(v, 10, 64); err != nil || n < 0 {
+				return fmt.Errorf("%w: %s must be a whole number, 0 or more", ErrUnknownSetting, d.Label)
+			}
 		}
 		if before[k] == v {
 			continue
