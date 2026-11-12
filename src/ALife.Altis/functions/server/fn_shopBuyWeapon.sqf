@@ -46,6 +46,15 @@ if ((_record getOrDefault ["status", ""]) != "OK" || { !alive _unit } || { _fact
 if (_info isEqualTo [] || { (_info select 0) != "weapons" } || { !(_method in ["cash", "bank"]) }) exitWith {};
 if (_cart isEqualTo [] || { count _cart > 15 }) exitWith {};
 if ((_cart findIf { !(_x isEqualTypeParams ["", "", 0]) || { !((_x select 0) in ["items", "mags", "accs"]) } || { (_x select 2) < 1 } || { (_x select 2) > 20 } }) >= 0) exitWith {};
+// At most weaponShopGearMax of one weapon / attachment / piece of kit (all its lines), 20 magazines.
+private _gearMax = getNumber (missionConfigFile >> "CfgALife" >> "weaponShopGearMax") max 1;
+private _counts = createHashMap;
+{ private _k = (_x select 0) + "|" + (_x select 1); _counts set [_k, (_counts getOrDefault [_k, 0]) + (_x select 2)]; } forEach _cart;
+private _over = (keys _counts) findIf { (_counts get _x) > ([_gearMax, 20] select ((_x select [0, 5]) == "mags|")) };
+if (_over >= 0) exitWith {
+    diag_log format ["[ALife] %1 weapon shop %2: refused, too many of one thing: %3", getPlayerUID _unit, _placement, _cart];
+    format ["At most %1 of a weapon, attachment or piece of kit per purchase (20 magazines).", _gearMax] call _fnc_reply;
+};
 _info params ["", "_place", "_shop"];
 
 if (getText (_shop >> "side") != _faction) exitWith { "You can't buy that here." call _fnc_reply; };

@@ -514,15 +514,22 @@ switch (_mode) do {
                 _name = format ["%1 kit", _name];
             };
         } else {
-            _qty = ((floor parseNumber ctrlText (_display displayCtrl IDC_QTY)) max 1) min 20;
+            _qty = (floor parseNumber ctrlText (_display displayCtrl IDC_QTY)) max 1;
         };
         if (isNil "_kit") exitWith {};
+        // At most weaponShopGearMax of a weapon / attachment / kit, 20 magazines, per purchase.
+        private _max = [getNumber (missionConfigFile >> "CfgALife" >> "weaponShopGearMax") max 1, 20] select (_key == "mags");
+        private _have = 0;
+        { if ((_x select 0) == _key && { (_x select 1) == _class }) then { _have = _have + (_x select 2); }; } forEach _cart;
+        if (_have + _qty > _max) exitWith {
+            [format ["At most %1 of %2 per purchase.", _max, _entry select 4], "warning"] call ALife_fnc_toast;
+        };
         private _i = _cart findIf { (_x select 0) == _key && { (_x select 1) == _class } && { (_x select 5) isEqualTo _kit } };
         if (_i < 0) then {
             if (count _cart >= 15) exitWith { ["Your cart is full: buy what's in it first.", "warning"] call ALife_fnc_toast; };
             _cart pushBack [_key, _class, _qty, _price, _name, _kit];
         } else {
-            (_cart select _i) set [2, (((_cart select _i) select 2) + _qty) min 20];
+            (_cart select _i) set [2, ((_cart select _i) select 2) + _qty];
         };
         ALife_wsCart = _cart;
         ["cart"] call ALife_fnc_weaponShop;
