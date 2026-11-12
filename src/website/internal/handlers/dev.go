@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"runtime"
 	"runtime/debug"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -61,6 +62,8 @@ type devHealthData struct {
 	Players    int64
 	Tables     int64
 	Checks     []healthCheck
+	// How many integrations are in each state (problems sort first).
+	CheckOK, CheckWarn, CheckBad, CheckOff int
 	Jobs       []healthJob
 	OutboxWait int64
 	OutboxDead int64
@@ -219,6 +222,22 @@ func (d *Deps) DevHealth(w http.ResponseWriter, r *http.Request) {
 	var stale int64
 	_ = d.Pool.QueryRow(ctx, `SELECT max(steam_refreshed_at), count(*) FILTER (WHERE steam_refreshed_at IS NULL OR steam_refreshed_at < now() - interval '2 days') FROM players`).Scan(&steamLast, &stale)
 	data.Jobs = append(data.Jobs, healthJob{Name: "Steam profile refresh", Last: steamLast, Detail: fmt.Sprintf("%d players not refreshed in 2 days", stale)})
+
+	// Problems first: down, then needs a look, then working, then switched off.
+	rank := map[string]int{"bad": 0, "warn": 1, "ok": 2, "off": 3}
+	sort.SliceStable(data.Checks, func(i, j int) bool { return rank[data.Checks[i].State] < rank[data.Checks[j].State] })
+	for _, c := range data.Checks {
+		switch c.State {
+		case "ok":
+			data.CheckOK++
+		case "warn":
+			data.CheckWarn++
+		case "bad":
+			data.CheckBad++
+		default:
+			data.CheckOff++
+		}
+	}
 
 	d.Render.Render(w, "dev_health.html", data)
 }
