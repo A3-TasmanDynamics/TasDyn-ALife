@@ -69,6 +69,7 @@
 
       <nav class="tabbar lookup-tabs" aria-label="Profile sections">
         <a class="tab {{if eq $.Tab "overview"}}active{{end}}" href="/admin/players{{qset $.Query "tab" ""}}">Overview</a>
+        <a class="tab {{if eq $.Tab "timeline"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "timeline" "only" "" "before" ""}}">Timeline</a>
         <a class="tab {{if eq $.Tab "money"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "money"}}">Money</a>
         <a class="tab {{if eq $.Tab "inventory"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "inventory"}}">Inventory</a>
         <a class="tab {{if eq $.Tab "sessions"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "sessions"}}">Sessions</a>
@@ -78,6 +79,29 @@
         <a class="tab {{if eq $.Tab "connections"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "connections" "cat" ""}}">Connections</a>
         <a class="tab {{if eq $.Tab "audit"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "audit"}}">Audit trail</a>
       </nav>
+
+      {{if eq $.Tab "timeline"}}
+      <section class="card dash-card tl-card" aria-labelledby="tl-title">
+        <div class="dash-card-head"><h2 id="tl-title">Timeline</h2><span class="muted small">Everything about {{.Name}}, newest first</span></div>
+        <div class="tl-filters" role="group" aria-label="Show">
+          <a class="tl-chip{{if not $.TimelineOnly}} active{{end}}" href="/admin/players{{qset $.Query "only" "" "before" ""}}">All</a>
+          {{range $.TimelineKind}}<a class="tl-chip tl-k-{{.Key}}{{if index $.TimelineOnly .Key}} active{{end}}" href="/admin/players{{qset $.Query "only" ($.OnlyToggle .Key) "before" ""}}"{{if index $.TimelineOnly .Key}} aria-pressed="true"{{end}}>{{.Label}}</a>{{end}}
+        </div>
+        <ol class="tl">
+          {{range $i, $it := $.Timeline}}
+          {{if $.DayChanged $i}}<li class="tl-day">{{$it.When.Local.Format "Monday 2 January 2006"}}</li>{{end}}
+          <li class="tl-item tl-k-{{$it.Kind}}">
+            <span class="tl-time">{{$it.When.Local.Format "15:04"}}</span>
+            <span class="tl-dot" aria-hidden="true"></span>
+            <span class="tl-body">{{if $it.URL}}<a class="strong" href="{{$it.URL}}">{{$it.Title}}</a>{{else}}<span class="strong">{{$it.Title}}</span>{{end}}{{if $it.Detail}}<span class="muted small">{{$it.Detail}}</span>{{end}}</span>
+          </li>
+          {{else}}
+          <li class="empty">Nothing recorded{{if $.TimelineOnly}} of these kinds{{end}}.</li>
+          {{end}}
+        </ol>
+        {{if $.TimelineMore}}<div class="tl-more"><a class="btn btn-sm" href="/admin/players{{qset $.Query "before" $.TimelineNext}}">Show older</a></div>{{end}}
+      </section>
+      {{end}}
 
       {{if eq $.Tab "overview"}}
       <div class="lookup-cards">

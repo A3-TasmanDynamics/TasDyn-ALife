@@ -20,6 +20,7 @@ import (
 	"website/internal/factions"
 	"website/internal/lookup"
 	"website/internal/players"
+	"website/internal/timeline"
 	"website/internal/watchlist"
 )
 
@@ -63,6 +64,11 @@ type playerLookupData struct {
 	EventCat   string
 	Conn       players.Connections
 	Watch      *watchlist.Entry
+	Timeline     []timeline.Item
+	TimelineMore bool
+	TimelineNext string          // the "before" cursor for Show older
+	TimelineOnly map[string]bool // kinds picked ("" = all)
+	TimelineKind []timeline.Kind
 	Game       map[string]bool // in-game actions the viewer may send (while they're online)
 
 	CanVehicles   bool
@@ -154,6 +160,32 @@ func (d *Deps) PlayerLookup(w http.ResponseWriter, r *http.Request) {
 			if data.CanVehicles {
 				data.Tab = "vehicles"
 				data.Vehicles, data.VehLog, _ = players.Vehicles(r.Context(), d.Pool, data.P.ID)
+			}
+		case "timeline":
+			data.Tab = "timeline"
+			o := timeline.Opts{PlayerID: data.P.ID, Limit: 60, Notes: data.CanNotes, Flags: d.can(r, "anticheat.review"), Cases: data.CanCases}
+			if ns, err := strconv.ParseInt(q.Get("before"), 10, 64); err == nil && ns > 0 {
+				o.Before = time.Unix(0, ns)
+			}
+			data.TimelineOnly = map[string]bool{}
+			for _, k := range strings.Split(q.Get("only"), ",") {
+				if k != "" {
+					data.TimelineOnly[k] = true
+				}
+			}
+			o.Only = data.TimelineOnly
+			for _, k := range timeline.Kinds {
+				if (k.Key == "note" && !o.Notes) || (k.Key == "flag" && !o.Flags) || (k.Key == "case" && !o.Cases) {
+					continue
+				}
+				data.TimelineKind = append(data.TimelineKind, k)
+			}
+			var err error
+			if data.Timeline, data.TimelineMore, err = timeline.Build(r.Context(), d.Pool, o); err != nil {
+				slog.Error("player timeline failed", "error", err)
+			}
+			if data.TimelineMore && len(data.Timeline) > 0 {
+				data.TimelineNext = strconv.FormatInt(data.Timeline[len(data.Timeline)-1].When.UnixNano(), 10)
 			}
 		case "events":
 			data.Tab = "events"
@@ -406,4 +438,31 @@ func (d playerLookupData) Playtime() string {
 		return ""
 	}
 	return hoursMinutes(d.P.Playtime)
+}
+
+// OnlyToggle is the "only" filter with kind switched on or off.
+func (d playerLookupData) OnlyToggle(kind string) string {
+	var keys []string
+	for _, k := range d.TimelineKind {
+		on := d.TimelineOnly[k.Key]
+		if k.Key == kind {
+			on = !on
+		}
+		if on {
+			keys = append(keys, k.Key)
+		}
+	}
+	return strings.Join(keys, ",")
+}
+
+// OnlyString is the current "only" filter.
+func (d playerLookupData) OnlyString() string { return d.OnlyToggle("") }
+
+// DayChanged reports whether item i starts a new day in the timeline.
+func (d playerLookupData) DayChanged(i int) bool {
+	if i == 0 {
+		return true
+	}
+	a, b := d.Timeline[i].When.Local(), d.Timeline[i-1].When.Local()
+	return a.YearDay() != b.YearDay() || a.Year() != b.Year()
 }
