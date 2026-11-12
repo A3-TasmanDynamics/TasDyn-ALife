@@ -53,6 +53,7 @@ if (_jail > 0) then {
     private _cell = getMarkerPos (getArray (missionConfigFile >> "CfgJail" >> "markers") param [0, ""]);
     if (_cell isNotEqualTo [0, 0, 0]) then { _target = [_cell select 0, _cell select 1, 0]; _name = "Jail"; };
 };
+["grace", _unit] call ALife_fnc_anticheat; // a server teleport, not a cheat
 _unit setPosATL _target;
 _unit hideObjectGlobal false;
 _unit setVariable ["alife_uid", _uid];

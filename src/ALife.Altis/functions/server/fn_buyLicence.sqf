@@ -20,7 +20,8 @@
 params [["_unit", objNull, [objNull]], ["_process", "", [""]], ["_wanted", "", [""]]];
 
 if (!isServer || { isNull _unit }) exitWith {};
-if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith {};
+if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith { ["spoof", _unit, "buyLicence", remoteExecutedOwner] call ALife_fnc_anticheat; };
+if (isRemoteExecuted && { ["rate", _unit, "buy"] call ALife_fnc_anticheat }) exitWith {};
 
 private _owner = owner _unit;
 private _fnc_reply = { (if (_this isEqualType []) then { _this } else { [_this, "warning"] }) remoteExecCall ["ALife_fnc_notify", _owner]; };
@@ -67,6 +68,7 @@ if (_saved != "OK") exitWith {
 _record set [_key, _licences];
 
 diag_log format ["[ALife] %1 bought the %2 licence for $%3 (%4)%5", _uid, _licence, _price, _method, [" at a processor", " at the licence office"] select _isOffice];
+["log", _unit, "shop.buy_licence", [["licence", _licence], ["total", _price], ["paid_by", _method]]] call ALife_fnc_anticheat;
 [format ["Bought the %1 for $%2.%3", _name, [_price] call BIS_fnc_numberText, [" Processing here is free now.", ""] select _isOffice], "success"] call _fnc_reply;
 [_unit] call ALife_fnc_requestPhoneData;
 if (_isOffice) then { ["bought", _licences] remoteExecCall ["ALife_fnc_licenceShop", _owner]; };

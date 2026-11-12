@@ -13,7 +13,8 @@
 params [["_unit", objNull, [objNull]], ["_target", objNull, [objNull]], ["_amount", 0, [0]]];
 
 if (!isServer || { isNull _unit } || { isNull _target }) exitWith {};
-if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith {};
+if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith { ["spoof", _unit, "bankTransfer", remoteExecutedOwner] call ALife_fnc_anticheat; };
+if (isRemoteExecuted && { ["rate", _unit, "bank"] call ALife_fnc_anticheat }) exitWith {};
 
 private _owner = owner _unit;
 private _fnc_reply = { (if (_this isEqualType []) then { _this } else { [_this, "warning"] }) remoteExecCall ["ALife_fnc_notify", _owner]; };
@@ -47,6 +48,7 @@ if (_result != "OK") exitWith {
 } forEach [[_uid, _faction, -_amount], [_targetUid, _targetFaction, _amount]];
 
 diag_log format ["[ALife] %1 sent $%2 to %3", _uid, _amount, _targetUid];
+["log", _unit, "bank.transfer", [["to", _targetUid], ["amount", _amount]]] call ALife_fnc_anticheat;
 [format ["Sent $%1 to %2.", [_amount] call BIS_fnc_numberText, name _target], "success"] call _fnc_reply;
 [format ["%1 sent you $%2 (bank).", name _unit, [_amount] call BIS_fnc_numberText], "success"] remoteExecCall ["ALife_fnc_notify", owner _target];
 [_unit] call ALife_fnc_requestPhoneData;

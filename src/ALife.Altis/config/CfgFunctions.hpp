@@ -49,6 +49,7 @@ class CfgFunctions
             class garage {};         // client -> server: the garage (list / take out / store)
             class vehicleSpawn {};   // an owned vehicle into the world (shop, garage)
             class vehicleSpawnPoint {}; // where it appears: a spawn marker nearby, else a clear spot
+            class anticheat {};      // event log, flags (rate, movement, state, gear, dupes, spoofed requests)
             class vehicleState {};   // an owned vehicle's fuel / damage / trunk, for saving
             class containerGet {};   // the container (bag / vehicle trunk) behind an object
             class containerCreateBag {}; // drop a bag at a player's feet

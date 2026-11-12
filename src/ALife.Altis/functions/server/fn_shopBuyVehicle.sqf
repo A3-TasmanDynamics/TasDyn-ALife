@@ -20,7 +20,8 @@
 params [["_unit", objNull, [objNull]], ["_placement", "", [""]], ["_class", "", [""]], ["_colour", "", [""]], ["_method", "", [""]]];
 
 if (!isServer || { isNull _unit }) exitWith {};
-if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith {};
+if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith { ["spoof", _unit, "shopBuyVehicle", remoteExecutedOwner] call ALife_fnc_anticheat; };
+if (isRemoteExecuted && { ["rate", _unit, "buy"] call ALife_fnc_anticheat }) exitWith {};
 
 private _owner = owner _unit;
 private _fnc_reply = { (if (_this isEqualType []) then { _this } else { [_this, "warning"] }) remoteExecCall ["ALife_fnc_notify", _owner]; };
@@ -86,6 +87,7 @@ if (_added select [0, 3] == "OK:") then {
 [_class, _marker, _uid, _id, _plate, _colour] call ALife_fnc_vehicleSpawn;
 
 diag_log format ["[ALife] %1 bought %2 (%3, plate %4) for $%5 (%6) at %7", _uid, _class, _colour, _plate, _price, _method, _placement];
+["log", _unit, "shop.buy_vehicle", [["shop", _placement], ["vehicle", _class], ["plate", _plate], ["total", _price], ["paid_by", _method]]] call ALife_fnc_anticheat;
 ["bought", [_name, _plate]] remoteExecCall ["ALife_fnc_vehicleShop", _owner];
 [format ["Bought the %1 for $%2. It's at the spawn point, locked: press U near it to unlock.", _name, [_price] call BIS_fnc_numberText], "success"] call _fnc_reply;
 [_unit] call ALife_fnc_requestPhoneData;

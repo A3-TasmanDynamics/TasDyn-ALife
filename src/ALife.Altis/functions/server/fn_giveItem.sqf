@@ -14,7 +14,8 @@
 params [["_unit", objNull, [objNull]], ["_target", objNull, [objNull]], ["_class", "", [""]], ["_qty", 0, [0]]];
 
 if (!isServer || { isNull _unit }) exitWith {};
-if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith {};
+if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith { ["spoof", _unit, "giveItem", remoteExecutedOwner] call ALife_fnc_anticheat; };
+if (isRemoteExecuted && { ["rate", _unit, "give"] call ALife_fnc_anticheat }) exitWith {};
 
 private _owner = owner _unit;
 private _fnc_reply = { (if (_this isEqualType []) then { _this } else { [_this, "warning"] }) remoteExecCall ["ALife_fnc_notify", _owner]; };
@@ -47,6 +48,7 @@ if (_class == "cash") exitWith {
     };
     _theirs set [_targetFaction + "_cash", (_theirs getOrDefault [_targetFaction + "_cash", 0]) + _qty];
     diag_log format ["[ALife] %1 gave $%2 cash to %3", _uid, _qty, _targetUid];
+    ["log", _unit, "give.cash", [["to", _targetUid], ["amount", _qty]]] call ALife_fnc_anticheat;
     [format ["Gave $%1 to %2.", [_qty] call BIS_fnc_numberText, name _target], "success"] call _fnc_reply;
     [format ["%1 gave you $%2.", name _unit, [_qty] call BIS_fnc_numberText], "success"] remoteExecCall ["ALife_fnc_notify", owner _target];
     [_unit] call ALife_fnc_requestPhoneData;
@@ -83,6 +85,7 @@ if (!([_targetUid, _targetFaction, _class, _qty] call ALife_fnc_itemsChange)) ex
 };
 
 diag_log format ["[ALife] %1 gave %2 x%3 to %4", _uid, _class, _qty, _targetUid];
+["log", _unit, "give.item", [["to", _targetUid], ["item", _class], ["qty", _qty]]] call ALife_fnc_anticheat;
 [format ["Gave %1 x%2 to %3.", _name, _qty, name _target], "success"] call _fnc_reply;
 [format ["%1 gave you %2 x%3.", name _unit, _name, _qty], "success"] remoteExecCall ["ALife_fnc_notify", owner _target];
 [_unit] call ALife_fnc_requestPhoneData;

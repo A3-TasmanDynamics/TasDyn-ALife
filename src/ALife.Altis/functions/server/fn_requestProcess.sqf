@@ -18,7 +18,8 @@
 params [["_unit", objNull, [objNull]], ["_process", "", [""]]];
 
 if (!isServer || { isNull _unit }) exitWith {};
-if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith {};
+if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith { ["spoof", _unit, "requestProcess", remoteExecutedOwner] call ALife_fnc_anticheat; };
+if (isRemoteExecuted && { ["rate", _unit, "process"] call ALife_fnc_anticheat }) exitWith {};
 
 private _owner = owner _unit;
 private _fnc_reply = { (if (_this isEqualType []) then { _this } else { [_this, "warning"] }) remoteExecCall ["ALife_fnc_notify", _owner]; };
@@ -88,6 +89,7 @@ ALife_busy set [_uid, true];
     { [_uid, _faction, _x select 0, (_x select 1) * _batches] call ALife_fnc_itemsChange; } forEach _to;
 
     diag_log format ["[ALife] %1 processed %2 x%3 at %4 (fee $%5)", _uid, configName _cfg, _batches, getText (_cfg >> "name"), _fee * _batches];
+    ["log", _unit, "process", [["process", configName _cfg], ["batches", _batches], ["fee", _fee * _batches]]] call ALife_fnc_anticheat;
     [format ["Made %1%2.", (_to apply { format ["%1 %2", (_x select 1) * _batches, (_x select 0) call _itemName] }) joinString ", ",
         ["", format [" Fee: $%1 (no licence).", [_fee * _batches] call BIS_fnc_numberText]] select (_fee > 0)], "success"] call _fnc_reply;
     [_unit] call ALife_fnc_requestPhoneData;
