@@ -2852,3 +2852,25 @@ a.eco-link:hover { background: rgba(255, 255, 255, 0.03); }
 .eco-daily { grid-template-columns: minmax(0, 1fr) 110px 110px 80px 100px; }
 @media (max-width: 1100px) { .eco-charts { grid-template-columns: 1fr; } }
 @media (max-width: 900px) { .eco-daily { grid-template-columns: 1fr 1fr; } }
+/* ---------- Gangs & Wanted boards ---------- */
+.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--text-faint); margin-right: 8px; vertical-align: middle; }
+.dot-on { background: var(--green); box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15); }
+.gang-tag { font-family: var(--font-display); font-weight: 700; color: var(--amber-bright); }
+.gang-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.gang-stats > div { display: flex; flex-direction: column; gap: 2px; }
+.gang-member { display: grid; grid-template-columns: minmax(0, 1fr) 70px auto; gap: 10px; align-items: center; padding: 6px 0; font-size: 13px; border-bottom: 1px solid var(--border-soft); color: var(--text); text-decoration: none; }
+.gang-member:hover { color: var(--amber-bright); }
+.gang-rank { font-size: 10.5px; font-weight: 800; text-transform: uppercase; color: var(--text-dim); }
+.gang-rank-leader { color: var(--amber-bright); }
+.gang-rank-officer { color: #93c5fd; }
+.wanted-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) 100px 110px; gap: 12px; align-items: center; padding: 10px 20px; font-size: 13px; border-bottom: 1px solid var(--border-soft); color: var(--text); text-decoration: none; }
+a.wanted-row:hover { background: rgba(255, 255, 255, 0.03); }
+.wanted-crimes { color: var(--text-dim); }
+@media (max-width: 900px) { .wanted-row { grid-template-columns: 1fr; gap: 2px; } .wanted-row.stafflog-th { display: none; } .gang-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* ---------- Player Lookup > Connections ---------- */
+.conn-head { padding: 14px 20px 6px; margin: 0; }
+.conn-row { display: grid; grid-template-columns: minmax(0, 1.4fr) 120px 140px 130px; gap: 12px; align-items: center; padding: 9px 20px; font-size: 13px; border-bottom: 1px solid var(--border-soft); color: var(--text); text-decoration: none; }
+a.conn-row:hover { background: rgba(255, 255, 255, 0.03); }
+.conn-trade { grid-template-columns: minmax(0, 1.4fr) 110px 110px 130px 150px; font-variant-numeric: tabular-nums; }
+.conn-alias { grid-template-columns: minmax(0, 1fr) 140px 140px; }
+@media (max-width: 900px) { .conn-row, .conn-trade, .conn-alias { grid-template-columns: 1fr; gap: 2px; } .conn-row.stafflog-th { display: none; } }

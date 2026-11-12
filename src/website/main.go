@@ -411,6 +411,8 @@ func run() error {
 			r.Get("/admin/players", d.PlayerLookup)
 			r.Get("/admin/events", d.EventLog)
 			r.Get("/admin/economy", d.Economy)
+			r.Get("/admin/gangs", d.GangsBoard)
+			r.Get("/admin/wanted", d.WantedBoard)
 			r.Post("/admin/players/{id}/faction-level", d.PlayerSetFactionLevel)
 			r.Post("/admin/players/{id}/compensate", d.PlayerCompensate)
 			r.Post("/admin/players/{id}/licences", d.PlayerLicences)
