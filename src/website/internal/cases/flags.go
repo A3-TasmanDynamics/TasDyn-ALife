@@ -72,6 +72,28 @@ func (f Flag) Status() string {
 type FlagFilter struct {
 	Confidence string // "" / high / medium
 	OpenOnly   bool
+	Status     string // "" (any) / open / watch / closed (dismissed, case, kick, ban)
+	Type       string // a flag_type, "" = any
+	PlayerID   int64  // 0 = anyone
+	Search     string // player name or Steam ID (when PlayerID is 0)
+}
+
+// FlagTypes lists every detector, for the type filter: [type, title].
+func FlagTypes() [][2]string {
+	out := make([][2]string, 0, len(flagTitles))
+	for k, v := range flagTitles {
+		out = append(out, [2]string{k, v})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i][1] < out[j][1] })
+	return out
+}
+
+// FlagTitle is a detector's display name.
+func FlagTitle(t string) string {
+	if s := flagTitles[t]; s != "" {
+		return s
+	}
+	return t
 }
 
 const flagSelect = `
@@ -124,9 +146,18 @@ func flattenDetails(raw string) []KV {
 
 // Flags lists flags, newest first.
 func Flags(ctx context.Context, pool *pgxpool.Pool, f FlagFilter, limit int) ([]Flag, error) {
+	if f.OpenOnly {
+		f.Status = "open"
+	}
+	search := strings.TrimSpace(f.Search)
 	rows, err := pool.Query(ctx, flagSelect+`
-		WHERE ($1 = '' OR f.confidence = $1) AND (NOT $2 OR f.resolution IS NULL)
-		ORDER BY f.id DESC LIMIT $3`, f.Confidence, f.OpenOnly, limit)
+		WHERE ($1 = '' OR f.confidence = $1)
+		  AND ($2 = '' OR ($2 = 'open' AND f.resolution IS NULL) OR ($2 = 'watch' AND f.resolution = 'watch')
+		       OR ($2 = 'closed' AND f.resolution IS NOT NULL AND f.resolution <> 'watch'))
+		  AND ($3 = '' OR f.flag_type = $3)
+		  AND ($4 = 0 OR f.player_id = $4)
+		  AND ($5 = '' OR p.uid = $5 OR p.name ILIKE '%' || $5 || '%' OR p.steam_name ILIKE '%' || $5 || '%')
+		ORDER BY f.id DESC LIMIT $6`, f.Confidence, f.Status, f.Type, f.PlayerID, search, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -208,6 +239,74 @@ func ReviewFlag(ctx context.Context, pool *pgxpool.Pool, actor Actor, id int64, 
 		return err
 	}
 	return tx.Commit(ctx)
+}
+
+// FlagStats is the Anti-Cheat page's summary.
+type FlagStats struct {
+	Open, OpenHigh, Watching, Last24h, Last7d int
+	ByType                                    []TypeCount // open flags per detector, most first
+	TopPlayers                                []PlayerCount
+}
+
+type TypeCount struct {
+	Type, Title string
+	Open, Total int
+}
+
+type PlayerCount struct {
+	PlayerID int64
+	Name     string
+	Flags    int // in the last 30 days
+	Open     int
+}
+
+// FlagSummary summarises every flag: counts, per detector, and the most flagged
+// players of the last 30 days.
+func FlagSummary(ctx context.Context, pool *pgxpool.Pool) (FlagStats, error) {
+	var s FlagStats
+	if err := pool.QueryRow(ctx, `
+		SELECT count(*) FILTER (WHERE resolution IS NULL),
+		       count(*) FILTER (WHERE resolution IS NULL AND confidence = 'high'),
+		       count(*) FILTER (WHERE resolution = 'watch'),
+		       count(*) FILTER (WHERE created_at > now() - interval '24 hours'),
+		       count(*) FILTER (WHERE created_at > now() - interval '7 days')
+		FROM anti_cheat_flags`).Scan(&s.Open, &s.OpenHigh, &s.Watching, &s.Last24h, &s.Last7d); err != nil {
+		return s, err
+	}
+	rows, err := pool.Query(ctx, `
+		SELECT flag_type, count(*) FILTER (WHERE resolution IS NULL), count(*)
+		FROM anti_cheat_flags GROUP BY flag_type ORDER BY 2 DESC, 3 DESC, 1`)
+	if err != nil {
+		return s, err
+	}
+	for rows.Next() {
+		var t TypeCount
+		if err := rows.Scan(&t.Type, &t.Open, &t.Total); err != nil {
+			rows.Close()
+			return s, err
+		}
+		t.Title = FlagTitle(t.Type)
+		s.ByType = append(s.ByType, t)
+	}
+	rows.Close()
+	rows, err = pool.Query(ctx, `
+		SELECT p.id, COALESCE(NULLIF(p.name, ''), NULLIF(p.steam_name, ''), 'Player #' || p.id),
+		       count(*), count(*) FILTER (WHERE f.resolution IS NULL)
+		FROM anti_cheat_flags f JOIN players p ON p.id = f.player_id
+		WHERE f.created_at > now() - interval '30 days'
+		GROUP BY p.id ORDER BY 3 DESC, 4 DESC, p.id LIMIT 5`)
+	if err != nil {
+		return s, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var p PlayerCount
+		if err := rows.Scan(&p.PlayerID, &p.Name, &p.Flags, &p.Open); err != nil {
+			return s, err
+		}
+		s.TopPlayers = append(s.TopPlayers, p)
+	}
+	return s, rows.Err()
 }
 
 // OpenFlagCount is the sidebar badge.

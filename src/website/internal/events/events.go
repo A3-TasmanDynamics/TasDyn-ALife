@@ -52,6 +52,7 @@ type Filter struct {
 	Search   string
 	Category string
 	Range    string
+	From, To time.Time // optional window (zero = open-ended)
 	Limit    int
 	Offset   int
 }
@@ -97,6 +98,12 @@ func List(ctx context.Context, pool *pgxpool.Pool, f Filter) ([]Event, bool, err
 		if r.Key == f.Range && r.Back > 0 {
 			where = append(where, "l.created_at > "+arg(time.Now().Add(-r.Back)))
 		}
+	}
+	if !f.From.IsZero() {
+		where = append(where, "l.created_at >= "+arg(f.From))
+	}
+	if !f.To.IsZero() {
+		where = append(where, "l.created_at <= "+arg(f.To))
 	}
 	q := `SELECT l.id, l.created_at, l.player_id, COALESCE(NULLIF(p.name, ''), NULLIF(p.steam_name, ''), 'Player #' || p.id), p.uid,
 	             l.event_type, COALESCE(l.details::text, '')

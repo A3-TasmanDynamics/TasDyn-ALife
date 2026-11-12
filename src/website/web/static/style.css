@@ -2770,3 +2770,24 @@ h1, .section-title, .page-title, .status-headline,
   .ev-player, .ev-what { white-space: normal; }
   .ev-details { padding: 4px 16px 12px; }
 }
+/* ---------- Anti-Cheat page: summary, detectors, context ---------- */
+.ac-stats { margin-bottom: 0; }
+.ac-stat-sub { font-size: 15px; font-weight: 600; color: var(--text-dim); }
+.ac-overview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.ac-ov-card { padding: 16px 18px; display: flex; flex-direction: column; gap: 2px; }
+.ac-ov-row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 8px; margin: 0 -8px; border-radius: 6px; font-size: 13px; color: var(--text); text-decoration: none; }
+.ac-ov-row:hover { background: rgba(255, 255, 255, 0.03); }
+.ac-ov-row.active { background: var(--amber-soft); }
+.ac-ov-row > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ac-ov-num { flex-shrink: 0; }
+.ac-body { display: flex; }
+.ac-filters .search-box { min-width: 180px; }
+.ac-detail { width: 520px; }
+.ac-context { border-top: 1px solid var(--border-soft); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.ac-context .ev-list { margin: 0 -22px; }
+.ac-context .ev-row > summary, .ac-context .ev-th { padding-left: 22px; padding-right: 22px; grid-template-columns: 70px minmax(0, 1fr); }
+.ac-context .ev-when { font-size: 12px; }
+.ac-context .ev-details { padding: 4px 22px 12px 104px; }
+a.ac-other { color: var(--text); text-decoration: none; }
+a.ac-other:hover { background: rgba(255, 255, 255, 0.03); }
+@media (max-width: 900px) { .ac-overview { grid-template-columns: 1fr; } .admin-stats.ac-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ac-context .ev-details { padding-left: 22px; } }
