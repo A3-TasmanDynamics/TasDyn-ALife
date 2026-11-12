@@ -111,6 +111,29 @@ class CfgItems
         use = "repair"; useTime = 12;
         anim = "AinvPknlMstpSnonWnonDnon_medic4";
     };
+    // Breaking into the police evidence vault (ALife_fnc_evidence): the
+    // outer door, the vault room door, the keypad. Rebel market only.
+    class boltcutter
+    {
+        displayName = "Bolt Cutters";
+        description = "Cuts through the evidence building's door. Used up. Illegal.";
+        icon = "ui\items\boltcutter_ca.paa";
+        weight = 4;
+    };
+    class blastingcharge
+    {
+        displayName = "Blasting Charge";
+        description = "Blows the evidence vault room door. Stand well back. Illegal.";
+        icon = "ui\items\blastingcharge_ca.paa";
+        weight = 5;
+    };
+    class keypaddecoder
+    {
+        displayName = "Keypad Decoder";
+        description = "Reads the evidence vault keypad so you can crack its code. Illegal.";
+        icon = "ui\items\keypaddecoder_ca.paa";
+        weight = 2;
+    };
     class zipties
     {
         displayName = "Zip Ties";

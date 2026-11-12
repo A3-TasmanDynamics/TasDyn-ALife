@@ -26,6 +26,7 @@ class CfgCrimes
     class drug_possession  { name = "Drug possession";               bounty = 4000;  jail = 6; };
     class drug_trafficking { name = "Drug trafficking";              bounty = 12000; jail = 12; };
     class robbery          { name = "Robbery";                       bounty = 20000; jail = 15; };
+    class evidence_robbery { name = "Robbing the evidence vault";    bounty = 50000; jail = 30; };
     class kidnapping       { name = "Kidnapping";                    bounty = 15000; jail = 15; };
     class attempted_murder { name = "Attempted murder";              bounty = 15000; jail = 15; };
     class murder           { name = "Murder";                        bounty = 30000; jail = 25; };
