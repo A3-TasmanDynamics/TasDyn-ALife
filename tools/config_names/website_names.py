@@ -8,6 +8,7 @@ Licence" / "Copper Ore" instead of classnames:
   - items (vItems, e.g. in vehicle trunks): CfgItems displayName
   - crimes: CfgCrimes name
   - gear: Arma's names (names.json) for every classname the config mentions
+  - market: CfgMarket base buy / sell prices and the min..max range
 
 Re-run after adding vehicles, licences or items:
 
@@ -77,6 +78,14 @@ crimes = {}
 for m in re.finditer(r'class (\w+)\s*\{\s*name = "([^"]*)"', read("CfgCrimes.hpp")):
     crimes[m.group(1).lower()] = m.group(2)
 
+# The market's base prices (CfgMarket), for the Economy page's "vs base".
+market = []
+body = read("CfgMarket.hpp").split("class CfgMarket", 1)[1]
+for m in re.finditer(r"class (\w+)\s*\{([^}]*)\}", body):
+    vals = dict(re.findall(r"(\w+)\s*=\s*([\d.]+)\s*;", m.group(2)))
+    if "buyPrice" in vals:
+        market.append((m.group(1).lower(), *(int(float(vals.get(k, 0))) for k in ("buyPrice", "sellPrice", "min", "max"))))
+
 # Arma gear (weapons, clothing, attachments, magazines, items) the mission
 # mentions anywhere in its config, by Arma's own name -- for the loadouts
 # the Admin Panel shows. Anything else falls back to its classname.
@@ -111,5 +120,7 @@ with open(OUT, "w", encoding="utf-8", newline="\n") as f:
     f.write("\n" + go_map("crimes", crimes) + "\n" + go_map("gear", gear))
     rows = "".join(f'\t{{Key: "{k}", Name: "{n}", Side: "{sd}"}},\n' for k, n, sd in licence_list)
     f.write(f"\nvar licenceList = []LicenceDef{{\n{rows}}}\n")
+    rows = "".join(f'\t{{Key: "{k}", Buy: {b}, Sell: {sl}, Min: {lo}, Max: {hi}}},\n' for k, b, sl, lo, hi in market)
+    f.write(f"\nvar marketList = []MarketBase{{\n{rows}}}\n")
 subprocess.run(["gofmt", "-w", OUT], check=True)
-print(f"{len(vehicles)} vehicles, {len(licences)} licences, {len(items)} items, {len(crimes)} crimes, {len(gear)} gear -> {OUT}")
+print(f"{len(vehicles)} vehicles, {len(licences)} licences, {len(items)} items, {len(crimes)} crimes, {len(gear)} gear, {len(market)} market -> {OUT}")

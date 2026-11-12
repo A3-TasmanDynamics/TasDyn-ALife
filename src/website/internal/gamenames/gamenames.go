@@ -106,3 +106,14 @@ func humanize(key string) string {
 	}
 	return strings.ToUpper(k[:1]) + k[1:]
 }
+
+// MarketBase is one CfgMarket item's base prices (dollars): what the
+// dynamic market drifts back toward, and the range its buy price stays in.
+type MarketBase struct {
+	Key       string
+	Buy, Sell int64
+	Min, Max  int64
+}
+
+// Market lists every market item's base prices, in config order.
+func Market() []MarketBase { return marketList }
