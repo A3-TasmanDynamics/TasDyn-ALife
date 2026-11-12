@@ -1,0 +1,26 @@
+{{define "game_server_card"}}
+{{/* The live game server (handlers.gameServerCard): Dashboard and System Health. */}}
+<section class="card gs-card gs-{{.State}}" aria-labelledby="gs-h">
+  <div class="gs-head">
+    <h2 class="card-label" id="gs-h">Game server</h2>
+    <span class="gs-pill gs-pill-{{.State}}"><span class="gs-dot" aria-hidden="true"></span>{{if eq .State "up"}}Online{{else if eq .State "down"}}Offline{{else if eq .State "error"}}Can't reach it{{else}}Not connected{{end}}</span>
+    {{if .CanControl}}<a class="dash-link gs-link" href="/admin/server">Server Control &rarr;</a>{{end}}
+  </div>
+  {{if eq .State "up"}}
+  <div class="gs-stats">
+    <div><span class="gs-label">Players online</span><span class="gs-value">{{.Online}}</span></div>
+    <div><span class="gs-label">Server FPS</span><span class="gs-value gs-fps-{{.FPSState}}">{{if .FPS}}{{.FPS}}{{else}}&mdash;{{end}}</span></div>
+    <div><span class="gs-label">Uptime</span><span class="gs-value">{{.Uptime}}</span></div>
+    <div><span class="gs-label">Last restart</span><span class="gs-value gs-small">{{if .LastRestart}}{{.LastRestart}}{{else}}&mdash;{{end}}</span></div>
+  </div>
+  {{if .RestartAt}}<p class="gs-note">A restart is scheduled for <strong>{{.RestartAt}}</strong>.</p>{{end}}
+  {{if eq .FPSState "bad"}}<p class="gs-note gs-note-bad">Server FPS is very low: players will feel lag. Check Server Control's logs.</p>{{end}}
+  {{else if eq .State "down"}}
+  <p class="gs-note gs-note-bad">The game server isn't running.{{if .LastRestart}} Last restart {{.LastRestart}}.{{end}}{{if .CanControl}} Start it from Server Control.{{end}}</p>
+  {{else if eq .State "error"}}
+  <p class="gs-note gs-note-bad">The Server Manager didn't answer: {{.Err}}</p>
+  {{else}}
+  <p class="gs-note">The website isn't connected to the Server Manager (SERVER_MANAGER_URL / TOKEN).</p>
+  {{end}}
+</section>
+{{end}}

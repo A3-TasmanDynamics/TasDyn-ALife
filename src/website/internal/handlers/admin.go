@@ -67,6 +67,7 @@ func (d *Deps) adminShell(r *http.Request, tab string) AdminShell {
 type adminHomeData struct {
 	Base
 	AdminShell
+	Game         gameServerCard
 	OnlineCount  int
 	OpenTickets  int
 	FlagsLast24h int
@@ -119,7 +120,7 @@ func (d *Deps) AdminHome(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin/support", http.StatusSeeOther)
 		return
 	}
-	data := adminHomeData{Base: baseFrom(r, "Admin Panel"), AdminShell: d.adminShell(r, "dashboard")}
+	data := adminHomeData{Base: baseFrom(r, "Admin Panel"), AdminShell: d.adminShell(r, "dashboard"), Game: d.gameServer(r)}
 
 	// Headline counts are non-essential -- a failed one shows 0 rather than
 	// taking the whole panel down, same as the landing page's stats.

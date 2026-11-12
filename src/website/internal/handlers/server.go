@@ -59,6 +59,53 @@ func localTime(rfc string) string {
 	return t.Local().Format("2 Jan 15:04")
 }
 
+// gameServerCard is the live game server for the Dashboard and System Health
+// (partial_game_server.html): up / down / error (no answer) / off (the
+// website isn't connected to server_manager).
+type gameServerCard struct {
+	State       string
+	Err         string
+	Online      int
+	FPS         string
+	FPSState    string // good / warn (under 20) / bad (under 10)
+	Uptime      string
+	LastRestart string
+	RestartAt   string
+	CanControl  bool
+}
+
+func (d *Deps) gameServer(r *http.Request) gameServerCard {
+	g := gameServerCard{State: "off", CanControl: d.can(r, "server.control") || d.can(r, "server.logs")}
+	_ = d.Pool.QueryRow(r.Context(), `SELECT count(*) FROM player_sessions WHERE disconnected_at IS NULL`).Scan(&g.Online)
+	if !d.ServerMgr.Configured() {
+		return g
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+	st, err := d.ServerMgr.Status(ctx)
+	if err != nil {
+		g.State, g.Err = "error", err.Error()
+		return g
+	}
+	g.LastRestart, g.RestartAt = localTime(st.LastRestart), localTime(st.RestartAt)
+	if !st.Running {
+		g.State = "down"
+		return g
+	}
+	g.State, g.Uptime = "up", dur(st.UptimeSeconds)
+	if st.ServerFPS > 0 {
+		g.FPS = fmt.Sprintf("%.0f", st.ServerFPS)
+		g.FPSState = "good"
+		if st.ServerFPS < 20 {
+			g.FPSState = "warn"
+		}
+		if st.ServerFPS < 10 {
+			g.FPSState = "bad"
+		}
+	}
+	return g
+}
+
 func (d *Deps) ServerControl(w http.ResponseWriter, r *http.Request) {
 	data := serverData{Base: baseFrom(r, "Server Control"), AdminShell: d.adminShell(r, "server"),
 		CanControl: d.can(r, "server.control"), CanLogs: d.can(r, "server.logs"), ServerID: ServerID,
