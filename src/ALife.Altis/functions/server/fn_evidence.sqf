@@ -27,7 +27,12 @@
     Needs minCops police online; one robbery per `cooldown` s; not finished
     within giveUpAfter s, the vault reseals. Everyone who works a stage is
     wanted (crime). Police at the keypad or vault can secure it (reseal,
-    alarm off) or, when it's quiet, destroy the evidence.
+    alarm off) or, when it's quiet, clear the evidence -- so can staff
+    (game.admin, or a server owner), whatever they're playing.
+
+    Kept across restarts: the vault's inventory and the items / cash are
+    saved after every change (and every 15 s while it's open, including
+    what robbers haven't taken yet), and put back when the server starts.
 
     Arguments: [unit, mode, arg] (unit objNull for the server's own calls):
         [objNull, "load"]                     - (serverInit) from the database; the objects
@@ -124,8 +129,16 @@ private _fnc_lock = {
 // Save the vault to the database.
 private _fnc_save = {
     private _e = ALife_evidence;
-    private _items = (keys (_e get "items")) apply { [_x, (_e get "items") get _x] };
-    private _r = ["evidence", ["set", str (call _fnc_gear), str _items, str (_e get "cash")]] call ALife_fnc_extension;
+    private _all = +(_e get "items");
+    private _cash = _e get "cash";
+    // Cracked open: what robbers haven't taken from its bag is still evidence (a restart keeps it).
+    private _bag = (missionNamespace getVariable ["ALife_containers", createHashMap]) getOrDefault [(missionNamespace getVariable ["ALife_vault", createHashMap]) getOrDefault ["bag", ""], createHashMap];
+    if (count _bag > 0) then {
+        { _all set [_x, (_all getOrDefault [_x, 0]) + _y]; } forEach (_bag get "items");
+        _cash = _cash + (_bag getOrDefault ["cash", 0]);
+    };
+    private _items = (keys _all) apply { [_x, _all get _x] };
+    private _r = ["evidence", ["set", str (call _fnc_gear), str _items, str _cash]] call ALife_fnc_extension;
     if (_r != "OK") then { diag_log format ["[ALife] evidence save failed: %1", _r]; };
     _r == "OK"
 };
@@ -452,7 +465,11 @@ switch (_mode) do {
             if (isRemoteExecuted) exitWith {};
             if (_arg == "save") then { call _fnc_save; } else { call _fnc_reset; };
         };
-        if ((_unit getVariable ["alife_faction", ""]) != "cop" || { !alive _unit }) exitWith {};
+        // Police, or staff (game.admin / a server owner) whatever they're playing.
+        private _uidS = getPlayerUID _unit;
+        private _staff = _uidS in getArray (missionConfigFile >> "CfgALife" >> "owners")
+            || { "game.admin" in (((missionNamespace getVariable ["ALife_sessions", createHashMap]) getOrDefault [_uidS, createHashMap]) getOrDefault ["staff_perms", []]) };
+        if (((_unit getVariable ["alife_faction", ""]) != "cop" && { !_staff }) || { !alive _unit }) exitWith {};
         private _near = ["keypad", "vault", "entrance", "vaultDoor"] findIf { private _o = _x call _obj; !isNull _o && { _unit distance _o < getNumber (_cfg >> "range") + 2 } } >= 0;
         if (!_near) exitWith { "Get closer." call _fnc_reply; };
         (call _fnc_count) params ["_weapons", "_gear", "_items", "_cash"];
@@ -474,9 +491,14 @@ switch (_mode) do {
                 private _v = "vault" call _obj;
                 if (!isNull _v) then { clearWeaponCargoGlobal _v; clearMagazineCargoGlobal _v; clearItemCargoGlobal _v; clearBackpackCargoGlobal _v; };
                 call _fnc_save;
-                diag_log format ["[ALife] %1 destroyed the evidence (%2 weapons, %3 gear, %4 items, $%5)", getPlayerUID _unit, _weapons, _gear, _items, _cash];
-                ["log", _unit, "police.evidence_destroyed", [["weapons", _weapons], ["gear", _gear], ["items", _items], ["cash", _cash]]] call ALife_fnc_anticheat;
-                ["Evidence destroyed.", "success"] call _fnc_reply;
+                private _by = ["police", "staff"] select ((_unit getVariable ["alife_faction", ""]) != "cop");
+                diag_log format ["[ALife] %1 (%6) cleared the evidence (%2 weapons, %3 gear, %4 items, $%5)", getPlayerUID _unit, _weapons, _gear, _items, _cash, _by];
+                ["log", _unit, "police.evidence_destroyed", [["weapons", _weapons], ["gear", _gear], ["items", _items], ["cash", _cash], ["by", _by]]] call ALife_fnc_anticheat;
+                if (_by == "staff") then {
+                    ["admin", ["log", _uidS, "", "game.evidence_cleared", "Cleared the evidence vault",
+                        toJSON createHashMapFromArray [["weapons", _weapons], ["gear", _gear], ["items", _items], ["cash", _cash]]]] call ALife_fnc_extension;
+                };
+                ["Evidence cleared.", "success"] call _fnc_reply;
             };
         };
     };
