@@ -36,6 +36,8 @@ private _shop = missionNamespace getVariable ["ALife_shopClass", ""];
 private _cfg = ([_shop] call ALife_fnc_shopInfo) param [2, configNull]; // the VirtualShops shop
 private _data = missionNamespace getVariable ["ALife_phone", createHashMap];
 private _hasItems = getArray (_cfg >> "items") isNotEqualTo [];
+// Police / EMS shops: fixed prices (the dynamic market is for civilians).
+private _fixed = getText (_cfg >> "side") != "civ";
 private _hasBuys = getArray (_cfg >> "buys") isNotEqualTo [];
 // Selling to the shop: a trader (buys only), or a shop that does both
 // opened with "sell".
@@ -70,7 +72,7 @@ switch (_mode) do {
         };
         {
             private _class = _x;
-            private _row = _list lnbAddRow [getText (missionConfigFile >> "CfgItems" >> _class >> "displayName"), ([_class, _selling] call ALife_fnc_marketPrice) call _fnc_money, ""];
+            private _row = _list lnbAddRow [getText (missionConfigFile >> "CfgItems" >> _class >> "displayName"), ([_class, _selling, _fixed] call ALife_fnc_marketPrice) call _fnc_money, ""];
             _list lnbSetData [[_row, 0], _class];
             _list lnbSetPicture [[_row, 0], getText (missionConfigFile >> "CfgItems" >> _class >> "icon")];
             if (((missionConfigFile >> "CfgMarket" >> _class) call _fnc_missing) != "") then { _list lnbSetColor [[_row, 0], [1, 1, 1, 0.4]]; };
@@ -89,7 +91,7 @@ switch (_mode) do {
         private _list = _display displayCtrl IDC_LIST;
         for "_row" from 0 to ((lnbSize _list) select 0) - 1 do {
             private _class = _list lnbData [_row, 0];
-            _list lnbSetText [[_row, 1], ([_class, _selling] call ALife_fnc_marketPrice) call _fnc_money]; // prices move
+            _list lnbSetText [[_row, 1], ([_class, _selling, _fixed] call ALife_fnc_marketPrice) call _fnc_money]; // prices move (civilian shops)
             _list lnbSetText [[_row, 2], format ["x%1", _owned getOrDefault [_class, 0]]];
         };
         ["select"] call ALife_fnc_shop;
