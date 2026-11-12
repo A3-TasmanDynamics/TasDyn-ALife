@@ -324,8 +324,9 @@ CREATE TABLE vehicles (
     fuel             REAL NOT NULL DEFAULT 1.0,
     damage           JSONB NOT NULL DEFAULT '[]'::jsonb,  -- [[hitpointName,damage],...] pairs, e.g. [["hitengine",0.4]]
                                                             -- not a single float -- see getAllHitPointsDamage
+    -- 'sold': sold back at a garage (kept for its history).
     status           TEXT NOT NULL DEFAULT 'garaged'
-                         CHECK (status IN ('garaged', 'spawned', 'impounded', 'destroyed')),
+                         CONSTRAINT vehicles_status_check CHECK (status IN ('garaged', 'spawned', 'impounded', 'destroyed', 'sold')),
     garage_id        BIGINT REFERENCES garages(id) ON DELETE SET NULL,
     position         JSONB,           -- last known world position, NULL if garaged
     inventory        JSONB NOT NULL DEFAULT '[]'::jsonb,  -- [[key,value],...] pairs -- cargo
@@ -813,6 +814,16 @@ CREATE TABLE IF NOT EXISTS faction_members (
 -- [["items", [[class, n], ...]], ["mags", [[class, ammo], ...]],
 --  ["weapons", [weapon arrays]], ["containers", [[class, items, mags, weapons], ...]]];
 -- items = virtual items [[class, count], ...] (config/CfgItems.hpp).
+-- The police evidence vault (ALife_fnc_evidence): what police seize from the
+-- ground, kept until it's robbed or destroyed. One row.
+CREATE TABLE IF NOT EXISTS evidence_vault (
+    id          INTEGER PRIMARY KEY CHECK (id = 1),
+    gear        JSONB NOT NULL DEFAULT '[]'::jsonb,   -- locker gear format (items, mags, weapons, containers)
+    items       JSONB NOT NULL DEFAULT '[]'::jsonb,   -- virtual items [[class, count], ...]
+    cash        BIGINT NOT NULL DEFAULT 0 CHECK (cash >= 0),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS faction_lockers (
     player_id   BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
     faction     TEXT NOT NULL CHECK (faction IN ('cop', 'medic')),

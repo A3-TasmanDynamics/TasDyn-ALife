@@ -71,6 +71,57 @@ if (_escorted isNotEqualTo []) exitWith {
     true
 };
 
+// ---- The evidence vault (CfgALife >> Evidence) ---------------------------
+private _evCfg = missionConfigFile >> "CfgALife" >> "Evidence";
+private _evStages = ["entrance", "vaultDoor", "keypad", "vault"];
+private _evName = if (isNull _target) then { "" } else { vehicleVarName _target };
+private _evAt = if (_evName == "") then { -1 } else { _evStages findIf { getText (_evCfg >> _x) == _evName } };
+if (_evAt >= 0 && { player distance _target <= getNumber (_evCfg >> "range") + 1 }) exitWith {
+    private _stage = _evStages select _evAt;
+    if (_faction == "cop") exitWith {
+        ["open", "Evidence vault", [
+            ["What's inside", { [player, "police", "count"] remoteExecCall ["ALife_fnc_evidence", 2]; }, []],
+            ["Secure the vault", { [player, "police", "secure"] remoteExecCall ["ALife_fnc_evidence", 2]; }, []],
+            ["Destroy the evidence", {
+                ["open", "Destroy all the evidence?", [
+                    ["Yes, destroy it", { [player, "police", "destroy"] remoteExecCall ["ALife_fnc_evidence", 2]; }, []],
+                    ["No", {}, []]
+                ], "It can't be undone"] call ALife_fnc_radial;
+            }, []]
+        ], "Seized items are kept here"] call ALife_fnc_radial;
+        true
+    };
+    if (_faction != "civ") exitWith { true };
+    if (_stage == "vault") exitWith { ["Crack the keypad to open it.", "info"] call ALife_fnc_toast; true };
+    private _label = switch (_stage) do {
+        case "entrance": { "Cut the door (Bolt Cutters)" };
+        case "vaultDoor": { "Set a charge (Blasting Charge)" };
+        default { "Crack the keypad (Keypad Decoder)" };
+    };
+    ["open", "Evidence vault", [[_label, { [player, "begin", _this] remoteExecCall ["ALife_fnc_evidence", 2]; }, _stage]]] call ALife_fnc_radial;
+    true
+};
+
+// ---- Police: seize what's on the ground ----------------------------------
+// A dropped weapon / gear (a weapon holder -- hard to look at, so also the
+// nearest one in front of you) or a bag of items: into the evidence vault.
+private _holder = if (_faction != "cop" || { vehicle player != player }) then { objNull } else {
+    if (!isNull _target && { _target isKindOf "WeaponHolder" || { _target isKindOf "WeaponHolderSimulated" } }) then { _target } else {
+        ((nearestObjects [player, ["WeaponHolder", "WeaponHolderSimulated"], 3]) select { abs ((player getRelDir _x) - 180) > 120 }) param [0, objNull]
+    }
+};
+if (!isNull _holder && { player distance _holder <= getNumber (_evCfg >> "seizeRange") }) exitWith {
+    ["open", "Dropped gear", [["Seize", { [player, "seize", _this] remoteExecCall ["ALife_fnc_evidence", 2]; }, _holder]], "Goes to the evidence vault"] call ALife_fnc_radial;
+    true
+};
+if (_faction == "cop" && { !isNull _target } && { _target in (missionNamespace getVariable ["ALife_groundBags", []]) } && { player distance _target < 4 }) exitWith {
+    ["open", "Dropped items", [
+        ["Open", { player playActionNow "PutDown"; [player, _this] remoteExecCall ["ALife_fnc_containerOpen", 2]; }, _target],
+        ["Seize", { [player, "seize", _this] remoteExecCall ["ALife_fnc_evidence", 2]; }, _target]
+    ], "Seize: into the evidence vault"] call ALife_fnc_radial;
+    true
+};
+
 if (!isNull _target && { _target in (missionNamespace getVariable ["ALife_groundBags", []]) } && { player distance _target < 4 }) exitWith {
     player playActionNow "PutDown"; // reach down to it
     [player, _target] remoteExecCall ["ALife_fnc_containerOpen", 2];

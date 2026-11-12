@@ -136,6 +136,40 @@ class CfgALife
     // stand still and can't be hurt). Windows on one: Reception, with your
     // locker -- weapons and clothing go in a crate (Arma's inventory; its
     // size is how much fits), virtual items in our inventory screen.
+    // ---- Police evidence vault (ALife_fnc_evidence) -----------------------
+    // Police seize items off the ground (Windows on a dropped weapon or bag):
+    // they go into the evidence vault, kept in the database. It can be robbed:
+    // bolt cutters on the building's door, a blasting charge on the vault
+    // room door, then crack the keypad's code (a Keypad Decoder) -- and the
+    // vault opens: everything seized, its cash and cashBonus. Police are
+    // alerted (and see it on the map) from the first cut; everyone taking
+    // part is wanted for crime.
+    // Objects you place in Eden with these variable names (they stand still
+    // and can't be hurt): something at the building's door, at the vault
+    // room door, the keypad (e.g. a laptop), the vault (e.g. a safe).
+    class Evidence
+    {
+        entrance = "evidence_entrance";
+        vaultDoor = "evidence_vaultdoor";
+        keypad = "evidence_keypad";
+        vault = "evidence_vault";
+        range = 3;                // metres: how close to work on one
+        seizeRange = 5;           // metres: police seizing items off the ground
+        minCops = 4;              // police online to start a robbery
+        cooldown = 3600;          // seconds after a robbery before the next
+        giveUpAfter = 1200;       // seconds: a robbery not finished by then reseals the vault
+        cutTime = 20;             // seconds cutting the door
+        placeTime = 8;            // seconds setting the charge...
+        fuse = 45;                // ...and before it blows
+        codeLength = 4;           // the keypad code: digits...
+        guesses = 10;             // ...tries before it locks...
+        lockout = 60;             // ...for this long (a new code after)
+        cashBonus = 25000;        // dollars in the vault on top of the seized cash
+        crate = "Box_IND_Wps_F";  // what the loot comes out in
+        lootLifetime = 900;       // seconds before an emptied-or-not loot crate goes
+        crime = "evidence_robbery";
+    };
+
     class Lockers
     {
         cop[] = { "police_receptionist_1", "police_receptionist_2", "police_receptionist_3", "police_receptionist_4", "police_receptionist_5", "police_receptionist_6" };
@@ -166,6 +200,14 @@ class CfgALife
     // one purchase (magazines: 20). Stops a leftover quantity buying a pile
     // of scopes by mistake.
     weaponShopGearMax = 3;
+    // The weapon shop's 3D view (ALife_fnc_weaponShop).
+    class WeaponShop
+    {
+        turnSensitivity = 40;               // degrees the item turns per screen-width of mouse drag (higher = faster)
+        zoomStep = 0.06;                    // how much one scroll notch zooms (0.06 = 6%)
+        bench = "Land_Workbench_01_F";      // what the item lies on ("" = just the floor)
+        floorColour[] = { 0.045, 0.063, 0.11 }; // the floor around it (red, green, blue 0-1)
+    };
 
     // ---- Anti-cheat (ALife_fnc_anticheat, docs/ANTI_CHEAT.md) ----------------
     // Every economy action goes in the player's event log; what isn't normal

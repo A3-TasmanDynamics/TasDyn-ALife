@@ -49,7 +49,7 @@ class VirtualShops
         side = "civ";
         licence = "rebel";
         level = 0;
-        items[] = { "water", "tbacon", "firstaid", "lockpick", "zipties", "toolkit", "fuelcan" };
+        items[] = { "water", "tbacon", "firstaid", "lockpick", "zipties", "toolkit", "fuelcan", "boltcutter", "blastingcharge", "keypaddecoder" };
     };
 
     class cop
@@ -99,6 +99,9 @@ class CfgMarket
     class lockpick   { buyPrice = 150; sellPrice = 75; min = 75; max = 450; };  // Lockpick
     class toolkit    { buyPrice = 350; sellPrice = 175; min = 175; max = 1050; };  // Toolkit
     class zipties    { buyPrice = 500; sellPrice = 250; min = 250; max = 1500; };  // Zip Ties
+    class boltcutter     { buyPrice = 7500; sellPrice = 3750; min = 3750; max = 22500; };  // Bolt Cutters
+    class blastingcharge { buyPrice = 25000; sellPrice = 12500; min = 12500; max = 75000; };  // Blasting Charge
+    class keypaddecoder  { buyPrice = 15000; sellPrice = 7500; min = 7500; max = 45000; };  // Keypad Decoder
     class donut      { buyPrice = 25; sellPrice = 12; min = 12; max = 75; };  // Donut
     class spikestrip { buyPrice = 2500; sellPrice = 1250; min = 1250; max = 7500; level = 1; };  // Spike Strip
     class cone       { buyPrice = 50; sellPrice = 25; min = 25; max = 150; };  // Road Cone

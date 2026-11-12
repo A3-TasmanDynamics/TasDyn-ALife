@@ -183,5 +183,6 @@ addMissionEventHandler ["EntityRespawned", {
     };
 
     ["start"] call ALife_fnc_anticheat;
+    ["load"] call ALife_fnc_evidence;
     [] call ALife_fnc_syncLoop;
 };

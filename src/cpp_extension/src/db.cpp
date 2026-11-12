@@ -1190,8 +1190,80 @@ bool Database::VehicleList(const std::string& uid, const std::string& faction, s
     return QueryOne(conn_,
         "SELECT COALESCE(json_agg(json_build_array(v.id::text, v.classname, COALESCE(v.plate, ''), v.status) ORDER BY v.id)::text, '[]') "
         "FROM vehicles v JOIN players p ON p.id = v.owner_player_id "
-        "WHERE p.uid = $1 AND v.faction_scope = $2 AND v.status <> 'destroyed'",
+        "WHERE p.uid = $1 AND v.faction_scope = $2 AND v.status NOT IN ('destroyed', 'sold')",
         2, params, outResponse, outError);
+}
+
+bool Database::VehicleSell(const std::string& id, const std::string& uid, const std::string& faction,
+                           const std::string& price, const std::string& token, const std::string& memo,
+                           std::string& outStatus, std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    const char* bankFaction = BankFaction(faction);
+    if (!bankFaction) {
+        outStatus = "ERROR";
+        outError = "bad faction";
+        return true;
+    }
+    auto exec = [&](const char* sql, int n, const char* const* params) {
+        return PQexecParams(conn_, sql, n, nullptr, params, nullptr, nullptr, 0);
+    };
+    auto fail = [&](PGresult* res, const char* status) {
+        if (res) {
+            outError = PQerrorMessage(conn_);
+            PQclear(res);
+        }
+        PQclear(PQexec(conn_, "ROLLBACK"));
+        outStatus = status;
+        return true;
+    };
+
+    PQclear(PQexec(conn_, "BEGIN"));
+    // Theirs, in the garage, this faction's: locked, then sold.
+    const char* vehParams[3] = {id.c_str(), uid.c_str(), bankFaction};
+    PGresult* vehRes = exec(
+        "UPDATE vehicles v SET status = 'sold', position = NULL "
+        "FROM players p WHERE v.id = $1::bigint AND p.id = v.owner_player_id AND p.uid = $2 "
+        "AND v.status = 'garaged' AND v.faction_scope = $3 RETURNING v.id, p.id",
+        3, vehParams);
+    if (PQresultStatus(vehRes) != PGRES_TUPLES_OK) return fail(vehRes, "ERROR");
+    if (PQntuples(vehRes) == 0) {
+        PQclear(vehRes);
+        return fail(nullptr, "NOT_YOURS");
+    }
+    std::string playerId = PQgetvalue(vehRes, 0, 1);
+    PQclear(vehRes);
+
+    // The money: into their bank (account made if it's missing).
+    const char* acctParams[2] = {playerId.c_str(), bankFaction};
+    PQclear(exec("INSERT INTO bank_accounts (player_id, faction, balance) VALUES ($1::bigint, $2, 0) "
+                 "ON CONFLICT (player_id, faction) DO NOTHING", 2, acctParams));
+    const char* payParams[5] = {playerId.c_str(), bankFaction, price.c_str(), token.c_str(), memo.c_str()};
+    PGresult* payRes = exec(
+        "INSERT INTO bank_transactions (account_id, type, amount, balance_after, memo, request_token, created_by) "
+        "SELECT b.id, 'payout', $3::bigint, b.balance + $3::bigint, NULLIF($5, ''), $4, $1::bigint "
+        "FROM bank_accounts b WHERE b.player_id = $1::bigint AND b.faction = $2",
+        5, payParams);
+    if (PQresultStatus(payRes) != PGRES_COMMAND_OK) {
+        bool duplicate = IsUniqueViolation(payRes);
+        return fail(payRes, duplicate ? "DUPLICATE" : "ERROR");
+    }
+    PQclear(payRes);
+    const char* logParams[3] = {id.c_str(), playerId.c_str(), price.c_str()};
+    PGresult* logRes = exec("INSERT INTO vehicle_logs (vehicle_id, player_id, action, amount) VALUES ($1::bigint, $2::bigint, 'sell', $3::bigint)",
+                            3, logParams);
+    if (PQresultStatus(logRes) != PGRES_COMMAND_OK) return fail(logRes, "ERROR");
+    PQclear(logRes);
+
+    PGresult* commitRes = PQexec(conn_, "COMMIT");
+    bool committed = PQresultStatus(commitRes) == PGRES_COMMAND_OK;
+    if (!committed) outError = PQerrorMessage(conn_);
+    PQclear(commitRes);
+    outStatus = committed ? "OK" : "ERROR";
+    return true;
 }
 
 bool Database::VehicleGet(const std::string& id, std::string& outResponse, std::string& outError) {
@@ -1362,6 +1434,31 @@ bool Database::Wanted(const std::string& op, const std::vector<std::string>& arg
 
 // Personal lockers (faction_lockers) -- police / EMS keep gear and items
 // at the station. Rows appear on the first save.
+bool Database::Evidence(const std::string& op, const std::vector<std::string>& args, std::string& outResponse,
+                        std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    if (op == "get") {
+        return QueryOne(conn_,
+            "SELECT COALESCE((SELECT json_build_array(gear, items, cash)::text FROM evidence_vault WHERE id = 1), '[[],[],0]')",
+            0, nullptr, outResponse, outError);
+    }
+    // set: gear, items, cash
+    const char* params[3] = {args[0].c_str(), args[1].c_str(), args[2].c_str()};
+    std::string ignored;
+    if (!QueryOne(conn_,
+            "INSERT INTO evidence_vault (id, gear, items, cash) VALUES (1, $1::jsonb, $2::jsonb, $3::bigint) "
+            "ON CONFLICT (id) DO UPDATE SET gear = EXCLUDED.gear, items = EXCLUDED.items, cash = EXCLUDED.cash, updated_at = now()",
+            3, params, ignored, outError)) {
+        return false;
+    }
+    outResponse = "OK";
+    return true;
+}
+
 bool Database::Locker(const std::string& op, const std::vector<std::string>& args, std::string& outResponse,
                       std::string& outError) {
     std::lock_guard<std::mutex> lock(mutex_);

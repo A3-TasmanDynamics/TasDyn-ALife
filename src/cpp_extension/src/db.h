@@ -97,6 +97,13 @@ public:
     bool VehicleLog(const std::string& id, const std::string& uid, const std::string& action,
                     const std::string& amount, std::string& outError);
     bool VehicleStatus(const std::string& id, const std::string& status, std::string& outError);
+    // Sells a garaged vehicle back: marks it sold (kept for its history) and
+    // pays price into the owner's bank (a 'payout', idempotent on token), in
+    // one transaction. outStatus "OK" / "NOT_YOURS" (not theirs, not in the
+    // garage, or another faction's) / "DUPLICATE" / "ERROR".
+    bool VehicleSell(const std::string& id, const std::string& uid, const std::string& faction,
+                     const std::string& price, const std::string& token, const std::string& memo,
+                     std::string& outStatus, std::string& outError);
 
     bool RecordCombatLog(const std::string& uid, const std::string& faction, const std::string& killer,
                          const std::string& weapon, const std::string& distance,
@@ -141,6 +148,11 @@ public:
     // Personal lockers (faction_lockers): ["get", uid, faction] -> the text
     // [gear, items] ([[],[]] if they have none yet); ["setGear" | "setItems",
     // uid, faction, json] -> "OK" (created on first save).
+    // The police evidence vault (ALife_fnc_evidence): one row of seized
+    // gear (locker gear format), virtual items and cash.
+    //   "get" -> [gear, items, cash] as JSON text;  "set": gearJson, itemsJson, cash
+    bool Evidence(const std::string& op, const std::vector<std::string>& args, std::string& outResponse,
+                  std::string& outError);
     bool Locker(const std::string& op, const std::vector<std::string>& args, std::string& outResponse,
                 std::string& outError);
 

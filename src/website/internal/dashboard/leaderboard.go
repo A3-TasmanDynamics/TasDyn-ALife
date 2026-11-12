@@ -49,7 +49,7 @@ func PublicLeaderboard(ctx context.Context, pool *pgxpool.Pool, youID int64, lim
 		       COALESCE(p.civ_cash, 0) + COALESCE(p.cop_cash, 0) + COALESCE(p.medic_cash, 0)
 		         + COALESCE((SELECT sum(balance) FROM bank_accounts b WHERE b.player_id = p.id), 0),
 		       (SELECT count(*) FROM houses h WHERE h.owner_player_id = p.id),
-		       (SELECT count(*) FROM vehicles v WHERE v.owner_player_id = p.id AND v.status <> 'destroyed'
+		       (SELECT count(*) FROM vehicles v WHERE v.owner_player_id = p.id AND v.status NOT IN ('destroyed', 'sold')
 		          AND COALESCE(v.faction_scope, 'civilian') = 'civilian'),
 		       COALESCE(p.civ_playtime_seconds, 0) + COALESCE(p.cop_playtime_seconds, 0) + COALESCE(p.medic_playtime_seconds, 0),
 		       COALESCE(p.cop_playtime_seconds, 0), COALESCE(p.medic_playtime_seconds, 0),
