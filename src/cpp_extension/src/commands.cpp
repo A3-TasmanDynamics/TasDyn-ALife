@@ -117,14 +117,17 @@ std::string HandleBank(Database& db, const std::vector<std::string>& args) {
     return status;
 }
 
-// args = [op, uid]  (op: start / end / reset; reset takes no uid)
+// args = [op, uid(, faction)]  (op: start / end / reset; reset takes no uid;
+// start may say which faction they joined as: civ / cop / medic)
 std::string HandleSession(Database& db, const std::vector<std::string>& args) {
     if (args.empty()) return "ERROR:expected [op, uid]";
     const std::string& op = args[0];
     std::string uid = args.size() > 1 ? args[1] : "";
     if (op != "reset" && !IsSteam64(uid)) return "ERROR:invalid uid";
+    std::string faction = args.size() > 2 ? args[2] : "";
+    if (!faction.empty() && faction != "civ" && faction != "cop" && faction != "medic") return "ERROR:invalid faction";
     std::string error;
-    if (!db.RecordSession(op, uid, error)) return "ERROR:" + error;
+    if (!db.RecordSession(op, uid, faction, error)) return "ERROR:" + error;
     return "OK";
 }
 

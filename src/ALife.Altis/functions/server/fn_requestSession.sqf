@@ -81,7 +81,7 @@ ALife_sessions set [_uid, _record];
 // They're online (player_sessions -- the website's online list). Once per
 // connection, not on every respawn.
 if (!(_uid in ALife_online)) then {
-    private _result = ["session", ["start", _uid]] call ALife_fnc_extension;
+    private _result = ["session", ["start", _uid, _faction]] call ALife_fnc_extension;
     if (_result == "OK") then { ALife_online set [_uid, true]; } else { diag_log format ["[ALife] session start for %1 failed: %2", _uid, _result]; };
 };
 

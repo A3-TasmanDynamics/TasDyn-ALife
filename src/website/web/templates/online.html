@@ -1,0 +1,55 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content mod-page">
+    <div>
+      <h1 class="page-title admin-title">Online Now</h1>
+      <p class="admin-sub">Who's in game right now, as which faction and for how long. Refreshes every minute.</p>
+    </div>
+
+    <section class="admin-stats" aria-label="Summary">
+      <div class="admin-stat"><div class="label">Online now</div><div class="value value-green">{{.Sum.Online}}</div>
+        <div class="sub">{{.Sum.Civ}} civ &middot; {{.Sum.Cop}} police &middot; {{.Sum.Medic}} EMS{{if .Sum.Unknown}} &middot; {{.Sum.Unknown}} unknown{{end}}</div></div>
+      <div class="admin-stat"><div class="label">Peak, last 24 h</div><div class="value">{{.Sum.Peak24}}</div>
+        <div class="sub">{{if .Sum.Peak24}}{{.Sum.PeakAt.Local.Format "2 Jan 15:04"}}{{else}}&mdash;{{end}}</div></div>
+      <div class="admin-stat"><div class="label">Players, last 24 h</div><div class="value">{{.Sum.Unique24}}</div></div>
+      <div class="admin-stat"><div class="label">Average session</div><div class="value">{{if .Sum.AvgSession}}{{$.Dur .Sum.AvgSession}}{{else}}&mdash;{{end}}</div>
+        <div class="sub">sessions that ended in the last 24 h</div></div>
+    </section>
+
+    <section class="card dash-card" aria-labelledby="on-list">
+      <div class="dash-card-head"><h2 id="on-list">In game</h2><span class="muted small">Longest on first</span></div>
+      {{if .Players}}<div class="on-row stafflog-th"><span>Player</span><span>Faction</span><span>On for</span><span>Cash</span><span>Bank</span><span>Status</span></div>{{end}}
+      {{range .Players}}
+      <a class="on-row" href="/admin/players?id={{.PlayerID}}">
+        <span class="strong ellipsis"><span class="dot dot-on"></span>{{.Name}}{{if .Gang}} <span class="muted small">&middot; {{.Gang}}</span>{{end}}</span>
+        <span><span class="on-fac on-fac-{{if .Faction}}{{.Faction}}{{else}}none{{end}}">{{$.FactionName .Faction}}</span>{{if .Level}} <span class="muted small">L{{.Level}}</span>{{end}}</span>
+        <span title="Since {{.Since.Local.Format "2 Jan 15:04"}}">{{$.Since .}}</span>
+        <span class="num">${{money .Cash}}</span>
+        <span class="num">${{money .Bank}}</span>
+        <span class="on-tags">
+          {{if not .Alive}}<span class="on-tag on-tag-down">Down</span>{{end}}
+          {{if .JailSecs}}<span class="on-tag on-tag-jail">Jailed</span>{{end}}
+          {{if .Bounty}}<span class="on-tag on-tag-wanted">Wanted ${{money .Bounty}}</span>{{end}}
+          {{if .OpenFlags}}<span class="on-tag on-tag-flag">{{.OpenFlags}} flag{{if ne .OpenFlags 1}}s{{end}}</span>{{end}}
+        </span>
+      </a>
+      {{else}}<p class="empty-state">Nobody is in game right now.</p>{{end}}
+    </section>
+
+    <section class="card dash-card" aria-labelledby="on-hist">
+      <div class="dash-card-head"><h2 id="on-hist">Players online</h2><span class="muted small">Last 24 hours, every 15 minutes</span></div>
+      <div class="on-chart">{{template "line_chart" (dict "C" .Chart "Label" "Players online over the last 24 hours" "Legend" false)}}</div>
+    </section>
+
+    <section class="card dash-card" aria-labelledby="on-left">
+      <div class="dash-card-head"><h2 id="on-left">Recently left</h2><span class="muted small">Last 2 hours</span></div>
+      {{range .Left}}
+      <a class="eco-flow eco-link" href="/admin/players?id={{.PlayerID}}"><span><span class="dot"></span>{{.Name}} <span class="muted small">&middot; {{$.FactionName .Faction}}</span></span><span class="muted small">{{$.Ago .At}} ago &middot; played {{$.Dur .Length}}</span></a>
+      {{else}}<p class="empty-state">Nobody has left in the last 2 hours.</p>{{end}}
+    </section>
+  </div>
+</div>
+<script src="/static/chart.js" defer></script>
+<script>setTimeout(function () { if (!document.hidden) location.reload(); else document.addEventListener("visibilitychange", function () { location.reload(); }, { once: true }); }, 60000);</script>
+{{end}}

@@ -412,6 +412,7 @@ func run() error {
 			r.Use(d.Auth.RequirePermission("players.view"))
 			r.Get("/admin/players", d.PlayerLookup)
 			r.Get("/admin/events", d.EventLog)
+			r.Get("/admin/online", d.OnlineNow)
 			r.Get("/admin/economy", d.Economy)
 			r.Get("/admin/gangs", d.GangsBoard)
 			r.Get("/admin/wanted", d.WantedBoard)

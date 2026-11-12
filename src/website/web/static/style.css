@@ -2876,3 +2876,21 @@ a.conn-row:hover { background: rgba(255, 255, 255, 0.03); }
 .conn-trade { grid-template-columns: minmax(0, 1.4fr) 110px 110px 130px 150px; font-variant-numeric: tabular-nums; }
 .conn-alias { grid-template-columns: minmax(0, 1fr) 140px 140px; }
 @media (max-width: 900px) { .conn-row, .conn-trade, .conn-alias { grid-template-columns: 1fr; gap: 2px; } .conn-row.stafflog-th { display: none; } }
+/* ---- Online now (/admin/online) ---- */
+.admin-stat .sub { font-size: 12px; color: var(--text-faint); margin-top: 4px; }
+.on-row { display: grid; grid-template-columns: minmax(0, 1.6fr) 120px 80px 100px 110px minmax(0, 1.4fr); gap: 12px; align-items: center; padding: 10px 20px; font-size: 13px; border-bottom: 1px solid var(--border-soft); color: var(--text); text-decoration: none; }
+a.on-row:hover { background: rgba(255, 255, 255, 0.03); }
+.on-row .num { font-variant-numeric: tabular-nums; }
+.on-fac { font-weight: 600; }
+.on-fac-civ { color: var(--text); }
+.on-fac-cop { color: #60a5fa; }
+.on-fac-medic { color: #f87171; }
+.on-fac-none { color: var(--text-faint); }
+.on-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.on-tag { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap; }
+.on-tag-wanted { color: var(--amber); border-color: rgba(245, 158, 11, 0.4); }
+.on-tag-flag { color: #fca5a5; border-color: rgba(239, 68, 68, 0.45); }
+.on-tag-jail { color: #93c5fd; border-color: rgba(59, 130, 246, 0.45); }
+.on-chart { padding: 8px 20px 16px; position: relative; }
+.lc-online { stroke: #22c55e; background: #22c55e; }
+@media (max-width: 900px) { .on-row { grid-template-columns: 1fr 1fr; gap: 4px 12px; } .on-row.stafflog-th { display: none; } }

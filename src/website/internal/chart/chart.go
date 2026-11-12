@@ -48,6 +48,16 @@ type Chart struct {
 // on the axis (amounts); otherwise the range hugs the data with 0 shown
 // if it's crossed (percentages).
 func Build(times []time.Time, series []Series, fmtY func(float64) string, fromZero bool) Chart {
+	return build(times, series, fmtY, fromZero, 0)
+}
+
+// BuildCounts is Build for whole numbers (players online): from zero, with
+// gridlines on whole steps only.
+func BuildCounts(times []time.Time, series []Series) Chart {
+	return build(times, series, Count, true, 1)
+}
+
+func build(times []time.Time, series []Series, fmtY func(float64) string, fromZero bool, minStep float64) Chart {
 	c := Chart{W: 720, H: 240, Left: 72, Right: 720 - 92, Top: 12, Bottom: 240 - 26, ZeroY: -1, Points: len(times)}
 	c.LabelX = c.Left - 8
 	if len(times) < 2 {
@@ -67,7 +77,10 @@ func Build(times []time.Time, series []Series, fmtY func(float64) string, fromZe
 	if hi == lo {
 		hi = lo + 1
 	}
-	step := niceStep((hi - lo) / 4)
+	step := math.Max(niceStep((hi-lo)/4), minStep)
+	if minStep > 0 {
+		step = math.Ceil(step)
+	}
 	lo = math.Floor(lo/step) * step
 	hi = math.Ceil(hi/step) * step
 	y := func(v float64) float64 { return c.Bottom - (v-lo)/(hi-lo)*(c.Bottom-c.Top) }
@@ -187,6 +200,9 @@ func Money(v float64) string {
 	}
 	return fmt.Sprintf("%s$%.0f", sign, a)
 }
+
+// Count formats a whole number.
+func Count(v float64) string { return fmt.Sprintf("%.0f", v) }
 
 // Percent formats a signed percentage: +4.5%, -12%, 0%.
 func Percent(v float64) string {

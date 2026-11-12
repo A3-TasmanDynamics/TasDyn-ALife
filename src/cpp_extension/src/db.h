@@ -66,7 +66,7 @@ public:
     // Who's online (player_sessions, read by the website): op "start" opens
     // a session for uid (closing any left open), "end" closes it, "reset"
     // closes every open session (server start).
-    bool RecordSession(const std::string& op, const std::string& uid, std::string& outError);
+    bool RecordSession(const std::string& op, const std::string& uid, const std::string& faction, std::string& outError);
 
     // Dynamic market (docs/DATA_CONTRACT.md "market"): MarketLoad returns
     // every saved price as [["item","price"],...]; MarketSet upserts one;
