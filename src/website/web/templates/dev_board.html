@@ -23,6 +23,7 @@
 <div class="admin-shell">
   {{template "admin_sidebar" .}}
   <div class="admin-content dev-board-page">
+    {{template "admin_header" .}}
     <div class="dev-head">
       <div>
         <h1 class="page-title admin-title">Project Board</h1>
@@ -263,6 +264,5 @@
     {{end}}
   </div>
 </div>
-<script src="/static/admin.js" defer></script>
 <script src="/static/dev.js" defer></script>
 {{end}}

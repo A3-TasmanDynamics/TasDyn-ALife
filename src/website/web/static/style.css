@@ -521,9 +521,7 @@ a.admin-nav-item:hover { background: rgba(255, 255, 255, 0.04); color: var(--tex
 .admin-table-card .muted { color: var(--text-faint); }
 
 @media (max-width: 900px) {
-  .admin-shell { flex-direction: column; }
-  .admin-sidebar { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--border-soft); }
-  .admin-content { padding: 24px 16px 48px; }
+  .admin-content { padding: 20px 16px 48px; }
   .admin-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
@@ -2953,3 +2951,41 @@ a.attn-row:hover { background: rgba(255, 255, 255, 0.03); }
 .spark-dot { stroke: var(--bg-elevated); stroke-width: 1.5; }
 .watch-dash { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); }
 @media (max-width: 600px) { .attn-row { grid-template-columns: 1fr 20px; } .attn-level { grid-column: 1 / -1; } .spark { width: 84px; } }
+/* ---- Admin navigation: collapsible sections, header strip, phone drawer ---- */
+.admin-nav { display: flex; flex-direction: column; gap: 2px; }
+.admin-nav-section > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; cursor: pointer; border-radius: 6px; user-select: none; }
+.admin-nav-section > summary::-webkit-details-marker { display: none; }
+.admin-nav-section > summary:hover { color: var(--text); }
+.admin-nav-section > summary:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
+.admin-nav-chev { transition: transform 0.15s ease; opacity: 0.7; }
+.admin-nav-section:not([open]) .admin-nav-chev { transform: rotate(-90deg); }
+.admin-nav-section { display: flex; flex-direction: column; gap: 1px; }
+
+.admin-header { display: flex; flex-direction: column; gap: 10px; margin: -8px 0 20px; }
+.admin-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-faint); }
+.admin-crumbs a { color: var(--text-dim); text-decoration: none; }
+.admin-crumbs a:hover { color: var(--text); text-decoration: underline; }
+.admin-crumbs [aria-current] { color: var(--text-dim); font-weight: 600; }
+.admin-tabs { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--border-soft); scrollbar-width: none; }
+.admin-tabs::-webkit-scrollbar { display: none; }
+.admin-tab { display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--text-dim); text-decoration: none; font-size: 13.5px; font-weight: 600; white-space: nowrap; }
+.admin-tab:hover { color: var(--text); }
+.admin-tab.active { color: var(--amber-bright); border-bottom-color: var(--amber); }
+.admin-tab .admin-nav-count { margin-left: 0; }
+
+.admin-mobilebar { display: none; }
+.admin-nav-backdrop { display: none; }
+@media (max-width: 900px) {
+  .admin-shell { flex-direction: column; }
+  .admin-mobilebar { display: flex; align-items: center; gap: 8px; position: sticky; top: 0; z-index: 30; height: 52px; padding: 0 8px; background: #060a14; border-bottom: 1px solid var(--border-soft); }
+  .admin-mobilebar-home { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--text); text-decoration: none; font-weight: 700; font-size: 15px; }
+  .admin-mobilebar-home span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .admin-mobilebar-btn { width: 40px; height: 40px; display: inline-grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--text); cursor: pointer; }
+  .admin-mobilebar-btn:hover { background: rgba(255, 255, 255, 0.06); }
+  .admin-sidebar { position: fixed; z-index: 50; top: 0; left: 0; bottom: 0; width: min(300px, 86vw); height: 100%; transform: translateX(-102%); transition: transform 0.2s ease; box-shadow: 0 0 40px rgba(0, 0, 0, 0.5); }
+  .nav-open .admin-sidebar { transform: none; }
+  .nav-open .admin-nav-backdrop { display: block; position: fixed; inset: 0; z-index: 40; background: rgba(3, 6, 12, 0.6); }
+  .nav-open { overflow: hidden; }
+  .admin-header { margin-top: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .admin-sidebar, .admin-nav-chev { transition: none; } }

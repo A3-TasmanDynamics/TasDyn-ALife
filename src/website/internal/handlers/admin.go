@@ -43,6 +43,13 @@ type AdminShell struct {
 	// Perms are the viewer's permission keys: the sidebar only shows
 	// pages they can open.
 	Perms map[string]bool
+
+	// Navigation (nav.go): the sidebar's sections, and the current page's
+	// section, page and sibling tabs for the header.
+	Nav        []NavSection
+	NavSection *NavSection
+	NavPage    *NavItem
+	NavTabs    []NavItem
 }
 
 // adminShell looks up the signed-in staff member's rank display name for
@@ -66,6 +73,7 @@ func (d *Deps) adminShell(r *http.Request, tab string) AdminShell {
 		WHERE p.id = $1
 	`, sess.PlayerID).Scan(&s.StaffRank, &s.OpenCases, &s.ActiveBans, &s.OpenFlags, &s.OpenApps, &s.OpenTickets, &s.UnassignedTickets)
 	s.Perms, _ = auth.Effective(r.Context(), d.Pool, sess.PlayerID)
+	buildNav(&s, sess)
 	return s
 }
 

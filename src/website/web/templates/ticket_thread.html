@@ -3,6 +3,7 @@
 <div class="admin-shell">
   {{template "admin_sidebar" .}}
   <div class="admin-content">
+    {{template "admin_header" .}}
     <a class="cmd-back" href="/admin/tickets">&larr; Tickets</a>
     <h1 class="page-title admin-title">#{{.Ticket.ID}} {{.Ticket.Subject}}</h1>
     {{template "ticket_body" .}}

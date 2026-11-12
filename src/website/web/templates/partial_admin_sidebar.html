@@ -1,73 +1,35 @@
 {{define "admin_sidebar"}}
-{{/* Section order and names follow the layout plan canvas. Pages that
-     aren't built yet are shown as "Soon" rather than dead links. */}}
-<nav class="admin-sidebar" aria-label="Admin sections">
+{{/* The admin panel's sidebar. Sections, pages, permissions and badges come
+     from handlers/nav.go (.Nav); sections collapse (remembered per browser,
+     /static/panel.js) except the one holding the current page. On phones the
+     sidebar is a drawer opened from the top bar. */}}
+<header class="admin-mobilebar">
+  <button class="admin-mobilebar-btn" type="button" data-nav-toggle aria-controls="admin-sidebar" aria-expanded="false" aria-label="Open the menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  <a href="/admin" class="admin-mobilebar-home"><img src="/static/brand/alife-a.svg" alt="" width="15" height="20" /><span>{{if .NavPage}}{{.NavPage.Label}}{{else}}Admin Panel{{end}}</span></a>
+  {{if .Session.AdminPanelAccess}}<button class="admin-mobilebar-btn" type="button" data-qs-open aria-label="Search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>{{else}}<span class="admin-mobilebar-btn" aria-hidden="true"></span>{{end}}
+</header>
+<div class="admin-nav-backdrop" data-nav-close hidden></div>
+<nav class="admin-sidebar" id="admin-sidebar" aria-label="Admin sections">
   <div class="admin-sidebar-head">
     <a href="/admin" class="admin-sidebar-home"><img class="admin-sidebar-mark" src="/static/brand/alife-a.svg" alt="" width="19" height="25" /><span>Admin Panel</span></a>
     <a class="bell" href="/notifications" aria-label="Notifications{{if .Session.Unread}}, {{.Session.Unread}} unread{{end}}"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>{{if .Session.Unread}}<span class="bell-count">{{.Session.Unread}}</span>{{end}}</a>
   </div>
-  {{if .Session.AdminPanelAccess}}
-  {{if index .Perms "players.view"}}<form class="admin-sidebar-search" method="get" action="/admin/players" role="search">
+  {{if and .Session.AdminPanelAccess (index .Perms "players.view")}}<form class="admin-sidebar-search" method="get" action="/admin/players" role="search">
     <label>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
       <input name="q" aria-label="Search players" placeholder="Search players">
     </label>
   </form>{{end}}
 
+  <div class="admin-nav">
+  {{range .Nav}}
+  <details class="admin-nav-section" data-nav-section="{{.Key}}" open{{if .Active}} data-active{{end}}>
+    <summary class="admin-nav-group">{{.Name}}<svg class="admin-nav-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>
+    {{range .Items}}<a href="{{.URL}}" class="admin-nav-item{{if .Active}} active{{end}}"{{if .Active}} aria-current="page"{{end}}>{{.Label}}{{if .New}} <span class="admin-nav-new">NEW</span>{{end}}{{if .Count}}<span class="admin-nav-count{{if .Hot}} admin-nav-count-hot{{end}}">{{.Count}}</span>{{end}}</a>
+    {{end}}
+  </details>
   {{end}}
-
-  {{if .Session.AdminPanelAccess}}
-  <div class="admin-nav-group">Overview</div>
-  <a href="/admin" class="admin-nav-item {{if eq .AdminTab "dashboard"}}active{{end}}" {{if eq .AdminTab "dashboard"}}aria-current="page"{{end}}>Dashboard</a>
-  {{if index .Perms "announce.post"}}<a href="/admin/devlog/new" class="admin-nav-item {{if eq .AdminTab "devlog"}}active{{end}}" {{if eq .AdminTab "devlog"}}aria-current="page"{{end}}>New Devlog Post</a>{{end}}
-
-  {{if or (index .Perms "cases.view") (index .Perms "anticheat.review")}}<div class="admin-nav-group">Moderation</div>{{end}}
-  {{if index .Perms "cases.view"}}<a href="/admin/cases" class="admin-nav-item {{if eq .AdminTab "cases"}}active{{end}}" {{if eq .AdminTab "cases"}}aria-current="page"{{end}}>Cases{{if .OpenCases}}<span class="admin-nav-count admin-nav-count-hot">{{.OpenCases}}</span>{{end}}</a>{{end}}
-  {{if index .Perms "cases.view"}}<a href="/admin/bans" class="admin-nav-item {{if eq .AdminTab "bans"}}active{{end}}" {{if eq .AdminTab "bans"}}aria-current="page"{{end}}>Bans{{if .ActiveBans}}<span class="admin-nav-count">{{.ActiveBans}}</span>{{end}}</a>{{end}}
-  {{if index .Perms "anticheat.review"}}<a href="/admin/anticheat" class="admin-nav-item {{if eq .AdminTab "anticheat"}}active{{end}}" {{if eq .AdminTab "anticheat"}}aria-current="page"{{end}}>Anti-Cheat Flags{{if .OpenFlags}}<span class="admin-nav-count admin-nav-count-hot">{{.OpenFlags}}</span>{{end}}</a>{{end}}
-
-  {{end}}
-
-  {{if .Session.SupportPanelAccess}}
-  <div class="admin-nav-group">Support</div>
-  <a href="/admin/support" class="admin-nav-item {{if eq .AdminTab "support"}}active{{end}}" {{if eq .AdminTab "support"}}aria-current="page"{{end}}>Support Overview</a>
-  <a href="/admin/tickets" class="admin-nav-item {{if eq .AdminTab "tickets"}}active{{end}}" {{if eq .AdminTab "tickets"}}aria-current="page"{{end}}>Tickets{{if .UnassignedTickets}}<span class="admin-nav-count admin-nav-count-hot" title="Unassigned">{{.UnassignedTickets}}</span>{{else if .OpenTickets}}<span class="admin-nav-count">{{.OpenTickets}}</span>{{end}}</a>
-  {{end}}
-
-  {{if .Session.AdminPanelAccess}}
-  {{if index .Perms "players.view"}}<div class="admin-nav-group">Players</div>{{end}}
-  {{if index .Perms "players.view"}}<a href="/admin/players" class="admin-nav-item {{if eq .AdminTab "players"}}active{{end}}" {{if eq .AdminTab "players"}}aria-current="page"{{end}}>Player Lookup</a>{{end}}
-  {{if index .Perms "players.view"}}<a href="/admin/online" class="admin-nav-item {{if eq .AdminTab "online"}}active{{end}}" {{if eq .AdminTab "online"}}aria-current="page"{{end}}>Online Now</a>{{end}}
-  {{if index .Perms "players.view"}}<a href="/admin/watchlist" class="admin-nav-item {{if eq .AdminTab "watchlist"}}active{{end}}" {{if eq .AdminTab "watchlist"}}aria-current="page"{{end}}>Watchlist</a>{{end}}
-  {{if index .Perms "players.view"}}<a href="/admin/events" class="admin-nav-item {{if eq .AdminTab "events"}}active{{end}}" {{if eq .AdminTab "events"}}aria-current="page"{{end}}>Event Log</a>{{end}}
-  {{if index .Perms "players.view"}}<a href="/admin/economy" class="admin-nav-item {{if eq .AdminTab "economy"}}active{{end}}" {{if eq .AdminTab "economy"}}aria-current="page"{{end}}>Economy &amp; Crime</a>{{end}}
-  {{if index .Perms "players.view"}}<a href="/admin/gangs" class="admin-nav-item {{if eq .AdminTab "gangs"}}active{{end}}" {{if eq .AdminTab "gangs"}}aria-current="page"{{end}}>Gangs</a>{{end}}
-  {{if index .Perms "players.view"}}<a href="/admin/wanted" class="admin-nav-item {{if eq .AdminTab "wanted"}}active{{end}}" {{if eq .AdminTab "wanted"}}aria-current="page"{{end}}>Wanted &amp; Jail</a>{{end}}
-  {{if index .Perms "players.vehicles"}}<a href="/admin/vehicles" class="admin-nav-item {{if eq .AdminTab "vehicles"}}active{{end}}" {{if eq .AdminTab "vehicles"}}aria-current="page"{{end}}>Vehicle Lookup</a>{{end}}
-  {{if index .Perms "players.view"}}<a href="/admin/houses" class="admin-nav-item {{if eq .AdminTab "houses"}}active{{end}}" {{if eq .AdminTab "houses"}}aria-current="page"{{end}}>Houses &amp; Garages</a>{{end}}
-
-  <div class="admin-nav-group">Staff</div>
-  {{if index .Perms "staff.view"}}<a href="/admin/staff" class="admin-nav-item {{if eq .AdminTab "staff"}}active{{end}}" {{if eq .AdminTab "staff"}}aria-current="page"{{end}}>Staff Directory</a>{{end}}
-  <a href="/admin/roles" class="admin-nav-item {{if eq .AdminTab "roles"}}active{{end}}" {{if eq .AdminTab "roles"}}aria-current="page"{{end}}>Roles &amp; Permissions</a>
-  {{if index .Perms "roles.manage"}}<a href="/admin/role-sync" class="admin-nav-item {{if eq .AdminTab "rolesync"}}active{{end}}" {{if eq .AdminTab "rolesync"}}aria-current="page"{{end}}>Discord Role Sync</a>{{end}}
-  {{if index .Perms "applications.view"}}<a href="/admin/applications" class="admin-nav-item {{if eq .AdminTab "applications"}}active{{end}}" {{if eq .AdminTab "applications"}}aria-current="page"{{end}}>Applications{{if .OpenApps}}<span class="admin-nav-count admin-nav-count-hot">{{.OpenApps}}</span>{{end}}</a>{{end}}
-  <a href="/admin/staff-log" class="admin-nav-item {{if eq .AdminTab "stafflog"}}active{{end}}" {{if eq .AdminTab "stafflog"}}aria-current="page"{{end}}>Staff Log</a>
-
-  {{if or (index .Perms "server.logs") (index .Perms "database.query") (index .Perms "players.compensate") (index .Perms "announce.post") (index .Perms "rules.edit") (index .Perms "bot.admin")}}<div class="admin-nav-group">Server</div>{{end}}
-  {{if index .Perms "server.logs"}}<a href="/admin/server" class="admin-nav-item {{if eq .AdminTab "server"}}active{{end}}" {{if eq .AdminTab "server"}}aria-current="page"{{end}}>Server Control</a>{{end}}
-  {{if index .Perms "database.query"}}<a href="/admin/database" class="admin-nav-item {{if eq .AdminTab "database"}}active{{end}}" {{if eq .AdminTab "database"}}aria-current="page"{{end}}>Database <span class="admin-nav-new">NEW</span></a>{{end}}
-  {{if index .Perms "players.compensate"}}<a href="/admin/prices" class="admin-nav-item {{if eq .AdminTab "prices"}}active{{end}}" {{if eq .AdminTab "prices"}}aria-current="page"{{end}}>Item Prices</a>{{end}}
-  {{if index .Perms "announce.post"}}<a href="/admin/notices" class="admin-nav-item {{if eq .AdminTab "notices"}}active{{end}}" {{if eq .AdminTab "notices"}}aria-current="page"{{end}}>Essential Notices</a>{{end}}
-  {{if index .Perms "rules.edit"}}<a href="/admin/rules" class="admin-nav-item {{if eq .AdminTab "rules"}}active{{end}}" {{if eq .AdminTab "rules"}}aria-current="page"{{end}}>Server Rules</a>{{end}}
-  {{if index .Perms "bot.admin"}}<a href="/admin/discord" class="admin-nav-item {{if eq .AdminTab "discord"}}active{{end}}" {{if eq .AdminTab "discord"}}aria-current="page"{{end}}>Discord Bot</a>{{end}}
-  {{end}}
-
-  {{if index .Perms "dev.tools"}}
-  <div class="admin-nav-group">Development</div>
-  <a href="/admin/dev" class="admin-nav-item {{if eq .AdminTab "dev-health"}}active{{end}}" {{if eq .AdminTab "dev-health"}}aria-current="page"{{end}}>System Health</a>
-  <a href="/admin/dev/logs" class="admin-nav-item {{if eq .AdminTab "dev-logs"}}active{{end}}" {{if eq .AdminTab "dev-logs"}}aria-current="page"{{end}}>Website Logs</a>
-  <a href="/admin/dev/board" class="admin-nav-item {{if eq .AdminTab "dev-board"}}active{{end}}" {{if eq .AdminTab "dev-board"}}aria-current="page"{{end}}>Project Board</a>
-  {{end}}
+  </div>
 
   <div class="admin-sidebar-foot">
     <div class="admin-sidebar-foot-label">Signed in as</div>
@@ -78,4 +40,19 @@
     </div>
   </div>
 </nav>
+{{end}}
+
+{{/* The strip at the top of every admin page: where you are (breadcrumb)
+     and, for sections drawn as tabs, the section's other pages. */}}
+{{define "admin_header"}}
+{{if .NavPage}}
+<div class="admin-header">
+  <nav class="admin-crumbs" aria-label="Breadcrumb"><a href="/admin">Admin</a><span aria-hidden="true">/</span>{{with .NavSection}}{{if ne .Key "overview"}}<a href="{{(index .Items 0).URL}}">{{.Name}}</a><span aria-hidden="true">/</span>{{end}}{{end}}<span aria-current="page">{{.NavPage.Label}}</span></nav>
+  {{if .NavTabs}}
+  <nav class="admin-tabs" aria-label="{{.NavSection.Name}} pages">
+    {{range .NavTabs}}<a href="{{.URL}}" class="admin-tab{{if .Active}} active{{end}}"{{if .Active}} aria-current="page"{{end}}>{{.Label}}{{if .Count}}<span class="admin-nav-count{{if .Hot}} admin-nav-count-hot{{end}}">{{.Count}}</span>{{end}}</a>{{end}}
+  </nav>
+  {{end}}
+</div>
+{{end}}
 {{end}}

@@ -3,6 +3,7 @@
   {{template "admin_sidebar" .}}
   {{$c := .Case}}
   <div class="admin-content mod-page mod-case">
+    {{template "admin_header" .}}
     <div class="mod-case-main">
       <a class="mod-back" href="/admin/cases">&larr; All cases</a>
       <div class="mod-case-title">
@@ -160,5 +161,4 @@
     {{end}}
   </div>
 </div>
-<script src="/static/admin.js" defer></script>
 {{end}}

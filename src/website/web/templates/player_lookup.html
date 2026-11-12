@@ -2,6 +2,7 @@
 <div class="admin-shell">
   {{template "admin_sidebar" .}}
   <div class="admin-content lookup-page">
+    {{template "admin_header" .}}
     <section class="lookup-search" aria-label="Search">
       <h1 class="page-title admin-title">Player Lookup</h1>
       <p class="admin-sub">Name, past names, Steam64, BattlEye GUID or player ID.</p>
@@ -417,5 +418,4 @@
     </section>
   </div>
 </div>
-<script src="/static/admin.js" defer></script>
 {{end}}

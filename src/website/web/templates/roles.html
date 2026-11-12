@@ -2,6 +2,7 @@
 <div class="admin-shell">
   {{template "admin_sidebar" .}}
   <div class="admin-content roles-page">
+    {{template "admin_header" .}}
     <div class="roles-head">
       <div>
         <h1 class="page-title admin-title">Roles &amp; Permissions</h1>
@@ -134,5 +135,4 @@
     {{end}}
   </div>
 </div>
-<script src="/static/admin.js" defer></script>
 {{end}}

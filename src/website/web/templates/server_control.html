@@ -2,6 +2,7 @@
 <div class="admin-shell">
   {{template "admin_sidebar" .}}
   <div class="admin-content mod-page">
+    {{template "admin_header" .}}
     <div>
       <h1 class="page-title admin-title">Server control</h1>
       <p class="admin-sub">Start, stop and restart the game server, and read its live log. Every action goes through server_manager on the game host and is written to the Staff Log with your reason.</p>
@@ -94,6 +95,5 @@ SERVER_MANAGER_TOKEN=&lt;ControlAPIToken&gt;</pre>
     {{end}}
   </div>
 </div>
-<script src="/static/admin.js" defer></script>
 <script src="/static/server.js" defer></script>
 {{end}}
