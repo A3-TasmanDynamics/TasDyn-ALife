@@ -32,13 +32,13 @@ func TestBuildNav(t *testing.T) {
 			t.Errorf("moderator shouldn't see %s", not)
 		}
 	}
-	if s.Section == nil || s.Section.Key != "moderation" || !s.Section.Active || s.Page == nil || s.Page.Label != "Anti-Cheat Flags" {
-		t.Fatalf("current: %+v %+v", s.Section, s.Page)
+	if s.NavSection == nil || s.NavSection.Key != "moderation" || !s.NavSection.Active || s.NavPage == nil || s.NavPage.Label != "Anti-Cheat Flags" {
+		t.Fatalf("current: %+v %+v", s.NavSection, s.NavPage)
 	}
-	if len(s.Tabs) != 4 {
-		t.Errorf("moderation tabs: %d", len(s.Tabs))
+	if len(s.NavTabs) != 4 {
+		t.Errorf("moderation tabs: %d", len(s.NavTabs))
 	}
-	for _, it := range s.Tabs {
+	for _, it := range s.NavTabs {
 		if it.Key == "anticheat" && (it.Count != 3 || !it.Hot || !it.Active) {
 			t.Errorf("flags tab: %+v", it)
 		}
@@ -47,12 +47,12 @@ func TestBuildNav(t *testing.T) {
 	// A section that isn't tabbed: no tabs; a page in no section: no header.
 	s = AdminShell{AdminTab: "server", Perms: map[string]bool{"server.logs": true}}
 	buildNav(&s, &auth.Session{AdminPanelAccess: true})
-	if s.Page == nil || s.Tabs != nil {
-		t.Errorf("server: page %v tabs %v", s.Page, s.Tabs)
+	if s.NavPage == nil || s.NavTabs != nil {
+		t.Errorf("server: page %v tabs %v", s.NavPage, s.NavTabs)
 	}
 	s = AdminShell{AdminTab: "nowhere"}
 	buildNav(&s, &auth.Session{AdminPanelAccess: true})
-	if s.Page != nil || s.Section != nil {
+	if s.NavPage != nil || s.NavSection != nil {
 		t.Error("unknown tab matched a page")
 	}
 

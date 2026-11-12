@@ -46,10 +46,10 @@ type AdminShell struct {
 
 	// Navigation (nav.go): the sidebar's sections, and the current page's
 	// section, page and sibling tabs for the header.
-	Nav     []NavSection
-	Section *NavSection
-	Page    *NavItem
-	Tabs    []NavItem
+	Nav        []NavSection
+	NavSection *NavSection
+	NavPage    *NavItem
+	NavTabs    []NavItem
 }
 
 // adminShell looks up the signed-in staff member's rank display name for
