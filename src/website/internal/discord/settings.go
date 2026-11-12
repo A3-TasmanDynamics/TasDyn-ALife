@@ -43,6 +43,8 @@ const (
 	ToggleAlertFlags    = "toggle.alert_flags"
 	ToggleAlertVault    = "toggle.alert_vault"
 	NumberAlertMoney    = "number.alert_money"
+	ToggleAlertWatch    = "toggle.alert_watch"
+	NumberAlertWatch    = "number.alert_watch_money"
 
 	// Internal state, not shown on the settings page: where the bot's own
 	// long-lived messages are, as "channelID/messageID", so they're edited
@@ -63,6 +65,8 @@ var SettingDefs = []SettingDef{
 	{ToggleAlertFlags, "Alert: high-confidence anti-cheat flags", "Post each new high-confidence flag (dupes, cheat states, gear no shop gives...) to #staff-alerts.", "toggle", "on"},
 	{ToggleAlertVault, "Alert: evidence vault break-ins", "Post when someone breaks into the evidence building or vault, and when it's robbed.", "toggle", "on"},
 	{NumberAlertMoney, "Alert: money moves of at least ($)", "A bank transfer, cash handed over, a sale or a robbery of this much or more in one go is posted to #staff-alerts. 0 turns it off.", "number", "500000"},
+	{ToggleAlertWatch, "Alert: watched players join", "Post when a player on the watchlist joins the game.", "toggle", "on"},
+	{NumberAlertWatch, "Alert: watched players' money moves of at least ($)", "A lower bar for players on the watchlist: a transfer, cash handed over, a sale or a robbery of this much or more is posted. 0 turns it off.", "number", "25000"},
 }
 
 func settingDef(key string) (SettingDef, bool) {

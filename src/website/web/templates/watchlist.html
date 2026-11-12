@@ -1,0 +1,50 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content mod-page">
+    <div>
+      <h1 class="page-title admin-title">Watchlist</h1>
+      <p class="admin-sub">Players staff are keeping an eye on. They're tagged across the panel, and #staff-alerts gets a line when one joins or moves money (Admin &rarr; Discord Bot).</p>
+    </div>
+
+    <section class="admin-stats" aria-label="Summary">
+      <div class="admin-stat"><div class="label">Watched players</div><div class="value">{{.Total}}</div></div>
+      <div class="admin-stat"><div class="label">Online now</div><div class="value {{if .Online}}value-green{{end}}">{{.Online}}</div></div>
+    </section>
+
+    {{if .CanEdit}}
+    <form class="card watch-add" method="post" action="/admin/watchlist/add">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      <div class="field"><label for="watch-who">Player</label><input id="watch-who" name="who" required placeholder="Steam ID, player # or exact name"></div>
+      <div class="field watch-add-reason"><label for="watch-why">Why</label><input id="watch-why" name="reason" maxlength="500" required placeholder="e.g. Suspected duping, see case #12"></div>
+      <button class="btn btn-primary" type="submit">Add to watchlist</button>
+    </form>
+    {{end}}
+
+    <form class="stafflog-filters" method="get" action="/admin/watchlist">
+      <label class="search-box"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input name="q" value="{{.Q}}" aria-label="Player, Steam ID or reason" placeholder="Player, Steam ID or reason"></label>
+      <button class="btn" type="submit">Search</button>
+      {{if .Q}}<a class="btn" href="/admin/watchlist">Clear</a>{{end}}
+    </form>
+
+    <section class="card dash-card" aria-labelledby="w-list">
+      <div class="dash-card-head"><h2 id="w-list">Watched</h2><span class="muted small">Online first, then newest</span></div>
+      {{if .Entries}}<div class="watch-row stafflog-th"><span>Player</span><span>Why</span><span>Now</span><span>Last 7 days</span><span></span></div>{{end}}
+      {{range .Entries}}
+      <div class="watch-row">
+        <span class="ellipsis"><a class="strong" href="/admin/players?id={{.PlayerID}}"><span class="dot {{if .Online}}dot-on{{end}}" title="{{if .Online}}Online{{else}}Offline{{end}}"></span>{{.Name}}</a><br><span class="muted small">{{if .Online}}online now{{else}}{{$.Ago .LastSeen}}{{end}}</span></span>
+        <span>{{.Reason}}<br><span class="muted small">{{if .AddedBy}}{{.AddedBy}}, {{end}}{{.AddedAt.Format "2 Jan 2006"}}{{if .FlagID}} &middot; <a href="/admin/anticheat?flag={{.FlagID}}">flag #{{.FlagID}}</a>{{end}}</span></span>
+        <span class="on-tags">
+          {{if .Bounty}}<span class="on-tag on-tag-wanted">Wanted ${{money .Bounty}}</span>{{end}}
+          {{if .OpenFlags}}<a class="on-tag on-tag-flag" href="/admin/anticheat?q={{.UID}}">{{.OpenFlags}} open flag{{if ne .OpenFlags 1}}s{{end}}</a>{{end}}
+          {{if not (or .Bounty .OpenFlags)}}<span class="muted small">&mdash;</span>{{end}}
+        </span>
+        <span><a href="/admin/players?id={{.PlayerID}}&tab=events">{{.Events7d}} event{{if ne .Events7d 1}}s{{end}}</a></span>
+        <span class="watch-actions">{{if $.CanEdit}}<form method="post" action="/admin/watchlist/{{.PlayerID}}/remove"><input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><button class="btn btn-sm" type="submit" onclick="return confirm('Take {{.Name}} off the watchlist?')">Remove</button></form>{{end}}</span>
+      </div>
+      {{else}}<p class="empty-state">{{if $.Q}}Nobody on the watchlist matches "{{$.Q}}".{{else}}Nobody is on the watchlist. Add a player here, from Player Lookup, or by reviewing an anti-cheat flag as "watch".{{end}}</p>{{end}}
+    </section>
+  </div>
+</div>
+{{end}}

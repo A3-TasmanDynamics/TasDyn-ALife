@@ -62,6 +62,22 @@ func TestFlagFiltersAndSummary(t *testing.T) {
 	if err := ReviewFlag(ctx, pool, actor, f3, "dismiss", "lag"); err != nil {
 		t.Fatal(err)
 	}
+	// Watching from a flag puts the player on the watchlist, once.
+	var watchFlag int64
+	var watchReason string
+	if err := pool.QueryRow(ctx, `SELECT COALESCE(flag_id, 0), reason FROM player_watchlist WHERE player_id = $1`, a).Scan(&watchFlag, &watchReason); err != nil || watchFlag != f2 {
+		t.Errorf("watchlist after a watch review: flag %d, %q, %v", watchFlag, watchReason, err)
+	}
+	if err := ReviewFlag(ctx, pool, actor, f1, "watch", "again"); err != nil {
+		t.Fatal(err)
+	}
+	pool.QueryRow(ctx, `SELECT COALESCE(flag_id, 0) FROM player_watchlist WHERE player_id = $1`, a).Scan(&watchFlag)
+	if watchFlag != f2 {
+		t.Errorf("a second watch review replaced the watchlist entry (flag %d)", watchFlag)
+	}
+	if err := ReviewFlag(ctx, pool, actor, f1, "", ""); err != nil {
+		t.Fatal(err)
+	}
 
 	count := func(what string, f FlagFilter, want int) []Flag {
 		t.Helper()

@@ -28,6 +28,7 @@
         <span class="num">${{money .Cash}}</span>
         <span class="num">${{money .Bank}}</span>
         <span class="on-tags">
+          {{with $.WatchReason .PlayerID}}<span class="on-tag on-tag-watch" title="{{.}}">Watched</span>{{end}}
           {{if not .Alive}}<span class="on-tag on-tag-down">Down</span>{{end}}
           {{if .JailSecs}}<span class="on-tag on-tag-jail">Jailed</span>{{end}}
           {{if .Bounty}}<span class="on-tag on-tag-wanted">Wanted ${{money .Bounty}}</span>{{end}}
