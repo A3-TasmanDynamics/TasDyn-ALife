@@ -15,7 +15,7 @@
       <div class="admin-stat"><div class="label">Most common crime</div><div class="value value-text-sm">{{with .Board.ByCrime}}{{(index . 0).Name}}{{else}}&mdash;{{end}}</div></div>
     </section>
 
-    <form class="stafflog-filters" method="get" action="/admin/wanted">
+    <form class="filterbar" method="get" action="/admin/wanted">
       <label class="search-box"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input name="q" value="{{.Q}}" aria-label="Player, Steam ID or gang" placeholder="Player, Steam ID or gang"></label>
       <button class="btn" type="submit">Search</button>
@@ -26,15 +26,15 @@
       <div class="dash-col">
         <section class="card dash-card" aria-labelledby="w-list">
           <div class="dash-card-head"><h2 id="w-list">Wanted</h2><span class="muted small">Biggest bounty first</span><a class="dash-link" href="/admin/events?cat=crime">Crime events &rarr;</a></div>
-          {{if .Board.List}}<div class="wanted-row stafflog-th"><span>Player</span><span>Crimes</span><span>Bounty</span><span>Wanted since</span></div>{{end}}
+          {{if .Board.List}}<div class="lrow wanted-row lrow-head"><span>Player</span><span>Crimes</span><span>Bounty</span><span>Wanted since</span></div>{{end}}
           {{range .Board.List}}
-          <a class="wanted-row" href="/admin/players?id={{.PlayerID}}">
+          <a class="lrow wanted-row" href="/admin/players?id={{.PlayerID}}">
             <span class="strong ellipsis"><span class="dot {{if .Online}}dot-on{{end}}" title="{{if .Online}}Online{{else}}Offline{{end}}"></span>{{.Name}}{{if .Gang}} <span class="muted small">&middot; {{.Gang}}</span>{{end}}</span>
             <span class="wanted-crimes">{{range $i, $c := .Crimes}}{{if $i}}, {{end}}{{$c}}{{end}}</span>
             <span class="warn-text strong">${{money .Bounty}}</span>
             <span class="muted small">{{.Since.Format "2 Jan 15:04"}}{{if ne .Since .Latest}}<br>latest {{.Latest.Format "2 Jan 15:04"}}{{end}}</span>
           </a>
-          {{else}}<p class="empty-state">{{if $.Q}}Nobody wanted matches "{{$.Q}}".{{else}}Nobody is wanted right now.{{end}}</p>{{end}}
+          {{else}}<p class="empty">{{if $.Q}}Nobody wanted matches "{{$.Q}}".{{else}}Nobody is wanted right now.{{end}}</p>{{end}}
         </section>
       </div>
       <div class="dash-col">
@@ -42,13 +42,13 @@
           <div class="dash-card-head"><h2 id="w-jail">In jail</h2><span class="muted small">Time left counts down while they're online</span></div>
           {{range .Board.Jail}}
           <a class="eco-flow eco-link" href="/admin/players?id={{.PlayerID}}"><span><span class="dot {{if .Online}}dot-on{{end}}"></span>{{.Name}}</span><span>{{$.Dur .Left}} left{{if .Bail}} <span class="muted small">&middot; bail ${{money .Bail}}</span>{{end}}</span></a>
-          {{else}}<p class="empty-state">Nobody is in jail.</p>{{end}}
+          {{else}}<p class="empty">Nobody is in jail.</p>{{end}}
         </section>
         <section class="card dash-card" aria-labelledby="w-crimes">
           <div class="dash-card-head"><h2 id="w-crimes">Outstanding by crime</h2></div>
           {{range .Board.ByCrime}}
           <div class="eco-flow"><span>{{.Name}} <span class="muted small">&times;{{.Count}}</span></span><span>${{money .Total}}</span></div>
-          {{else}}<p class="empty-state">No outstanding crimes.</p>{{end}}
+          {{else}}<p class="empty">No outstanding crimes.</p>{{end}}
         </section>
       </div>
     </div>

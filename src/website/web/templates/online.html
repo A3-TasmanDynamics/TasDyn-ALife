@@ -20,9 +20,9 @@
 
     <section class="card dash-card" aria-labelledby="on-list">
       <div class="dash-card-head"><h2 id="on-list">In game</h2><span class="muted small">Longest on first</span></div>
-      {{if .Players}}<div class="on-row stafflog-th"><span>Player</span><span>Faction</span><span>On for</span><span>Cash</span><span>Bank</span><span>Status</span></div>{{end}}
+      {{if .Players}}<div class="lrow on-row lrow-head"><span>Player</span><span>Faction</span><span>On for</span><span>Cash</span><span>Bank</span><span>Status</span></div>{{end}}
       {{range .Players}}
-      <a class="on-row" href="/admin/players?id={{.PlayerID}}">
+      <a class="lrow on-row" href="/admin/players?id={{.PlayerID}}">
         <span class="strong ellipsis"><span class="dot dot-on"></span>{{.Name}}{{if .Gang}} <span class="muted small">&middot; {{.Gang}}</span>{{end}}</span>
         <span><span class="on-fac on-fac-{{if .Faction}}{{.Faction}}{{else}}none{{end}}">{{$.FactionName .Faction}}</span>{{if .Level}} <span class="muted small">L{{.Level}}</span>{{end}}</span>
         <span title="Since {{.Since.Local.Format "2 Jan 15:04"}}">{{$.Since .}}</span>
@@ -36,7 +36,7 @@
           {{if .OpenFlags}}<span class="on-tag on-tag-flag">{{.OpenFlags}} flag{{if ne .OpenFlags 1}}s{{end}}</span>{{end}}
         </span>
       </a>
-      {{else}}<p class="empty-state">Nobody is in game right now.</p>{{end}}
+      {{else}}<p class="empty">Nobody is in game right now.</p>{{end}}
     </section>
 
     <section class="card dash-card" aria-labelledby="on-hist">
@@ -48,7 +48,7 @@
       <div class="dash-card-head"><h2 id="on-left">Recently left</h2><span class="muted small">Last 2 hours</span></div>
       {{range .Left}}
       <a class="eco-flow eco-link" href="/admin/players?id={{.PlayerID}}"><span><span class="dot"></span>{{.Name}} <span class="muted small">&middot; {{$.FactionName .Faction}}</span></span><span class="muted small">{{$.Ago .At}} ago &middot; played {{$.Dur .Length}}</span></a>
-      {{else}}<p class="empty-state">Nobody has left in the last 2 hours.</p>{{end}}
+      {{else}}<p class="empty">Nobody has left in the last 2 hours.</p>{{end}}
     </section>
   </div>
 </div>

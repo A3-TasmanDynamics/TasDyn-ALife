@@ -7,7 +7,7 @@
       <h1 class="page-title admin-title">Gangs</h1>
       <p class="admin-sub">Every gang: who's in it, who's online, its bank, what its members are worth, and how much trouble they're in. Read-only; gang leaders manage their gang on the website's Gang page.</p>
     </div>
-    <form class="stafflog-filters" method="get" action="/admin/gangs">
+    <form class="filterbar" method="get" action="/admin/gangs">
       <label class="search-box"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input name="q" value="{{.Q}}" aria-label="Gang name or tag" placeholder="Gang name or tag"></label>
       <button class="btn" type="submit">Search</button>
@@ -22,7 +22,7 @@
             <span class="mod-dim">Leader {{.Leader}} &middot; bank ${{money .Bank}}{{if .Wanted}} &middot; <span class="warn-text">{{.Wanted}} wanted</span>{{end}}{{if .Crimes}} &middot; {{.Crimes}} crime{{if ne .Crimes 1}}s{{end}} this week{{end}}</span>
           </a>
           {{else}}
-          <p class="mod-empty">{{if .Q}}No gang matches "{{.Q}}".{{else}}No gangs yet.{{end}}</p>
+          <p class="empty">{{if .Q}}No gang matches "{{.Q}}".{{else}}No gangs yet.{{end}}</p>
           {{end}}
         </div>
       </div>
@@ -59,7 +59,7 @@
           {{else}}<p class="mod-dim">Nothing logged yet.</p>{{end}}
         </div>
         {{else}}
-        <p class="mod-empty">Pick a gang.</p>
+        <p class="empty">Pick a gang.</p>
         {{end}}
       </div>
     </div>

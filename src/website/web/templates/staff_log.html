@@ -19,7 +19,7 @@
         {{end}}
       </nav>
 
-      <form class="stafflog-filters" method="get" action="/admin/staff-log">
+      <form class="filterbar" method="get" action="/admin/staff-log">
         {{if .Filter.Category}}<input type="hidden" name="cat" value="{{.Filter.Category}}">{{end}}
         <label class="search-box"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
           <input name="q" value="{{.Filter.Search}}" aria-label="Search the staff log" placeholder="Search details…"></label>
@@ -39,12 +39,12 @@
       </form>
 
       <div class="stafflog-table" role="table" aria-label="Staff log entries">
-        <div class="stafflog-row stafflog-th" role="row">
+        <div class="lrow stafflog-row lrow-head" role="row">
           <span role="columnheader">Time</span><span role="columnheader">Staff</span><span role="columnheader">Action</span><span role="columnheader">Target</span><span role="columnheader">Details</span><span role="columnheader">Source</span>
         </div>
         <div class="stafflog-body">
           {{range .Page.Entries}}
-          <a class="stafflog-row {{if and $.Selected (eq .ID $.Selected.ID)}}selected{{end}}" role="row" href="/admin/staff-log{{qset $.Query "entry" (i64 .ID)}}">
+          <a class="lrow stafflog-row {{if and $.Selected (eq .ID $.Selected.ID)}}selected{{end}}" role="row" href="/admin/staff-log{{qset $.Query "entry" (i64 .ID)}}">
             <span class="muted" role="cell">{{.Time.Format "01/02 · 15:04"}}</span>
             <span class="strong" role="cell">{{.Staff}}</span>
             <span class="stafflog-action" role="cell"><span class="cat-dot cat-{{.Category}}" aria-hidden="true"></span><code>{{.DisplayAction}}</code></span>
@@ -53,14 +53,14 @@
             <span class="muted small" role="cell">{{.Source}}</span>
           </a>
           {{else}}
-          <p class="empty-state">No entries match these filters.</p>
+          <p class="empty">No entries match these filters.</p>
           {{end}}
         </div>
         <div class="stafflog-foot">
           <span>{{len .Page.Entries}} shown &middot; 50 per page &middot; {{.Page.Total}} {{if eq .Page.Total 1}}entry{{else}}entries{{end}}</span>
           <div class="pager">
-            {{if .Page.HasNewer}}{{with index .Page.Entries 0}}<a class="btn small-btn" href="/admin/staff-log{{qset $.Query "after" (i64 .ID) "before" "" "entry" ""}}">Newer</a>{{end}}{{else}}<span class="btn small-btn disabled" aria-disabled="true">Newer</span>{{end}}
-            {{if .Page.HasOlder}}{{with index .Page.Entries (dec (len .Page.Entries))}}<a class="btn small-btn" href="/admin/staff-log{{qset $.Query "before" (i64 .ID) "after" "" "entry" ""}}">Older</a>{{end}}{{else}}<span class="btn small-btn disabled" aria-disabled="true">Older</span>{{end}}
+            {{if .Page.HasNewer}}{{with index .Page.Entries 0}}<a class="btn btn-sm" href="/admin/staff-log{{qset $.Query "after" (i64 .ID) "before" "" "entry" ""}}">Newer</a>{{end}}{{else}}<span class="btn btn-sm disabled" aria-disabled="true">Newer</span>{{end}}
+            {{if .Page.HasOlder}}{{with index .Page.Entries (dec (len .Page.Entries))}}<a class="btn btn-sm" href="/admin/staff-log{{qset $.Query "before" (i64 .ID) "after" "" "entry" ""}}">Older</a>{{end}}{{else}}<span class="btn btn-sm disabled" aria-disabled="true">Older</span>{{end}}
           </div>
         </div>
       </div>
@@ -84,7 +84,7 @@
       <pre class="inspector-payload">{{$.Payload}}</pre>
       {{end}}
       {{else}}
-      <p class="empty-state">Select an entry to see its details.</p>
+      <p class="empty">Select an entry to see its details.</p>
       {{end}}
     </aside>
   </div>

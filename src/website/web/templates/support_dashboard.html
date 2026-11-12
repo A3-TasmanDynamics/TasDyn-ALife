@@ -27,7 +27,7 @@
     <section class="card">
       <h2>Recent Tickets</h2>
       {{if .RecentTickets}}
-        <table>
+        <div class="table-wrap"><table>
           <thead><tr><th>Priority</th><th>Subject</th><th>Requester</th><th>Category</th><th>Status</th><th>Opened</th><th></th></tr></thead>
           <tbody>
             {{range .RecentTickets}}
@@ -42,10 +42,10 @@
             </tr>
             {{end}}
           </tbody>
-        </table>
+        </table></div>
         <p class="hint" style="margin-top:14px;"><a href="/admin/tickets">View all tickets →</a></p>
       {{else}}
-        <p class="empty-state">No tickets yet.</p>
+        <p class="empty">No tickets yet.</p>
       {{end}}
     </section>
   </div>

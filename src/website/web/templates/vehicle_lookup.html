@@ -23,7 +23,7 @@
           <span class="veh-state veh-{{.Status}}">{{.StatusText}}</span>
         </a>
         {{else}}
-        <p class="empty-state">No vehicles match.</p>
+        <p class="empty">No vehicles match.</p>
         {{end}}
       </div>
     </section>
@@ -81,12 +81,12 @@
       {{end}}
       <div class="card lookup-audit">
         {{range .History}}
-        <div class="audit-row veh-history-row"><span class="muted">{{.When.Format "2 Jan 2006 15:04"}}</span><span>{{.What}}</span><span class="muted audit-by">{{.By}}</span></div>
-        {{else}}<p class="empty-state">No history for this vehicle yet.</p>{{end}}
+        <div class="lrow audit-row veh-history-row"><span class="muted">{{.When.Format "2 Jan 2006 15:04"}}</span><span>{{.What}}</span><span class="muted audit-by">{{.By}}</span></div>
+        {{else}}<p class="empty">No history for this vehicle yet.</p>{{end}}
       </div>
       <p class="hint">Read-only. Fuel, damage and trunk are as last saved (when it was stored, impounded or its trunk changed); a vehicle that's out may differ now. In game, the admin menu's "Their vehicles" pulls a player's vehicle out or sends it back to their garage.</p>
       {{else}}
-      <div class="lookup-empty"><p class="empty-state">Search for a vehicle, then pick it from the list.</p></div>
+      <div class="lookup-empty"><p class="empty">Search for a vehicle, then pick it from the list.</p></div>
       {{end}}
     </section>
   </div>

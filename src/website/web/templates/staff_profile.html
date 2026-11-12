@@ -104,7 +104,7 @@
         <span class="muted timeline-by">{{.By}}</span>
       </div>
       {{else}}
-      <p class="empty-state">Nothing recorded yet.</p>
+      <p class="empty">Nothing recorded yet.</p>
       {{end}}
       {{if .CanNotes}}
       <form class="timeline-add" method="post" action="/admin/staff/{{$m.ID}}/notes">

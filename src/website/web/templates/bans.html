@@ -44,13 +44,13 @@
         {{end}}
       </article>
       {{else}}
-      <p class="mod-empty card">No appeals waiting. Banned players can appeal once per ban from their dashboard.</p>
+      <p class="empty card">No appeals waiting. Banned players can appeal once per ban from their dashboard.</p>
       {{end}}
     {{else}}
     <div class="mod-table" role="table" aria-label="Bans">
-      <div class="mod-row mod-ban-row mod-row-head" role="row"><span>Player</span><span>Reason</span><span>Case</span><span>By</span><span>Issued</span><span>{{if eq .Tab "active"}}Expires{{else}}Ended{{end}}</span><span></span></div>
+      <div class="lrow mod-row mod-ban-row lrow-head" role="row"><span>Player</span><span>Reason</span><span>Case</span><span>By</span><span>Issued</span><span>{{if eq .Tab "active"}}Expires{{else}}Ended{{end}}</span><span></span></div>
       {{range .Bans}}
-      <div class="mod-row mod-ban-row" role="row">
+      <div class="lrow mod-row mod-ban-row" role="row">
         <span>{{if .PlayerID}}<a class="strong" href="/admin/players?id={{.PlayerID}}">{{.Player}}</a>{{else}}<strong>{{.Player}}</strong>{{end}}<span class="mod-small mono">{{.UID}}</span></span>
         <span>{{.Reason}}<span class="mod-small">Scope: {{.ScopeLabel}}{{if .Note}} &middot; note: {{.Note}}{{end}}{{if .LiftReason}} &middot; lifted: {{.LiftReason}}{{end}}</span></span>
         <span>{{if .CaseID}}<a href="/admin/cases/{{.CaseID}}">#{{.CaseID}}</a>{{else}}<span class="mod-dim">&mdash;</span>{{end}}</span>
@@ -70,7 +70,7 @@
         </span>
       </div>
       {{else}}
-      <p class="mod-empty">{{if eq .Tab "active"}}No active bans.{{else}}No expired or lifted bans yet.{{end}}</p>
+      <p class="empty">{{if eq .Tab "active"}}No active bans.{{else}}No expired or lifted bans yet.{{end}}</p>
       {{end}}
     </div>
     {{end}}

@@ -44,7 +44,7 @@
         <a class="seg-item {{if eq .Status "closed"}}active{{end}}" href="/admin/anticheat{{qset .Query "status" "closed" "open" "" "flag" ""}}">Closed</a>
         <a class="seg-item {{if eq .Status "all"}}active{{end}}" href="/admin/anticheat{{qset .Query "status" "all" "open" "" "flag" ""}}">All</a>
       </nav>
-      <form class="mod-filters ac-filters" method="get" action="/admin/anticheat">
+      <form class="filterbar ac-filters" method="get" action="/admin/anticheat">
         {{if ne .Status "open"}}<input type="hidden" name="status" value="{{.Status}}">{{end}}
         <label class="search-box"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
           <input name="q" value="{{.Search}}" aria-label="Player name or Steam ID" placeholder="Player name or Steam ID"></label>
@@ -68,7 +68,7 @@
           <span class="mod-dim">{{.Player}}</span>
         </a>
         {{else}}
-        <p class="mod-empty">No flags match these filters.{{if eq .Status "open"}} Nothing is waiting for review.{{end}}</p>
+        <p class="empty">No flags match these filters.{{if eq .Status "open"}} Nothing is waiting for review.{{end}}</p>
         {{end}}
       </div>
     </div>
@@ -133,7 +133,7 @@
       </dialog>
       {{end}}
       {{else}}
-      <p class="mod-empty">No flags here. They appear when the server's detectors or the Steam ban check raise one.</p>
+      <p class="empty">No flags here. They appear when the server's detectors or the Steam ban check raise one.</p>
       {{end}}
     </div>
     </div>
