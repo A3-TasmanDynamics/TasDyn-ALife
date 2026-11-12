@@ -61,6 +61,15 @@ class VirtualShops
         items[] = { "water", "coffee", "donut", "firstaid", "toolkit", "fuelcan", "cone", "barrier", "roadlight", "arrowsign", "spikestrip" };
     };
 
+    class gas
+    {
+        name = "Gas Station Store";
+        side = "civ";
+        licence = "";
+        level = 0;
+        items[] = { "water", "coffee", "redgull", "apple", "tbacon", "fuelcan", "toolkit" };
+    };
+
     class medic
     {
         name = "Medical Supplies";

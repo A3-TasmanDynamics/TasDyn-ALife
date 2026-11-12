@@ -109,6 +109,27 @@ class CfgALife
         };
     };
 
+    // ---- Gas stations (ALife_fnc_gasStation) -----------------------------
+    // Every Altis fuel pump: Windows near one (in or by a vehicle) fills it
+    // up, paid per litre (cash or bank) -- pumps don't fill vehicles for free.
+    // The cashiers (CfgShops >> gas_station npcs[]) run the store, and can be
+    // held up: Windows on one with a weapon in your hands, stay within
+    // robRange for robTime seconds and the till's yours (payoutMin-payoutMax).
+    // Police are alerted with a map marker; the robber is wanted (crime).
+    class GasStations
+    {
+        pricePerLitre = 4;        // dollars
+        pumpRange = 8;            // metres from a pump to fill up
+        vehicleRange = 12;        // metres from the vehicle (you can stand by it)
+        robTime = 90;             // seconds to empty the till
+        robRange = 15;            // metres: walk further away and it fails
+        minCops = 2;              // police online to rob one
+        cooldown = 1200;          // seconds before the same station can be robbed again
+        payoutMin = 4000;
+        payoutMax = 12000;
+        crime = "robbery";
+    };
+
     // ---- Lockers (police / EMS, ALife_fnc_locker) ---------------------------
     // Your own locker, the same at every station of your faction, kept by
     // the receptionists: units you place in Eden with these names (they

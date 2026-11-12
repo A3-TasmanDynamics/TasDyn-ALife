@@ -43,6 +43,21 @@ if ([_target] call ALife_fnc_isAtm && { player distance _target <= getNumber (mi
 };
 
 private _isVehicle = !isNull _target && { alive _target } && { _target isKindOf "LandVehicle" || { _target isKindOf "Air" } || { _target isKindOf "Ship" } };
+// At a fuel pump: pay to fill up the vehicle you're in, the one you're
+// looking at, or the nearest one beside you (CfgALife >> GasStations).
+private _gasCfg = missionConfigFile >> "CfgALife" >> "GasStations";
+if ((nearestTerrainObjects [player, ["FUELSTATION"], getNumber (_gasCfg >> "pumpRange"), false]) isNotEqualTo []) then {
+    private _onFoot = vehicle player == player;
+    private _veh = switch (true) do {
+        case (!_onFoot): { vehicle player };
+        case (_isVehicle && { player distance _target < getNumber (_gasCfg >> "vehicleRange") }): { _target };
+        default { ((nearestObjects [player, ["LandVehicle", "Air", "Ship"], getNumber (_gasCfg >> "vehicleRange")]) select { alive _x }) param [0, objNull] };
+    };
+    ALife_atPump = !isNull _veh;
+    if (ALife_atPump) then { ["menu", [_veh, _onFoot && { _isVehicle } && { player distance _target < 8 }]] call ALife_fnc_gasClient; };
+} else { ALife_atPump = false; };
+if (ALife_atPump) exitWith { true };
+
 if (_isVehicle && { player distance _target < 8 } && { vehicle player == player }) exitWith {
     ["open", _target] call ALife_fnc_vehicleMenu;
     true
@@ -173,6 +188,16 @@ if (_process != "") exitWith {
 // shop it serves, or a wheel of them -- your faction's only, with the
 // Garage for vehicle shops and, at a receptionist, your locker.
 private _npcName = if (_near) then { vehicleVarName _target } else { "" };
+// A gas station cashier: the store, and holding up the till (a civilian with a weapon out).
+if (_npcName != "" && { _npcName in getArray (missionConfigFile >> "CfgShops" >> "gas_station" >> "npcs") }) exitWith {
+    private _opts = [];
+    if (_faction == "civ") then { _opts pushBack ["Store", _openShop, "gas_station"]; };
+    if (_faction == "civ" && { currentWeapon player != "" }) then { _opts pushBack ["Rob the till", { [player, "rob", _this] remoteExecCall ["ALife_fnc_gasStation", 2]; }, _target]; };
+    if (_opts isEqualTo []) exitWith { ["The cashier only serves civilians.", "info"] call ALife_fnc_toast; true };
+    if (count _opts == 1) exitWith { "gas_station" call _openShop; true };
+    ["open", name _target, _opts, "Gas station"] call ALife_fnc_radial;
+    true
+};
 private _isReception = _npcName != "" && { _faction in ["cop", "medic"] } && { _npcName in getArray (missionConfigFile >> "CfgALife" >> "Lockers" >> _faction) };
 private _npcShops = [];
 if (_npcName != "") then {

@@ -35,6 +35,20 @@
 
 class CfgShops
 {
+    // Gas stations: the store at the cashier (and Rob the till -- CfgALife
+    // >> GasStations). Place a unit inside each station named gas_cashier_1,
+    // gas_cashier_2, ... Every Altis fuel pump sells fuel on its own (pay at
+    // the pump, Windows key).
+    class gas_station
+    {
+        type = "market";
+        shop = "gas";
+        markers[] = {};
+        npcs[] = { "gas_cashier_1", "gas_cashier_2", "gas_cashier_3", "gas_cashier_4", "gas_cashier_5", "gas_cashier_6", "gas_cashier_7", "gas_cashier_8", "gas_cashier_9", "gas_cashier_10", "gas_cashier_11", "gas_cashier_12", "gas_cashier_13", "gas_cashier_14", "gas_cashier_15" };
+        radius = 8;
+        mapMarker = "Gas Station";
+    };
+
     // Licence office: place civilian units in Eden named licence_vendor_1,
     // licence_vendor_2, ... (add more names here).
     class licence_office
