@@ -25,6 +25,7 @@ import (
 	"website/internal/config"
 	"website/internal/csrf"
 	"website/internal/db"
+	"website/internal/economy"
 	"website/internal/dbbrowser"
 	"website/internal/discord"
 	"website/internal/handlers"
@@ -219,6 +220,9 @@ func run() error {
 		// Steam profile/ban cache + BattlEye GUID backfill (internal/steam).
 		go d.Steam.Run(ctx)
 
+		// Economy history for Admin -> Economy & Crime: a snapshot an hour.
+		go economy.RunSnapshots(ctx, pool)
+
 		// Return staff whose LOA end date has passed to active.
 		go staff.RunLOASweep(ctx, pool, func(n int64, err error) {
 			if err != nil {
@@ -409,6 +413,8 @@ func run() error {
 			r.Get("/admin/players", d.PlayerLookup)
 			r.Get("/admin/events", d.EventLog)
 			r.Get("/admin/economy", d.Economy)
+			r.Get("/admin/gangs", d.GangsBoard)
+			r.Get("/admin/wanted", d.WantedBoard)
 			r.Post("/admin/players/{id}/faction-level", d.PlayerSetFactionLevel)
 			r.Post("/admin/players/{id}/compensate", d.PlayerCompensate)
 			r.Post("/admin/players/{id}/licences", d.PlayerLicences)

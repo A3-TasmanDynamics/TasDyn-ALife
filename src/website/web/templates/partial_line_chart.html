@@ -1,0 +1,16 @@
+{{/* A chart.Chart. Called with (dict "C" chart "Label" "accessible name" "Legend" bool). Hover: /static/chart.js. */}}
+{{define "line_chart"}}
+{{with .C}}
+<div class="lc" data-hover="{{.Hover}}">
+  {{if $.Legend}}<div class="lc-legend">{{range .Lines}}<span><span class="lc-key {{.Class}}" aria-hidden="true"></span>{{.Name}}</span>{{end}}</div>{{end}}
+  <svg class="lc-svg" viewBox="0 0 {{.W}} {{.H}}" role="img" aria-label="{{$.Label}}">
+    {{range .YTicks}}<line class="lc-grid" x1="{{$.C.Left}}" x2="{{$.C.Right}}" y1="{{.Pos}}" y2="{{.Pos}}"/><text class="lc-ylabel" x="{{$.C.LabelX}}" y="{{.Pos}}" dy="4" text-anchor="end">{{.Label}}</text>{{end}}
+    {{if ge .ZeroY 0.0}}<line class="lc-zero" x1="{{.Left}}" x2="{{.Right}}" y1="{{.ZeroY}}" y2="{{.ZeroY}}"/>{{end}}
+    {{range .XTicks}}<text class="lc-xlabel" x="{{.Pos}}" y="{{$.C.H}}" dy="-6" text-anchor="middle">{{.Label}}</text>{{end}}
+    {{range .Lines}}<path class="lc-line {{.Class}}" d="{{.Path}}"/><text class="lc-end" x="{{.EndX}}" y="{{.EndY}}" dy="4">{{.EndLabel}}</text>{{end}}
+    <line class="lc-cross" x1="0" x2="0" y1="{{.Top}}" y2="{{.Bottom}}" visibility="hidden"/>
+  </svg>
+  <div class="lc-tip" hidden></div>
+</div>
+{{end}}
+{{end}}

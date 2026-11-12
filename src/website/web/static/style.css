@@ -2800,7 +2800,7 @@ a.ac-other:hover { background: rgba(255, 255, 255, 0.03); }
 .eco-fac:last-child { border-bottom: none; }
 .eco-fac-top { display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; }
 .eco-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--bg-input); }
-.eco-bar-cash, .eco-key-cash { background: var(--amber); }
+.eco-bar-cash, .eco-key-cash { background: #d97706; }
 .eco-bar-bank, .eco-key-bank { background: #3b82f6; }
 .eco-fac-split { display: flex; flex-wrap: wrap; gap: 4px 18px; }
 .eco-key { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
@@ -2831,3 +2831,48 @@ a.eco-link:hover { background: rgba(255, 255, 255, 0.03); }
 @media (max-width: 900px) { .eco-flows { grid-template-columns: 1fr; } .eco-flows > div + div { border-left: none; border-top: 1px solid var(--border-soft); } .eco-mkt { grid-template-columns: minmax(0, 1fr) 70px 70px 64px; } }
 /* Discord settings: number fields (alert thresholds). */
 .num-setting { width: 100%; max-width: 220px; min-height: 38px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text); font: inherit; font-size: 13px; font-variant-numeric: tabular-nums; }
+/* ---------- Line charts (partial_line_chart.html, chart.js) ---------- */
+/* Series colours validated against the card surface (#131b2e): cash #d97706, bank #3b82f6. */
+.lc { position: relative; }
+.lc-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.lc-grid { stroke: var(--border-soft); stroke-width: 1; }
+.lc-zero { stroke: var(--text-faint); stroke-width: 1; }
+.lc-ylabel, .lc-xlabel { fill: var(--text-faint); font-size: 11px; font-variant-numeric: tabular-nums; }
+.lc-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.lc-end { fill: var(--text-dim); font-size: 11.5px; font-weight: 600; }
+.lc-cross { stroke: var(--text-dim); stroke-width: 1; stroke-dasharray: 3 3; }
+.lc-cash { stroke: #d97706; background: #d97706; }
+.lc-bank { stroke: #3b82f6; background: #3b82f6; }
+.lc-market { stroke: #3b82f6; background: #3b82f6; }
+.lc-legend { display: flex; gap: 16px; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+.lc-key { display: inline-block; width: 12px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+.lc-tip { position: absolute; top: 24px; pointer-events: none; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; color: var(--text); white-space: nowrap; box-shadow: var(--shadow-card); font-variant-numeric: tabular-nums; }
+.lc-tip strong { display: block; margin-bottom: 2px; }
+.eco-trends { margin-bottom: 16px; }
+.eco-charts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; padding: 14px 20px 6px; }
+.eco-table summary { padding: 10px 20px 14px; font-size: 12.5px; color: var(--text-dim); cursor: pointer; }
+.eco-daily { grid-template-columns: minmax(0, 1fr) 110px 110px 80px 100px; }
+@media (max-width: 1100px) { .eco-charts { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .eco-daily { grid-template-columns: 1fr 1fr; } }
+/* ---------- Gangs & Wanted boards ---------- */
+.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--text-faint); margin-right: 8px; vertical-align: middle; }
+.dot-on { background: var(--green); box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15); }
+.gang-tag { font-family: var(--font-display); font-weight: 700; color: var(--amber-bright); }
+.gang-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.gang-stats > div { display: flex; flex-direction: column; gap: 2px; }
+.gang-member { display: grid; grid-template-columns: minmax(0, 1fr) 70px auto; gap: 10px; align-items: center; padding: 6px 0; font-size: 13px; border-bottom: 1px solid var(--border-soft); color: var(--text); text-decoration: none; }
+.gang-member:hover { color: var(--amber-bright); }
+.gang-rank { font-size: 10.5px; font-weight: 800; text-transform: uppercase; color: var(--text-dim); }
+.gang-rank-leader { color: var(--amber-bright); }
+.gang-rank-officer { color: #93c5fd; }
+.wanted-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) 100px 110px; gap: 12px; align-items: center; padding: 10px 20px; font-size: 13px; border-bottom: 1px solid var(--border-soft); color: var(--text); text-decoration: none; }
+a.wanted-row:hover { background: rgba(255, 255, 255, 0.03); }
+.wanted-crimes { color: var(--text-dim); }
+@media (max-width: 900px) { .wanted-row { grid-template-columns: 1fr; gap: 2px; } .wanted-row.stafflog-th { display: none; } .gang-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* ---------- Player Lookup > Connections ---------- */
+.conn-head { padding: 14px 20px 6px; margin: 0; }
+.conn-row { display: grid; grid-template-columns: minmax(0, 1.4fr) 120px 140px 130px; gap: 12px; align-items: center; padding: 9px 20px; font-size: 13px; border-bottom: 1px solid var(--border-soft); color: var(--text); text-decoration: none; }
+a.conn-row:hover { background: rgba(255, 255, 255, 0.03); }
+.conn-trade { grid-template-columns: minmax(0, 1.4fr) 110px 110px 130px 150px; font-variant-numeric: tabular-nums; }
+.conn-alias { grid-template-columns: minmax(0, 1fr) 140px 140px; }
+@media (max-width: 900px) { .conn-row, .conn-trade, .conn-alias { grid-template-columns: 1fr; gap: 2px; } .conn-row.stafflog-th { display: none; } }

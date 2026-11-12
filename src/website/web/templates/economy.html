@@ -19,6 +19,33 @@
       <div class="admin-stat"><div class="label">Evidence vault</div><div class="value">{{index .VaultCounts 0}} <span class="eco-stat-unit">gear</span> &middot; {{index .VaultCounts 1}} <span class="eco-stat-unit">items</span></div><div class="eco-stat-sub">${{money .Vault.Cash}} cash</div></div>
     </section>
 
+    <section class="card dash-card eco-trends" aria-labelledby="eco-trends">
+      <div class="dash-card-head"><h2 id="eco-trends">Trends</h2><span class="muted small">One snapshot an hour</span></div>
+      {{if ge (len .History) 2}}
+      <div class="eco-charts">
+        <div>
+          <div class="card-label">Money in bank accounts</div>
+          {{template "line_chart" (dict "C" .BankChart "Label" "Money in bank accounts over this window" "Legend" false)}}
+        </div>
+        <div>
+          <div class="card-label">Cash carried</div>
+          {{template "line_chart" (dict "C" .CashChart "Label" "Cash players carry over this window" "Legend" false)}}
+        </div>
+        <div>
+          <div class="card-label">Market prices vs base &middot; average</div>
+          {{template "line_chart" (dict "C" .MarketChart "Label" "Average market price compared with base prices over this window" "Legend" false)}}
+        </div>
+      </div>
+      <details class="eco-table">
+        <summary>Show as a table (one row a day)</summary>
+        <div class="eco-mkt eco-mkt-th eco-daily"><span>Day</span><span>Cash</span><span>Bank</span><span>Market</span><span>Bounties</span></div>
+        {{range .Daily}}<div class="eco-mkt eco-daily"><span>{{.At.Format "Mon 2 Jan 15:04"}}</span><span>${{money .Cash}}</span><span>${{money .Bank}}</span><span>{{if gt .MarketIndex 0.0}}+{{end}}{{.MarketIndex}}%</span><span>${{money .Bounties}}</span></div>{{end}}
+      </details>
+      {{else}}
+      <p class="empty-state">Collecting history: the website takes a snapshot every hour{{with .History}} (the first was {{(index . 0).At.Format "2 Jan 15:04"}}){{end}}. The charts appear once there are two.</p>
+      {{end}}
+    </section>
+
     <div class="dash-grid">
       <div class="dash-col">
         <section class="card dash-card" aria-labelledby="eco-supply">
@@ -103,4 +130,5 @@
     </div>
   </div>
 </div>
+<script src="/static/chart.js" defer></script>
 {{end}}
