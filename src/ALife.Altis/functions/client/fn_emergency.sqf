@@ -2,9 +2,11 @@
     ALife_fnc_emergency (client)
 
     Lights and sirens on police and EMS vehicles (any vehicle their shops
-    sell -- CarShops with side "cop" / "medic"). The driver toggles them:
-    Left Shift + L the light bar, Left Shift + F the siren (CfgALife >>
-    Emergency). The
+    sell -- CarShops with side "cop" / "medic"). The driver works them:
+    Left Shift + L the light bar (off, then each flash pattern in turn, then
+    off), Left Shift + F the siren (the crew hear the cabin version),
+    Left Shift + G one "whoop" to pull someone over (CfgALife >> Emergency).
+    The
     state is on the vehicle (alife_lights / alife_siren, public), and every
     player's machine shows the flashing lights and plays the siren for
     vehicles near them -- so it's right for players who join later too.
@@ -14,8 +16,9 @@
 
     Modes:
         ["init"]            - from initPlayerLocal.sqf: keys + the watcher
-        ["lights", vehicle] - toggle (the driver)
+        ["lights", vehicle] - next pattern / off (the driver)
         ["siren", vehicle]  - toggle (the driver)
+        ["whoop", vehicle]  - one whoop, heard by everyone near (the driver)
 */
 
 params [["_mode", "", [""]], ["_veh", objNull, [objNull]]];
@@ -40,7 +43,7 @@ switch (_mode) do {
             private _cfg = missionConfigFile >> "CfgALife" >> "Emergency";
             // Left Shift (initPlayerLocal.sqf tracks it; Arma's _shift is either one).
             if (_ctrl || _alt || { !(missionNamespace getVariable ["ALife_leftShift", false]) }
-                || { !(_key in [getNumber (_cfg >> "lightsKey"), getNumber (_cfg >> "sirenKey")]) }) exitWith { false };
+                || { !(_key in [getNumber (_cfg >> "lightsKey"), getNumber (_cfg >> "sirenKey"), getNumber (_cfg >> "whoopKey")]) }) exitWith { false };
             private _veh = vehicle player;
             if (_veh == player || { driver _veh != player } || { !alive player }) exitWith { false };
             private _type = ALife_emergencyTypes getOrDefault [toLower typeOf _veh, ""];
@@ -49,7 +52,14 @@ switch (_mode) do {
             if (isNil "ALife_emergencyKeys") then { ALife_emergencyKeys = createHashMap; };
             private _repeat = diag_tickTime - (ALife_emergencyKeys getOrDefault [_key, -10]) < 0.6;
             ALife_emergencyKeys set [_key, diag_tickTime];
-            if (!_repeat) then { [["siren", "lights"] select (_key == getNumber (_cfg >> "lightsKey")), _veh] call ALife_fnc_emergency; };
+            if (!_repeat) then {
+                private _mode = switch (_key) do {
+                    case (getNumber (_cfg >> "lightsKey")): { "lights" };
+                    case (getNumber (_cfg >> "whoopKey")): { "whoop" };
+                    default { "siren" };
+                };
+                [_mode, _veh] call ALife_fnc_emergency;
+            };
             true
         }];
         (findDisplay 46) displayAddEventHandler ["KeyUp", {
@@ -78,9 +88,25 @@ switch (_mode) do {
     };
 
     case "lights": {
-        private _on = !(_veh getVariable ["alife_lights", false]);
-        _veh setVariable ["alife_lights", _on, true];
-        [["Lights off.", "Lights on."] select _on, "info", "", 2] call ALife_fnc_toast;
+        // Off -> pattern 1 -> pattern 2 ... -> off. The pattern is public, so
+        // everyone sees the same one; it changes on the next flash.
+        private _patterns = getArray (_cfg >> "patterns");
+        private _next = if (_veh getVariable ["alife_lights", false]) then { (_veh getVariable ["alife_lightPattern", 1]) + 1 } else { 1 };
+        if (_next > count _patterns) exitWith {
+            _veh setVariable ["alife_lights", false, true];
+            ["Lights off.", "info", "", 2] call ALife_fnc_toast;
+        };
+        _veh setVariable ["alife_lightPattern", _next, true];
+        _veh setVariable ["alife_lights", true, true];
+        [format ["Lights: %1.", _patterns select (_next - 1)], "info", "", 2] call ALife_fnc_toast;
+    };
+
+    case "whoop": {
+        // At most one every 1.5 s; heard by everyone near (playSound3D is global).
+        if (diag_tickTime - (missionNamespace getVariable ["ALife_lastWhoop", -10]) < 1.5) exitWith {};
+        ALife_lastWhoop = diag_tickTime;
+        private _type = ALife_emergencyTypes getOrDefault [toLower typeOf _veh, "cop"];
+        playSound3D [getText (_cfg >> _type >> "whoop"), _veh, false, getPosASL _veh, 3, 1, getNumber (_cfg >> "sirenRange")];
     };
 
     case "siren": {
