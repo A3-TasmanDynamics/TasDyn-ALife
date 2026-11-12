@@ -47,6 +47,7 @@ var navDefs = []navSectionDef{
 	{key: "overview", name: "Overview", items: []navDef{
 		{key: "dashboard", label: "Dashboard", url: "/admin"},
 		{key: "online", label: "Online Now", url: "/admin/online", perm: "players.view"},
+		{key: "map", label: "Live Map", url: "/admin/map", perm: "game.markers"},
 	}},
 	{key: "moderation", name: "Moderation", tabs: true, items: []navDef{
 		{key: "cases", label: "Cases", url: "/admin/cases", perm: "cases.view", badge: func(s *AdminShell) (int, bool) { return s.OpenCases, true }},
@@ -173,6 +174,7 @@ var navIcons = map[string]string{
 	"tickets":       "M3 9a2 2 0 0 0 0 6v3a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3a2 2 0 0 0 0-6V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1zM14 5v14",
 	"staff":         "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8a4 4 0 1 0 0-8M19 8v6M22 11h-6",
 	"staffactivity": "M3 3v18h18M7 15l4-4 3 3 5-6",
+	"map":           "M9 3L3 6v15l6-3 6 3 6-3V3l-6 3zM9 3v15M15 6v15",
 	"schedule":      "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 7v5l3 2",
 	"replies":       "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2zM8 9h8M8 13h5",
 	"applications":  "M9 3h6v4H9zM9 5H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-3M9 12h6M9 16h4",
