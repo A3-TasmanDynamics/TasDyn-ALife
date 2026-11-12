@@ -42,6 +42,7 @@ class CfgFunctions
             class dropGear {};        // a player's Arma gear onto the ground (strip)
             class locker {};          // police / EMS personal lockers (gear crate, items)
             class adminAction {};    // client -> server: the admin menu (checked against website permissions)
+            class gameCommands {};   // the website's admin panel -> players in game (message, warn, kick, announce)
             class shopSell {};       // client -> server: sell to a trader
             class requestGather {};  // client -> server: gather a resource (timed)
             class requestProcess {}; // client -> server: process resources (timed)

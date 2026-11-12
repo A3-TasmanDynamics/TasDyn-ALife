@@ -1,7 +1,7 @@
 {{define "content"}}
 <div class="admin-shell">
   {{template "admin_sidebar" .}}
-  <div id="admin-main" tabindex="-1" class="admin-content mod-page" data-live="online watch">
+  <div id="admin-main" tabindex="-1" class="admin-content mod-page" data-live="online watch gamecmd">
     {{template "admin_header" .}}
     <div>
       <h1 class="page-title admin-title">Online Now</h1>
@@ -38,6 +38,44 @@
       </a>
       {{else}}<p class="empty">Nobody is in game right now.</p>{{end}}
     </section>
+
+    {{if .Game}}
+    <section class="card dash-card" aria-labelledby="on-tools">
+      <div class="dash-card-head"><h2 id="on-tools">In-game tools</h2><span class="muted small">Reaches the game within a few seconds · logged to the Staff Log</span></div>
+      <div class="gt-forms">
+        {{if .CanSend}}
+        <form class="gt-form" method="post" action="/admin/game/command">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="back" value="/admin/online">
+          <div class="field"><label for="gt-player">Player</label>
+            <select id="gt-player" name="player" required><option value="">Choose a player in game…</option>{{range .Players}}<option value="{{.PlayerID}}">{{.Name}}</option>{{end}}</select></div>
+          <div class="field"><label for="gt-action">Send</label>
+            <select id="gt-action" name="action">{{if .Game.message}}<option value="message">Private message</option>{{end}}{{if .Game.warn}}<option value="warn">Warning</option>{{end}}{{if .Game.kick}}<option value="kick">Kick (with this reason)</option>{{end}}</select></div>
+          <div class="field gt-text"><label for="gt-text">Message or reason</label><input id="gt-text" name="text" maxlength="300" required placeholder="What they'll see"></div>
+          <button class="btn btn-primary" type="submit" data-confirm-kick>Send</button>
+        </form>
+        {{end}}
+        {{if .Game.announce}}
+        <form class="gt-form" method="post" action="/admin/game/command">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="back" value="/admin/online"><input type="hidden" name="action" value="announce">
+          <div class="field gt-text"><label for="gt-announce">Announce to everyone</label><input id="gt-announce" name="text" maxlength="300" required placeholder="e.g. Server restart in 10 minutes"></div>
+          <button class="btn" type="submit">Announce</button>
+        </form>
+        {{end}}
+      </div>
+      {{if .Recent}}
+      <div class="lrow gt-row lrow-head"><span>When</span><span>What</span><span>To</span><span>Message</span><span>Status</span></div>
+      {{range .Recent}}
+      <div class="lrow gt-row">
+        <span class="muted small">{{$.Ago .Created}} ago</span>
+        <span>{{.Action}}</span>
+        <span class="ellipsis">{{if .Target}}<a href="/admin/players?id={{.TargetID}}">{{.Target}}</a>{{else}}everyone{{end}}</span>
+        <span class="ellipsis" title="{{.Text}} — sent by {{.By}}">{{.Text}} <span class="muted small">· {{.By}}</span></span>
+        <span><span class="gt-status gt-{{.Status}}">{{.Status}}</span>{{if .Result}} <span class="muted small">{{.Result}}</span>{{end}}</span>
+      </div>
+      {{end}}
+      {{end}}
+    </section>
+    {{end}}
 
     <section class="card dash-card" aria-labelledby="on-hist">
       <div class="dash-card-head"><h2 id="on-hist">Players online</h2><span class="muted small">Last 24 hours, every 15 minutes</span></div>

@@ -67,6 +67,11 @@ public:
     // a session for uid (closing any left open), "end" closes it, "reset"
     // closes every open session (server start).
     bool RecordSession(const std::string& op, const std::string& uid, const std::string& faction, std::string& outError);
+    // Website -> game commands (game_commands): "claim" hands the server up to
+    // 10 pending ones as [[id, action, targetUid, text, staffName], ...] and
+    // expires ones older than 2 minutes; "done" records the outcome.
+    bool GameCommandsClaim(std::string& outResponse, std::string& outError);
+    bool GameCommandDone(const std::string& id, const std::string& status, const std::string& result, std::string& outError);
 
     // Dynamic market (docs/DATA_CONTRACT.md "market"): MarketLoad returns
     // every saved price as [["item","price"],...]; MarketSet upserts one;

@@ -63,6 +63,7 @@ type playerLookupData struct {
 	EventCat   string
 	Conn       players.Connections
 	Watch      *watchlist.Entry
+	Game       map[string]bool // in-game actions the viewer may send (while they're online)
 
 	CanVehicles   bool
 	CanCompensate bool
@@ -124,6 +125,9 @@ func (d *Deps) PlayerLookup(w http.ResponseWriter, r *http.Request) {
 		data.Houses, _ = lookup.PlayerHouses(r.Context(), d.Pool, data.P.ID)
 		data.Wanted, _ = players.WantedInfo(r.Context(), d.Pool, data.P.ID)
 		data.CanNotes = d.can(r, "players.notes")
+		if data.P.Status == "online" {
+			data.Game = d.gameCaps(r)
+		}
 		if w, ok, err := watchlist.Get(r.Context(), d.Pool, data.P.ID); err != nil {
 			slog.Error("watchlist lookup failed", "error", err)
 		} else if ok {

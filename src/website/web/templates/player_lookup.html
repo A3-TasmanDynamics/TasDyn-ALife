@@ -50,6 +50,7 @@
             {{if $.CanCompensate}}<button class="btn" type="button" data-dialog-open="dlg-comp">Compensate…</button>{{end}}
             {{if or $.CanPolice $.CanEMS}}<button class="btn" type="button" data-dialog-open="dlg-level">Faction level…</button>{{end}}
             {{if $.CanLicences}}<button class="btn" type="button" data-dialog-open="dlg-licences">Licences…</button>{{end}}
+            {{if or $.Game.message $.Game.warn $.Game.kick}}<button class="btn" type="button" data-dialog-open="dlg-game">In game…</button>{{end}}
             {{if $.CanNotes}}<button class="btn" type="button" data-dialog-open="dlg-watch">{{if $.Watch}}Watchlist…{{else}}Watch…{{end}}</button>{{end}}
             {{if and $.CanBan (not $.Ban)}}<button class="btn btn-danger-soft" type="button" data-dialog-open="dlg-ban">Ban…</button>{{end}}
             {{if and $.CanLiftBan $.Ban}}<button class="btn" type="button" data-dialog-open="dlg-lift">Lift ban…</button>{{end}}
@@ -313,6 +314,21 @@
       </div>
       {{end}}
 
+      {{if or $.Game.message $.Game.warn $.Game.kick}}
+      <dialog id="dlg-game" class="modal" aria-labelledby="dlg-game-title">
+        <form method="post" action="/admin/game/command" data-player="{{.Name}}">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="player" value="{{.ID}}"><input type="hidden" name="back" value="/admin/players?id={{.ID}}">
+          <div class="modal-head"><h2 id="dlg-game-title">{{.Name}} is in game</h2><button class="modal-x" type="button" data-dialog-close aria-label="Close">&times;</button></div>
+          <div class="modal-body">
+            <div class="field"><label for="game-action">Send</label>
+              <select id="game-action" name="action">{{if $.Game.message}}<option value="message">Private message</option>{{end}}{{if $.Game.warn}}<option value="warn">Warning</option>{{end}}{{if $.Game.kick}}<option value="kick">Kick (with this reason)</option>{{end}}</select></div>
+            <div class="field"><label for="game-text">Message or reason</label><input id="game-text" name="text" maxlength="300" required placeholder="What they'll see"></div>
+            <p class="hint">It reaches the game within a few seconds and is logged to the Staff Log. The outcome shows under In-game tools on Online Now.</p>
+          </div>
+          <div class="modal-foot"><button class="btn" type="button" data-dialog-close>Cancel</button><button class="btn btn-primary" type="submit">Send</button></div>
+        </form>
+      </dialog>
+      {{end}}
       {{if $.CanNotes}}
       <dialog id="dlg-watch" class="modal" aria-labelledby="dlg-watch-title">
         <form method="post" action="/admin/players/{{.ID}}/watch">

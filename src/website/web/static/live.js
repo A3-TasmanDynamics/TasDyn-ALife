@@ -131,6 +131,7 @@
     };
     es.addEventListener("counts", function (e) { counts(JSON.parse(e.data)); });
     es.addEventListener("online", function () { touched("online"); });
+    es.addEventListener("gamecmd", function () { touched("gamecmd"); });
     ["flag", "ticket", "case", "watch"].forEach(function (topic) {
       es.addEventListener(topic, function (e) {
         var t = JSON.parse(e.data);
