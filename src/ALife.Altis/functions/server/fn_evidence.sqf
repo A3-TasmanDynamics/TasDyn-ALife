@@ -15,8 +15,15 @@
            digits, `guesses` tries: each says how many are right and in the
            right place, and how many are right but elsewhere; out of tries:
            locked for `lockout` s, a new code)
-        4. the vault opens: a crate with everything seized, and a bag with
-           its virtual items, its cash and cashBonus. The vault is empty.
+        4. the vault opens: its own inventory -- everything seized -- can be
+           looted (Arma's inventory), and Windows on it gives the seized
+           virtual items, cash and cashBonus. What's left in it stays
+           evidence; it locks again when it reseals.
+    The vault object (evidence_vault) is a real container (a crate or box
+    placed in Eden): seized gear goes straight into its inventory, which is
+    what's saved, and it's locked (lockInventory, on every machine) except
+    while it's cracked open. Without one, the gear is kept in the database
+    only.
     Needs minCops police online; one robbery per `cooldown` s; not finished
     within giveUpAfter s, the vault reseals. Everyone who works a stage is
     wanted (crime). Police at the keypad or vault can secure it (reseal,
@@ -37,7 +44,7 @@ params [["_unit", objNull, [objNull]], ["_mode", "", [""]], ["_arg", ""]];
 if (!isServer) exitWith {};
 private _cfg = missionConfigFile >> "CfgALife" >> "Evidence";
 // (The server itself: "load", and "police" "timeout" with no unit.)
-if (_mode != "load" && { isNull _unit } && { !(_mode == "police" && { _arg isEqualTo "timeout" }) }) exitWith {};
+if (_mode != "load" && { isNull _unit } && { !(_mode == "police" && { _arg in ["timeout", "save"] }) }) exitWith {};
 if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith { ["spoof", _unit, "evidence", remoteExecutedOwner] call ALife_fnc_anticheat; };
 if (isRemoteExecuted && { ["rate", _unit, "evidence"] call ALife_fnc_anticheat }) exitWith {};
 
@@ -98,18 +105,34 @@ private _fnc_fill = {
         };
     } forEach (_data getOrDefault ["containers", []]);
 };
+// The gear in evidence: the vault's own inventory (or, with no vault object, the kept list).
+private _fnc_gear = {
+    private _v = "vault" call _obj;
+    if (isNull _v) exitWith { ALife_evidence get "gear" };
+    _v call _fnc_read
+};
+// The vault's inventory locked / open, on every machine (and anyone joining later).
+private _fnc_lock = {
+    private _v = "vault" call _obj;
+    if (isNull _v) exitWith {};
+    _v lockInventory _this;
+    // Everyone now, and anyone joining later (ALife_fnc_evidenceClient "init").
+    ALife_evidenceOpen = !_this;
+    publicVariable "ALife_evidenceOpen";
+    ["lock", [_v, _this]] remoteExecCall ["ALife_fnc_evidenceClient", -2];
+};
 // Save the vault to the database.
 private _fnc_save = {
     private _e = ALife_evidence;
     private _items = (keys (_e get "items")) apply { [_x, (_e get "items") get _x] };
-    private _r = ["evidence", ["set", str (_e get "gear"), str _items, str (_e get "cash")]] call ALife_fnc_extension;
+    private _r = ["evidence", ["set", str (call _fnc_gear), str _items, str (_e get "cash")]] call ALife_fnc_extension;
     if (_r != "OK") then { diag_log format ["[ALife] evidence save failed: %1", _r]; };
     _r == "OK"
 };
 private _fnc_empty = { ALife_evidence = createHashMapFromArray [["gear", [["items", []], ["mags", []], ["weapons", []], ["containers", []]]], ["items", createHashMap], ["cash", 0]]; };
 // How much is in it, for people.
 private _fnc_count = {
-    private _g = createHashMapFromArray ((ALife_evidence get "gear") select { _x isEqualTypeParams ["", []] });
+    private _g = createHashMapFromArray ((call _fnc_gear) select { _x isEqualTypeParams ["", []] });
     [count (_g getOrDefault ["weapons", []]), count (_g getOrDefault ["mags", []]) + count (_g getOrDefault ["items", []]) + count (_g getOrDefault ["containers", []]),
      (values (ALife_evidence get "items")) call { private _n = 0; { _n = _n + _x; } forEach _this; _n }, ALife_evidence get "cash"]
 };
@@ -139,10 +162,24 @@ private _fnc_wanted = {
     _record set ["civ_bounty", _total];
     _who setVariable ["alife_bounty", _total, true];
 };
-// Back to sealed.
+// Back to sealed: locked; what robbers left of the items and cash is evidence again.
 private _fnc_reset = {
     private _keep = ALife_vault getOrDefault ["cooldownUntil", 0];
+    private _bag = ALife_vault getOrDefault ["bag", ""];
     ALife_vault = createHashMapFromArray [["stage", 0], ["cooldownUntil", _keep], ["robbers", []]];
+    if (_bag != "") then {
+        private _c = (missionNamespace getVariable ["ALife_containers", createHashMap]) getOrDefault [_bag, createHashMap];
+        if (count _c > 0) then {
+            private _store = ALife_evidence get "items";
+            { _store set [_x, (_store getOrDefault [_x, 0]) + _y]; } forEach (_c get "items");
+            ALife_evidence set ["cash", (ALife_evidence get "cash") + (_c getOrDefault ["cash", 0])];
+            ALife_containers deleteAt _bag;
+        };
+        ALife_groundBags = (missionNamespace getVariable ["ALife_groundBags", []]) - ["vault" call _obj];
+        publicVariable "ALife_groundBags";
+    };
+    true call _fnc_lock;
+    call _fnc_save;
     [false] call _fnc_alarm;
 };
 
@@ -171,8 +208,15 @@ switch (_mode) do {
         // The vault's objects: still and unhurt.
         {
             private _o = _x call _obj;
-            if (!isNull _o) then { _o allowDamage false; _o enableSimulationGlobal false; };
-        } forEach ["entrance", "vaultDoor", "keypad", "vault"];
+            if (!isNull _o) then { _o allowDamage false; if (_x != "vault") then { _o enableSimulationGlobal false; }; };
+        } forEach ["entrance", "vaultDoor", "keypad", "vault"]; // (the vault keeps simulating: its inventory opens)
+        // The vault's inventory: just the evidence (not what Eden put in it), locked.
+        private _v = "vault" call _obj;
+        if (!isNull _v) then {
+            clearWeaponCargoGlobal _v; clearMagazineCargoGlobal _v; clearItemCargoGlobal _v; clearBackpackCargoGlobal _v;
+            [_v, ALife_evidence get "gear"] call _fnc_fill;
+            true call _fnc_lock;
+        };
         diag_log format ["[ALife] evidence vault loaded: %1", call _fnc_count];
         // Not finished in time: resealed.
         [] spawn {
@@ -182,6 +226,14 @@ switch (_mode) do {
                 if (_stage in [1, 2, 2.5] && { time - (ALife_vault getOrDefault ["startedAt", time]) > getNumber (missionConfigFile >> "CfgALife" >> "Evidence" >> "giveUpAfter") }) then {
                     diag_log "[ALife] evidence vault robbery timed out: resealed";
                     [objNull, "police", "timeout"] call ALife_fnc_evidence;
+                };
+                // Cracked open: what's left in it is saved as robbers take things; resealed after lootLifetime.
+                if (_stage == 3) then {
+                    if (time - (ALife_vault getOrDefault ["openedAt", time]) > getNumber (missionConfigFile >> "CfgALife" >> "Evidence" >> "lootLifetime")) then {
+                        [objNull, "police", "timeout"] call ALife_fnc_evidence;
+                    } else {
+                        [objNull, "police", "save"] call ALife_fnc_evidence;
+                    };
                 };
             };
         };
@@ -212,12 +264,15 @@ switch (_mode) do {
         // Weapons / gear on the ground (a weapon holder; a bag is a simple object, no cargo).
         if (_bagId == "" && { _target isKindOf "WeaponHolder" || { _target isKindOf "WeaponHolderSimulated" } }) then {
             private _gear = _target call _fnc_read;
-            private _store = ALife_evidence get "gear";
-            {
-                _x params ["_key", "_list"];
-                private _i = _store findIf { (_x select 0) == _key };
-                if (_i < 0) then { _store pushBack [_key, +_list]; } else { ((_store select _i) select 1) append _list; };
-            } forEach _gear;
+            private _v = "vault" call _obj;
+            if (!isNull _v) then { [_v, _gear] call _fnc_fill; } else {
+                private _store = ALife_evidence get "gear";
+                {
+                    _x params ["_key", "_list"];
+                    private _i = _store findIf { (_x select 0) == _key };
+                    if (_i < 0) then { _store pushBack [_key, +_list]; } else { ((_store select _i) select 1) append _list; };
+                } forEach _gear;
+            };
             private _n = count ((createHashMapFromArray _gear) get "weapons");
             _what pushBack format ["%1 weapon(s) and gear", _n];
         };
@@ -344,43 +399,42 @@ switch (_mode) do {
         private _left = (ALife_vault getOrDefault ["left", 0]) - 1;
         ALife_vault set ["left", _left];
         if (_exact == count _code) exitWith {
-            // Cracked: the vault opens -- a crate with the gear, a bag with the items and cash.
+            // Cracked: the vault itself opens -- its inventory (the gear), and
+            // Windows on it for the virtual items, cash and cashBonus.
             ALife_vault set ["stage", 3];
+            ALife_vault set ["openedAt", time];
             [_uid, "civ", "keypaddecoder", -1] call ALife_fnc_itemsChange;
             ["cracked", []] remoteExecCall ["ALife_fnc_evidenceClient", _owner];
             private _vault = "vault" call _obj;
-            private _pos = _vault getPos [1.5, getDir _vault];
-            private _crate = createVehicle [getText (_cfg >> "crate"), [_pos select 0, _pos select 1, 0], [], 0, "CAN_COLLIDE"];
-            clearWeaponCargoGlobal _crate; clearMagazineCargoGlobal _crate; clearItemCargoGlobal _crate; clearBackpackCargoGlobal _crate;
-            [_crate, ALife_evidence get "gear"] call _fnc_fill;
-            // Its virtual items and cash: a ground container on the crate (Windows on it).
+            private _count = call _fnc_count;
             private _cash = (ALife_evidence get "cash") + getNumber (_cfg >> "cashBonus");
+            // No vault object: the old way, a crate beside where it should be (by the keypad).
+            if (isNull _vault) then {
+                private _pos = _keypad getPos [1.5, getDir _keypad];
+                _vault = createVehicle [getText (_cfg >> "crate"), [_pos select 0, _pos select 1, 0], [], 0, "CAN_COLLIDE"];
+                clearWeaponCargoGlobal _vault; clearMagazineCargoGlobal _vault; clearItemCargoGlobal _vault; clearBackpackCargoGlobal _vault;
+                [_vault, ALife_evidence get "gear"] call _fnc_fill;
+                ALife_evidence set ["gear", [["items", []], ["mags", []], ["weapons", []], ["containers", []]]];
+            };
+            false call _fnc_lock;
             if (isNil "ALife_containers") then { ALife_containers = createHashMap; ALife_containerCount = 0; };
             ALife_containerCount = ALife_containerCount + 1;
-            private _id = format ["bag_vault_%1", ALife_containerCount];
+            private _id = format ["vault_%1", ALife_containerCount];
             ALife_containers set [_id, createHashMapFromArray [
-                ["object", _crate], ["kind", "ground"], ["owner", ""], ["title", "Evidence vault"],
+                ["object", _vault], ["kind", "ground"], ["owner", ""], ["title", "Evidence vault"],
                 ["items", +(ALife_evidence get "items")], ["cash", _cash], ["capacity", 100000], ["created", time]
             ]];
-            ALife_groundBags = (missionNamespace getVariable ["ALife_groundBags", []]) + [_crate];
+            ALife_vault set ["bag", _id];
+            ALife_groundBags = (missionNamespace getVariable ["ALife_groundBags", []]) + [_vault];
             publicVariable "ALife_groundBags";
-            private _count = call _fnc_count;
-            call _fnc_empty;
+            // The items and cash are in its bag now (what's left goes back when it reseals).
+            ALife_evidence set ["items", createHashMap];
+            ALife_evidence set ["cash", 0];
             call _fnc_save;
             ALife_vault set ["cooldownUntil", time + getNumber (_cfg >> "cooldown")];
             diag_log format ["[ALife] evidence vault cracked by %1: %2 weapons, %3 other, %4 items, $%5", getPlayerUID _unit, _count select 0, _count select 1, _count select 2, _cash];
             ["log", _unit, "evidence.robbed", [["weapons", _count select 0], ["gear", _count select 1], ["items", _count select 2], ["cash", _cash]]] call ALife_fnc_anticheat;
             [true, "The evidence vault has been cracked open!"] call _fnc_alarm;
-            // The crate goes after a while; the vault reseals with it.
-            [_crate, _id] spawn {
-                params ["_crate", "_id"];
-                sleep getNumber (missionConfigFile >> "CfgALife" >> "Evidence" >> "lootLifetime");
-                ALife_containers deleteAt _id;
-                ALife_groundBags = (missionNamespace getVariable ["ALife_groundBags", []]) - [_crate];
-                publicVariable "ALife_groundBags";
-                deleteVehicle _crate;
-                if ((ALife_vault getOrDefault ["stage", 0]) == 3) then { [objNull, "police", "timeout"] call ALife_fnc_evidence; };
-            };
         };
         if (_left <= 0) exitWith {
             ALife_vault set ["lockedUntil", time + getNumber (_cfg >> "lockout")];
@@ -394,7 +448,10 @@ switch (_mode) do {
     case "police": {
         // _arg: "secure" (reseal, alarm off), "destroy" (the evidence, when it's quiet),
         // "count" (what's in it); "timeout" from the server itself.
-        if (_arg == "timeout") exitWith { if (!isRemoteExecuted) then { call _fnc_reset; }; };
+        if (_arg in ["timeout", "save"]) exitWith {
+            if (isRemoteExecuted) exitWith {};
+            if (_arg == "save") then { call _fnc_save; } else { call _fnc_reset; };
+        };
         if ((_unit getVariable ["alife_faction", ""]) != "cop" || { !alive _unit }) exitWith {};
         private _near = ["keypad", "vault", "entrance", "vaultDoor"] findIf { private _o = _x call _obj; !isNull _o && { _unit distance _o < getNumber (_cfg >> "range") + 2 } } >= 0;
         if (!_near) exitWith { "Get closer." call _fnc_reply; };
@@ -414,6 +471,8 @@ switch (_mode) do {
             case "destroy": {
                 if ((ALife_vault getOrDefault ["stage", 0]) > 0) exitWith { "Not during a break-in." call _fnc_reply; };
                 call _fnc_empty;
+                private _v = "vault" call _obj;
+                if (!isNull _v) then { clearWeaponCargoGlobal _v; clearMagazineCargoGlobal _v; clearItemCargoGlobal _v; clearBackpackCargoGlobal _v; };
                 call _fnc_save;
                 diag_log format ["[ALife] %1 destroyed the evidence (%2 weapons, %3 gear, %4 items, $%5)", getPlayerUID _unit, _weapons, _gear, _items, _cash];
                 ["log", _unit, "police.evidence_destroyed", [["weapons", _weapons], ["gear", _gear], ["items", _items], ["cash", _cash]]] call ALife_fnc_anticheat;

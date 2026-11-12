@@ -92,7 +92,15 @@ if (_evAt >= 0 && { player distance _target <= getNumber (_evCfg >> "range") + 1
         true
     };
     if (_faction != "civ") exitWith { true };
-    if (_stage == "vault") exitWith { ["Crack the keypad to open it.", "info"] call ALife_fnc_toast; true };
+    if (_stage == "vault") exitWith {
+        // Cracked open: its items and cash (its gear is in its own inventory).
+        if (_target in (missionNamespace getVariable ["ALife_groundBags", []])) then {
+            [player, _target] remoteExecCall ["ALife_fnc_containerOpen", 2];
+        } else {
+            ["Crack the keypad to open it.", "info"] call ALife_fnc_toast;
+        };
+        true
+    };
     private _label = switch (_stage) do {
         case "entrance": { "Cut the door (Bolt Cutters)" };
         case "vaultDoor": { "Set a charge (Blasting Charge)" };
