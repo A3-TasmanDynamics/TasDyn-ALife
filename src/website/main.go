@@ -471,6 +471,7 @@ func run() error {
 		r.Group(func(r chi.Router) {
 			r.Use(d.Auth.RequirePermission("cases.view"))
 			r.Get("/admin/cases", d.CasesList)
+			r.Get("/admin/reports", d.Reports)
 			r.Get("/admin/cases/{id}", d.CaseView)
 			r.Post("/admin/cases/{id}/entries", d.CaseAddEntry)
 			r.Post("/admin/cases/{id}/status", d.CaseSetStatus)

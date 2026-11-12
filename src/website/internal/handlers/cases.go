@@ -172,8 +172,9 @@ type caseNewData struct {
 	Type    string
 	Summary string
 	Players []string
-	FlagID  int64
-	Note    string
+	FlagID   int64
+	TicketID int64 // opening from a player report
+	Note     string
 }
 
 func (d *Deps) CaseNew(w http.ResponseWriter, r *http.Request) {
@@ -188,6 +189,16 @@ func (d *Deps) CaseNew(w http.ResponseWriter, r *http.Request) {
 			data.Players[0] = fmt.Sprintf("#%d", fl.PlayerID)
 			data.Type = "cheating"
 			data.Summary = fl.Title
+		}
+	}
+	if tid, err := strconv.ParseInt(q.Get("ticket"), 10, 64); err == nil && tid > 0 {
+		if rep, ok, err := cases.GetReport(r.Context(), d.Pool, tid); err == nil && ok && rep.CaseID == 0 {
+			data.TicketID = tid
+			data.Type = "conduct"
+			data.Summary = rep.Subject
+			if len([]rune(data.Summary)) > 200 {
+				data.Summary = string([]rune(data.Summary)[:200])
+			}
 		}
 	}
 	d.Render.Render(w, "case_new.html", data)
@@ -211,13 +222,14 @@ func (d *Deps) CaseCreate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	flagID, _ := strconv.ParseInt(r.FormValue("flag"), 10, 64)
+	ticketID, _ := strconv.ParseInt(r.FormValue("ticket"), 10, 64)
 	var id int64
 	if err == nil {
 		id, err = cases.Open(r.Context(), d.Pool, caseActor(r), r.FormValue("type"), r.FormValue("summary"), ids, flagID, r.FormValue("note"))
 	}
 	if err != nil {
 		data := caseNewData{Base: baseFrom(r, "Open a case"), AdminShell: d.adminShell(r, "cases"), Types: cases.Types,
-			Type: r.FormValue("type"), Summary: r.FormValue("summary"), Players: r.Form["player"], FlagID: flagID, Note: r.FormValue("note")}
+			Type: r.FormValue("type"), Summary: r.FormValue("summary"), Players: r.Form["player"], FlagID: flagID, TicketID: ticketID, Note: r.FormValue("note")}
 		for len(data.Players) < 4 {
 			data.Players = append(data.Players, "")
 		}
@@ -231,7 +243,16 @@ func (d *Deps) CaseCreate(w http.ResponseWriter, r *http.Request) {
 		d.Render.RenderStatus(w, http.StatusUnprocessableEntity, "case_new.html", data)
 		return
 	}
-	http.Redirect(w, r, fmt.Sprintf("/admin/cases/%d?notice=%s", id, errMsg("Case opened.")), http.StatusSeeOther)
+	notice := "Case opened."
+	if ticketID > 0 {
+		if err := cases.LinkReport(r.Context(), d.Pool, caseActor(r), id, ticketID); err != nil {
+			slog.Warn("cases: linking the report failed", "ticket", ticketID, "case", id, "error", err)
+			http.Redirect(w, r, fmt.Sprintf("/admin/cases/%d?error=%s", id, errMsg(fmt.Sprintf("Case opened, but it couldn't be linked to ticket #%d: %v", ticketID, err))), http.StatusSeeOther)
+			return
+		}
+		notice = fmt.Sprintf("Case opened from report ticket #%d. The reporter is told when it's closed.", ticketID)
+	}
+	http.Redirect(w, r, fmt.Sprintf("/admin/cases/%d?notice=%s", id, errMsg(notice)), http.StatusSeeOther)
 }
 
 // ---- Case view ----
@@ -244,6 +265,8 @@ type caseViewData struct {
 	Bans       []cases.Ban
 	Correcting int
 	Replies    []replies.Reply // saved case-entry templates
+	Tickets    []int64         // report tickets this case came from
+	CanTickets bool
 	CanWrite   bool
 	CanClose   bool
 	CanBan     bool
@@ -315,6 +338,18 @@ func (d *Deps) CaseView(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	data.Replies = d.savedReplies(r, "case")
+	if rows, err := d.Pool.Query(r.Context(), `SELECT id FROM support_tickets WHERE case_id = $1 ORDER BY id`, id); err == nil {
+		for rows.Next() {
+			var t int64
+			if rows.Scan(&t) == nil {
+				data.Tickets = append(data.Tickets, t)
+			}
+		}
+		rows.Close()
+	}
+	if sess, ok := auth.FromContext(r.Context()); ok && sess != nil {
+		data.CanTickets = sess.SupportPanelAccess
+	}
 	d.Render.Render(w, "case_view.html", data)
 }
 

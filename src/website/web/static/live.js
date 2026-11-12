@@ -33,6 +33,7 @@
   function counts(c) {
     if ("cases" in c) badge("cases", c.cases, true);
     if ("bans" in c) badge("bans", c.bans, false);
+    if ("reports" in c) badge("reports", c.reports, true);
     if ("anticheat" in c) badge("anticheat", c.anticheat, true);
     if ("applications" in c) badge("applications", c.applications, true);
     if ("tickets_open" in c) {

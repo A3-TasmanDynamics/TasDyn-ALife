@@ -9,6 +9,7 @@
 
     <form class="card mod-form" method="post" action="/admin/cases/new">
       <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      {{if .TicketID}}<input type="hidden" name="ticket" value="{{.TicketID}}"><div class="banner banner-notice mod-inline-banner">Opening from player report ticket #{{.TicketID}}. The reporter is added to the case and the report copied in; add the player(s) being reported below.</div>{{end}}
       {{if .FlagID}}<input type="hidden" name="flag" value="{{.FlagID}}"><div class="banner banner-notice mod-inline-banner">Opening from anti-cheat flag #{{.FlagID}}. The flag will be marked as handled in this case.</div>{{end}}
       <div class="mod-form-row">
         <div class="field"><label for="cn-type">Type</label>

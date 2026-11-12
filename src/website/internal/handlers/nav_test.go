@@ -22,7 +22,7 @@ func TestBuildNav(t *testing.T) {
 		Perms: map[string]bool{"cases.view": true, "anticheat.review": true, "players.view": true}}
 	buildNav(&s, &auth.Session{AdminPanelAccess: true})
 	k := keys(s)
-	for _, want := range []string{"dashboard", "cases", "anticheat", "bans", "watchlist", "players", "gangs", "roles", "stafflog"} {
+	for _, want := range []string{"dashboard", "cases", "reports", "anticheat", "bans", "watchlist", "players", "gangs", "roles", "stafflog"} {
 		if !k[want] {
 			t.Errorf("moderator should see %s", want)
 		}
@@ -35,7 +35,7 @@ func TestBuildNav(t *testing.T) {
 	if s.NavSection == nil || s.NavSection.Key != "moderation" || !s.NavSection.Active || s.NavPage == nil || s.NavPage.Label != "Anti-Cheat Flags" {
 		t.Fatalf("current: %+v %+v", s.NavSection, s.NavPage)
 	}
-	if len(s.NavTabs) != 4 {
+	if len(s.NavTabs) != 5 { // cases, reports, flags, bans, watchlist
 		t.Errorf("moderation tabs: %d", len(s.NavTabs))
 	}
 	for _, it := range s.NavTabs {

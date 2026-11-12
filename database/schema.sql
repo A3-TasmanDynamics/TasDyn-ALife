@@ -1462,8 +1462,10 @@ CREATE TABLE support_tickets (
     discord_thread_id   TEXT,              -- Discord thread this ticket mirrors to, docs/WEBSITE.md §9
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
-    closed_at           TIMESTAMPTZ
+    closed_at           TIMESTAMPTZ,
+    case_id             BIGINT REFERENCES staff_cases(id) ON DELETE SET NULL  -- a player report turned into a case
 );
+CREATE INDEX idx_support_tickets_case ON support_tickets(case_id) WHERE case_id IS NOT NULL;
 
 CREATE INDEX idx_support_tickets_player_id ON support_tickets(player_id);
 CREATE INDEX idx_support_tickets_open ON support_tickets(status) WHERE status != 'closed';

@@ -36,6 +36,7 @@ type AdminShell struct {
 	OpenCases  int
 	ActiveBans int
 	OpenFlags  int
+	NewReports int // player reports with no case yet
 	OpenApps   int
 	// Support section: open tickets, and unassigned ones.
 	OpenTickets       int
@@ -66,12 +67,14 @@ func (d *Deps) adminShell(r *http.Request, tab string) AdminShell {
 		       (SELECT count(*) FROM staff_cases WHERE status = 'open'),
 		       (SELECT count(*) FROM banlist WHERE expires_at IS NULL OR expires_at > now()),
 		       (SELECT count(*) FROM anti_cheat_flags WHERE resolution IS NULL),
+		       (SELECT count(*) FROM support_tickets t JOIN ticket_categories tc ON tc.id = t.subcategory_id
+		         WHERE tc.key IN ('gameplay_player_report', 'discord_report_member', 'teamspeak_report_member') AND t.case_id IS NULL AND t.status <> 'closed'),
 		       (SELECT count(*) FROM staff_applications WHERE status IN ('pending', 'interview')),
 		       (SELECT count(*) FROM support_tickets WHERE status <> 'closed'),
 		       (SELECT count(*) FROM support_tickets WHERE status <> 'closed' AND assigned_staff_id IS NULL)
 		FROM players p LEFT JOIN staff_ranks sr ON sr.id = p.staff_rank_id
 		WHERE p.id = $1
-	`, sess.PlayerID).Scan(&s.StaffRank, &s.OpenCases, &s.ActiveBans, &s.OpenFlags, &s.OpenApps, &s.OpenTickets, &s.UnassignedTickets)
+	`, sess.PlayerID).Scan(&s.StaffRank, &s.OpenCases, &s.ActiveBans, &s.OpenFlags, &s.NewReports, &s.OpenApps, &s.OpenTickets, &s.UnassignedTickets)
 	s.Perms, _ = auth.Effective(r.Context(), d.Pool, sess.PlayerID)
 	buildNav(&s, sess)
 	return s

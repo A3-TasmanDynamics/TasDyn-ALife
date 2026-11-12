@@ -3290,3 +3290,10 @@ a.lrow:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
 .lm-list-wrap summary { cursor: pointer; color: var(--text-dim); }
 .lm-list { columns: 2 260px; padding-left: 18px; }
 .lm-list a { color: var(--text-2); }
+/* ---- Reports ---- */
+.rp-list { display: flex; flex-direction: column; gap: 12px; }
+.rp { padding: 14px 18px; display: flex; flex-direction: column; gap: 8px; }
+.rp-head { display: flex; flex-direction: column; gap: 2px; }
+.rp-body { margin: 0; padding: 10px 14px; border-left: 3px solid var(--border-strong); background: var(--bg-input); border-radius: 6px; font-size: 13.5px; line-height: 1.55; white-space: pre-wrap; max-height: 220px; overflow: auto; }
+.rp-foot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ticket-report { padding: 12px 16px; margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; border-left: 3px solid var(--amber); }
