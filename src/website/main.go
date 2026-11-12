@@ -25,14 +25,15 @@ import (
 	"website/internal/config"
 	"website/internal/csrf"
 	"website/internal/db"
-	"website/internal/economy"
-	"website/internal/live"
 	"website/internal/dbbrowser"
 	"website/internal/discord"
+	"website/internal/economy"
 	"website/internal/handlers"
+	"website/internal/live"
 	"website/internal/logbuf"
 	"website/internal/render"
 	"website/internal/rolesync"
+	"website/internal/schedule"
 	"website/internal/servercontrol"
 	"website/internal/staff"
 	"website/internal/status"
@@ -225,6 +226,9 @@ func run() error {
 		d.LiveHub = live.NewHub(pool)
 		go d.LiveHub.Run(ctx)
 
+		// Scheduled in-game announcements and restart countdowns.
+		go schedule.Run(ctx, pool)
+
 		// Economy history for Admin -> Economy & Crime: a snapshot an hour.
 		go economy.RunSnapshots(ctx, pool)
 
@@ -389,9 +393,9 @@ func run() error {
 		r.Use(d.Auth.RequireAdminPanel)
 		r.Get("/admin/search", d.QuickSearch)
 		r.Get("/admin/replies", d.Replies)
-		r.Post("/admin/replies/save", d.RepliesSave)            // replies.manage, checked inside
+		r.Post("/admin/replies/save", d.RepliesSave)          // replies.manage, checked inside
 		r.Post("/admin/replies/{id}/delete", d.RepliesDelete) // replies.manage, checked inside
-		r.Post("/admin/game/command", d.GameCommand) // permission per action, checked inside
+		r.Post("/admin/game/command", d.GameCommand)          // permission per action, checked inside
 		r.Get("/admin/devlog/new", d.DevlogNewForm)
 		r.Post("/admin/devlog/new", d.DevlogCreate)
 
@@ -499,6 +503,8 @@ func run() error {
 		r.Group(func(r chi.Router) {
 			r.Use(d.Auth.RequirePermission("announce.post"))
 			r.Get("/admin/notices", d.AdminNotices)
+			r.Get("/admin/schedule", d.Schedule)
+			r.Post("/admin/schedule", d.ScheduleAction)
 			r.Post("/admin/notices", d.AdminNoticePost)
 		})
 
