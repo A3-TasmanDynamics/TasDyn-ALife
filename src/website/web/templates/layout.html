@@ -73,7 +73,7 @@
     </nav>
   </footer>
   {{end}}
-  {{if and .Panel .Session}}<script src="/static/admin.js" defer></script><script src="/static/panel.js" defer></script><script src="/static/live.js" defer></script>{{if .Session.AdminPanelAccess}}<script src="/static/quicksearch.js" defer></script>{{end}}{{end}}
+  {{if and .Panel .Session}}<script src="/static/admin.js" defer></script><script src="/static/panel.js" defer></script><script src="/static/live.js" defer></script><script src="/static/triage.js" defer></script>{{if .Session.AdminPanelAccess}}<script src="/static/quicksearch.js" defer></script>{{end}}{{end}}
 </body>
 </html>
 {{end}}

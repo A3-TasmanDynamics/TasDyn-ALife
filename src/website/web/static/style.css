@@ -3145,3 +3145,30 @@ a.lrow:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
 .skip-link { position: absolute; left: 12px; top: -60px; z-index: 100; padding: 10px 14px; border-radius: 8px; background: var(--amber); color: var(--on-amber); font-weight: 700; text-decoration: none; }
 .skip-link:focus { top: 12px; }
 #admin-main:focus { outline: none; }
+/* ---- Triage: bulk bars, keyboard, saved views (/static/triage.js) ---- */
+.ac-row { display: flex; align-items: stretch; gap: 8px; }
+.ac-row > .ac-item { flex: 1; min-width: 0; }
+.ac-row > .bulk-check { margin: 14px 2px 0; }
+.bulk-check { width: 16px; height: 16px; accent-color: var(--amber); cursor: pointer; flex-shrink: 0; }
+.bulk-col { width: 34px; }
+.bulkbar { position: sticky; top: 8px; z-index: 20; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; margin: 0 0 10px; border-radius: 10px; background: var(--bg-elevated); border: 1px solid var(--amber); box-shadow: var(--shadow-card); }
+.bulk-all { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin-right: 4px; }
+.bulk-all input { accent-color: var(--amber); width: 16px; height: 16px; }
+.bulk-note { flex: 1; min-width: 200px; min-height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text); font: inherit; font-size: 13px; }
+.bulkbar select { min-height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text); font: inherit; font-size: 12.5px; padding: 0 8px; }
+.admin-content [data-row]:focus-visible, .admin-content a.lrow:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.saved-views { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.view-chip { display: inline-flex; align-items: center; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-elevated); font-size: 12.5px; }
+.view-chip a { padding: 4px 4px 4px 12px; color: var(--text-2); text-decoration: none; font-weight: 600; }
+.view-chip.active { border-color: var(--amber); }
+.view-chip.active a { color: var(--amber-bright); }
+.view-chip button { border: 0; background: transparent; color: var(--text-faint); font-size: 15px; padding: 2px 10px 2px 6px; cursor: pointer; }
+.view-chip button:hover { color: var(--text); }
+.view-save { border: 1px dashed var(--border-strong); background: transparent; color: var(--text-dim); border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 12.5px; cursor: pointer; }
+.view-save:hover { color: var(--text); border-color: var(--amber); }
+.kbd-help { width: min(640px, calc(100vw - 32px)); }
+.kbd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 28px; padding-bottom: 18px; }
+.kbd-grid h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); }
+.kbd-grid p { display: flex; gap: 12px; align-items: baseline; margin: 0 0 7px; font-size: 13.5px; }
+.kbd-grid kbd { min-width: 64px; font-family: inherit; font-size: 12px; font-weight: 700; padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-2); text-align: center; }
+@media (max-width: 600px) { .kbd-grid { grid-template-columns: 1fr; } }
