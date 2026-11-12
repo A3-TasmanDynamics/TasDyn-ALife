@@ -57,7 +57,7 @@
     </div>
     <div class="card sync-log">
       {{if .Log}}
-      <table>
+      <div class="table-wrap"><table>
         <thead><tr><th>When</th><th>Player</th><th>Change</th><th>Result</th></tr></thead>
         <tbody>
           {{range .Log}}
@@ -69,7 +69,7 @@
           </tr>
           {{end}}
         </tbody>
-      </table>
+      </table></div>
       {{else}}
       <p class="hint sync-empty">Nothing synced yet. Map a role above, then change someone's rank or press "Sync everyone now".</p>
       {{end}}

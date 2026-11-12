@@ -22,7 +22,7 @@
       <div class="staff-team-head"><h2>{{.Name}}</h2><span>{{.Count}} {{if eq .Count 1}}member{{else}}members{{end}}</span></div>
       <div class="staff-rows">
         {{range .Members}}
-        <a class="staff-row" href="/admin/staff/{{.ID}}">
+        <a class="lrow staff-row" href="/admin/staff/{{.ID}}">
           {{if .AvatarURL}}<img class="staff-initials" src="{{.AvatarURL}}" alt="">{{else}}<span class="staff-initials" aria-hidden="true">{{.Initials}}</span>{{end}}
           <span class="staff-row-name">{{.Name}}</span>
           <span class="staff-row-rank">{{.RankName}} <span class="muted">&middot; {{.RankLevel}}</span></span>
@@ -34,7 +34,7 @@
       </div>
     </section>
     {{else}}
-    <p class="empty-state">{{if .Filter}}No staff with that status.{{else}}No staff yet.{{end}}</p>
+    <p class="empty">{{if .Filter}}No staff with that status.{{else}}No staff yet.{{end}}</p>
     {{end}}
 
     {{if .CanAdd}}

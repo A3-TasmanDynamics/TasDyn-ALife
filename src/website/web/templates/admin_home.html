@@ -53,14 +53,14 @@
         <section class="card dash-card" aria-labelledby="dash-mine">
           <div class="dash-card-head"><h2 id="dash-mine">My activity</h2><span class="muted small">This week: led {{.MyActivity.LedWeek}} &middot; assisted {{.MyActivity.AssistWeek}}</span><a class="dash-link" href="/admin/cases?mine=1&amp;range=all">All my cases &rarr;</a></div>
           {{range .MyCases}}
-          <a class="dash-row dash-row-link" href="/admin/cases/{{.ID}}">
+          <a class="lrow dash-row dash-row-link" href="/admin/cases/{{.ID}}">
             <span class="strong">#{{.ID}}</span>
             <span class="ellipsis">{{.Summary}}</span>
             <span class="muted small">{{if eq .Status "open"}}Open{{else}}Closed{{end}}</span>
             <span class="muted small dash-when">{{.Opened.Format "2 Jan"}}</span>
           </a>
           {{else}}
-          <p class="empty-state">You haven't led or assisted any cases yet.</p>
+          <p class="empty">You haven't led or assisted any cases yet.</p>
           {{end}}
         </section>
         {{end}}
@@ -70,14 +70,14 @@
             <a class="dash-link" href="/admin/staff-log">Full staff log &rarr;</a>
           </div>
           {{range .StaffLog}}
-          <div class="dash-row">
+          <div class="lrow dash-row">
             <span class="strong ellipsis">{{.StaffName}}</span>
             <span class="ellipsis">{{.Action}}{{if .TargetName}} &middot; {{.TargetName}}{{end}}{{if .Reason}} <span class="muted">&middot; {{.Reason}}</span>{{end}}</span>
             <span class="muted small">{{.Source}}</span>
             <span class="muted small dash-when">{{.CreatedAt}}</span>
           </div>
           {{else}}
-          <p class="empty-state">No staff actions logged yet.</p>
+          <p class="empty">No staff actions logged yet.</p>
           {{end}}
         </section>
       </div>
@@ -91,12 +91,12 @@
         <section class="card dash-card" aria-labelledby="dash-watch">
           <div class="dash-card-head"><h2 id="dash-watch">Watchlist</h2>{{if .WatchTotal}}<span class="muted small">{{.WatchTotal}} watched</span>{{end}}<a class="dash-link" href="/admin/watchlist">All &rarr;</a></div>
           {{range .Watch}}
-          <a class="dash-row dash-row-link watch-dash" href="/admin/players?id={{.PlayerID}}">
+          <a class="lrow dash-row dash-row-link watch-dash" href="/admin/players?id={{.PlayerID}}">
             <span class="strong ellipsis"><span class="dot {{if .Online}}dot-on{{end}}" title="{{if .Online}}Online{{else}}Offline{{end}}"></span>{{.Name}}</span>
             <span class="muted small ellipsis" title="{{.Reason}}">{{.Reason}}</span>
           </a>
           {{else}}
-          <p class="empty-state">Nobody is on the watchlist. Use Watch&hellip; on a player's page.</p>
+          <p class="empty">Nobody is on the watchlist. Use Watch&hellip; on a player's page.</p>
           {{end}}
         </section>
         {{end}}
@@ -112,7 +112,7 @@
             <span class="strong rich-total">${{$r.Total}}</span>
           </div>
           {{else}}
-          <p class="empty-state">No players yet.</p>
+          <p class="empty">No players yet.</p>
           {{end}}
         </section>
       </div>

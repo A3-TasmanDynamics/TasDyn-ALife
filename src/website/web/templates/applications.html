@@ -18,7 +18,7 @@
           <span class="mod-dim">#{{.ID}} &middot; submitted {{.CreatedAt.Format "2 Jan"}}{{if .TZ}} &middot; {{.TZ}}{{end}}</span>
         </a>
         {{else}}
-        <p class="mod-empty">Nothing here.</p>
+        <p class="empty">Nothing here.</p>
         {{end}}
       </div>
     </div>
@@ -75,7 +75,7 @@
       <p class="app-decided">{{if eq .Status "accepted"}}Accepted{{else}}Rejected{{end}}{{if .ReviewedBy}} by {{.ReviewedBy}}{{end}}{{if .DecidedAt}} on {{.DecidedAt.Format "2 Jan 2006"}}{{end}}.{{if .ReviewNote}} Note: {{.ReviewNote}}{{end}}</p>
       {{end}}
       {{else}}
-      <p class="mod-empty">No applications here.</p>
+      <p class="empty">No applications here.</p>
       {{end}}
     </div>
   </div>

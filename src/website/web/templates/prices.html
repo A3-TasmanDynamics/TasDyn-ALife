@@ -18,11 +18,11 @@
       <div class="field mod-grow"><label for="pr-q">Search houses</label><input id="pr-q" name="q" value="{{.Q}}" placeholder="House key"></div>
     </form>
     <div class="mod-table" role="table" aria-label="House prices">
-      <div class="mod-row mod-price-row mod-row-head" role="row"><span>House</span><span>Price</span><span>Owner</span></div>
+      <div class="lrow mod-row mod-price-row lrow-head" role="row"><span>House</span><span>Price</span><span>Owner</span></div>
       {{range .Houses}}
-      <div class="mod-row mod-price-row" role="row"><span class="mono">{{.Key}}</span><span>${{money .Price}}</span><span class="mod-dim">{{if .Owner}}{{.Owner}}{{else}}Unowned{{end}}</span></div>
+      <div class="lrow mod-row mod-price-row" role="row"><span class="mono">{{.Key}}</span><span>${{money .Price}}</span><span class="mod-dim">{{if .Owner}}{{.Owner}}{{else}}Unowned{{end}}</span></div>
       {{else}}
-      <p class="mod-empty">{{if .Q}}No houses match.{{else}}No houses in the database yet.{{end}}</p>
+      <p class="empty">{{if .Q}}No houses match.{{else}}No houses in the database yet.{{end}}</p>
       {{end}}
     </div>
   </div>

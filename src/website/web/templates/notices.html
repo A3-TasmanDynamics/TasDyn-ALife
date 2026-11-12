@@ -26,7 +26,7 @@
       {{if .Waiting}}<p class="hint">Waiting on: {{range $i, $n := .Waiting}}{{if $i}}, {{end}}{{$n}}{{end}}{{if gt (len .Waiting) 19}}…{{end}}</p>{{end}}
     </section>
     {{else}}
-    <p class="mod-empty card">No notices sent yet.</p>
+    <p class="empty card">No notices sent yet.</p>
     {{end}}
   </div>
 </div>

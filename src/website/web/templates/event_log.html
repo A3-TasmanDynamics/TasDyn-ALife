@@ -13,7 +13,7 @@
       {{end}}
     </nav>
 
-    <form class="stafflog-filters" method="get" action="/admin/events">
+    <form class="filterbar" method="get" action="/admin/events">
       {{if .Filter.Category}}<input type="hidden" name="cat" value="{{.Filter.Category}}">{{end}}
       <label class="search-box"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input name="q" value="{{.Filter.Search}}" aria-label="Player name or Steam ID" placeholder="Player name or Steam ID"></label>
@@ -28,8 +28,8 @@
       <div class="stafflog-foot">
         <span>Page {{.Page}} &middot; {{len .Events}} shown &middot; 50 per page</span>
         <div class="pager">
-          {{if .Prev}}<a class="btn small-btn" href="/admin/events{{qset .Query "page" .Prev}}">Newer</a>{{else}}<span class="btn small-btn disabled" aria-disabled="true">Newer</span>{{end}}
-          {{if .Next}}<a class="btn small-btn" href="/admin/events{{qset .Query "page" .Next}}">Older</a>{{else}}<span class="btn small-btn disabled" aria-disabled="true">Older</span>{{end}}
+          {{if .Prev}}<a class="btn btn-sm" href="/admin/events{{qset .Query "page" .Prev}}">Newer</a>{{else}}<span class="btn btn-sm disabled" aria-disabled="true">Newer</span>{{end}}
+          {{if .Next}}<a class="btn btn-sm" href="/admin/events{{qset .Query "page" .Next}}">Older</a>{{else}}<span class="btn btn-sm disabled" aria-disabled="true">Older</span>{{end}}
         </div>
       </div>
     </div>

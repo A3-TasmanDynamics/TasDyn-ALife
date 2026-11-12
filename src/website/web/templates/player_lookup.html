@@ -19,7 +19,7 @@
           <span class="status-pill status-pill-{{.Status}}">{{.Status}}</span>
         </a>
         {{else}}
-        <p class="empty-state">No players or past names match.</p>
+        <p class="empty">No players or past names match.</p>
         {{end}}
       </div>
     </section>
@@ -156,10 +156,10 @@
 
       {{if eq $.Tab "vehicles"}}
       <div class="stafflog-table lookup-table">
-        <div class="lookup-veh-row stafflog-th"><span>Vehicle</span><span>Garage</span><span>Plate &middot; fuel</span><span>State</span></div>
+        <div class="lrow lookup-veh-row lrow-head"><span>Vehicle</span><span>Garage</span><span>Plate &middot; fuel</span><span>State</span></div>
         {{range $.Vehicles}}
-        <a class="lookup-veh-row lookup-veh-link" href="/admin/vehicles?id={{.ID}}"><span class="strong">{{.Name}}</span><span>{{.Side}}</span><span><span class="mono">{{if .Plate}}{{.Plate}}{{else}}—{{end}}</span> <span class="muted">&middot; {{.Fuel}}%</span></span><span><span class="veh-state veh-{{.Status}}">{{.StatusText}}</span></span></a>
-        {{else}}<p class="empty-state">No vehicles.</p>{{end}}
+        <a class="lrow lookup-veh-row lookup-veh-link" href="/admin/vehicles?id={{.ID}}"><span class="strong">{{.Name}}</span><span>{{.Side}}</span><span><span class="mono">{{if .Plate}}{{.Plate}}{{else}}—{{end}}</span> <span class="muted">&middot; {{.Fuel}}%</span></span><span><span class="veh-state veh-{{.Status}}">{{.StatusText}}</span></span></a>
+        {{else}}<p class="empty">No vehicles.</p>{{end}}
       </div>
       {{if $.CanVehActions}}
       <div class="card lookup-points">
@@ -194,12 +194,12 @@
         {{end}}
       </div>
       <div class="card lookup-audit">
-        <div class="audit-row money-row stafflog-th"><span>When</span><span>Account</span><span>What</span><span class="money-amt">Amount</span><span class="money-amt">Balance</span></div>
+        <div class="lrow audit-row money-row lrow-head"><span>When</span><span>Account</span><span>What</span><span class="money-amt">Amount</span><span class="money-amt">Balance</span></div>
         {{range $.BankTx}}
-        <div class="audit-row money-row"><span class="muted">{{.When.Format "2 Jan 2006 15:04"}}</span><span>{{.Side}}</span>
+        <div class="lrow audit-row money-row"><span class="muted">{{.When.Format "2 Jan 2006 15:04"}}</span><span>{{.Side}}</span>
           <span>{{.TypeLabel}}{{if .Other}} &middot; {{.Other}}{{end}}{{if .Memo}} <span class="muted">&middot; {{.Memo}}</span>{{end}}{{if .By}} <span class="muted small">(by {{.By}})</span>{{end}}</span>
           <span class="money-amt {{if lt .Amount 0}}warn-text{{else}}ok-text{{end}}">{{$.Signed .Amount}}</span><span class="money-amt muted">${{$.Money .Balance}}</span></div>
-        {{else}}<p class="empty-state">No bank transactions yet.</p>{{end}}
+        {{else}}<p class="empty">No bank transactions yet.</p>{{end}}
       </div>
       <p class="hint">Cash is what they're carrying (saved by the game); bank is the sum of their transactions. Newest 200 shown.</p>
       {{end}}
@@ -248,10 +248,10 @@
         </div>
       </div>
       <div class="card lookup-audit">
-        <div class="audit-row sess-row stafflog-th"><span>Connected</span><span>Disconnected</span><span>Length</span></div>
+        <div class="lrow audit-row sess-row lrow-head"><span>Connected</span><span>Disconnected</span><span>Length</span></div>
         {{range .Sessions}}
-        <div class="audit-row sess-row"><span>{{.Start.Format "2 Jan 2006 15:04"}}</span><span class="muted">{{if .End}}{{.End.Format "2 Jan 2006 15:04"}}{{else}}<span class="ok-text">still online</span>{{end}}</span><span>{{$.Dur .Length}}</span></div>
-        {{else}}<p class="empty-state">Never connected.</p>{{end}}
+        <div class="lrow audit-row sess-row"><span>{{.Start.Format "2 Jan 2006 15:04"}}</span><span class="muted">{{if .End}}{{.End.Format "2 Jan 2006 15:04"}}{{else}}<span class="ok-text">still online</span>{{end}}</span><span>{{$.Dur .Length}}</span></div>
+        {{else}}<p class="empty">Never connected.</p>{{end}}
       </div>
       <p class="hint">Newest 100 sessions. IP addresses are recorded but not shown here.</p>
       {{end}}
@@ -267,7 +267,7 @@
       <div class="card lookup-audit">
         {{range $.Notes}}
         <div class="note-row"><div class="muted small">{{.Author}} &middot; {{.When.Format "2 Jan 2006 15:04"}}</div><div class="note-body">{{.Body}}</div></div>
-        {{else}}<p class="empty-state">No notes yet.</p>{{end}}
+        {{else}}<p class="empty">No notes yet.</p>{{end}}
       </div>
       <p class="hint">Notes can't be edited or deleted, so the history stays complete.</p>
       {{end}}
@@ -286,20 +286,20 @@
       <div class="card lookup-audit">
         <div class="card-label conn-head">Same IP as another account{{if .Shared}} &middot; <span class="warn-text">{{len .Shared}}</span>{{end}}</div>
         {{range .Shared}}
-        <a class="conn-row" href="/admin/players?id={{.PlayerID}}&amp;tab=connections"><span class="strong">{{.Name}}{{if .Banned}} <span class="mod-pill mod-pill-banned">Banned</span>{{end}}</span><span>{{.IPs}} shared IP{{if ne .IPs 1}}s{{end}}</span><span class="muted small">{{.Sources}}</span><span class="muted small">last {{.Last.Format "2 Jan 2006"}}</span></a>
-        {{else}}<p class="empty-state">No other account has used the same IP.</p>{{end}}
+        <a class="lrow conn-row" href="/admin/players?id={{.PlayerID}}&amp;tab=connections"><span class="strong">{{.Name}}{{if .Banned}} <span class="mod-pill mod-pill-banned">Banned</span>{{end}}</span><span>{{.IPs}} shared IP{{if ne .IPs 1}}s{{end}}</span><span class="muted small">{{.Sources}}</span><span class="muted small">last {{.Last.Format "2 Jan 2006"}}</span></a>
+        {{else}}<p class="empty">No other account has used the same IP.</p>{{end}}
       </div>
       <div class="card lookup-audit">
         <div class="card-label conn-head">Money &amp; items moved with other players</div>
-        {{if .Partners}}<div class="conn-row conn-trade stafflog-th"><span>Player</span><span>Sent to them</span><span>Got from them</span><span>Items to &middot; from</span><span>Times &middot; last</span></div>{{end}}
+        {{if .Partners}}<div class="lrow conn-row conn-trade lrow-head"><span>Player</span><span>Sent to them</span><span>Got from them</span><span>Items to &middot; from</span><span>Times &middot; last</span></div>{{end}}
         {{range .Partners}}
-        <a class="conn-row conn-trade" href="/admin/players?id={{.PlayerID}}&amp;tab=connections"><span class="strong">{{.Name}}{{if .SharesIP}} <span class="flag-tag" title="Also shares an IP with this player">SAME IP</span>{{end}}</span><span>{{if .Sent}}${{$.Money .Sent}}{{else}}<span class="muted">&mdash;</span>{{end}}</span><span>{{if .Recv}}${{$.Money .Recv}}{{else}}<span class="muted">&mdash;</span>{{end}}</span><span>{{.ItemsSent}} &middot; {{.ItemsRecv}}</span><span class="muted small">{{.Times}}&times; &middot; {{.Last.Format "2 Jan 15:04"}}</span></a>
-        {{else}}<p class="empty-state">They haven't given or transferred anything to anyone, or received anything.</p>{{end}}
+        <a class="lrow conn-row conn-trade" href="/admin/players?id={{.PlayerID}}&amp;tab=connections"><span class="strong">{{.Name}}{{if .SharesIP}} <span class="flag-tag" title="Also shares an IP with this player">SAME IP</span>{{end}}</span><span>{{if .Sent}}${{$.Money .Sent}}{{else}}<span class="muted">&mdash;</span>{{end}}</span><span>{{if .Recv}}${{$.Money .Recv}}{{else}}<span class="muted">&mdash;</span>{{end}}</span><span>{{.ItemsSent}} &middot; {{.ItemsRecv}}</span><span class="muted small">{{.Times}}&times; &middot; {{.Last.Format "2 Jan 15:04"}}</span></a>
+        {{else}}<p class="empty">They haven't given or transferred anything to anyone, or received anything.</p>{{end}}
       </div>
       <div class="card lookup-audit">
         <div class="card-label conn-head">Names used</div>
-        {{range .Aliases}}<div class="conn-row conn-alias"><span class="strong">{{.Name}}</span><span class="muted small">first {{.First.Format "2 Jan 2006"}}</span><span class="muted small">last {{.Last.Format "2 Jan 2006"}}</span></div>
-        {{else}}<p class="empty-state">No names recorded yet.</p>{{end}}
+        {{range .Aliases}}<div class="lrow conn-row conn-alias"><span class="strong">{{.Name}}</span><span class="muted small">first {{.First.Format "2 Jan 2006"}}</span><span class="muted small">last {{.Last.Format "2 Jan 2006"}}</span></div>
+        {{else}}<p class="empty">No names recorded yet.</p>{{end}}
       </div>
       {{end}}
       <p class="hint">Money sent and received is cash given in person plus bank transfers, from {{.Name}}'s side, taken from the game's event log. IPs come from website logins (the game can't see players' IPs) and are never shown, only whether accounts share one. A shared IP can be a household or a café, not just an alt: look at the trading too.</p>
@@ -308,8 +308,8 @@
       {{if eq $.Tab "audit"}}
       <div class="card lookup-audit">
         {{range $.Audit}}
-        <div class="audit-row"><span class="muted">{{.When.Format "2 Jan 2006 15:04"}}</span><span><span class="src-tag src-{{.Source}}">{{.Source}}</span></span><span>{{.What}}</span><span class="muted audit-by">{{.By}}</span></div>
-        {{else}}<p class="empty-state">Nothing recorded for this player yet.</p>{{end}}
+        <div class="lrow audit-row"><span class="muted">{{.When.Format "2 Jan 2006 15:04"}}</span><span><span class="src-tag src-{{.Source}}">{{.Source}}</span></span><span>{{.What}}</span><span class="muted audit-by">{{.By}}</span></div>
+        {{else}}<p class="empty">Nothing recorded for this player yet.</p>{{end}}
       </div>
       {{end}}
 
@@ -413,7 +413,7 @@
       </dialog>
       {{end}}
       {{else}}
-      <div class="lookup-empty"><p class="empty-state">Search for a player, then pick them from the list.</p></div>
+      <div class="lookup-empty"><p class="empty">Search for a player, then pick them from the list.</p></div>
       {{end}}
     </section>
   </div>

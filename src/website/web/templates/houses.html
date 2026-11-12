@@ -24,23 +24,24 @@
 
     <div class="card-label">Impound lot &middot; {{len .Garages.Impound}}</div>
     <div class="stafflog-table lookup-table">
-      <div class="lookup-veh-row stafflog-th"><span>Vehicle</span><span>Garage</span><span>Owner</span><span>Impounded</span></div>
+      <div class="lrow lookup-veh-row lrow-head"><span>Vehicle</span><span>Garage</span><span>Owner</span><span>Impounded</span></div>
       {{range .Garages.Impound}}
-      <a class="lookup-veh-row lookup-veh-link" href="/admin/vehicles?id={{.ID}}"><span class="strong">{{.Name}} <span class="mono muted">{{.Plate}}</span></span><span>{{.Side}}</span><span>{{if .Owner}}{{.Owner}}{{else}}<span class="muted">none</span>{{end}}</span><span class="muted">{{if .Since}}{{.Since.Format "2 Jan 15:04"}}{{else}}—{{end}}</span></a>
-      {{else}}<p class="empty-state">Nothing in the impound.</p>{{end}}
+      <a class="lrow lookup-veh-row lookup-veh-link" href="/admin/vehicles?id={{.ID}}"><span class="strong">{{.Name}} <span class="mono muted">{{.Plate}}</span></span><span>{{.Side}}</span><span>{{if .Owner}}{{.Owner}}{{else}}<span class="muted">none</span>{{end}}</span><span class="muted">{{if .Since}}{{.Since.Format "2 Jan 15:04"}}{{else}}—{{end}}</span></a>
+      {{else}}<p class="empty">Nothing in the impound.</p>{{end}}
     </div>
 
     <div class="card-label">Out in the world &middot; {{len .Garages.Out}}</div>
     <div class="stafflog-table lookup-table">
-      <div class="lookup-veh-row stafflog-th"><span>Vehicle</span><span>Garage</span><span>Owner</span><span>State</span></div>
+      <div class="lrow lookup-veh-row lrow-head"><span>Vehicle</span><span>Garage</span><span>Owner</span><span>State</span></div>
       {{range .Garages.Out}}
-      <a class="lookup-veh-row lookup-veh-link" href="/admin/vehicles?id={{.ID}}"><span class="strong">{{.Name}} <span class="mono muted">{{.Plate}}</span></span><span>{{.Side}}</span><span>{{if .Owner}}{{.Owner}}{{else}}<span class="muted">none</span>{{end}}</span><span><span class="veh-state veh-{{.Status}}">{{.StatusText}}</span></span></a>
-      {{else}}<p class="empty-state">No vehicles are out.</p>{{end}}
+      <a class="lrow lookup-veh-row lookup-veh-link" href="/admin/vehicles?id={{.ID}}"><span class="strong">{{.Name}} <span class="mono muted">{{.Plate}}</span></span><span>{{.Side}}</span><span>{{if .Owner}}{{.Owner}}{{else}}<span class="muted">none</span>{{end}}</span><span><span class="veh-state veh-{{.Status}}">{{.StatusText}}</span></span></a>
+      {{else}}<p class="empty">No vehicles are out.</p>{{end}}
     </div>
     <p class="hint">{{.Garages.Total}} vehicles in all. Every vehicle shop is a garage for its faction: a player's vehicles for that faction can be taken out at any of them. "Out" is as of the last save; vehicles left out when the server stops go back to the garage on the next start.</p>
   </div>
   {{else}}
   <div class="admin-content lookup-page">
+    {{template "admin_header" .}}
     <section class="lookup-search" aria-label="Search">
       <h1 class="page-title admin-title">Houses &amp; Garages</h1>
       <nav class="tabbar lookup-tabs" aria-label="Sections">
@@ -65,7 +66,7 @@
           <span class="lookup-result-text"><span class="strong">{{.Name}}</span><span class="muted small ellipsis">{{if .Owner}}{{.Owner}}{{else}}For sale{{end}} &middot; ${{$.Money .Price}}</span></span>
         </a>
         {{else}}
-        <p class="empty-state">{{if or .Q .Owned}}No houses match.{{else}}No houses yet: they're added to the database when houses come to the game.{{end}}</p>
+        <p class="empty">{{if or .Q .Owned}}No houses match.{{else}}No houses yet: they're added to the database when houses come to the game.{{end}}</p>
         {{end}}
       </div>
     </section>
@@ -93,7 +94,7 @@
       </div>
       <p class="hint">Read-only.</p>
       {{else}}
-      <div class="lookup-empty"><p class="empty-state">Pick a house from the list.</p></div>
+      <div class="lookup-empty"><p class="empty">Pick a house from the list.</p></div>
       {{end}}
     </section>
   </div>

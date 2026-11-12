@@ -22,7 +22,7 @@
     </form>
     {{end}}
 
-    <form class="stafflog-filters" method="get" action="/admin/watchlist">
+    <form class="filterbar" method="get" action="/admin/watchlist">
       <label class="search-box"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <input name="q" value="{{.Q}}" aria-label="Player, Steam ID or reason" placeholder="Player, Steam ID or reason"></label>
       <button class="btn" type="submit">Search</button>
@@ -31,9 +31,9 @@
 
     <section class="card dash-card" aria-labelledby="w-list">
       <div class="dash-card-head"><h2 id="w-list">Watched</h2><span class="muted small">Online first, then newest</span></div>
-      {{if .Entries}}<div class="watch-row stafflog-th"><span>Player</span><span>Why</span><span>Now</span><span>Last 7 days</span><span></span></div>{{end}}
+      {{if .Entries}}<div class="lrow watch-row lrow-head"><span>Player</span><span>Why</span><span>Now</span><span>Last 7 days</span><span></span></div>{{end}}
       {{range .Entries}}
-      <div class="watch-row">
+      <div class="lrow watch-row">
         <span class="ellipsis"><a class="strong" href="/admin/players?id={{.PlayerID}}"><span class="dot {{if .Online}}dot-on{{end}}" title="{{if .Online}}Online{{else}}Offline{{end}}"></span>{{.Name}}</a><br><span class="muted small">{{if .Online}}online now{{else}}{{$.Ago .LastSeen}}{{end}}</span></span>
         <span>{{.Reason}}<br><span class="muted small">{{if .AddedBy}}{{.AddedBy}}, {{end}}{{.AddedAt.Format "2 Jan 2006"}}{{if .FlagID}} &middot; <a href="/admin/anticheat?flag={{.FlagID}}">flag #{{.FlagID}}</a>{{end}}</span></span>
         <span class="on-tags">
@@ -44,7 +44,7 @@
         <span><a href="/admin/players?id={{.PlayerID}}&tab=events">{{.Events7d}} event{{if ne .Events7d 1}}s{{end}}</a></span>
         <span class="watch-actions">{{if $.CanEdit}}<form method="post" action="/admin/watchlist/{{.PlayerID}}/remove"><input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><button class="btn btn-sm" type="submit" onclick="return confirm('Take {{.Name}} off the watchlist?')">Remove</button></form>{{end}}</span>
       </div>
-      {{else}}<p class="empty-state">{{if $.Q}}Nobody on the watchlist matches "{{$.Q}}".{{else}}Nobody is on the watchlist. Add a player here, from Player Lookup, or by reviewing an anti-cheat flag as "watch".{{end}}</p>{{end}}
+      {{else}}<p class="empty">{{if $.Q}}Nobody on the watchlist matches "{{$.Q}}".{{else}}Nobody is on the watchlist. Add a player here, from Player Lookup, or by reviewing an anti-cheat flag as "watch".{{end}}</p>{{end}}
     </section>
   </div>
 </div>

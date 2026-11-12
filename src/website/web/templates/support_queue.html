@@ -57,7 +57,7 @@
       </form>
 
       {{if .Tickets}}
-        <table>
+        <div class="table-wrap"><table>
           <thead><tr><th>Priority</th><th>Subject</th><th>Requester</th><th>Category</th><th>Status</th><th>Assigned</th><th>Opened</th><th></th></tr></thead>
           <tbody>
             {{range .Tickets}}
@@ -76,9 +76,9 @@
             </tr>
             {{end}}
           </tbody>
-        </table>
+        </table></div>
       {{else}}
-        <p class="empty-state">No tickets match this filter.</p>
+        <p class="empty">No tickets match this filter.</p>
       {{end}}
     </section>
   </div>

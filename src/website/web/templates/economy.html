@@ -43,7 +43,7 @@
         {{range .Daily}}<div class="eco-mkt eco-daily"><span>{{.At.Format "Mon 2 Jan 15:04"}}</span><span>${{money .Cash}}</span><span>${{money .Bank}}</span><span>{{if gt .MarketIndex 0.0}}+{{end}}{{.MarketIndex}}%</span><span>${{money .Bounties}}</span></div>{{end}}
       </details>
       {{else}}
-      <p class="empty-state">Collecting history: the website takes a snapshot every hour{{with .History}} (the first was {{(index . 0).At.Format "2 Jan 15:04"}}){{end}}. The charts appear once there are two.</p>
+      <p class="empty">Collecting history: the website takes a snapshot every hour{{with .History}} (the first was {{(index . 0).At.Format "2 Jan 15:04"}}){{end}}. The charts appear once there are two.</p>
       {{end}}
     </section>
 
@@ -98,7 +98,7 @@
             <span class="strong ellipsis">{{$r.Name}}{{if $r.Flagged}} <span class="flag-tag" title="Has an unreviewed anti-cheat flag">FLAG</span>{{end}}</span>
             <span class="eco-rich-amt"><strong>${{money $r.Total}}</strong><span class="muted small">${{money $r.Cash}} cash &middot; ${{money $r.Bank}} bank</span></span>
           </a>
-          {{else}}<p class="empty-state">No players yet.</p>{{end}}
+          {{else}}<p class="empty">No players yet.</p>{{end}}
         </section>
 
         <section class="card dash-card" aria-labelledby="eco-crime">
@@ -114,7 +114,7 @@
           {{range .Crime.MostWanted}}<a class="eco-flow eco-link" href="/admin/players?id={{.ID}}"><span>{{.Name}} <span class="muted small">&middot; {{.Crimes}} crime{{if ne .Crimes 1}}s{{end}}</span></span><span class="warn-text">${{money .Bounty}}</span></a>{{end}}
           {{end}}
           <div class="eco-sub-head card-label">Latest</div>
-          {{if .Robberies}}{{template "event_rows" (dict "Events" .Robberies "ShowPlayer" true)}}{{else}}<p class="empty-state">No robberies or break-ins in this window.</p>{{end}}
+          {{if .Robberies}}{{template "event_rows" (dict "Events" .Robberies "ShowPlayer" true)}}{{else}}<p class="empty">No robberies or break-ins in this window.</p>{{end}}
         </section>
 
         <section class="card dash-card" aria-labelledby="eco-vault">
@@ -125,7 +125,7 @@
           {{range .Vault.Items}}<div class="eco-flow"><span>{{.Name}}</span><span>&times;{{.N}}</span></div>{{end}}{{end}}
           {{if .Vault.Gear}}<div class="eco-sub-head card-label">Gear</div>
           {{range .Vault.Gear}}<div class="eco-flow"><span>{{.Name}}</span><span>&times;{{.N}}</span></div>{{end}}{{end}}
-          {{else}}<p class="empty-state">Empty. Seized items, gear and cash show here until they're robbed or cleared.</p>{{end}}
+          {{else}}<p class="empty">Empty. Seized items, gear and cash show here until they're robbed or cleared.</p>{{end}}
         </section>
       </div>
     </div>
