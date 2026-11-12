@@ -17,6 +17,7 @@ class CfgRemoteExec
         class ALife_fnc_requestPhoneData { allowedTargets = 2; };
         class ALife_fnc_shopBuy { allowedTargets = 2; };
         class ALife_fnc_giveItem { allowedTargets = 2; };
+        class ALife_fnc_gasStation { allowedTargets = 2; };
         class ALife_fnc_animSync { allowedTargets = 2; };
         class ALife_fnc_bankTransfer { allowedTargets = 2; };
         class ALife_fnc_sendMessage { allowedTargets = 2; };
@@ -57,6 +58,7 @@ class CfgRemoteExec
         class ALife_fnc_restrained { allowedTargets = 1; };
         class ALife_fnc_fine { allowedTargets = 1; };
         class ALife_fnc_personApply { allowedTargets = 1; };
+        class ALife_fnc_gasClient { allowedTargets = 1; };
         class ALife_fnc_animApply { allowedTargets = 1; };
         class ALife_fnc_adminApply { allowedTargets = 1; };
         class ALife_fnc_admin { allowedTargets = 1; };
