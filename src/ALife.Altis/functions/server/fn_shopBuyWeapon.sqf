@@ -9,6 +9,11 @@
     (its "bought" mode); it's saved with the player's gear
     (ALife_fnc_savePlayer).
 
+    A weapon can come as a kit: its muzzle, light / laser, optic and bipod
+    (each must fit it -- compatibleItems -- and be sold here, allowed) and
+    up to 10 of one magazine it takes (sold here, allowed), priced together;
+    the client puts it on built, the first magazine loaded.
+
     Fitting: weapons go into their empty slots (rifle, pistol, launcher,
     binoculars) and a map / compass / watch / radio / GPS / night vision
     into its empty slot; everything else must fit by weight in the uniform,
@@ -17,8 +22,10 @@
     Arguments:
         0: OBJECT - the player's unit
         1: STRING - shop placement (CfgShops) of a weapon shop
-        2: ARRAY  - the cart: [[list, class, qty], ...]; list "items"
-                    (weapons and kit), "mags" or "accs"; qty 1-20; 15 lines
+        2: ARRAY  - the cart: [[list, class, qty(, kit)], ...]; list "items"
+                    (weapons and kit), "mags" or "accs"; qty 1-20; 15 lines;
+                    kit (a weapon): [muzzle, pointer, optic, bipod, magazine,
+                    magazines] ("" = none)
         3: STRING - "cash" or "bank"
 */
 
@@ -56,7 +63,7 @@ private _lines = [];
 private _problem = "";
 private _slotsUsed = [];
 {
-    _x params ["_list", "_class", "_qty"];
+    _x params ["_list", "_class", "_qty", ["_kit", [], [[]]]];
     _qty = floor _qty;
     private _rows = getArray (_shop >> _list);
     private _index = _rows findIf { (_x param [0, ""]) == _class };
@@ -92,9 +99,41 @@ private _slotsUsed = [];
             _slotsUsed pushBack _sim;
         };
     };
-    _mass = _mass + _each * (_qty - _free);
-    _total = _total + _price * _qty;
-    _lines pushBack [_list, _class, _qty, _name];
+    // A weapon kit: its parts, priced and weighed with it.
+    private _parts = 0;
+    private _partsMass = 0;
+    if (_kit isNotEqualTo []) then {
+        if (!(_type in [1, 2, 4]) || { !(_kit isEqualTypeArray ["", "", "", "", "", 0]) } || { (_kit select 5) < 0 } || { (_kit select 5) > 10 }) exitWith { _problem = "You can't buy that here."; };
+        _kit params ["_muzzle", "_pointer", "_optic", "_bipod", "_mag", "_mags"];
+        {
+            _x params ["_part", "_slot"];
+            if (_part != "" && { _problem == "" }) then {
+                private _accs = getArray (_shop >> "accs");
+                private _j = _accs findIf { (_x param [0, ""]) == _part };
+                if (_j < 0 || { !(toLower _part in ((compatibleItems [_class, _slot]) apply { toLower _x })) }) exitWith { _problem = "That attachment doesn't fit or isn't sold here."; };
+                (_accs select _j) params ["", "", ["_p", 0], ["", 0], ["_l", ""], ["_v", 0]];
+                private _n = [[_l, _v], _licences, _rank] call ALife_fnc_shopAccess;
+                if (_n != "") exitWith { _problem = format ["%1 needed for %2.", _n, getText (configFile >> "CfgWeapons" >> _part >> "displayName")]; };
+                _parts = _parts + _p;
+                _partsMass = _partsMass + getNumber (configFile >> "CfgWeapons" >> _part >> "ItemInfo" >> "mass");
+            };
+        } forEach [[_muzzle, "MuzzleSlot"], [_pointer, "PointerSlot"], [_optic, "CowsSlot"], [_bipod, "UnderBarrelSlot"]];
+        if (_problem == "" && { _mags > 0 }) then {
+            private _magRows = getArray (_shop >> "mags");
+            private _j = _magRows findIf { (_x param [0, ""]) == _mag };
+            if (_j < 0 || { !(toLower _mag in ((compatibleMagazines _class) apply { toLower _x })) }) exitWith { _problem = "That magazine doesn't fit or isn't sold here."; };
+            (_magRows select _j) params ["", "", ["_p", 0], ["", 0], ["_l", ""], ["_v", 0]];
+            private _n = [[_l, _v], _licences, _rank] call ALife_fnc_shopAccess;
+            if (_n != "") exitWith { _problem = format ["%1 needed for %2.", _n, getText (configFile >> "CfgMagazines" >> _mag >> "displayName")]; };
+            _parts = _parts + _p * _mags;
+            _partsMass = _partsMass + getNumber (configFile >> "CfgMagazines" >> _mag >> "mass") * _mags;
+        };
+        if (_mags == 0) then { _kit set [4, ""]; };
+    };
+    if (_problem != "") exitWith {};
+    _mass = _mass + _each * (_qty - _free) + _partsMass * _qty;
+    _total = _total + (_price + _parts) * _qty;
+    _lines pushBack [_list, _class, _qty, _name, _kit];
 } forEach _cart;
 if (_problem != "") exitWith { _problem call _fnc_reply; };
 
@@ -125,6 +164,6 @@ if (_paid != "OK") exitWith {
 };
 
 diag_log format ["[ALife] %1 bought %2 for $%3 (%4) at %5", _uid, _lines apply { [_x select 1, _x select 2] }, _total, _method, _placement];
-["bought", _lines apply { [_x select 0, _x select 1, _x select 2] }] remoteExecCall ["ALife_fnc_weaponShop", _owner];
+["bought", _lines apply { [_x select 0, _x select 1, _x select 2, _x select 4] }] remoteExecCall ["ALife_fnc_weaponShop", _owner];
 [format ["Bought %1 for $%2.", _memo, [_total] call BIS_fnc_numberText], "success"] call _fnc_reply;
 [_unit] call ALife_fnc_requestPhoneData;

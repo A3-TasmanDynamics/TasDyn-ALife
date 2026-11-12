@@ -96,27 +96,9 @@ class WeaponShops
         };
     };
 
-    class cop_kit
-    {
-        name = "Police Supplies";
-        side = "cop";
-        licence = "";
-        level = 0;
-        items[] = {
-            {"ItemMap"    , "", 50, 25, "", 0},  // Map
-            {"ItemCompass", "", 50, 25, "", 0},  // Compass
-            {"ItemWatch"  , "", 50, 25, "", 0},  // Watch
-            {"ItemRadio"  , "", 100, 50, "", 0},  // Radio
-            {"ItemGPS"    , "", 100, 50, "", 0},  // GPS
-            {"Binocular"  , "", 150, 75, "", 0},  // Binoculars
-            {"Rangefinder", "", 500, 250, "", 2},  // Rangefinder
-            {"NVGoggles"  , "", 1200, 600, "", 1}  // NV Goggles (Brown)
-        };
-    };
-
     class cop
     {
-        name = "Police Armoury";
+        name = "Police Armoury";  // weapons, magazines, attachments and kit (Police Supplies merged in)
         side = "cop";
         licence = "";
         level = 0;
@@ -128,7 +110,16 @@ class WeaponShops
             {"SMG_02_F"       , "", 15000, 7500, "", 2},  // Sting 9 mm -- Sting
             {"arifle_MXC_F"   , "", 30000, 15000, "", 3},  // MXC 6.5 mm
             {"arifle_MX_F"    , "", 35000, 17500, "", 4},  // MX 6.5 mm
-            {"arifle_MXM_F"   , "", 45000, 22500, "", 5}  // MXM 6.5 mm
+            {"arifle_MXM_F"   , "", 45000, 22500, "", 5},  // MXM 6.5 mm
+            // Kit (was Police Supplies)
+            {"ItemMap"    , "", 50, 25, "", 0},  // Map
+            {"ItemCompass", "", 50, 25, "", 0},  // Compass
+            {"ItemWatch"  , "", 50, 25, "", 0},  // Watch
+            {"ItemRadio"  , "", 100, 50, "", 0},  // Radio
+            {"ItemGPS"    , "", 100, 50, "", 0},  // GPS
+            {"Binocular"  , "", 150, 75, "", 0},  // Binoculars
+            {"Rangefinder", "", 500, 250, "", 2},  // Rangefinder
+            {"NVGoggles"  , "", 1200, 600, "", 1}  // NV Goggles (Brown)
         };
         mags[] = {
             {"16Rnd_9x21_Mag"          , "", 25, 12, "", 0},  // 9 mm 16Rnd Mag
