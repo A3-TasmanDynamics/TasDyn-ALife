@@ -31,9 +31,17 @@
       </section>
 
       <section class="card dev-card" aria-labelledby="dh-int">
-        <h2 class="card-label" id="dh-int">Integrations</h2>
+        <div class="health-int-head">
+          <h2 class="card-label" id="dh-int">Integrations</h2>
+          <span class="health-sum">
+            {{if .CheckBad}}<span class="dev-state dev-state-bad">{{.CheckBad}} down</span>{{end}}
+            {{if .CheckWarn}}<span class="dev-state dev-state-warn">{{.CheckWarn}} to check</span>{{end}}
+            <span class="dev-state dev-state-ok">{{.CheckOK}} OK</span>
+            {{if .CheckOff}}<span class="dev-state dev-state-off">{{.CheckOff}} off</span>{{end}}
+          </span>
+        </div>
         {{range .Checks}}
-        <div class="dev-check"><span class="dev-dot dev-dot-{{.State}}" aria-hidden="true"></span><div><strong>{{.Name}}</strong><span>{{.Detail}}</span></div><span class="dev-state dev-state-{{.State}}">{{if eq .State "ok"}}OK{{else if eq .State "warn"}}Check{{else if eq .State "bad"}}Down{{else}}Off{{end}}</span></div>
+        <div class="health-check health-check-{{.State}}"><span class="dev-dot dev-dot-{{.State}}" aria-hidden="true"></span><div class="health-check-text"><strong>{{.Name}}</strong><span>{{.Detail}}</span></div><span class="dev-state dev-state-{{.State}}">{{if eq .State "ok"}}OK{{else if eq .State "warn"}}Check{{else if eq .State "bad"}}Down{{else}}Off{{end}}</span></div>
         {{end}}
       </section>
     </div>

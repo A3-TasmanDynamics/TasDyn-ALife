@@ -2434,10 +2434,16 @@ summary.dbb-card-head::-webkit-details-marker { display: none; }
 .dev-dl { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 8px 14px; margin: 6px 0 0; font-size: 13.5px; }
 .dev-dl dt { color: var(--text-dim); }
 .dev-dl dd { margin: 0; overflow-wrap: anywhere; }
-.dev-check { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 13.5px; }
-.dev-check:last-child { border-bottom: 0; }
-.dev-check strong { display: block; font-weight: 700; }
-.dev-check span { color: var(--text-dim); font-size: 12.5px; }
+/* System health: integration rows (not .dev-check -- that's the Dev Board's checkbox). */
+.health-int-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.health-sum { display: flex; gap: 6px; flex-wrap: wrap; }
+.health-check { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 8px; margin: 0 -8px; border-bottom: 1px solid var(--border-soft); border-radius: 6px; font-size: 13.5px; }
+.health-check:last-child { border-bottom: 0; }
+.health-check-bad { background: rgba(248, 113, 113, 0.07); }
+.health-check-warn { background: rgba(251, 191, 36, 0.06); }
+.health-check-text { min-width: 0; }
+.health-check-text strong { display: block; font-weight: 700; }
+.health-check-text span { display: block; color: var(--text-dim); font-size: 12.5px; overflow-wrap: anywhere; }
 .dev-dot { width: 10px; height: 10px; border-radius: 5px; background: var(--border); }
 .dev-dot-ok { background: #4ade80; box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.15); }
 .dev-dot-warn { background: #fbbf24; box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15); }
