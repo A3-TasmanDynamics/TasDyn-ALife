@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"website/internal/auth"
+	"website/internal/replies"
 	"website/internal/discord/webhook"
 	"website/internal/notify"
 )
@@ -200,6 +201,7 @@ type ticketThreadData struct {
 	TopCategories []categoryOption // for the staff-only "edit category" form
 	Subcategories []categoryOption
 	StaffOptions  []staffOption // for the staff-only "assign to" dropdown
+	Replies       []replies.Reply // saved ticket replies (staff)
 }
 
 // TicketThread renders one ticket's conversation plus, for staff, a
@@ -285,6 +287,9 @@ func (d *Deps) TicketThread(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := ticketThreadData{Base: baseFrom(r, t.Subject), Ticket: t, IsStaff: isStaff}
+	if isStaff {
+		data.Replies = d.savedReplies(r, "ticket")
+	}
 	if isStaff {
 		data.AdminShell = d.adminShell(r, "tickets")
 	}

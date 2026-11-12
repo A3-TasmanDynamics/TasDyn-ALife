@@ -88,4 +88,27 @@
     var name = who && who.selectedIndex > 0 ? who.options[who.selectedIndex].text : (f.getAttribute("data-player") || "this player");
     if (!window.confirm("Kick " + name + " from the game server?")) e.preventDefault();
   });
+
+  // Saved replies: insert into the textarea at the cursor, placeholders filled in.
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-reply]");
+    if (!b) return;
+    var menu = b.closest("[data-reply-target]");
+    var ta = menu && document.getElementById(menu.getAttribute("data-reply-target"));
+    if (!ta) return;
+    var text = b.getAttribute("data-reply");
+    ["player", "staff", "ticket", "case"].forEach(function (k) {
+      var v = menu.getAttribute("data-" + k);
+      if (v) text = text.split("{" + k + "}").join(v);
+    });
+    var start = ta.selectionStart != null ? ta.selectionStart : ta.value.length, end = ta.selectionEnd != null ? ta.selectionEnd : start;
+    var before = ta.value.slice(0, start), after = ta.value.slice(end);
+    if (before && !/\s$/.test(before)) text = "\n" + text;
+    ta.value = before + text + after;
+    var pos = (before + text).length;
+    ta.focus();
+    ta.setSelectionRange(pos, pos);
+    ta.dispatchEvent(new Event("input", { bubbles: true }));
+    menu.open = false;
+  });
 })();

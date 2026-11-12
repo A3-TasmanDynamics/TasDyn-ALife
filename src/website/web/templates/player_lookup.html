@@ -286,6 +286,7 @@
       <form class="card note-form" method="post" action="/admin/players/{{.ID}}/notes">
         <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="q" value="{{$.Q}}">
         <label class="card-label" for="note-body">Add a note</label>
+        {{template "reply_menu" (dict "Replies" $.NoteReplies "Target" "note-body" "Player" .Name "Staff" $.Session.Name "Ticket" "" "Case" "")}}
         <textarea id="note-body" name="body" rows="3" maxlength="4000" required placeholder="Anything other staff should know about this player. Only staff can see notes."></textarea>
         <div><button class="btn btn-primary" type="submit">Add note</button></div>
       </form>

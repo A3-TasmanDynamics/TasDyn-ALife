@@ -36,7 +36,8 @@
       <form method="post" action="/tickets/{{.Ticket.ID}}/reply">
         <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
         <div class="field">
-          <textarea name="body" rows="3" required placeholder="Write a reply..." aria-label="Reply"></textarea>
+          {{if .IsStaff}}{{template "reply_menu" (dict "Replies" .Replies "Target" "reply-body" "Player" .Ticket.RequesterName "Staff" .Session.Name "Ticket" (printf "#%d" .Ticket.ID) "Case" "")}}{{end}}
+          <textarea id="reply-body" name="body" rows="3" required placeholder="Write a reply..." aria-label="Reply"></textarea>
         </div>
         {{if .IsStaff}}
         <div class="field row">

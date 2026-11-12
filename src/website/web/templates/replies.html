@@ -1,0 +1,52 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div id="admin-main" tabindex="-1" class="admin-content mod-page">
+    {{template "admin_header" .}}
+    <div>
+      <h1 class="page-title admin-title">Saved Replies</h1>
+      <p class="admin-sub">Canned text the whole staff team can insert with one click: ticket replies, case entries and player notes. These placeholders are filled in when inserted: {{range $i, $p := .Placeholders}}{{if $i}}, {{end}}<code>{{$p}}</code>{{end}}.</p>
+    </div>
+
+    {{if .CanManage}}
+    <form class="card reply-form" method="post" action="/admin/replies/save">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      <div class="reply-form-row">
+        <div class="field"><label for="r-scope">Used in</label><select id="r-scope" name="scope">{{range .Scopes}}<option value="{{.Key}}">{{.Label}}</option>{{end}}</select></div>
+        <div class="field reply-form-title"><label for="r-title">Title</label><input id="r-title" name="title" maxlength="80" required placeholder="e.g. Compensation approved"></div>
+      </div>
+      <div class="field"><label for="r-body">Text</label><textarea id="r-body" name="body" rows="4" maxlength="4000" required placeholder="Hi {player}, ..."></textarea></div>
+      <button class="btn btn-primary" type="submit">Add saved reply</button>
+    </form>
+    {{else}}
+    <p class="hint">Adding and editing them needs the replies.manage permission.</p>
+    {{end}}
+
+    {{range .Scopes}}
+    {{$list := $.In .Key}}
+    <section class="card dash-card" aria-labelledby="r-{{.Key}}">
+      <div class="dash-card-head"><h2 id="r-{{.Key}}">{{.Label}}</h2><span class="muted small">{{len $list}}</span></div>
+      {{range $list}}
+      <div class="reply-row">
+        <div class="reply-row-text"><strong>{{.Title}}</strong><p>{{.Body}}</p><span class="muted small">{{if .UpdatedBy}}{{.UpdatedBy}}, {{end}}{{.UpdatedAt.Local.Format "2 Jan 2006"}}</span></div>
+        {{if $.CanManage}}
+        <details class="reply-edit">
+          <summary class="btn btn-sm">Edit</summary>
+          <form method="post" action="/admin/replies/save">
+            <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="id" value="{{.ID}}">
+            {{$cur := .Scope}}
+            <div class="field"><label for="re-scope-{{.ID}}">Used in</label><select id="re-scope-{{.ID}}" name="scope">{{range $.Scopes}}<option value="{{.Key}}"{{if eq .Key $cur}} selected{{end}}>{{.Label}}</option>{{end}}</select></div>
+            <div class="field"><label for="re-title-{{.ID}}">Title</label><input id="re-title-{{.ID}}" name="title" maxlength="80" required value="{{.Title}}"></div>
+            <div class="field"><label for="re-body-{{.ID}}">Text</label><textarea id="re-body-{{.ID}}" name="body" rows="4" maxlength="4000" required>{{.Body}}</textarea></div>
+            <div class="reply-edit-actions"><button class="btn btn-primary btn-sm" type="submit">Save</button>
+              <button class="btn btn-danger-soft btn-sm" type="submit" formaction="/admin/replies/{{.ID}}/delete" formnovalidate onclick="return confirm('Delete this saved reply?')">Delete</button></div>
+          </form>
+        </details>
+        {{end}}
+      </div>
+      {{else}}<p class="empty">None yet.</p>{{end}}
+    </section>
+    {{end}}
+  </div>
+</div>
+{{end}}

@@ -92,6 +92,7 @@ var navDefs = []navSectionDef{
 		{key: "devlog", label: "New Devlog Post", url: "/admin/devlog/new", perm: "announce.post"},
 		{key: "notices", label: "Essential Notices", url: "/admin/notices", perm: "announce.post"},
 		{key: "rules", label: "Server Rules", url: "/admin/rules", perm: "rules.edit"},
+		{key: "replies", label: "Saved Replies", url: "/admin/replies"},
 	}},
 	{key: "dev", name: "Development", tabs: true, items: []navDef{
 		{key: "dev-health", label: "System Health", url: "/admin/dev", perm: "dev.tools"},
@@ -171,6 +172,7 @@ var navIcons = map[string]string{
 	"tickets":       "M3 9a2 2 0 0 0 0 6v3a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3a2 2 0 0 0 0-6V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1zM14 5v14",
 	"staff":         "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8a4 4 0 1 0 0-8M19 8v6M22 11h-6",
 	"staffactivity": "M3 3v18h18M7 15l4-4 3 3 5-6",
+	"replies":      "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2zM8 9h8M8 13h5",
 	"applications":  "M9 3h6v4H9zM9 5H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-3M9 12h6M9 16h4",
 	"roles":         "M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4",
 	"rolesync":      "M21 12a9 9 0 0 1-15.5 6.3M3 12A9 9 0 0 1 18.5 5.7M21 3v5h-5M3 21v-5h5",

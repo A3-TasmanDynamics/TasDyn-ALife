@@ -445,6 +445,7 @@ JOIN (VALUES
     ('players.view', 10),
     ('players.vehicles', 20),
     ('players.notes', 10),
+    ('replies.manage', 40),
     ('players.licences', 40),
     ('players.vehicle_actions', 40),
     ('players.edit_police', 100),
@@ -1103,6 +1104,21 @@ CREATE TABLE game_commands (
 );
 CREATE INDEX idx_game_commands_pending ON game_commands(id) WHERE status = 'pending';
 CREATE INDEX idx_game_commands_created ON game_commands(created_at DESC);
+
+-- Saved replies & templates: canned ticket replies, case-entry templates and
+-- player-note templates the whole staff team can insert with one click
+-- (/admin/replies). Placeholders like {player} are filled in when inserted.
+CREATE TABLE saved_replies (
+    id          BIGSERIAL PRIMARY KEY,
+    scope       TEXT NOT NULL CHECK (scope IN ('ticket', 'case', 'note')),
+    title       TEXT NOT NULL CHECK (length(title) BETWEEN 1 AND 80),
+    body        TEXT NOT NULL CHECK (length(body) BETWEEN 1 AND 4000),
+    created_by  BIGINT REFERENCES players(id) ON DELETE SET NULL,
+    updated_by  BIGINT REFERENCES players(id) ON DELETE SET NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (scope, title)
+);
 
 -- This project's own persistent banlist (docs/ADMIN_TOOLS.md §8) — not a
 -- literal multi-org shared/cloud ban service.

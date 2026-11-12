@@ -1,0 +1,14 @@
+{{/* "Insert a saved reply" menu for a textarea. Called with
+     (dict "Replies" list "Target" "textarea-id" "Player" name "Staff" name "Ticket" "#12" "Case" "#3").
+     /static/panel.js inserts the text and fills in {player} {staff} {ticket} {case}. */}}
+{{define "reply_menu"}}
+{{if .Replies}}
+<details class="reply-menu" data-reply-target="{{.Target}}" data-player="{{.Player}}" data-staff="{{.Staff}}" data-ticket="{{.Ticket}}" data-case="{{.Case}}">
+  <summary>Insert a saved reply</summary>
+  <div class="reply-list" role="list">
+    {{range .Replies}}<button type="button" class="reply-item" role="listitem" data-reply="{{.Body}}"><strong>{{.Title}}</strong><span>{{.Body}}</span></button>{{end}}
+    <a class="reply-manage" href="/admin/replies">Manage saved replies…</a>
+  </div>
+</details>
+{{end}}
+{{end}}
