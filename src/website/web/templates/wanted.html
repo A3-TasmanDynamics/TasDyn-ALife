@@ -1,0 +1,56 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content mod-page">
+    <div>
+      <h1 class="page-title admin-title">Wanted &amp; Jail</h1>
+      <p class="admin-sub">Everyone with an outstanding bounty, and everyone serving jail time. Read-only: bounties are added and cleared in game.</p>
+    </div>
+
+    <section class="admin-stats" aria-label="Summary">
+      <div class="admin-stat"><div class="label">Wanted players</div><div class="value {{if .Board.List}}value-amber{{end}}">{{len .Board.List}}</div></div>
+      <div class="admin-stat"><div class="label">Total bounties</div><div class="value">${{money .Board.Total}}</div></div>
+      <div class="admin-stat"><div class="label">In jail</div><div class="value value-blue">{{len .Board.Jail}}</div></div>
+      <div class="admin-stat"><div class="label">Most common crime</div><div class="value value-text-sm">{{with .Board.ByCrime}}{{(index . 0).Name}}{{else}}&mdash;{{end}}</div></div>
+    </section>
+
+    <form class="stafflog-filters" method="get" action="/admin/wanted">
+      <label class="search-box"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input name="q" value="{{.Q}}" aria-label="Player, Steam ID or gang" placeholder="Player, Steam ID or gang"></label>
+      <button class="btn" type="submit">Search</button>
+      {{if .Q}}<a class="btn" href="/admin/wanted">Clear</a>{{end}}
+    </form>
+
+    <div class="dash-grid">
+      <div class="dash-col">
+        <section class="card dash-card" aria-labelledby="w-list">
+          <div class="dash-card-head"><h2 id="w-list">Wanted</h2><span class="muted small">Biggest bounty first</span><a class="dash-link" href="/admin/events?cat=crime">Crime events &rarr;</a></div>
+          {{if .Board.List}}<div class="wanted-row stafflog-th"><span>Player</span><span>Crimes</span><span>Bounty</span><span>Wanted since</span></div>{{end}}
+          {{range .Board.List}}
+          <a class="wanted-row" href="/admin/players?id={{.PlayerID}}">
+            <span class="strong ellipsis"><span class="dot {{if .Online}}dot-on{{end}}" title="{{if .Online}}Online{{else}}Offline{{end}}"></span>{{.Name}}{{if .Gang}} <span class="muted small">&middot; {{.Gang}}</span>{{end}}</span>
+            <span class="wanted-crimes">{{range $i, $c := .Crimes}}{{if $i}}, {{end}}{{$c}}{{end}}</span>
+            <span class="warn-text strong">${{money .Bounty}}</span>
+            <span class="muted small">{{.Since.Format "2 Jan 15:04"}}{{if ne .Since .Latest}}<br>latest {{.Latest.Format "2 Jan 15:04"}}{{end}}</span>
+          </a>
+          {{else}}<p class="empty-state">{{if $.Q}}Nobody wanted matches "{{$.Q}}".{{else}}Nobody is wanted right now.{{end}}</p>{{end}}
+        </section>
+      </div>
+      <div class="dash-col">
+        <section class="card dash-card" aria-labelledby="w-jail">
+          <div class="dash-card-head"><h2 id="w-jail">In jail</h2><span class="muted small">Time left counts down while they're online</span></div>
+          {{range .Board.Jail}}
+          <a class="eco-flow eco-link" href="/admin/players?id={{.PlayerID}}"><span><span class="dot {{if .Online}}dot-on{{end}}"></span>{{.Name}}</span><span>{{$.Dur .Left}} left{{if .Bail}} <span class="muted small">&middot; bail ${{money .Bail}}</span>{{end}}</span></a>
+          {{else}}<p class="empty-state">Nobody is in jail.</p>{{end}}
+        </section>
+        <section class="card dash-card" aria-labelledby="w-crimes">
+          <div class="dash-card-head"><h2 id="w-crimes">Outstanding by crime</h2></div>
+          {{range .Board.ByCrime}}
+          <div class="eco-flow"><span>{{.Name}} <span class="muted small">&times;{{.Count}}</span></span><span>${{money .Total}}</span></div>
+          {{else}}<p class="empty-state">No outstanding crimes.</p>{{end}}
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}
