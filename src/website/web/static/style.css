@@ -3172,3 +3172,16 @@ a.lrow:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
 .kbd-grid p { display: flex; gap: 12px; align-items: baseline; margin: 0 0 7px; font-size: 13.5px; }
 .kbd-grid kbd { min-width: 64px; font-family: inherit; font-size: 12px; font-weight: 700; padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-2); text-align: center; }
 @media (max-width: 600px) { .kbd-grid { grid-template-columns: 1fr; } }
+/* ---- Staff Activity ---- */
+.sa-row { grid-template-columns: minmax(0, 1.6fr) 70px 100px 130px 60px 60px 130px; }
+.sa-who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sa-bar { display: block; height: 3px; margin-top: 4px; border-radius: 2px; background: rgb(var(--tint) / 0.06); max-width: 220px; }
+.sa-bar span { display: block; height: 100%; border-radius: 2px; background: var(--amber); }
+.sa-table { padding: 0 20px 16px; }
+.sa-table summary { cursor: pointer; color: var(--text-dim); font-size: 13px; padding: 4px 0 10px; }
+/* Categorical series (validated: dataviz validate_palette, both themes) */
+.lc-s1 { stroke: #3987e5; background: #3987e5; }
+.lc-s2 { stroke: #d95926; background: #d95926; }
+.lc-s3 { stroke: #199e70; background: #199e70; }
+:root[data-theme="light"] .lc-s1 { stroke: #2a78d6; background: #2a78d6; }
+:root[data-theme="light"] .lc-s2 { stroke: #eb6834; background: #eb6834; }

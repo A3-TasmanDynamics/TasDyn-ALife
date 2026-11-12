@@ -397,6 +397,7 @@ func run() error {
 		r.Group(func(r chi.Router) {
 			r.Use(d.Auth.RequirePermission("staff.view"))
 			r.Get("/admin/staff", d.StaffList)
+			r.Get("/admin/staff-activity", d.StaffActivity)
 			r.Post("/admin/staff/add", d.StaffAdd)
 			r.Get("/admin/staff/{id}", d.StaffProfile)
 			r.Post("/admin/staff/{id}/rank", d.StaffSetRank)
