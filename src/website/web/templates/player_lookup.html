@@ -67,6 +67,7 @@
         {{if $.CanVehicles}}<a class="tab {{if eq $.Tab "vehicles"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "vehicles"}}">Vehicles</a>{{end}}
         {{if $.CanNotes}}<a class="tab {{if eq $.Tab "notes"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "notes"}}">Notes</a>{{end}}
         <a class="tab {{if eq $.Tab "events"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "events" "cat" ""}}">Events</a>
+        <a class="tab {{if eq $.Tab "connections"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "connections" "cat" ""}}">Connections</a>
         <a class="tab {{if eq $.Tab "audit"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "audit"}}">Audit trail</a>
       </nav>
 
@@ -271,6 +272,30 @@
       </nav>
       <div class="card lookup-audit">{{template "event_rows" (dict "Events" $.Events "ShowPlayer" false)}}</div>
       <p class="hint">What the game recorded for this player: buys, sells, gives, the bank, storage, garages, fuel, robberies, seizures. Newest 200{{if $.EventsMore}} (there are older ones: see the <a href="/admin/events?q={{.UID}}&amp;range=all">Event Log</a>){{end}}.</p>
+      {{end}}
+
+      {{if eq $.Tab "connections"}}
+      {{with $.Conn}}
+      <div class="card lookup-audit">
+        <div class="card-label conn-head">Same IP as another account{{if .Shared}} &middot; <span class="warn-text">{{len .Shared}}</span>{{end}}</div>
+        {{range .Shared}}
+        <a class="conn-row" href="/admin/players?id={{.PlayerID}}&amp;tab=connections"><span class="strong">{{.Name}}{{if .Banned}} <span class="mod-pill mod-pill-banned">Banned</span>{{end}}</span><span>{{.IPs}} shared IP{{if ne .IPs 1}}s{{end}}</span><span class="muted small">{{.Sources}}</span><span class="muted small">last {{.Last.Format "2 Jan 2006"}}</span></a>
+        {{else}}<p class="empty-state">No other account has used the same IP.</p>{{end}}
+      </div>
+      <div class="card lookup-audit">
+        <div class="card-label conn-head">Money &amp; items moved with other players</div>
+        {{if .Partners}}<div class="conn-row conn-trade stafflog-th"><span>Player</span><span>Sent to them</span><span>Got from them</span><span>Items to &middot; from</span><span>Times &middot; last</span></div>{{end}}
+        {{range .Partners}}
+        <a class="conn-row conn-trade" href="/admin/players?id={{.PlayerID}}&amp;tab=connections"><span class="strong">{{.Name}}{{if .SharesIP}} <span class="flag-tag" title="Also shares an IP with this player">SAME IP</span>{{end}}</span><span>{{if .Sent}}${{$.Money .Sent}}{{else}}<span class="muted">&mdash;</span>{{end}}</span><span>{{if .Recv}}${{$.Money .Recv}}{{else}}<span class="muted">&mdash;</span>{{end}}</span><span>{{.ItemsSent}} &middot; {{.ItemsRecv}}</span><span class="muted small">{{.Times}}&times; &middot; {{.Last.Format "2 Jan 15:04"}}</span></a>
+        {{else}}<p class="empty-state">They haven't given or transferred anything to anyone, or received anything.</p>{{end}}
+      </div>
+      <div class="card lookup-audit">
+        <div class="card-label conn-head">Names used</div>
+        {{range .Aliases}}<div class="conn-row conn-alias"><span class="strong">{{.Name}}</span><span class="muted small">first {{.First.Format "2 Jan 2006"}}</span><span class="muted small">last {{.Last.Format "2 Jan 2006"}}</span></div>
+        {{else}}<p class="empty-state">No names recorded yet.</p>{{end}}
+      </div>
+      {{end}}
+      <p class="hint">Money sent and received is cash given in person plus bank transfers, from {{.Name}}'s side, taken from the game's event log. IPs come from website logins (the game can't see players' IPs) and are never shown, only whether accounts share one. A shared IP can be a household or a café, not just an alt: look at the trading too.</p>
       {{end}}
 
       {{if eq $.Tab "audit"}}
