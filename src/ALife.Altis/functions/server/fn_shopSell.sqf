@@ -44,7 +44,9 @@ _qty = round _qty;
 if (_qty < 1 || { _qty > 999 }) exitWith {};
 
 private _name = getText (missionConfigFile >> "CfgItems" >> _class >> "displayName");
-private _total = ([_class, true] call ALife_fnc_marketPrice) * _qty;
+// Police / EMS shops: fixed prices, the market doesn't move (civilian only).
+private _fixed = getText (_shopCfg >> "side") != "civ";
+private _total = ([_class, true, _fixed] call ALife_fnc_marketPrice) * _qty;
 if (!([_uid, _faction, _class, -_qty] call ALife_fnc_itemsChange)) exitWith {
     format ["You don't have %1 %2.", _qty, _name] call _fnc_reply;
 };
@@ -60,6 +62,6 @@ if (_paid != "OK") exitWith {
 _record set [_faction + "_cash", (_record getOrDefault [_faction + "_cash", 0]) + _total];
 
 diag_log format ["[ALife] %1 sold %2 x%3 for $%4 at %5", _uid, _class, _qty, _total, _shop];
-["trade", [_class, -_qty]] call ALife_fnc_market;
+if (!_fixed) then { ["trade", [_class, -_qty]] call ALife_fnc_market; };
 [format ["Sold %1 x%2 for $%3.", _name, _qty, [_total] call BIS_fnc_numberText], "success"] call _fnc_reply;
 [_unit] call ALife_fnc_requestPhoneData;

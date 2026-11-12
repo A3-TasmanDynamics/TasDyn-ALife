@@ -6,6 +6,8 @@
     it (CfgShops items[]), the licence / rank the shop and the item need
     (CfgMarket), the current market price, and that they can pay. Paid by
     cash or bank; the purchase then moves the market (ALife_fnc_market).
+    Police and EMS shops sell at fixed prices (CfgMarket buyPrice) and don't
+    move the market: the dynamic market is for civilians.
 
     Arguments:
         0: OBJECT - the player's unit
@@ -48,7 +50,8 @@ if (_missing != "") exitWith {
 _qty = round _qty;
 if (_qty < 1 || { _qty > 20 } || { !(_method in ["cash", "bank"]) }) exitWith {};
 
-private _total = ([_class] call ALife_fnc_marketPrice) * _qty;
+private _fixed = getText (_shopCfg >> "side") != "civ";
+private _total = ([_class, false, _fixed] call ALife_fnc_marketPrice) * _qty;
 private _name = getText (missionConfigFile >> "CfgItems" >> _class >> "displayName");
 private _paid = [_uid, _faction, _record, _total, _method, format ["%1 x%2", _name, _qty]] call ALife_fnc_shopCharge;
 
@@ -67,6 +70,6 @@ if (!([_uid, _faction, _class, _qty] call ALife_fnc_itemsChange)) exitWith {
 };
 
 diag_log format ["[ALife] %1 bought %2 x%3 for $%4 (%5) at %6", _uid, _class, _qty, _total, _method, _shop];
-["trade", [_class, _qty]] call ALife_fnc_market;
+if (!_fixed) then { ["trade", [_class, _qty]] call ALife_fnc_market; };
 [format ["Bought %1 x%2 for $%3.", _name, _qty, [_total] call BIS_fnc_numberText], "success"] call _fnc_reply;
 [_unit] call ALife_fnc_requestPhoneData;
