@@ -116,7 +116,8 @@ switch (_mode) do {
     };
 
     case "start": {
-        [] spawn {
+        [_staff] spawn {
+            params ["_staff"]; // (a spawned script doesn't see the caller's locals)
             private _cfg = missionConfigFile >> "CfgALife" >> "AntiCheat";
             private _every = getNumber (_cfg >> "checkEvery") max 2;
             ALife_acPos = createHashMap;     // uid -> [position 2D, time]
