@@ -16,6 +16,7 @@ import (
 	"website/internal/audit"
 	"website/internal/auth"
 	"website/internal/cases"
+	"website/internal/events"
 	"website/internal/factions"
 	"website/internal/lookup"
 	"website/internal/players"
@@ -55,6 +56,10 @@ type playerLookupData struct {
 	}
 	VehLog   []players.VehicleEvent
 	Audit    []players.AuditEvent
+	Events     []events.Event
+	EventsMore bool
+	EventCats  []events.Category
+	EventCat   string
 
 	CanVehicles   bool
 	CanCompensate bool
@@ -138,6 +143,10 @@ func (d *Deps) PlayerLookup(w http.ResponseWriter, r *http.Request) {
 				data.Tab = "vehicles"
 				data.Vehicles, data.VehLog, _ = players.Vehicles(r.Context(), d.Pool, data.P.ID)
 			}
+		case "events":
+			data.Tab = "events"
+			data.EventCats, data.EventCat = events.Categories, q.Get("cat")
+			data.Events, data.EventsMore, _ = events.List(r.Context(), d.Pool, events.Filter{PlayerID: data.P.ID, Category: data.EventCat, Limit: 200})
 		case "audit":
 			data.Tab = "audit"
 			data.Audit, _ = players.Audit(r.Context(), d.Pool, data.P.ID)

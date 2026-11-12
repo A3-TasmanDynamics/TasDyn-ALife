@@ -1,0 +1,38 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content">
+    <h1 class="page-title admin-title">Event Log</h1>
+    <p class="admin-sub">Everything the game server records about the economy: buying and selling, giving, the bank, storage, garages, fuel, robberies and the police. Click a row for its details.</p>
+
+    <nav class="filter-pills" aria-label="Category">
+      <a class="filter-pill {{if not .Filter.Category}}active{{end}}" href="/admin/events{{qset .Query "cat" "" "page" ""}}" {{if not .Filter.Category}}aria-current="true"{{end}}>All</a>
+      {{range .Categories}}
+      <a class="filter-pill {{if eq .Key $.Filter.Category}}active{{end}}" href="/admin/events{{qset $.Query "cat" .Key "page" ""}}" {{if eq .Key $.Filter.Category}}aria-current="true"{{end}}><span class="ev-dot ev-{{.Key}}" aria-hidden="true"></span>{{.Label}}</a>
+      {{end}}
+    </nav>
+
+    <form class="stafflog-filters" method="get" action="/admin/events">
+      {{if .Filter.Category}}<input type="hidden" name="cat" value="{{.Filter.Category}}">{{end}}
+      <label class="search-box"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input name="q" value="{{.Filter.Search}}" aria-label="Player name or Steam ID" placeholder="Player name or Steam ID"></label>
+      <select name="range" aria-label="Date range">
+        {{range .Ranges}}<option value="{{.Key}}" {{if eq .Key $.Filter.Range}}selected{{end}}>{{.Label}}</option>{{end}}
+      </select>
+      <button class="btn" type="submit">Filter</button>
+    </form>
+
+    <div class="card">
+      {{template "event_rows" (dict "Events" .Events "ShowPlayer" true)}}
+      <div class="stafflog-foot">
+        <span>Page {{.Page}} &middot; {{len .Events}} shown &middot; 50 per page</span>
+        <div class="pager">
+          {{if .Prev}}<a class="btn small-btn" href="/admin/events{{qset .Query "page" .Prev}}">Newer</a>{{else}}<span class="btn small-btn disabled" aria-disabled="true">Newer</span>{{end}}
+          {{if .Next}}<a class="btn small-btn" href="/admin/events{{qset .Query "page" .Next}}">Older</a>{{else}}<span class="btn small-btn disabled" aria-disabled="true">Older</span>{{end}}
+        </div>
+      </div>
+    </div>
+    <p class="hint">Read-only. Written by the game as it happens (the anti-cheat's event log). Staff actions are in the <a href="/admin/staff-log">Staff Log</a>; flags are in <a href="/admin/anticheat">Anti-Cheat</a>.</p>
+  </div>
+</div>
+{{end}}

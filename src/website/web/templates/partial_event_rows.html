@@ -1,0 +1,24 @@
+{{/* Rows of the game's event log. Called with (dict "Events" ... "ShowPlayer" bool). */}}
+{{define "event_rows"}}
+<div class="ev-list" role="table" aria-label="Events">
+  <div class="ev-row ev-th{{if not .ShowPlayer}} ev-noplayer{{end}}" role="row">
+    <span role="columnheader">When</span>{{if .ShowPlayer}}<span role="columnheader">Player</span>{{end}}<span role="columnheader">What happened</span>
+  </div>
+  {{range .Events}}
+  <details class="ev-row{{if not $.ShowPlayer}} ev-noplayer{{end}}" role="row">
+    <summary>
+      <span class="muted ev-when" role="cell" title="{{.When.Format "2 Jan 2006 15:04:05 MST"}}">{{.When.Format "2 Jan 15:04:05"}}</span>
+      {{if $.ShowPlayer}}<span class="ev-player" role="cell"><a href="/admin/players?id={{.PlayerID}}&amp;tab=events">{{.PlayerName}}</a></span>{{end}}
+      <span class="ev-what" role="cell"><span class="ev-tag ev-{{if .Category}}{{.Category}}{{else}}other{{end}}">{{if .Category}}{{.Category}}{{else}}other{{end}}</span> {{.Summary}}</span>
+    </summary>
+    <div class="ev-details">
+      {{range .Details}}<div class="kv"><span>{{.K}}</span><span>{{.V}}</span></div>{{end}}
+      <div class="kv"><span>Event</span><code class="perm-key">{{.Type}}</code></div>
+      {{if $.ShowPlayer}}<div class="kv"><span>Steam ID</span><span class="mono">{{.UID}}</span></div>{{end}}
+    </div>
+  </details>
+  {{else}}
+  <p class="empty-state">No events match.</p>
+  {{end}}
+</div>
+{{end}}

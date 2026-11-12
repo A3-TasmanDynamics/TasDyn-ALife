@@ -66,6 +66,7 @@
         <a class="tab {{if eq $.Tab "sessions"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "sessions"}}">Sessions</a>
         {{if $.CanVehicles}}<a class="tab {{if eq $.Tab "vehicles"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "vehicles"}}">Vehicles</a>{{end}}
         {{if $.CanNotes}}<a class="tab {{if eq $.Tab "notes"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "notes"}}">Notes</a>{{end}}
+        <a class="tab {{if eq $.Tab "events"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "events" "cat" ""}}">Events</a>
         <a class="tab {{if eq $.Tab "audit"}}active{{end}}" href="/admin/players{{qset $.Query "tab" "audit"}}">Audit trail</a>
       </nav>
 
@@ -261,6 +262,15 @@
         {{else}}<p class="empty-state">No notes yet.</p>{{end}}
       </div>
       <p class="hint">Notes can't be edited or deleted, so the history stays complete.</p>
+      {{end}}
+
+      {{if eq $.Tab "events"}}
+      <nav class="filter-pills" aria-label="Event category">
+        <a class="filter-pill {{if not $.EventCat}}active{{end}}" href="/admin/players{{qset $.Query "cat" ""}}">All</a>
+        {{range $.EventCats}}<a class="filter-pill {{if eq .Key $.EventCat}}active{{end}}" href="/admin/players{{qset $.Query "cat" .Key}}"><span class="ev-dot ev-{{.Key}}" aria-hidden="true"></span>{{.Label}}</a>{{end}}
+      </nav>
+      <div class="card lookup-audit">{{template "event_rows" (dict "Events" $.Events "ShowPlayer" false)}}</div>
+      <p class="hint">What the game recorded for this player: buys, sells, gives, the bank, storage, garages, fuel, robberies, seizures. Newest 200{{if $.EventsMore}} (there are older ones: see the <a href="/admin/events?q={{.UID}}&amp;range=all">Event Log</a>){{end}}.</p>
       {{end}}
 
       {{if eq $.Tab "audit"}}
