@@ -85,13 +85,26 @@ class CfgSounds
     class ALife_SirenPolice
     {
         name = "Police siren";
-        sound[] = { "@a3\sounds_f_orangeehicles\softan_02an_02_gendarmerie_siren_ext_loop_01.wss", 3, 1, 600 };
+        sound[] = { "@a3\sounds_f_orange\vehicles\soft\van_02\van_02_gendarmerie_siren_ext_loop_01.wss", 3, 1, 600 };
+        titles[] = {};
+    };
+    // Heard inside the vehicle: the cabin version of each.
+    class ALife_SirenPoliceInt
+    {
+        name = "Police siren (inside)";
+        sound[] = { "@a3\sounds_f_orange\vehicles\soft\van_02\van_02_gendarmerie_siren_int_loop_01.wss", 1.5, 1, 30 };
+        titles[] = {};
+    };
+    class ALife_SirenEMSInt
+    {
+        name = "Ambulance siren (inside)";
+        sound[] = { "@a3\sounds_f_orange\vehicles\soft\van_02\van_02_ambulance_siren_int_loop.wss", 1.5, 1, 30 };
         titles[] = {};
     };
     class ALife_SirenEMS
     {
         name = "Ambulance siren";
-        sound[] = { "@a3\sounds_f_orangeehicles\softan_02an_02_ambulance_siren_ext_loop.wss", 3, 1, 600 };
+        sound[] = { "@a3\sounds_f_orange\vehicles\soft\van_02\van_02_ambulance_siren_ext_loop.wss", 3, 1, 600 };
         titles[] = {};
     };
 };
