@@ -85,20 +85,27 @@ class CfgALife
     {
         lightsKey = 38;         // Left Shift + L (DIK 38): light bar on / off
         sirenKey = 33;          // Left Shift + F (DIK 33): siren on / off
+        whoopKey = 34;          // Left Shift + G (DIK 34): one "whoop" (pull over)
         lightRange = 1200;      // metres: you see a vehicle's lights from this far
         sirenRange = 600;       // metres: you hear its siren from this far
         flash = 0.25;           // seconds each side of the light bar stays lit
+        // Left Shift + L goes off -> each pattern in turn -> off.
+        patterns[] = { "Alternating", "Double flash" };
         class cop
         {
             colours[] = { { 1, 0.05, 0.05 }, { 0.05, 0.15, 1 } };   // red / blue
             siren = "ALife_SirenPolice";                              // CfgSounds (description.ext)
+            sirenInside = "ALife_SirenPoliceInt";                     // what the crew hear
             sirenLength = 2.17;                                       // seconds, one loop of it
+            whoop = "a3\sounds_f\vehicles\soft\offroad_01\offroad_01_gendarmerie_siren_oneshot.wss";
         };
         class medic
         {
             colours[] = { { 1, 0.05, 0.05 }, { 1, 1, 1 } };          // red / white
             siren = "ALife_SirenEMS";
+            sirenInside = "ALife_SirenEMSInt";
             sirenLength = 3.28;
+            whoop = "a3\sounds_f_orange\vehicles\soft\van_02\van_02_ambulance_siren_oneshot.wss";
         };
     };
 
@@ -133,6 +140,11 @@ class CfgALife
     // vehicleSpawns marker within this many metres, else at a clear spot near
     // the player (a shop NPC placed away from the markers).
     vehicleSpawnRange = 150;
+
+    // Weapon shops: the most of one weapon, attachment or piece of kit in
+    // one purchase (magazines: 20). Stops a leftover quantity buying a pile
+    // of scopes by mistake.
+    weaponShopGearMax = 3;
 
     // ---- Anti-cheat (ALife_fnc_anticheat, docs/ANTI_CHEAT.md) ----------------
     // Every economy action goes in the player's event log; what isn't normal

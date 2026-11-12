@@ -11,15 +11,19 @@
         1: BOOL   - true for what a shop pays when buying it from a player:
                     the current price scaled by the item's sellPrice / buyPrice.
                     Default false.
+        2: BOOL   - true for a fixed price: the CfgMarket buyPrice / sellPrice,
+                    not the market (police and EMS shops -- the dynamic
+                    market is for civilians). Default false.
 
     Returns:
         NUMBER - dollars, rounded to whole dollars; -1 if not on the market
 */
 
-params [["_class", "", [""]], ["_selling", false, [false]]];
+params [["_class", "", [""]], ["_selling", false, [false]], ["_fixed", false, [false]]];
 
 private _cfg = missionConfigFile >> "CfgMarket";
 if (!isClass (_cfg >> _class)) exitWith { -1 };
+if (_fixed) exitWith { round getNumber (_cfg >> _class >> (["buyPrice", "sellPrice"] select _selling)) };
 
 private _price = if (isServer && { !isNil "ALife_market" }) then {
     ALife_market getOrDefault [_class, getNumber (_cfg >> _class >> "buyPrice")]

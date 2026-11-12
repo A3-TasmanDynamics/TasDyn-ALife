@@ -180,15 +180,6 @@ class CfgShops
         radius = 8;
     };
 
-    class cop_supplies
-    {
-        type = "weapons";
-        shop = "cop_kit";
-        markers[] = {};
-        npcs[] = { "police_receptionist_1", "police_receptionist_2", "police_receptionist_3", "police_receptionist_4", "police_receptionist_5", "police_receptionist_6" };
-        radius = 8;
-    };
-
     class cop_armoury
     {
         type = "weapons";
