@@ -146,7 +146,9 @@ class CfgALife
     // part is wanted for crime.
     // Objects you place in Eden with these variable names (they stand still
     // and can't be hurt): something at the building's door, at the vault
-    // room door, the keypad (e.g. a laptop), the vault (e.g. a safe).
+    // room door, the keypad (e.g. a laptop), and the vault -- a CONTAINER (a
+    // crate / box with an inventory, e.g. Box_NATO_AmmoVeh_F): seized gear
+    // goes into its own inventory, locked until it's cracked.
     class Evidence
     {
         entrance = "evidence_entrance";
@@ -165,8 +167,8 @@ class CfgALife
         guesses = 10;             // ...tries before it locks...
         lockout = 60;             // ...for this long (a new code after)
         cashBonus = 25000;        // dollars in the vault on top of the seized cash
-        crate = "Box_IND_Wps_F";  // what the loot comes out in
-        lootLifetime = 900;       // seconds before an emptied-or-not loot crate goes
+        crate = "Box_IND_Wps_F";  // only if there's no vault object: the loot comes out in this
+        lootLifetime = 900;       // seconds the vault stays open after it's cracked, then it reseals
         crime = "evidence_robbery";
     };
 

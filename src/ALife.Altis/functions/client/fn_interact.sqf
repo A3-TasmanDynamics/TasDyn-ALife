@@ -78,13 +78,16 @@ private _evName = if (isNull _target) then { "" } else { vehicleVarName _target 
 private _evAt = if (_evName == "") then { -1 } else { _evStages findIf { getText (_evCfg >> _x) == _evName } };
 if (_evAt >= 0 && { player distance _target <= getNumber (_evCfg >> "range") + 1 }) exitWith {
     private _stage = _evStages select _evAt;
-    if (_faction == "cop") exitWith {
+    // Police -- or staff (game.admin / a server owner), whatever they're playing.
+    private _evStaff = (getPlayerUID player) in getArray (missionConfigFile >> "CfgALife" >> "owners")
+        || { "game.admin" in ((missionNamespace getVariable ["ALife_phone", createHashMap]) getOrDefault ["perms", []]) };
+    if (_faction == "cop" || { _evStaff }) exitWith {
         ["open", "Evidence vault", [
             ["What's inside", { [player, "police", "count"] remoteExecCall ["ALife_fnc_evidence", 2]; }, []],
             ["Secure the vault", { [player, "police", "secure"] remoteExecCall ["ALife_fnc_evidence", 2]; }, []],
-            ["Destroy the evidence", {
-                ["open", "Destroy all the evidence?", [
-                    ["Yes, destroy it", { [player, "police", "destroy"] remoteExecCall ["ALife_fnc_evidence", 2]; }, []],
+            ["Clear the evidence", {
+                ["open", "Clear all the evidence?", [
+                    ["Yes, clear it", { [player, "police", "destroy"] remoteExecCall ["ALife_fnc_evidence", 2]; }, []],
                     ["No", {}, []]
                 ], "It can't be undone"] call ALife_fnc_radial;
             }, []]
@@ -92,7 +95,15 @@ if (_evAt >= 0 && { player distance _target <= getNumber (_evCfg >> "range") + 1
         true
     };
     if (_faction != "civ") exitWith { true };
-    if (_stage == "vault") exitWith { ["Crack the keypad to open it.", "info"] call ALife_fnc_toast; true };
+    if (_stage == "vault") exitWith {
+        // Cracked open: its items and cash (its gear is in its own inventory).
+        if (_target in (missionNamespace getVariable ["ALife_groundBags", []])) then {
+            [player, _target] remoteExecCall ["ALife_fnc_containerOpen", 2];
+        } else {
+            ["Crack the keypad to open it.", "info"] call ALife_fnc_toast;
+        };
+        true
+    };
     private _label = switch (_stage) do {
         case "entrance": { "Cut the door (Bolt Cutters)" };
         case "vaultDoor": { "Set a charge (Blasting Charge)" };

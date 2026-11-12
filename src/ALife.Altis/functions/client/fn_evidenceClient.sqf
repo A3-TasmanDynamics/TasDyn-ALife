@@ -14,6 +14,8 @@
         ["key", digit] / ["clear"] / ["enter"]   - the keypad's buttons
         ["locked", seconds] / ["cracked"]
         ["alarm", [on, position, text]]          - police only
+        ["lock", [vault, locked]]                - the vault's inventory locked / open here
+        ["init"]                                 - (initPlayerLocal) the same, on joining
 */
 
 #define IDD 6100
@@ -116,6 +118,20 @@ switch (_mode) do {
     case "cracked": {
         if (!isNull _display) then { _display closeDisplay 1; };
         ["Cracked it! The vault is open: the loot is in the crate beside it (Windows for the cash and items).", "success"] call ALife_fnc_toast;
+    };
+
+    case "init": {
+        // Joining: the vault's inventory as the server has it (ALife_evidenceOpen).
+        private _name = getText (missionConfigFile >> "CfgALife" >> "Evidence" >> "vault");
+        private _until = time + 60;
+        waitUntil { sleep 1; !isNil "ALife_evidenceOpen" || { time > _until } };
+        private _v = missionNamespace getVariable [_name, objNull];
+        if (!isNull _v) then { _v lockInventory !(missionNamespace getVariable ["ALife_evidenceOpen", false]); };
+    };
+
+    case "lock": {
+        _arg params [["_vault", objNull], ["_locked", true]];
+        if (!isNull _vault) then { _vault lockInventory _locked; };
     };
 
     case "alarm": {

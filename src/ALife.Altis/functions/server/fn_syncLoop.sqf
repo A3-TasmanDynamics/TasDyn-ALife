@@ -30,7 +30,8 @@ while { true } do {
         private _expired = [];
         {
             private _object = _y get "object";
-            if (isNull _object || { (_y get "kind") == "ground" && { time - (_y get "created") > _lifetime } }) then { _expired pushBack _x; };
+            // (The cracked evidence vault's items -- "vault_" -- go back into evidence when it reseals.)
+            if (isNull _object || { (_y get "kind") == "ground" && { (_x select [0, 6]) != "vault_" } && { time - (_y get "created") > _lifetime } }) then { _expired pushBack _x; };
         } forEach ALife_containers;
         {
             private _object = (ALife_containers get _x) get "object";
