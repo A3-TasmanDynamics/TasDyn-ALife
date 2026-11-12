@@ -5,11 +5,16 @@ import (
 	"net/http"
 	"time"
 
+	"website/internal/attention"
 	"website/internal/audit"
 	"website/internal/auth"
 	"website/internal/cases"
+	"website/internal/chart"
+	"website/internal/economy"
 	"website/internal/notify"
+	"website/internal/online"
 	"website/internal/players"
+	"website/internal/watchlist"
 )
 
 type staffLogRow struct {
@@ -92,6 +97,16 @@ type adminHomeData struct {
 
 	Notes  []notify.Item
 	Unread int
+
+	// Needs attention feed, tile sparklines and the watchlist card.
+	Attention   []attention.Item
+	OnlineSpark chart.Spark // players online, last 24 h
+	OnlinePeak  int
+	FlagSpark   chart.Spark // flags raised per hour, last 24 h
+	MoneySpark  chart.Spark // money supply, last 7 days of snapshots
+	Watch       []watchlist.Entry
+	WatchTotal  int
+	CanWatch    bool
 }
 
 type caseBar struct {
@@ -190,6 +205,7 @@ func (d *Deps) AdminHome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data.OpenCaseCount = data.OpenCases
+	d.dashboardExtras(r, &data)
 	if sess, ok := auth.FromContext(ctx); ok {
 		data.Notes, data.Unread, _ = notify.List(ctx, d.Pool, sess.PlayerID, 5)
 	}
@@ -210,4 +226,62 @@ func (d *Deps) AdminHome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	d.Render.Render(w, "admin_home.html", data)
+}
+
+// dashboardExtras fills the Needs attention feed, the tile sparklines and
+// the watchlist card. Each is optional: a failure is logged and the part is
+// left out.
+func (d *Deps) dashboardExtras(r *http.Request, data *adminHomeData) {
+	ctx := r.Context()
+	now := time.Now()
+	sess, _ := auth.FromContext(ctx)
+	v := attention.Viewer{Perms: data.Perms, Support: sess != nil && sess.SupportPanelAccess}
+	var err error
+	if data.Attention, err = attention.Collect(ctx, d.Pool, v, now); err != nil {
+		slog.Error("admin home: needs attention failed", "error", err)
+	}
+
+	if _, counts, err := online.History(ctx, d.Pool, 24*time.Hour, 30*time.Minute); err != nil {
+		slog.Error("admin home: online history failed", "error", err)
+	} else {
+		data.OnlineSpark = chart.BuildSpark(counts, 120, 28, chart.Count)
+		for _, c := range counts {
+			data.OnlinePeak = max(data.OnlinePeak, int(c))
+		}
+	}
+	if rows, err := d.Pool.Query(ctx, `
+		SELECT count(f.id)::float8
+		FROM generate_series(date_trunc('hour', now()) - interval '23 hours', date_trunc('hour', now()), interval '1 hour') h
+		LEFT JOIN anti_cheat_flags f ON f.created_at >= h AND f.created_at < h + interval '1 hour'
+		GROUP BY h ORDER BY h`); err != nil {
+		slog.Error("admin home: flag history failed", "error", err)
+	} else {
+		var vals []float64
+		for rows.Next() {
+			var n float64
+			if rows.Scan(&n) == nil {
+				vals = append(vals, n)
+			}
+		}
+		rows.Close()
+		data.FlagSpark = chart.BuildSpark(vals, 120, 28, chart.Count)
+	}
+	if pts, err := economy.History(ctx, d.Pool, now.Add(-7*24*time.Hour)); err != nil {
+		slog.Error("admin home: money history failed", "error", err)
+	} else {
+		vals := make([]float64, len(pts))
+		for i, p := range pts {
+			vals[i] = float64(p.Cash + p.Bank)
+		}
+		data.MoneySpark = chart.BuildSpark(vals, 120, 28, chart.Money)
+	}
+
+	if data.CanWatch = data.Perms["players.view"]; data.CanWatch {
+		all, err := watchlist.List(ctx, d.Pool, "")
+		if err != nil {
+			slog.Error("admin home: watchlist failed", "error", err)
+		}
+		data.WatchTotal = len(all)
+		data.Watch = all[:min(len(all), 6)]
+	}
 }
