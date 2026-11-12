@@ -2714,3 +2714,30 @@ h1, .section-title, .page-title, .status-headline,
   font-family: var(--font-display);
   font-weight: 700;
 }
+/* ---------- Event Log (/admin/events, Player Lookup > Events) ---------- */
+.ev-list { font-size: 13px; }
+.ev-row { border-bottom: 1px solid var(--border-soft); }
+.ev-row > summary, .ev-th { display: grid; grid-template-columns: 120px 170px minmax(0, 1fr); gap: 12px; align-items: center; padding: 10px 20px; list-style: none; cursor: pointer; }
+.ev-th { cursor: default; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-faint); }
+.ev-noplayer > summary, .ev-th.ev-noplayer { grid-template-columns: 120px minmax(0, 1fr); }
+.ev-row > summary::-webkit-details-marker { display: none; }
+.ev-row > summary:hover { background: rgba(255, 255, 255, 0.02); }
+.ev-row[open] > summary { background: var(--amber-soft); }
+.ev-row > summary:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
+.ev-player, .ev-what { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ev-player a { color: var(--text); font-weight: 600; text-decoration: none; }
+.ev-player a:hover { color: var(--amber-bright); }
+.ev-details { padding: 6px 20px 14px 152px; display: grid; gap: 4px; max-width: 760px; }
+.ev-details .kv { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 12px; }
+.ev-details .kv > span:first-child { color: var(--text-dim); }
+.ev-details .kv > span:last-child { overflow-wrap: anywhere; }
+.ev-tag { display: inline-block; font-size: 10.5px; font-weight: 800; padding: 1px 7px; border-radius: 4px; text-transform: uppercase; margin-right: 6px; color: #0b1220; background: var(--text-faint); }
+.ev-dot { width: 8px; height: 8px; border-radius: 4px; display: inline-block; flex-shrink: 0; background: var(--text-faint); }
+.ev-shops { background: #3b82f6; } .ev-money { background: #22c55e; } .ev-storage { background: #a855f7; } .ev-crime { background: #ef4444; }
+.ev-police { background: #38bdf8; } .ev-fuel { background: #f59e0b; } .ev-process { background: #14b8a6; } .ev-anticheat { background: #f472b6; }
+@media (max-width: 720px) {
+  .ev-row > summary, .ev-th { grid-template-columns: 1fr; gap: 2px; padding: 10px 16px; }
+  .ev-th { display: none; }
+  .ev-player, .ev-what { white-space: normal; }
+  .ev-details { padding: 4px 16px 12px; }
+}

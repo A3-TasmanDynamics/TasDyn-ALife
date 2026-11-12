@@ -73,6 +73,18 @@ func VehiclesNamed(q string) []string {
 	return out
 }
 
+// Any names a class of any kind -- virtual item, vehicle or Arma gear --
+// and says whether it's known; unknown classes come back as they are.
+func Any(class string) (string, bool) {
+	k := strings.ToLower(strings.TrimSpace(class))
+	for _, m := range []map[string]string{items, vehicles, gear} {
+		if n, ok := m[k]; ok {
+			return n, true
+		}
+	}
+	return class, false
+}
+
 func lookup(m map[string]string, key string) string {
 	if n, ok := m[strings.ToLower(strings.TrimSpace(key))]; ok {
 		return n

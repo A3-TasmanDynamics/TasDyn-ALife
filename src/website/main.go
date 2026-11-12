@@ -405,6 +405,7 @@ func run() error {
 		r.Group(func(r chi.Router) {
 			r.Use(d.Auth.RequirePermission("players.view"))
 			r.Get("/admin/players", d.PlayerLookup)
+			r.Get("/admin/events", d.EventLog)
 			r.Post("/admin/players/{id}/faction-level", d.PlayerSetFactionLevel)
 			r.Post("/admin/players/{id}/compensate", d.PlayerCompensate)
 			r.Post("/admin/players/{id}/licences", d.PlayerLicences)
