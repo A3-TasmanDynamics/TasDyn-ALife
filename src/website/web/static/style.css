@@ -2829,3 +2829,10 @@ a.eco-link:hover { background: rgba(255, 255, 255, 0.03); }
 .dash-card .ev-row > summary, .dash-card .ev-th { padding-left: 20px; padding-right: 20px; grid-template-columns: 100px 120px minmax(0, 1fr); }
 .dash-card .ev-details { padding-left: 20px; }
 @media (max-width: 900px) { .eco-flows { grid-template-columns: 1fr; } .eco-flows > div + div { border-left: none; border-top: 1px solid var(--border-soft); } .eco-mkt { grid-template-columns: minmax(0, 1fr) 70px 70px 64px; } }
+/* ---------- Player Lookup > Connections ---------- */
+.conn-head { padding: 14px 20px 6px; margin: 0; }
+.conn-row { display: grid; grid-template-columns: minmax(0, 1.4fr) 120px 140px 130px; gap: 12px; align-items: center; padding: 9px 20px; font-size: 13px; border-bottom: 1px solid var(--border-soft); color: var(--text); text-decoration: none; }
+a.conn-row:hover { background: rgba(255, 255, 255, 0.03); }
+.conn-trade { grid-template-columns: minmax(0, 1.4fr) 110px 110px 130px 150px; font-variant-numeric: tabular-nums; }
+.conn-alias { grid-template-columns: minmax(0, 1fr) 140px 140px; }
+@media (max-width: 900px) { .conn-row, .conn-trade, .conn-alias { grid-template-columns: 1fr; gap: 2px; } .conn-row.stafflog-th { display: none; } }
