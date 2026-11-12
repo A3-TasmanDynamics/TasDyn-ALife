@@ -481,6 +481,7 @@ func run() error {
 		r.Group(func(r chi.Router) {
 			r.Use(d.Auth.RequirePermission("anticheat.review"))
 			r.Get("/admin/anticheat", d.AntiCheat)
+			r.Post("/admin/anticheat/bulk", d.FlagBulkReview)
 			r.Post("/admin/anticheat/{id}", d.FlagReview)
 		})
 
@@ -563,6 +564,7 @@ func run() error {
 		r.Get("/admin/support", d.SupportDashboard)
 		r.Get("/admin/tickets", d.SupportQueue)
 		r.Get("/admin/tickets/{id}", d.TicketThread)
+		r.Post("/admin/tickets/bulk", d.TicketBulk)
 		r.Post("/admin/tickets/{id}/assign", d.AssignTicket)
 		r.Post("/admin/tickets/{id}/priority", d.SetTicketPriority)
 		r.Post("/admin/tickets/{id}/category", d.SetTicketCategory)

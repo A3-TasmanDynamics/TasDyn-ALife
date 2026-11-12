@@ -60,13 +60,26 @@
         <button class="btn" type="submit">Filter</button>
         {{if or .Search .Type .Confidence}}<a class="btn" href="/admin/anticheat{{if ne .Status "open"}}?status={{.Status}}{{end}}">Clear</a>{{end}}
       </form>
+      {{if .Flags}}
+      <form id="bulk-flags" class="bulkbar" method="post" action="/admin/anticheat/bulk" data-bulk hidden>
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><input type="hidden" name="back" value="">
+        <label class="bulk-all"><input type="checkbox" data-bulk-all aria-label="Select all flags on this page"> <span data-bulk-count>0</span> selected</label>
+        <input class="bulk-note" name="note" maxlength="1000" required placeholder="Note (required, saved to the Staff Log)" aria-label="Note for the selected flags">
+        <button class="btn btn-sm" type="submit" name="resolution" value="dismiss">Dismiss</button>
+        <button class="btn btn-sm" type="submit" name="resolution" value="watch">Watch</button>
+        <button class="btn btn-sm" type="button" data-bulk-clear>Clear</button>
+      </form>
+      {{end}}
       <div class="ac-items">
         {{range .Flags}}
-        <a class="ac-item{{if and $.Selected (eq .ID $.Selected.ID)}} active{{end}}" href="/admin/anticheat{{qset $.Query "flag" (i64 .ID)}}">
+        <div class="ac-row">
+        <input class="bulk-check" type="checkbox" name="ids" value="{{.ID}}" form="bulk-flags" aria-label="Select flag #{{.ID}}">
+        <a class="ac-item{{if and $.Selected (eq .ID $.Selected.ID)}} active{{end}}" data-row href="/admin/anticheat{{qset $.Query "flag" (i64 .ID)}}">
           <span class="ac-item-top"><span class="ac-sev ac-sev-{{.Confidence}}">{{.Confidence}}</span><span class="mod-dim">#{{.ID}} &middot; {{.CreatedAt.Format "2 Jan 15:04"}}</span><span class="ac-status ac-status-{{if .Open}}open{{else}}closed{{end}}">{{.Status}}</span></span>
           <span class="strong">{{.Title}}</span>
           <span class="mod-dim">{{.Player}}</span>
         </a>
+        </div>
         {{else}}
         <p class="empty">No flags match these filters.{{if eq .Status "open"}} Nothing is waiting for review.{{end}}</p>
         {{end}}
@@ -85,11 +98,11 @@
       {{if .Open}}
       <form class="ac-review" method="post" action="/admin/anticheat/{{.ID}}">
         <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
-        <div class="field"><label for="ac-note">Resolution note</label><textarea id="ac-note" name="note" rows="2" maxlength="1000" placeholder="Why you're dismissing or watching. Saved to the Staff Log. To act on the player, open a case."></textarea></div>
+        <div class="field"><label for="ac-note">Resolution note</label><textarea id="ac-note" name="note" rows="2" data-key="n" maxlength="1000" placeholder="Why you're dismissing or watching. Saved to the Staff Log. To act on the player, open a case."></textarea></div>
         <div class="ac-actions">
           <button class="btn" type="submit" name="resolution" value="dismiss">Dismiss as false positive</button>
           <button class="btn" type="submit" name="resolution" value="watch">Watch player</button>
-          {{if $.CanCase}}<a class="btn btn-primary" href="/admin/cases/new?flag={{.ID}}">Open a case</a>{{end}}
+          {{if $.CanCase}}<a class="btn btn-primary" data-key="c" href="/admin/cases/new?flag={{.ID}}">Open a case</a>{{end}}
           {{if $.CanBan}}<button class="btn btn-danger-soft" type="button" data-dialog-open="dlg-ac-ban">Ban…</button>{{end}}
         </div>
       </form>
