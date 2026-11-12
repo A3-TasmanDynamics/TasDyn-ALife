@@ -17,7 +17,8 @@
 params [["_unit", objNull, [objNull]], ["_shop", "", [""]], ["_class", "", [""]], ["_qty", 0, [0]]];
 
 if (!isServer || { isNull _unit }) exitWith {};
-if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith {};
+if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith { ["spoof", _unit, "shopSell", remoteExecutedOwner] call ALife_fnc_anticheat; };
+if (isRemoteExecuted && { ["rate", _unit, "sell"] call ALife_fnc_anticheat }) exitWith {};
 
 private _owner = owner _unit;
 private _fnc_reply = { (if (_this isEqualType []) then { _this } else { [_this, "warning"] }) remoteExecCall ["ALife_fnc_notify", _owner]; };
@@ -60,6 +61,7 @@ if (_paid != "OK") exitWith {
 _record set [_faction + "_cash", (_record getOrDefault [_faction + "_cash", 0]) + _total];
 
 diag_log format ["[ALife] %1 sold %2 x%3 for $%4 at %5", _uid, _class, _qty, _total, _shop];
+["log", _unit, "shop.sell", [["shop", _shop], ["item", _class], ["qty", _qty], ["total", _total]]] call ALife_fnc_anticheat;
 ["trade", [_class, -_qty]] call ALife_fnc_market;
 [format ["Sold %1 x%2 for $%3.", _name, _qty, [_total] call BIS_fnc_numberText], "success"] call _fnc_reply;
 [_unit] call ALife_fnc_requestPhoneData;

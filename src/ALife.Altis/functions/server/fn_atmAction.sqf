@@ -15,7 +15,8 @@
 params [["_unit", objNull, [objNull]], ["_op", "", [""]], ["_amount", 0, [0]]];
 
 if (!isServer || { isNull _unit }) exitWith {};
-if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith {};
+if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith { ["spoof", _unit, "atmAction", remoteExecutedOwner] call ALife_fnc_anticheat; };
+if (isRemoteExecuted && { ["rate", _unit, "bank"] call ALife_fnc_anticheat }) exitWith {};
 if (!(_op in ["deposit", "withdraw"])) exitWith {};
 
 private _owner = owner _unit;
@@ -48,5 +49,6 @@ _record set [_faction + "_cash", (_record getOrDefault [_faction + "_cash", 0]) 
 _record set [_faction + "_bank", (_record getOrDefault [_faction + "_bank", 0]) - _change];
 
 diag_log format ["[ALife] ATM: %1 %2 $%3 (%4)", _uid, ["withdrew", "deposited"] select (_op == "deposit"), _amount, _faction];
+["log", _unit, "bank." + _op, [["amount", _amount], ["faction", _faction]]] call ALife_fnc_anticheat;
 [format ["%1 $%2.", ["Withdrew", "Deposited"] select (_op == "deposit"), [_amount] call BIS_fnc_numberText], "success"] call _fnc_reply;
 [_unit] call ALife_fnc_requestPhoneData;

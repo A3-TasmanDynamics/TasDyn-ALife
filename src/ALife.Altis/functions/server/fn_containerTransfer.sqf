@@ -20,7 +20,8 @@
 params [["_unit", objNull, [objNull]], ["_id", "", [""]], ["_direction", "", [""]], ["_entries", [], [[]]], ["_cash", 0, [0]]];
 
 if (!isServer || { isNull _unit }) exitWith {};
-if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith {};
+if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith { ["spoof", _unit, "containerTransfer", remoteExecutedOwner] call ALife_fnc_anticheat; };
+if (isRemoteExecuted && { ["rate", _unit, "container"] call ALife_fnc_anticheat }) exitWith {};
 if (!(_direction in ["take", "store"])) exitWith {};
 
 private _owner = owner _unit;
@@ -115,6 +116,7 @@ if (_cash > 0) then {
 
 if (_moved isNotEqualTo []) then {
     diag_log format ["[ALife] %1 %2 %3 %4: %5", _uid, ["took from", "put in"] select (_direction == "store"), _container get "kind", _id, _moved joinString ", "];
+    ["log", _unit, "container." + _direction, [["container", _id], ["kind", _container get "kind"], ["moved", _moved]]] call ALife_fnc_anticheat;
 };
 if (_full) then {
     (["There isn't room for all of that.", "You can't carry all of that."] select (_direction == "take")) call _fnc_reply;

@@ -25,6 +25,7 @@ ALife_revives deleteAt _uid;
 _revive params ["_pos", "_loadout", "_body", "_medicName"];
 
 private _faction = [side group _unit] call ALife_fnc_sideToFaction;
+["grace", _unit] call ALife_fnc_anticheat;
 _unit setPosATL _pos;
 _unit hideObjectGlobal false;
 _unit setVariable ["alife_uid", _uid];

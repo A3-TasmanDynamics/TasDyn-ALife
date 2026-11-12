@@ -68,6 +68,9 @@ private _theirUid = if (isNull _target) then { "" } else { getPlayerUID _target 
 private _them = if (isNull _target) then { "" } else { _target getVariable ["alife_name", name _target] };
 private _targeted = _action in ["bring", "heal", "freeze", "message", "warn", "kick", "ban", "compensate", "give", "giveCash", "giveLicence", "licences"];
 if (_targeted && { _theirUid == "" }) exitWith { "That player has left." call _fnc_reply; };
+// Staff moving people around (bring, teleports): not cheats.
+["grace", _unit, 30] call ALife_fnc_anticheat;
+if (!isNull _target) then { ["grace", _target, 30] call ALife_fnc_anticheat; };
 // The first argument is the reason / message for most actions; vehicle
 // actions send the vehicle there instead.
 private _reason = _args param [0, ""];

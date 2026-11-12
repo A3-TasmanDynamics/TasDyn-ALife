@@ -63,6 +63,34 @@ std::string HandleCombatLog(Database& db, const std::vector<std::string>& args) 
     return "OK";
 }
 
+// Anti-cheat (ALife_fnc_anticheat):
+//   ["log",  uid, eventType, detailsJson]               -> player_log
+//   ["flag", uid, flagType, "high"|"medium", detailsJson] -> anti_cheat_flags + staff_log
+std::string HandleAc(Database& db, const std::vector<std::string>& args) {
+    if (args.size() < 4) return "ERROR:expected [op, uid, type, ...]";
+    const std::string& op = args[0];
+    if (!IsSteam64(args[1])) return "ERROR:invalid uid";
+    const std::string& type = args[2];
+    if (type.empty() || type.size() > 40) return "ERROR:invalid type";
+    for (char c : type) {
+        if (!((c >= 'a' && c <= 'z') || c == '_' || c == '.')) return "ERROR:invalid type";
+    }
+    std::string error;
+    if (op == "log") {
+        if (args[3].size() > 8000) return "ERROR:details too long";
+        if (!db.AcLog(args[1], type, args[3], error)) return "ERROR:" + error;
+        return "OK";
+    }
+    if (op == "flag") {
+        if (args.size() < 5) return "ERROR:expected [flag, uid, type, confidence, details]";
+        if (args[3] != "high" && args[3] != "medium") return "ERROR:invalid confidence";
+        if (args[4].size() > 8000) return "ERROR:details too long";
+        if (!db.AcFlag(args[1], type, args[3], args[4], error)) return "ERROR:" + error;
+        return "OK";
+    }
+    return "ERROR:unknown ac op";
+}
+
 // args = [op, uid, faction, amount, requestToken, otherUid, otherFaction, memo]
 std::string HandleBank(Database& db, const std::vector<std::string>& args) {
     if (args.size() < 8) return "ERROR:expected [op, uid, faction, amount, token, otherUid, otherFaction, memo]";
@@ -385,6 +413,7 @@ std::string DispatchCommand(Database& db, const std::string& command,
     if (command == "load") return HandleLoad(db, args);
     if (command == "save") return HandleSave(db, args);
     if (command == "combatlog") return HandleCombatLog(db, args);
+    if (command == "ac") return HandleAc(db, args);
     if (command == "bank") return HandleBank(db, args);
     if (command == "session") return HandleSession(db, args);
     if (command == "market") return HandleMarket(db, args);

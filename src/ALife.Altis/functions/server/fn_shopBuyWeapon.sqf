@@ -25,7 +25,8 @@
 params [["_unit", objNull, [objNull]], ["_placement", "", [""]], ["_cart", [], [[]]], ["_method", "", [""]]];
 
 if (!isServer || { isNull _unit }) exitWith {};
-if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith {};
+if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith { ["spoof", _unit, "shopBuyWeapon", remoteExecutedOwner] call ALife_fnc_anticheat; };
+if (isRemoteExecuted && { ["rate", _unit, "buy"] call ALife_fnc_anticheat }) exitWith {};
 
 private _owner = owner _unit;
 private _fnc_reply = { (if (_this isEqualType []) then { _this } else { [_this, "warning"] }) remoteExecCall ["ALife_fnc_notify", _owner]; };
@@ -125,6 +126,7 @@ if (_paid != "OK") exitWith {
 };
 
 diag_log format ["[ALife] %1 bought %2 for $%3 (%4) at %5", _uid, _lines apply { [_x select 1, _x select 2] }, _total, _method, _placement];
+["log", _unit, "shop.buy_gear", [["shop", _placement], ["items", _lines apply { [_x select 1, _x select 2] }], ["total", _total], ["paid_by", _method]]] call ALife_fnc_anticheat;
 ["bought", _lines apply { [_x select 0, _x select 1, _x select 2] }] remoteExecCall ["ALife_fnc_weaponShop", _owner];
 [format ["Bought %1 for $%2.", _memo, [_total] call BIS_fnc_numberText], "success"] call _fnc_reply;
 [_unit] call ALife_fnc_requestPhoneData;

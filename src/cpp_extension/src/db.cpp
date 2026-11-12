@@ -485,6 +485,62 @@ bool Database::RecordCombatLog(const std::string& uid, const std::string& factio
     return ok;
 }
 
+bool Database::AcLog(const std::string& uid, const std::string& eventType, const std::string& detailsJson,
+                     std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    const char* params[3] = {uid.c_str(), eventType.c_str(), detailsJson.c_str()};
+    PGresult* res = PQexecParams(
+        conn_,
+        "INSERT INTO player_log (player_id, event_type, details) "
+        "SELECT id, $2, NULLIF($3, '')::jsonb FROM players WHERE uid = $1",
+        3, nullptr, params, nullptr, nullptr, 0);
+    bool ok = (PQresultStatus(res) == PGRES_COMMAND_OK);
+    if (!ok) {
+        outError = PQerrorMessage(conn_);
+    } else if (std::strcmp(PQcmdTuples(res), "0") == 0) {
+        ok = false;
+        outError = "unknown uid";
+    }
+    PQclear(res);
+    return ok;
+}
+
+bool Database::AcFlag(const std::string& uid, const std::string& flagType, const std::string& confidence,
+                      const std::string& detailsJson, std::string& outError) {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    if (!EnsureConnected()) {
+        outError = "not connected";
+        return false;
+    }
+    const char* params[4] = {uid.c_str(), flagType.c_str(), confidence.c_str(), detailsJson.c_str()};
+    PGresult* res = PQexecParams(
+        conn_,
+        "WITH p AS (SELECT id FROM players WHERE uid = $1), "
+        "d AS (SELECT COALESCE(NULLIF($4, '')::jsonb, '{}'::jsonb) AS details), "
+        "f AS (INSERT INTO anti_cheat_flags (player_id, flag_type, confidence, details) "
+        "      SELECT p.id, $2, $3, d.details FROM p, d RETURNING id, player_id) "
+        "INSERT INTO staff_log (target_player_id, action, reason, after_value, source) "
+        "SELECT f.player_id, 'anticheat.flag', 'Anti-cheat: ' || $2 || ' (' || $3 || ')', "
+        "       d.details || jsonb_build_object('flag_id', f.id), 'game' "
+        "FROM f, d",
+        4, nullptr, params, nullptr, nullptr, 0);
+    bool ok = (PQresultStatus(res) == PGRES_COMMAND_OK);
+    if (!ok) {
+        outError = PQerrorMessage(conn_);
+    } else if (std::strcmp(PQcmdTuples(res), "0") == 0) {
+        ok = false;
+        outError = "unknown uid";
+    }
+    PQclear(res);
+    return ok;
+}
+
 namespace {
 
 // "civ"/"cop"/"medic" (the mission's faction keys) -> bank_accounts.faction.

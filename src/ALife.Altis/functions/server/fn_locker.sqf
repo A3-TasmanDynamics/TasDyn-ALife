@@ -139,7 +139,7 @@ if (_mode == "saveItems") exitWith {
 };
 
 if (!(_unit isEqualType objNull) || { isNull _unit }) exitWith {};
-if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith {};
+if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith { ["spoof", _unit, "locker", remoteExecutedOwner] call ALife_fnc_anticheat; };
 private _owner = owner _unit;
 private _fnc_reply = { (if (_this isEqualType []) then { _this } else { [_this, "warning"] }) remoteExecCall ["ALife_fnc_notify", _owner]; };
 private _uid = getPlayerUID _unit;

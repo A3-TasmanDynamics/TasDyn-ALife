@@ -51,6 +51,7 @@ switch (_mode) do {
         ALife_jail set [_uid, [serverTime + _seconds, _bail]];
         _unit setVariable ["alife_jailed", true, true];
         [_uid, _seconds, _bail] call _fnc_save;
+        ["grace", _unit] call ALife_fnc_anticheat;
         ["start", _seconds, _bail, getMarkerPos (getArray (_cfg >> "markers") param [0, ""])] remoteExecCall ["ALife_fnc_jailClient", owner _unit];
         diag_log format ["[ALife] %1 jailed for %2 s, bail $%3", _uid, round _seconds, _bail];
     };
@@ -62,6 +63,7 @@ switch (_mode) do {
         private _unit = _uid call _fnc_unit;
         if (!isNull _unit) then {
             _unit setVariable ["alife_jailed", false, true];
+            ["grace", _unit] call ALife_fnc_anticheat;
             ["release", 0, 0, getMarkerPos getText (_cfg >> "release")] remoteExecCall ["ALife_fnc_jailClient", owner _unit];
         };
         diag_log format ["[ALife] %1 released from jail", _uid];

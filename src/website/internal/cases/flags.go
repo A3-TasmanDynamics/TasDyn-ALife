@@ -44,6 +44,10 @@ var flagTitles = map[string]string{
 	"rate_limit":         "Request rate limit exceeded",
 	"steam_ban":          "New Steam ban on account",
 	"combat_log":         "Combat logging (left while incapacitated)",
+	"cheat_state":        "God mode / invisible / speed (not staff)",
+	"gear":               "Gear no shop or kit gives",
+	"dupe":               "Possible dupe (unexplained pile of gear)",
+	"invalid_request":    "Request sent for another player",
 }
 
 // Open reports whether nobody has reviewed the flag yet.

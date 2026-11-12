@@ -181,6 +181,8 @@ CREATE TABLE player_log (
 );
 
 CREATE INDEX idx_player_log_player_id ON player_log(player_id);
+CREATE INDEX idx_player_log_player_time ON player_log(player_id, created_at DESC);
+CREATE INDEX idx_player_log_event_time ON player_log(event_type, created_at DESC);
 
 -- Name history, not a single overwritten column -- lets staff spot a UID
 -- cycling through names (alt-account/evasion pattern) instead of only ever
@@ -1093,7 +1095,9 @@ CREATE TABLE anti_cheat_flags (
     player_id     BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
     -- 'steam_ban': a new VAC/game ban appeared on the player's Steam account (internal/steam).
     -- 'combat_log': disconnected while incapacitated (the game server, via the extension).
-    flag_type     TEXT NOT NULL CHECK (flag_type IN ('honeypot', 'movement', 'idempotency_reject', 'rate_limit', 'steam_ban', 'combat_log')),
+    -- 'cheat_state' / 'gear' / 'dupe' / 'invalid_request' / 'movement' / 'rate_limit': the game server's checks (ALife_fnc_anticheat).
+    flag_type     TEXT NOT NULL CONSTRAINT anti_cheat_flags_flag_type_check CHECK (flag_type IN ('honeypot', 'movement', 'idempotency_reject', 'rate_limit', 'steam_ban', 'combat_log',
+                                       'cheat_state', 'gear', 'dupe', 'invalid_request')),
     confidence    TEXT NOT NULL CHECK (confidence IN ('high', 'medium')),
     details       JSONB,
     reviewed_by   BIGINT REFERENCES players(id) ON DELETE SET NULL,

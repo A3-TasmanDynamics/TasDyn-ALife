@@ -134,6 +134,27 @@ class CfgALife
     // the player (a shop NPC placed away from the markers).
     vehicleSpawnRange = 150;
 
+    // ---- Anti-cheat (ALife_fnc_anticheat, docs/ANTI_CHEAT.md) ----------------
+    // Every economy action goes in the player's event log; what isn't normal
+    // is flagged for staff (website: Anti-cheat flags, #staff-log). Nothing
+    // here kicks or bans on its own.
+    class AntiCheat
+    {
+        rateWindow = 1;          // seconds: requests of one action counted over this
+        rateMax = 5;             // more than this in rateWindow: flagged, the rest refused
+        burstGap = 0.08;         // seconds: two of the same request closer than this (faster than a click): flagged
+        checkEvery = 5;          // seconds between movement / state checks
+        gearEvery = 60;          // seconds between gear checks
+        footSpeed = 15;          // m/s on foot (sprinting is ~6.5)
+        vehicleFactor = 1.5;     // x the vehicle's top speed (+10 m/s)
+        teleportDistance = 300;  // metres in one check: "teleport" rather than "too fast"
+        grace = 20;              // seconds after a server teleport (spawn, jail, revive, admin) not checked
+        dupeCount = 4;           // this many of one weapon / attachment / piece of gear on someone: flagged
+        flagCooldown = 600;      // seconds before the same flag is raised again for a player
+        // Gear that's fine though no shop sells it (starting GPS, map...).
+        alwaysAllowed[] = { "ItemMap", "ItemCompass", "ItemWatch", "ItemRadio", "ItemGPS", "Binocular" };
+    };
+
     // ---- Keys (the phone's Keys app, the U key) -----------------------------
     class Keys
     {

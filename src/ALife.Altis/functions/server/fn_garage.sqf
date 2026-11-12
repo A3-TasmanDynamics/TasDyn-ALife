@@ -23,7 +23,8 @@
 params [["_unit", objNull, [objNull]], ["_mode", "", [""]], ["_placement", "", [""]], ["_id", "", [""]]];
 
 if (!isServer || { isNull _unit }) exitWith {};
-if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith {};
+if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith { ["spoof", _unit, "garage", remoteExecutedOwner] call ALife_fnc_anticheat; };
+if (isRemoteExecuted && { ["rate", _unit, "garage"] call ALife_fnc_anticheat }) exitWith {};
 
 private _owner = owner _unit;
 private _fnc_reply = { (if (_this isEqualType []) then { _this } else { [_this, "warning"] }) remoteExecCall ["ALife_fnc_notify", _owner]; };
@@ -170,6 +171,7 @@ switch (_mode) do {
         if (_status == "impounded") then { ["vehicle", ["log", _id, _uid, "return", str _fee]] call ALife_fnc_extension; };
         [_class, _marker, _uid, _id, _plate, _skin, _fuel, _damage, _trunk] call ALife_fnc_vehicleSpawn;
         diag_log format ["[ALife] %1 took %2 (id %3, plate %4) out of the garage at %5%6", _uid, _class, _id, _plate, _placement, ["", format [" (impound fee $%1)", _fee]] select (_status == "impounded")];
+        ["log", _unit, "garage.retrieve", [["vehicle", _class], ["id", _id], ["plate", _plate], ["garage", _placement], ["fee", _fee]]] call ALife_fnc_anticheat;
         [format ["Your %1 is at the spawn point, locked: press U near it to unlock.%2", _class call _name,
             ["", format [" Paid $%1 to get it out of the impound.", [_fee] call BIS_fnc_numberText]] select (_status == "impounded")], "success"] call _fnc_reply;
         ["list", call _fnc_list] remoteExecCall ["ALife_fnc_garageMenu", _owner];
@@ -194,6 +196,7 @@ switch (_mode) do {
         if (_container != "") then { ALife_containers deleteAt _container; };
         private _vname = (typeOf _vehicle) call _name;
         diag_log format ["[ALife] %1 stored %2 (id %3) at %4", _uid, typeOf _vehicle, _vid, _placement];
+        ["log", _unit, "garage.store", [["vehicle", typeOf _vehicle], ["id", _vid], ["garage", _placement]]] call ALife_fnc_anticheat;
         deleteVehicle _vehicle;
         [format ["Stored your %1. Its trunk stays in it.", _vname], "success"] call _fnc_reply;
         ["list", call _fnc_list] remoteExecCall ["ALife_fnc_garageMenu", _owner];

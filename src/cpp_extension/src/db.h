@@ -102,6 +102,15 @@ public:
                          const std::string& weapon, const std::string& distance,
                          const std::string& secondsIncapacitated, std::string& outError);
 
+    // Anti-cheat (ALife_fnc_anticheat). AcLog: one player_log row (the
+    // gameplay event log -- buys, sells, gives, transfers...). AcFlag: an
+    // anti_cheat_flags row for staff to review, plus a staff_log row (posted
+    // to #staff-log). detailsJson is a JSON object.
+    bool AcLog(const std::string& uid, const std::string& eventType, const std::string& detailsJson,
+               std::string& outError);
+    bool AcFlag(const std::string& uid, const std::string& flagType, const std::string& confidence,
+                const std::string& detailsJson, std::string& outError);
+
     // Staff actions from the game's Admin app (ALife_fnc_adminAction). All
     // land in staff_log with source 'game' (posted to #staff-log like the
     // website's), alongside banlist / kick_log / bank_transactions -- the

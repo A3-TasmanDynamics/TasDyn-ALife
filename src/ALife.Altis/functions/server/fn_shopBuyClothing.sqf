@@ -20,7 +20,8 @@
 params [["_unit", objNull, [objNull]], ["_placement", "", [""]], ["_items", [], [[]]], ["_method", "", [""]]];
 
 if (!isServer || { isNull _unit }) exitWith {};
-if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith {};
+if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith { ["spoof", _unit, "shopBuyClothing", remoteExecutedOwner] call ALife_fnc_anticheat; };
+if (isRemoteExecuted && { ["rate", _unit, "buy"] call ALife_fnc_anticheat }) exitWith {};
 
 private _owner = owner _unit;
 private _fnc_reply = { (if (_this isEqualType []) then { _this } else { [_this, "warning"] }) remoteExecCall ["ALife_fnc_notify", _owner]; };
@@ -82,6 +83,7 @@ if (_paid != "OK") exitWith {
 };
 
 diag_log format ["[ALife] %1 bought %2 for $%3 (%4) at %5", _uid, _items, _total, _method, _placement];
+["log", _unit, "shop.buy_clothing", [["shop", _placement], ["items", _items apply { _x select 1 }], ["total", _total], ["paid_by", _method]]] call ALife_fnc_anticheat;
 ["bought", _items] remoteExecCall ["ALife_fnc_clothingShop", _owner];
 [format ["Bought %1 for $%2.", _names joinString ", ", [_total] call BIS_fnc_numberText], "success"] call _fnc_reply;
 [_unit] call ALife_fnc_requestPhoneData;
