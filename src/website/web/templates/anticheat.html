@@ -2,6 +2,7 @@
 <div class="admin-shell">
   {{template "admin_sidebar" .}}
   <div class="admin-content mod-page">
+    {{template "admin_header" .}}
     <div>
       <h1 class="page-title admin-title">Anti-Cheat Flags</h1>
       <p class="admin-sub">Server-side detections. Flags never punish on their own: a staff member reviews each one, and any action happens through a case.</p>
@@ -138,5 +139,4 @@
     </div>
   </div>
 </div>
-<script src="/static/admin.js" defer></script>
 {{end}}

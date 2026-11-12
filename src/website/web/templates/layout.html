@@ -72,7 +72,7 @@
     </nav>
   </footer>
   {{end}}
-  {{if and .Panel .Session}}{{if .Session.AdminPanelAccess}}<script src="/static/quicksearch.js" defer></script>{{end}}{{end}}
+  {{if and .Panel .Session}}<script src="/static/admin.js" defer></script><script src="/static/panel.js" defer></script>{{if .Session.AdminPanelAccess}}<script src="/static/quicksearch.js" defer></script>{{end}}{{end}}
 </body>
 </html>
 {{end}}

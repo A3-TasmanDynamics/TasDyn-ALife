@@ -146,6 +146,15 @@
     }
   });
 
+  // Buttons that open it (the phone top bar's search).
+  document.addEventListener("click", function (e) {
+    if (e.target.closest("[data-qs-open]")) {
+      e.preventDefault();
+      open();
+    }
+  });
+  window.ALifeQuickSearch = { open: open };
+
   // The sidebar box opens the palette with whatever was typed.
   var side = document.querySelector(".admin-sidebar-search input");
   if (side) {

@@ -2,6 +2,7 @@
 <div class="admin-shell">
   {{template "admin_sidebar" .}}
   <div class="admin-content">
+    {{template "admin_header" .}}
     <h1 class="page-title admin-title">Discord Bot</h1>
     <p class="admin-sub">Which channels the bot posts to and how it behaves{{if .GuildName}} in <strong>{{.GuildName}}</strong>{{end}}. A channel left unset means that feature simply doesn't post. Which Discord role each rank gets is on <a href="/admin/role-sync">Discord Role Sync</a>.</p>
 

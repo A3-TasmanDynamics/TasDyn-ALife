@@ -2,6 +2,7 @@
 <div class="admin-shell">
   {{template "admin_sidebar" .}}
   <div class="admin-content">
+    {{template "admin_header" .}}
     <form class="gd-form rules-gd-form" method="post" action="/admin/rules/save" data-rules-form>
       <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
       <input type="hidden" name="mode" value="{{if .TextMode}}text{{else}}sections{{end}}" data-rules-mode>
