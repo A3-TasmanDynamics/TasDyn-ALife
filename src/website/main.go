@@ -381,6 +381,7 @@ func run() error {
 
 	r.Group(func(r chi.Router) {
 		r.Use(d.Auth.RequireAdminPanel)
+		r.Get("/admin/search", d.QuickSearch)
 		r.Get("/admin/devlog/new", d.DevlogNewForm)
 		r.Post("/admin/devlog/new", d.DevlogCreate)
 
