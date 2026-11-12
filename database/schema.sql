@@ -1870,3 +1870,17 @@ CREATE TABLE market_prices (
     price       NUMERIC(12, 2) NOT NULL CHECK (price > 0),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Economy history (Admin -> Economy & Crime charts): one row an hour,
+-- written by the website (internal/economy RunSnapshots).
+CREATE TABLE IF NOT EXISTS economy_snapshots (
+    taken_at    TIMESTAMPTZ PRIMARY KEY DEFAULT now(),
+    civ_cash    BIGINT NOT NULL,
+    cop_cash    BIGINT NOT NULL,
+    medic_cash  BIGINT NOT NULL,
+    civ_bank    BIGINT NOT NULL,
+    cop_bank    BIGINT NOT NULL,
+    medic_bank  BIGINT NOT NULL,
+    bounties    BIGINT NOT NULL,              -- outstanding wanted bounties
+    market      JSONB NOT NULL DEFAULT '{}'   -- {item: buy price} for items off their base price
+);

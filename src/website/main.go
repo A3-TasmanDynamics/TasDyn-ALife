@@ -25,6 +25,7 @@ import (
 	"website/internal/config"
 	"website/internal/csrf"
 	"website/internal/db"
+	"website/internal/economy"
 	"website/internal/dbbrowser"
 	"website/internal/discord"
 	"website/internal/handlers"
@@ -216,6 +217,9 @@ func run() error {
 
 		// Steam profile/ban cache + BattlEye GUID backfill (internal/steam).
 		go d.Steam.Run(ctx)
+
+		// Economy history for Admin -> Economy & Crime: a snapshot an hour.
+		go economy.RunSnapshots(ctx, pool)
 
 		// Return staff whose LOA end date has passed to active.
 		go staff.RunLOASweep(ctx, pool, func(n int64, err error) {

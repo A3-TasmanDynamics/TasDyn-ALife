@@ -2800,7 +2800,7 @@ a.ac-other:hover { background: rgba(255, 255, 255, 0.03); }
 .eco-fac:last-child { border-bottom: none; }
 .eco-fac-top { display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; }
 .eco-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--bg-input); }
-.eco-bar-cash, .eco-key-cash { background: var(--amber); }
+.eco-bar-cash, .eco-key-cash { background: #d97706; }
 .eco-bar-bank, .eco-key-bank { background: #3b82f6; }
 .eco-fac-split { display: flex; flex-wrap: wrap; gap: 4px 18px; }
 .eco-key { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
@@ -2829,3 +2829,26 @@ a.eco-link:hover { background: rgba(255, 255, 255, 0.03); }
 .dash-card .ev-row > summary, .dash-card .ev-th { padding-left: 20px; padding-right: 20px; grid-template-columns: 100px 120px minmax(0, 1fr); }
 .dash-card .ev-details { padding-left: 20px; }
 @media (max-width: 900px) { .eco-flows { grid-template-columns: 1fr; } .eco-flows > div + div { border-left: none; border-top: 1px solid var(--border-soft); } .eco-mkt { grid-template-columns: minmax(0, 1fr) 70px 70px 64px; } }
+/* ---------- Line charts (partial_line_chart.html, chart.js) ---------- */
+/* Series colours validated against the card surface (#131b2e): cash #d97706, bank #3b82f6. */
+.lc { position: relative; }
+.lc-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.lc-grid { stroke: var(--border-soft); stroke-width: 1; }
+.lc-zero { stroke: var(--text-faint); stroke-width: 1; }
+.lc-ylabel, .lc-xlabel { fill: var(--text-faint); font-size: 11px; font-variant-numeric: tabular-nums; }
+.lc-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.lc-end { fill: var(--text-dim); font-size: 11.5px; font-weight: 600; }
+.lc-cross { stroke: var(--text-dim); stroke-width: 1; stroke-dasharray: 3 3; }
+.lc-cash { stroke: #d97706; background: #d97706; }
+.lc-bank { stroke: #3b82f6; background: #3b82f6; }
+.lc-market { stroke: #3b82f6; background: #3b82f6; }
+.lc-legend { display: flex; gap: 16px; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+.lc-key { display: inline-block; width: 12px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+.lc-tip { position: absolute; top: 24px; pointer-events: none; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; color: var(--text); white-space: nowrap; box-shadow: var(--shadow-card); font-variant-numeric: tabular-nums; }
+.lc-tip strong { display: block; margin-bottom: 2px; }
+.eco-trends { margin-bottom: 16px; }
+.eco-charts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; padding: 14px 20px 6px; }
+.eco-table summary { padding: 10px 20px 14px; font-size: 12.5px; color: var(--text-dim); cursor: pointer; }
+.eco-daily { grid-template-columns: minmax(0, 1fr) 110px 110px 80px 100px; }
+@media (max-width: 1100px) { .eco-charts { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .eco-daily { grid-template-columns: 1fr 1fr; } }

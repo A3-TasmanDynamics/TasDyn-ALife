@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"website/internal/chart"
 	"website/internal/economy"
 	"website/internal/events"
 )
@@ -28,6 +29,13 @@ type economyData struct {
 	Robberies   []events.Event
 	Vault       economy.Vault
 	VaultCounts [2]int64 // gear pieces, virtual items
+
+	// History (economy_snapshots, one an hour): charts and their table.
+	History     []economy.Point
+	BankChart   chart.Chart
+	CashChart   chart.Chart
+	MarketChart chart.Chart
+	Daily       []economy.Point // the last snapshot of each day, newest first
 }
 
 // Net is what the window added to (or took from) the money supply.
@@ -105,6 +113,27 @@ func (d *Deps) economyPage(ctx context.Context, window string) economyData {
 	}
 	for _, it := range data.Vault.Items {
 		data.VaultCounts[1] += it.N
+	}
+	data.History, err = economy.History(ctx, d.Pool, since)
+	logErr("history", err)
+	if len(data.History) >= 2 {
+		times := make([]time.Time, len(data.History))
+		cash := make([]float64, len(data.History))
+		bank := make([]float64, len(data.History))
+		idx := make([]float64, len(data.History))
+		for i, p := range data.History {
+			times[i], cash[i], bank[i], idx[i] = p.At, float64(p.Cash), float64(p.Bank), p.MarketIndex
+		}
+		// Separate charts: bank is usually many times cash, which would flatten it.
+		data.BankChart = chart.Build(times, []chart.Series{{Name: "Bank", Class: "lc-bank", Values: bank}}, chart.Money, true)
+		data.CashChart = chart.Build(times, []chart.Series{{Name: "Cash", Class: "lc-cash", Values: cash}}, chart.Money, true)
+		data.MarketChart = chart.Build(times, []chart.Series{{Name: "Market", Class: "lc-market", Values: idx}}, chart.Percent, false)
+	}
+	for i := len(data.History) - 1; i >= 0; i-- {
+		p := data.History[i]
+		if n := len(data.Daily); n == 0 || data.Daily[n-1].At.Format("2006-01-02") != p.At.Format("2006-01-02") {
+			data.Daily = append(data.Daily, p)
+		}
 	}
 	return data
 }
