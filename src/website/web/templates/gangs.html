@@ -1,0 +1,67 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div class="admin-content mod-page">
+    <div>
+      <h1 class="page-title admin-title">Gangs</h1>
+      <p class="admin-sub">Every gang: who's in it, who's online, its bank, what its members are worth, and how much trouble they're in. Read-only; gang leaders manage their gang on the website's Gang page.</p>
+    </div>
+    <form class="stafflog-filters" method="get" action="/admin/gangs">
+      <label class="search-box"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input name="q" value="{{.Q}}" aria-label="Gang name or tag" placeholder="Gang name or tag"></label>
+      <button class="btn" type="submit">Search</button>
+    </form>
+
+    <div class="ac-page ac-body">
+      <div class="ac-list">
+        <div class="ac-items">
+          {{range .Gangs}}
+          <a class="ac-item{{if and $.Selected (eq .ID $.Selected.ID)}} active{{end}}" href="/admin/gangs?id={{.ID}}{{if $.Q}}&amp;q={{$.Q}}{{end}}">
+            <span class="ac-item-top"><span class="gang-tag">[{{.Tag}}]</span><span class="strong">{{.Name}}</span><span class="ac-status {{if .Online}}ac-status-open{{else}}ac-status-closed{{end}}">{{.Online}} / {{.Members}} online</span></span>
+            <span class="mod-dim">Leader {{.Leader}} &middot; bank ${{money .Bank}}{{if .Wanted}} &middot; <span class="warn-text">{{.Wanted}} wanted</span>{{end}}{{if .Crimes}} &middot; {{.Crimes}} crime{{if ne .Crimes 1}}s{{end}} this week{{end}}</span>
+          </a>
+          {{else}}
+          <p class="mod-empty">{{if .Q}}No gang matches "{{.Q}}".{{else}}No gangs yet.{{end}}</p>
+          {{end}}
+        </div>
+      </div>
+
+      <div class="ac-detail card">
+        {{with .Selected}}
+        <div class="ac-item-top"><span class="gang-tag">[{{.Tag}}]</span><span class="mod-dim">Founded {{.Created.Format "2 Jan 2006"}}</span></div>
+        <h2 class="ac-title">{{.Name}}</h2>
+        <div class="gang-stats">
+          <div><span class="muted small">Members</span><strong>{{.Members}} <span class="muted small">&middot; {{.Online}} online</span></strong></div>
+          <div><span class="muted small">Gang bank</span><strong>${{money .Bank}}</strong></div>
+          <div><span class="muted small">Members' money</span><strong>${{money .Wealth}}</strong></div>
+          <div><span class="muted small">Bounties</span><strong{{if .Bounties}} class="warn-text"{{end}}>${{money .Bounties}}</strong></div>
+          <div><span class="muted small">Crimes, 7 days</span><strong>{{.Crimes}}</strong></div>
+          <div><span class="muted small">Vehicles</span><strong>{{.Vehicles}}</strong></div>
+        </div>
+
+        <div class="ac-context">
+          <div class="card-label">Members</div>
+          {{range .MemberList}}
+          <a class="gang-member" href="/admin/players?id={{.PlayerID}}"><span><span class="dot {{if .Online}}dot-on{{end}}" title="{{if .Online}}Online{{else}}Offline{{end}}"></span>{{.Name}}</span><span class="gang-rank gang-rank-{{.Rank}}">{{.Rank}}</span><span class="muted small">${{money .Wealth}}{{if .Bounty}} &middot; <span class="warn-text">${{money .Bounty}} wanted</span>{{end}}</span></a>
+          {{end}}
+        </div>
+
+        <div class="ac-context">
+          <div class="card-label">Gang bank</div>
+          {{range .Txs}}<div class="ac-kv"><span class="mod-dim">{{.When.Format "2 Jan 15:04"}}</span><span>{{.Type}} <strong class="{{if lt .Amount 0}}warn-text{{else}}ok-text{{end}}">{{if lt .Amount 0}}-{{end}}${{money .Abs}}</strong>{{if .By}} <span class="mod-dim">by {{.By}}</span>{{end}}{{if .Memo}} <span class="mod-dim">&middot; {{.Memo}}</span>{{end}}</span></div>
+          {{else}}<p class="mod-dim">No deposits or withdrawals yet.</p>{{end}}
+        </div>
+
+        <div class="ac-context">
+          <div class="card-label">Gang log</div>
+          {{range .Log}}<div class="ac-kv"><span class="mod-dim">{{.When.Format "2 Jan 15:04"}}</span><span><strong>{{.Action}}</strong> <span class="mod-dim">by {{.Actor}}</span>{{if .Detail}} <span class="mod-dim">&middot; {{.Detail}}</span>{{end}}</span></div>
+          {{else}}<p class="mod-dim">Nothing logged yet.</p>{{end}}
+        </div>
+        {{else}}
+        <p class="mod-empty">Pick a gang.</p>
+        {{end}}
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}
