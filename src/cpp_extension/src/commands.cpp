@@ -201,6 +201,22 @@ std::string HandleVehicle(Database& db, const std::vector<std::string>& args) {
         if (!db.VehicleAdd(args[1], args[2], args[3], args[4], skin, id, plate, error)) return "ERROR:" + error;
         return "OK:" + id + ":" + plate;
     }
+    if (op == "sell") {
+        // [sell, id, uid, faction, price, token, memo]
+        if (args.size() < 7) return "ERROR:expected [sell, id, uid, faction, price, token, memo]";
+        if (args[1].empty() || args[1].size() > 18) return "ERROR:invalid id";
+        for (char c : args[1]) {
+            if (!std::isdigit(static_cast<unsigned char>(c))) return "ERROR:invalid id";
+        }
+        if (!IsSteam64(args[2])) return "ERROR:invalid uid";
+        if (args[3] != "civ" && args[3] != "cop" && args[3] != "medic") return "ERROR:invalid faction";
+        if (!IsPrice(args[4]) || args[4].find('.') != std::string::npos || args[4] == "0") return "ERROR:invalid price";
+        if (args[5].empty() || args[5].size() > 100) return "ERROR:invalid token";
+        if (args[6].size() > 200) return "ERROR:memo too long";
+        std::string status;
+        if (!db.VehicleSell(args[1], args[2], args[3], args[4], args[5], args[6], status, error)) return "ERROR:" + error;
+        return status == "ERROR" ? "ERROR:" + error : status;
+    }
     if (op == "status") {
         if (args.size() < 3) return "ERROR:expected [status, id, status]";
         if (args[1].empty() || args[1].size() > 18) return "ERROR:invalid id";

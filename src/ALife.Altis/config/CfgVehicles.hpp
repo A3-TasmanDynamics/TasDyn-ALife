@@ -179,6 +179,9 @@ class CfgGarage
     impoundRate = 0.1;      // release fee: this share of the vehicle's shop price...
     impoundMin = 250;       // ...but at least this (dollars, from the bank)
     storeRange = 30;        // metres: how close your vehicle must be to store it
+    // Selling back at a garage: the shop row's sell price (its 4th value),
+    // or this share of its price when that's 0. Paid into the bank.
+    sellRate = 0.5;
 };
 
 class CfgVehicles

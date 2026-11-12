@@ -172,7 +172,7 @@ func Load(ctx context.Context, pool *pgxpool.Pool, playerID int64) (Overview, er
 	rows, err = pool.Query(ctx, `
 		SELECT v.classname, COALESCE(v.faction_scope, 'civilian'), v.status, COALESCE(g.name, '')
 		FROM vehicles v LEFT JOIN garages g ON g.id = v.garage_id
-		WHERE v.owner_player_id = $1 AND v.status <> 'destroyed'
+		WHERE v.owner_player_id = $1 AND v.status NOT IN ('destroyed', 'sold')
 		ORDER BY v.faction_scope NULLS FIRST, v.id`, playerID)
 	if err != nil {
 		return o, err
@@ -361,7 +361,7 @@ func Leaderboards(ctx context.Context, pool *pgxpool.Pool, youID int64, youOptIn
 		       COALESCE(p.civ_cash, 0) + COALESCE(p.cop_cash, 0) + COALESCE(p.medic_cash, 0)
 		         + COALESCE((SELECT sum(balance) FROM bank_accounts b WHERE b.player_id = p.id), 0),
 		       (SELECT count(*) FROM houses h WHERE h.owner_player_id = p.id),
-		       (SELECT count(*) FROM vehicles v WHERE v.owner_player_id = p.id AND v.status <> 'destroyed'
+		       (SELECT count(*) FROM vehicles v WHERE v.owner_player_id = p.id AND v.status NOT IN ('destroyed', 'sold')
 		          AND COALESCE(v.faction_scope, 'civilian') = 'civilian')
 		FROM players p WHERE p.leaderboard_opt_in`)
 	if err != nil {

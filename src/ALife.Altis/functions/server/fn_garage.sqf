@@ -4,7 +4,9 @@
     The garage at a vehicle shop (any CfgShops "vehicles" placement for the
     player's faction). Lists the player's vehicles for that faction, takes
     one out at the shop's spawn point (impounded ones for a release fee,
-    from the bank -- CfgGarage), and stores an owned vehicle parked nearby.
+    from the bank -- CfgGarage), stores an owned vehicle parked nearby, and
+    sells one that's in the garage back (its shop sell price, into the
+    bank; the vehicle is marked sold).
     Vehicles come back with the fuel, damage, trunk and skin they had.
 
     Staff (the admin menu's "Their vehicles", game.vehicles or a server
@@ -15,9 +17,9 @@
 
     Arguments:
         0: OBJECT - the player's unit (staff for the admin modes)
-        1: STRING - "list", "retrieve" or "store"; "adminList", "adminPull", "adminStore"
+        1: STRING - "list", "retrieve", "store" or "sell"; "adminList", "adminPull", "adminStore"
         2: STRING - CfgShops placement (a vehicle shop); admin modes: the owner's uid
-        3: STRING - retrieve / adminPull / adminStore: vehicles.id
+        3: STRING - retrieve / sell / adminPull / adminStore: vehicles.id
 */
 
 params [["_unit", objNull, [objNull]], ["_mode", "", [""]], ["_placement", "", [""]], ["_id", "", [""]]];
@@ -70,7 +72,7 @@ if (_mode in ["adminList", "adminPull", "adminStore"]) exitWith {
             private _raw = ["vehicle", ["get", _id]] call ALife_fnc_extension;
             if (_raw select [0, 6] == "ERROR:") exitWith { "Couldn't find that vehicle." call _fnc_reply; };
             (parseSimpleArray _raw) params ["", "_ownerUid", "", "_class", "_plate", "_status", ["_fuel", 1], ["_damage", []], ["_trunk", []], ["_skin", ""]];
-            if (_ownerUid != _theirUid || { _status == "destroyed" }) exitWith {};
+            if (_ownerUid != _theirUid || { _status in ["destroyed", "sold"] }) exitWith {};
             private _pos = _unit modelToWorld [0, 8, 0];
             if ((nearestObjects [_pos, ["LandVehicle", "Air", "Ship"], 5]) isNotEqualTo []) exitWith { "Something's in the way in front of you." call _fnc_reply; };
             private _r = ["vehicle", ["status", _id, "spawned"]] call ALife_fnc_extension;
@@ -91,7 +93,7 @@ if (_mode in ["adminList", "adminPull", "adminStore"]) exitWith {
                 private _raw = ["vehicle", ["get", _id]] call ALife_fnc_extension;
                 if (_raw select [0, 6] == "ERROR:") exitWith {};
                 (parseSimpleArray _raw) params ["", "_ownerUid", "", "", "", "_status", ["_fuel", 1], ["_damage", []], ["_trunk", []]];
-                if (_ownerUid == _theirUid && { _status != "destroyed" }) then { _state = [_fuel, _damage, _trunk]; };
+                if (_ownerUid == _theirUid && { !(_status in ["destroyed", "sold"]) }) then { _state = [_fuel, _damage, _trunk]; };
             };
             if (_state isEqualTo "busy") exitWith { "Someone's in it." call _fnc_reply; };
             if (_state isEqualTo []) exitWith { "Couldn't find that vehicle." call _fnc_reply; };
@@ -127,6 +129,21 @@ private _fnc_fee = {
     } forEach ("true" configClasses (missionConfigFile >> "CarShops"));
     (round (_price * getNumber (_cfg >> "impoundRate"))) max getNumber (_cfg >> "impoundMin")
 };
+// What the garage pays for it: the shop row's sell price (this faction's
+// shops first), else sellRate of its price.
+private _fnc_sell = {
+    private _class = _this;
+    private _best = 0;
+    {
+        private _shop = _x;
+        private _row = getArray (_shop >> "vehicles") select { (_x param [0, ""]) == _class };
+        if (_row isNotEqualTo [] && { getText (_shop >> "side") == _faction }) exitWith {
+            (_row select 0) params ["", "", ["_price", 0], ["_sell", 0]];
+            _best = if (_sell > 0) then { _sell } else { round (_price * getNumber (_cfg >> "sellRate")) };
+        };
+    } forEach ("true" configClasses (missionConfigFile >> "CarShops"));
+    _best
+};
 private _fnc_list = {
     private _raw = ["vehicle", ["list", _uid, _faction]] call ALife_fnc_extension;
     if (_raw select [0, 6] == "ERROR:") exitWith { diag_log format ["[ALife] garage list for %1 failed: %2", _uid, _raw]; [] };
@@ -135,7 +152,7 @@ private _fnc_list = {
         // "Out" only while it's really in the world.
         private _object = ALife_vehicleObjects getOrDefault [_vid, objNull];
         if (_status == "spawned" && { isNull _object || { !alive _object } }) then { _status = "garaged"; };
-        [_vid, _class, _plate, _status, [0, _class call _fnc_fee] select (_status == "impounded")]
+        [_vid, _class, _plate, _status, [0, _class call _fnc_fee] select (_status == "impounded"), "", _class call _fnc_sell]
     }
 };
 
@@ -174,6 +191,27 @@ switch (_mode) do {
         ["log", _unit, "garage.retrieve", [["vehicle", _class], ["id", _id], ["plate", _plate], ["garage", _placement], ["fee", _fee]]] call ALife_fnc_anticheat;
         [format ["Your %1 is at the spawn point, locked: press U near it to unlock.%2", _class call _name,
             ["", format [" Paid $%1 to get it out of the impound.", [_fee] call BIS_fnc_numberText]] select (_status == "impounded")], "success"] call _fnc_reply;
+        ["list", call _fnc_list] remoteExecCall ["ALife_fnc_garageMenu", _owner];
+        [_unit] call ALife_fnc_requestPhoneData;
+    };
+
+    case "sell": {
+        // One in the garage (not out, not impounded): marked sold, paid into the bank.
+        private _row = (call _fnc_list) select { (_x select 0) == _id };
+        if (_row isEqualTo []) exitWith { "That vehicle isn't in your garage." call _fnc_reply; };
+        (_row select 0) params ["", "_class", "_plate", "_status", "", "", "_price"];
+        if (_status != "garaged") exitWith { (["Store it in the garage first.", "Get it out of the impound first."] select (_status == "impounded")) call _fnc_reply; };
+        if (_price <= 0) exitWith { "That vehicle can't be sold here." call _fnc_reply; };
+        private _token = format ["vsell-%1-%2-%3", _uid, _id, round (diag_tickTime * 1000)];
+        private _r = ["vehicle", ["sell", _id, _uid, _faction, str _price, _token, format ["Sold %1 (%2)", _class call _name, _plate]]] call ALife_fnc_extension;
+        if (_r != "OK") exitWith {
+            diag_log format ["[ALife] garage sell %1 by %2 failed: %3", _id, _uid, _r];
+            (["Couldn't sell it. Try again.", "That vehicle isn't in your garage."] select (_r == "NOT_YOURS")) call _fnc_reply;
+        };
+        _record set [_faction + "_bank", (_record getOrDefault [_faction + "_bank", 0]) + _price];
+        diag_log format ["[ALife] %1 sold %2 (id %3, plate %4) for $%5 at %6", _uid, _class, _id, _plate, _price, _placement];
+        ["log", _unit, "garage.sell", [["vehicle", _class], ["id", _id], ["plate", _plate], ["garage", _placement], ["price", _price]]] call ALife_fnc_anticheat;
+        [format ["Sold your %1 for $%2. It's in your bank.", _class call _name, [_price] call BIS_fnc_numberText], "success"] call _fnc_reply;
         ["list", call _fnc_list] remoteExecCall ["ALife_fnc_garageMenu", _owner];
         [_unit] call ALife_fnc_requestPhoneData;
     };
