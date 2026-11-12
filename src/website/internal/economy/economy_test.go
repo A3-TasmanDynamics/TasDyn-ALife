@@ -148,10 +148,18 @@ func TestEconomy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.GasRobberies != 1 || c.RobbedCash != 3200 || c.Seizures != 1 {
+	// Other tests may share the DB: check at least this test's events, and
+	// find this test's player in the most wanted.
+	if c.GasRobberies < 1 || c.RobbedCash < 3200 || c.Seizures < 1 {
 		t.Errorf("crime: %+v", c)
 	}
-	if len(c.MostWanted) == 0 || c.MostWanted[0].ID != b || c.MostWanted[0].Bounty != 25000 || c.MostWanted[0].Crimes != 2 {
+	inWanted := false
+	for _, w := range c.MostWanted {
+		if w.ID == b {
+			inWanted = w.Bounty == 25000 && w.Crimes == 2
+		}
+	}
+	if !inWanted {
 		t.Errorf("most wanted: %+v", c.MostWanted)
 	}
 
