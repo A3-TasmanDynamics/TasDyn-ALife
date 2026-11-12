@@ -15,12 +15,12 @@
     `cooldown`. Police are alerted with a map marker; the robber is wanted
     (crime).
 
-    Modes:
-        ["refuel", unit, [vehicle, "cash" | "bank"]]
-        ["rob", unit, cashier]
+    Arguments: [unit, mode, arg]:
+        [unit, "refuel", [vehicle, "cash" | "bank"]]
+        [unit, "rob", cashier]
 */
 
-params [["_mode", "", [""]], ["_unit", objNull, [objNull]], ["_arg", []]];
+params [["_unit", objNull, [objNull]], ["_mode", "", [""]], ["_arg", []]];
 
 if (!isServer || { isNull _unit }) exitWith {};
 if (isRemoteExecuted && { remoteExecutedOwner != owner _unit }) exitWith { ["spoof", _unit, "gasStation", remoteExecutedOwner] call ALife_fnc_anticheat; };

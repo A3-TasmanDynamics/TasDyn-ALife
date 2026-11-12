@@ -22,16 +22,17 @@
     wanted (crime). Police at the keypad or vault can secure it (reseal,
     alarm off) or, when it's quiet, destroy the evidence.
 
-    Modes:
-        ["load"]                              - (serverInit) from the database; the objects
-        ["seize", cop, object]
-        ["begin", unit, stage]                - stage "entrance" / "vaultDoor" / "keypad"
-        ["finish", unit, stage]               - the client's progress bar finished
-        ["guess", unit, code]                 - a keypad guess (a string of digits)
-        ["police", unit, "secure" | "destroy" | "count"]
+    Arguments: [unit, mode, arg] (unit objNull for the server's own calls):
+        [objNull, "load"]                     - (serverInit) from the database; the objects
+        [cop, "seize", object]
+        [unit, "begin", stage]                - stage "entrance" / "vaultDoor" / "keypad"
+        [unit, "finish", stage]               - the client's progress bar finished
+        [unit, "guess", code]                 - a keypad guess (a string of digits)
+        [unit, "police", "secure" | "destroy" | "count"]
+        [objNull, "police", "timeout"]        - (server) reseal it
 */
 
-params [["_mode", "", [""]], ["_unit", objNull, [objNull]], ["_arg", ""]];
+params [["_unit", objNull, [objNull]], ["_mode", "", [""]], ["_arg", ""]];
 
 if (!isServer) exitWith {};
 private _cfg = missionConfigFile >> "CfgALife" >> "Evidence";
@@ -180,7 +181,7 @@ switch (_mode) do {
                 private _stage = ALife_vault getOrDefault ["stage", 0];
                 if (_stage in [1, 2, 2.5] && { time - (ALife_vault getOrDefault ["startedAt", time]) > getNumber (missionConfigFile >> "CfgALife" >> "Evidence" >> "giveUpAfter") }) then {
                     diag_log "[ALife] evidence vault robbery timed out: resealed";
-                    ["police", objNull, "timeout"] call ALife_fnc_evidence;
+                    [objNull, "police", "timeout"] call ALife_fnc_evidence;
                 };
             };
         };
@@ -378,7 +379,7 @@ switch (_mode) do {
                 ALife_groundBags = (missionNamespace getVariable ["ALife_groundBags", []]) - [_crate];
                 publicVariable "ALife_groundBags";
                 deleteVehicle _crate;
-                if ((ALife_vault getOrDefault ["stage", 0]) == 3) then { ["police", objNull, "timeout"] call ALife_fnc_evidence; };
+                if ((ALife_vault getOrDefault ["stage", 0]) == 3) then { [objNull, "police", "timeout"] call ALife_fnc_evidence; };
             };
         };
         if (_left <= 0) exitWith {

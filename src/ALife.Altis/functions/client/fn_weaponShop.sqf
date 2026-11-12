@@ -145,7 +145,7 @@ switch (_mode) do {
         _catalogue = [];
         private _weapons = []; // [name, compatible magazines] for grouping magazines
         {
-            _x params [["_class", ""], ["_name", ""], ["_price", 0], ["", 0], ["_licence", ""], ["_level", 0]];
+            _x params [["_class", ""], ["_name", ""], ["_price", 0], "", ["_licence", ""], ["_level", 0]];
             private _type = _class call _fnc_type;
             if (_name == "") then { _name = getText (configFile >> "CfgWeapons" >> _class >> "displayName"); };
             private _need = [_licence, _level] call _fnc_missing;
@@ -165,13 +165,13 @@ switch (_mode) do {
             };
         } forEach _rows;
         {
-            _x params [["_class", ""], ["_name", ""], ["_price", 0], ["", 0], ["_licence", ""], ["_level", 0]];
+            _x params [["_class", ""], ["_name", ""], ["_price", 0], "", ["_licence", ""], ["_level", 0]];
             if (_name == "") then { _name = getText (configFile >> "CfgMagazines" >> _class >> "displayName"); };
             private _i = _weapons findIf { toLower _class in (_x select 1) };
             _catalogue pushBack [1, ["Other", "For " + ((_weapons select _i) select 0)] select (_i >= 0), "mags", _class, _name, _price, [_licence, _level] call _fnc_missing];
         } forEach getArray (_cfg >> "mags");
         {
-            _x params [["_class", ""], ["_name", ""], ["_price", 0], ["", 0], ["_licence", ""], ["_level", 0]];
+            _x params [["_class", ""], ["_name", ""], ["_price", 0], "", ["_licence", ""], ["_level", 0]];
             if (_name == "") then { _name = getText (configFile >> "CfgWeapons" >> _class >> "displayName"); };
             private _group = switch (getNumber (configFile >> "CfgWeapons" >> _class >> "ItemInfo" >> "type")) do {
                 case 201: { "Optics" };
