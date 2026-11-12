@@ -153,13 +153,13 @@ func TestEconomy(t *testing.T) {
 	if c.GasRobberies < 1 || c.RobbedCash < 3200 || c.Seizures < 1 {
 		t.Errorf("crime: %+v", c)
 	}
-	found := false
+	inWanted := false
 	for _, w := range c.MostWanted {
 		if w.ID == b {
-			found = w.Bounty == 25000 && w.Crimes == 2
+			inWanted = w.Bounty == 25000 && w.Crimes == 2
 		}
 	}
-	if !found {
+	if !inWanted {
 		t.Errorf("most wanted: %+v", c.MostWanted)
 	}
 
