@@ -7,11 +7,24 @@
       <p class="admin-sub">Server-wide overview, economy and recent staff activity.</p>
     </div>
 
+    <section class="card dash-card attn" aria-labelledby="dash-attn">
+      <div class="dash-card-head"><h2 id="dash-attn">Needs attention</h2>{{if .Attention}}<span class="muted small">{{len .Attention}} item{{if ne (len .Attention) 1}}s{{end}}</span>{{end}}</div>
+      {{range .Attention}}
+      <a class="attn-row attn-{{.Level}}" href="{{.URL}}">
+        <span class="attn-level"><span class="attn-icon" aria-hidden="true">{{if eq .Level "critical"}}!{{else if eq .Level "warning"}}&#9650;{{else}}i{{end}}</span>{{if eq .Level "critical"}}Urgent{{else if eq .Level "warning"}}Soon{{else}}FYI{{end}}</span>
+        <span class="attn-text"><span class="strong">{{.Title}}</span>{{if .Detail}}<span class="muted small">{{.Detail}}</span>{{end}}</span>
+        <span class="attn-go" aria-hidden="true">&rarr;</span>
+      </a>
+      {{else}}
+      <p class="attn-clear"><span class="attn-icon attn-ok" aria-hidden="true">&#10003;</span>All clear. Nothing is waiting on staff right now.</p>
+      {{end}}
+    </section>
+
     <section class="admin-stats" aria-label="Operations">
-      <div class="admin-stat"><div class="label">Online now</div><div class="value value-green">{{.OnlineCount}}</div></div>
+      <a class="admin-stat stat-link" href="/admin/online"><div class="label">Online now</div><div class="stat-spark-row"><div class="value value-green">{{.OnlineCount}}</div>{{template "spark" (dict "S" .OnlineSpark "Class" "spark-green" "What" "Players online over the last 24 hours")}}</div><div class="sub">peak {{.OnlinePeak}} in the last 24 h</div></a>
       <a class="admin-stat stat-link" href="/admin/cases?status=open"><div class="label">Open cases</div><div class="value {{if .OpenCaseCount}}value-amber{{end}}">{{.OpenCaseCount}}</div></a>
       <a class="admin-stat stat-link" href="/admin/tickets"><div class="label">Open tickets</div><div class="value">{{.OpenTickets}}</div></a>
-      <a class="admin-stat stat-link" href="/admin/anticheat?open=1"><div class="label">Anti-cheat flags (24 h)</div><div class="value {{if .FlagsLast24h}}value-amber{{end}}">{{.FlagsLast24h}}</div></a>
+      <a class="admin-stat stat-link" href="/admin/anticheat?status=open"><div class="label">Anti-cheat flags (24 h)</div><div class="stat-spark-row"><div class="value {{if .FlagsLast24h}}value-amber{{end}}">{{.FlagsLast24h}}</div>{{template "spark" (dict "S" .FlagSpark "Class" "spark-amber" "What" "Anti-cheat flags raised per hour over the last 24 hours")}}</div><div class="sub">per hour, last 24 h</div></a>
     </section>
 
     {{template "game_server_card" .Game}}
@@ -22,7 +35,7 @@
         <div class="admin-stat"><div class="label">Registered players</div><div class="value">{{.TotalPlayers}}</div></div>
         <div class="admin-stat"><div class="label">Police whitelisted</div><div class="value">{{.PoliceCount}}</div></div>
         <div class="admin-stat"><div class="label">EMS whitelisted</div><div class="value">{{.EMSCount}}</div></div>
-        <div class="admin-stat"><div class="label">Money supply (bank + cash)</div><div class="value">${{.MoneySupply}}</div></div>
+        <a class="admin-stat stat-link" href="/admin/economy"><div class="label">Money supply (bank + cash)</div><div class="stat-spark-row"><div class="value">${{.MoneySupply}}</div>{{template "spark" (dict "S" .MoneySpark "Class" "spark-blue" "What" "Money supply over the last 7 days")}}</div><div class="sub">{{if .MoneySpark.Path}}last 7 days{{else}}history builds up hourly{{end}}</div></a>
       </div>
     </section>
 
@@ -73,6 +86,19 @@
           {{template "notification_list" dict "Items" .Notes "Unread" .Unread "CSRF" .CSRFToken "Back" "/admin#notifications"}}
           <a class="note-all" href="/notifications">All notifications</a>
         </section>
+        {{if .CanWatch}}
+        <section class="card dash-card" aria-labelledby="dash-watch">
+          <div class="dash-card-head"><h2 id="dash-watch">Watchlist</h2>{{if .WatchTotal}}<span class="muted small">{{.WatchTotal}} watched</span>{{end}}<a class="dash-link" href="/admin/watchlist">All &rarr;</a></div>
+          {{range .Watch}}
+          <a class="dash-row dash-row-link watch-dash" href="/admin/players?id={{.PlayerID}}">
+            <span class="strong ellipsis"><span class="dot {{if .Online}}dot-on{{end}}" title="{{if .Online}}Online{{else}}Offline{{end}}"></span>{{.Name}}</span>
+            <span class="muted small ellipsis" title="{{.Reason}}">{{.Reason}}</span>
+          </a>
+          {{else}}
+          <p class="empty-state">Nobody is on the watchlist. Use Watch&hellip; on a player's page.</p>
+          {{end}}
+        </section>
+        {{end}}
         <section class="card dash-card" aria-labelledby="dash-rich">
           <div class="dash-card-head">
             <h2 id="dash-rich">Rich list</h2>

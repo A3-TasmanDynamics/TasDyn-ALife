@@ -14,3 +14,6 @@
 </div>
 {{end}}
 {{end}}
+
+{{/* A chart.Spark: a tiny trend line for a stat tile. Called with (dict "S" spark "Class" "spark-green" "What" "players online, last 24 hours"). */}}
+{{define "spark"}}{{with .S}}{{if .Path}}<svg class="spark {{$.Class}}" viewBox="0 0 {{.W}} {{.H}}" width="{{.W}}" height="{{.H}}" role="img" aria-label="{{$.What}}: {{.Label}}"><path class="spark-area" d="{{.Area}}"/><path class="spark-line" d="{{.Path}}"/><circle class="spark-dot" cx="{{.LastX}}" cy="{{.LastY}}" r="2.5"/></svg>{{end}}{{end}}{{end}}
