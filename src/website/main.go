@@ -196,6 +196,8 @@ func run() error {
 			go d.RoleSyncEngine.Run(ctx)
 			// Live #server-status message, up/down posts and presence (§7).
 			go bot.RunStatus(ctx)
+			// #staff-alerts: flags, big money moves, vault robberies.
+			go bot.RunAlerts(ctx)
 			if *mode == "bot" {
 				go bot.ServeHealth(ctx, cfg.BotHealthAddr)
 			}

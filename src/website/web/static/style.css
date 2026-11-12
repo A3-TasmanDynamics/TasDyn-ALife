@@ -2829,6 +2829,8 @@ a.eco-link:hover { background: rgba(255, 255, 255, 0.03); }
 .dash-card .ev-row > summary, .dash-card .ev-th { padding-left: 20px; padding-right: 20px; grid-template-columns: 100px 120px minmax(0, 1fr); }
 .dash-card .ev-details { padding-left: 20px; }
 @media (max-width: 900px) { .eco-flows { grid-template-columns: 1fr; } .eco-flows > div + div { border-left: none; border-top: 1px solid var(--border-soft); } .eco-mkt { grid-template-columns: minmax(0, 1fr) 70px 70px 64px; } }
+/* Discord settings: number fields (alert thresholds). */
+.num-setting { width: 100%; max-width: 220px; min-height: 38px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text); font: inherit; font-size: 13px; font-variant-numeric: tabular-nums; }
 /* ---------- Line charts (partial_line_chart.html, chart.js) ---------- */
 /* Series colours validated against the card surface (#131b2e): cash #d97706, bank #3b82f6. */
 .lc { position: relative; }

@@ -48,6 +48,12 @@
             <span class="toggle-box"><input type="checkbox" name="{{.Key}}" value="on" {{if eq .Value "on"}}checked{{end}}> On</span>
           </label>
           {{end}}{{end}}
+          {{range .Settings}}{{if eq .Kind "number"}}
+          <div class="map-row">
+            <label class="map-label" for="set-{{.Key}}">{{.Label}}<span class="hint">{{.Help}}</span></label>
+            <div class="map-selects"><input id="set-{{.Key}}" name="{{.Key}}" value="{{.Value}}" inputmode="numeric" pattern="[0-9,$ ]*" class="num-setting"></div>
+          </div>
+          {{end}}{{end}}
         </div>
       </fieldset>
       <div class="sync-form-foot">

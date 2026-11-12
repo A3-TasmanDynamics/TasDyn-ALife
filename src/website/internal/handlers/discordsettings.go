@@ -120,6 +120,11 @@ func (d *Deps) DiscordSettingsSave(w http.ResponseWriter, r *http.Request) {
 			if v != "on" {
 				v = "off"
 			}
+		case "number":
+			v = strings.NewReplacer(",", "", "$", "", " ", "").Replace(v)
+			if v == "" {
+				v = "0"
+			}
 		}
 		values[def.Key] = v
 	}
