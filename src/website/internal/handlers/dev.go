@@ -112,6 +112,26 @@ func humanUptime(d time.Duration) string {
 	return fmt.Sprintf("%dm", m)
 }
 
+// dbSize caches pg_database_size, which walks the data files (slow on
+// Windows), for a few minutes.
+var dbSize struct {
+	sync.Mutex
+	at    time.Time
+	value string
+}
+
+func (d *Deps) databaseSize(ctx context.Context) string {
+	dbSize.Lock()
+	defer dbSize.Unlock()
+	if dbSize.value == "" || time.Since(dbSize.at) > 5*time.Minute {
+		var v string
+		if err := d.Pool.QueryRow(ctx, `SELECT pg_size_pretty(pg_database_size(current_database()))`).Scan(&v); err == nil {
+			dbSize.value, dbSize.at = v, time.Now()
+		}
+	}
+	return dbSize.value
+}
+
 func (d *Deps) DevHealth(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	data := devHealthData{Base: baseFrom(r, "System health"), AdminShell: d.adminShell(r, "dev-health"),
@@ -128,11 +148,12 @@ func (d *Deps) DevHealth(w http.ResponseWriter, r *http.Request) {
 
 	// Database.
 	t0 := time.Now()
-	if err := d.Pool.QueryRow(ctx, `SELECT current_setting('server_version'), pg_size_pretty(pg_database_size(current_database())),
-		(SELECT count(*) FROM players), (SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public')`).
-		Scan(&data.DBVersion, &data.DBSize, &data.Players, &data.Tables); err != nil {
+	if err := d.Pool.QueryRow(ctx, `SELECT current_setting('server_version'),
+		(SELECT count(*) FROM players), (SELECT count(*) FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p', 'v', 'f'))`).
+		Scan(&data.DBVersion, &data.Players, &data.Tables); err != nil {
 		slog.Error("dev health: database query failed", "error", err)
 	}
+	data.DBSize = d.databaseSize(ctx)
 	data.DBLatency = fmt.Sprintf("%d ms", time.Since(t0).Milliseconds())
 	st := d.Pool.Stat()
 	data.DBConns = fmt.Sprintf("%d in use · %d idle · %d max", st.AcquiredConns(), st.IdleConns(), st.MaxConns())

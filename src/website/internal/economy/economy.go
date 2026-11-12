@@ -250,7 +250,7 @@ func CrimeStats(ctx context.Context, pool *pgxpool.Pool, since time.Time) (Crime
 		       COALESCE(sum(CASE WHEN event_type IN ('robbery.gas', 'evidence.robbed') AND jsonb_typeof(details -> 'cash') = 'number'
 		                         THEN (details ->> 'cash')::numeric ELSE 0 END), 0)::bigint,
 		       count(*) FILTER (WHERE event_type = 'police.seize')
-		FROM player_log WHERE created_at > $1 AND (event_type LIKE 'robbery.%' OR event_type LIKE 'evidence.%' OR event_type = 'police.seize')`, since).
+		FROM player_log WHERE created_at > $1 AND event_type IN ('robbery.gas', 'evidence.robbed', 'evidence.breakin', 'police.seize')`, since). // idx_player_log_event_time
 		Scan(&c.GasRobberies, &c.VaultRobberies, &c.VaultBreakins, &c.RobbedCash, &c.Seizures); err != nil {
 		return c, err
 	}

@@ -120,8 +120,13 @@ func RecentlyLeft(ctx context.Context, pool *pgxpool.Pool, within time.Duration,
 // History is how many players were on at each step over the last `span`,
 // oldest first, ending now.
 func History(ctx context.Context, pool *pgxpool.Pool, span, step time.Duration) ([]time.Time, []float64, error) {
+	// Only the sessions that overlap the window (idx_player_sessions_disconnected),
+	// read once, then counted at each step.
 	rows, err := pool.Query(ctx, `
-		SELECT t, (SELECT count(DISTINCT s.player_id) FROM player_sessions s
+		WITH s AS MATERIALIZED (
+		  SELECT player_id, connected_at, disconnected_at FROM player_sessions
+		  WHERE disconnected_at IS NULL OR disconnected_at > now() - make_interval(secs => $1))
+		SELECT t, (SELECT count(DISTINCT s.player_id) FROM s
 		           WHERE s.connected_at <= t AND (s.disconnected_at IS NULL OR s.disconnected_at > t))
 		FROM generate_series(now() - make_interval(secs => $1), now(), make_interval(secs => $2)) t
 		ORDER BY t`, span.Seconds(), step.Seconds())

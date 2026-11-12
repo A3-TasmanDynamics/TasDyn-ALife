@@ -1,7 +1,7 @@
 {{define "content"}}
 <div class="admin-shell">
   {{template "admin_sidebar" .}}
-  <div class="admin-content" data-live="ticket">
+  <div id="admin-main" tabindex="-1" class="admin-content" data-live="ticket">
     {{template "admin_header" .}}
     <h1 class="page-title admin-title">Tickets</h1>
     <p class="admin-sub">Every player ticket, filtered and sorted. Open one to reply, assign or close it.</p>
@@ -10,12 +10,12 @@
 
       <form method="get" action="/admin/tickets" class="filter-bar">
         <div class="field" style="flex:2; min-width:220px;">
-          <label>Search</label>
-          <input type="text" name="q" value="{{.SearchQuery}}" placeholder="Subject, player name, or Steam UID..." />
+          <label for="f-q">Search</label>
+          <input id="f-q" type="text" name="q" value="{{.SearchQuery}}" placeholder="Subject, player name, or Steam UID..." />
         </div>
         <div class="field">
-          <label>Status</label>
-          <select name="status" onchange="this.form.submit()">
+          <label for="f-status">Status</label>
+          <select id="f-status" name="status" onchange="this.form.submit()">
             <option value="active" {{if eq .FilterStatus "active"}}selected{{end}}>Open + Pending</option>
             <option value="open" {{if eq .FilterStatus "open"}}selected{{end}}>Open only</option>
             <option value="pending" {{if eq .FilterStatus "pending"}}selected{{end}}>Pending only</option>
@@ -24,8 +24,8 @@
           </select>
         </div>
         <div class="field">
-          <label>Priority</label>
-          <select name="priority" onchange="this.form.submit()">
+          <label for="f-priority">Priority</label>
+          <select id="f-priority" name="priority" onchange="this.form.submit()">
             <option value="all" {{if eq .FilterPriority "all"}}selected{{end}}>All</option>
             <option value="urgent" {{if eq .FilterPriority "urgent"}}selected{{end}}>Urgent</option>
             <option value="high" {{if eq .FilterPriority "high"}}selected{{end}}>High</option>
@@ -34,8 +34,8 @@
           </select>
         </div>
         <div class="field">
-          <label>Category</label>
-          <select name="category" onchange="this.form.submit()">
+          <label for="f-category">Category</label>
+          <select id="f-category" name="category" onchange="this.form.submit()">
             <option value="all" {{if eq $.FilterCategory "all"}}selected{{end}}>All</option>
             {{$fc := .FilterCategory}}
             {{range .TopCategories}}
@@ -44,8 +44,8 @@
           </select>
         </div>
         <div class="field">
-          <label>Assigned</label>
-          <select name="assigned" onchange="this.form.submit()">
+          <label for="f-assigned">Assigned</label>
+          <select id="f-assigned" name="assigned" onchange="this.form.submit()">
             <option value="all" {{if eq .FilterAssigned "all"}}selected{{end}}>Everyone</option>
             <option value="me" {{if eq .FilterAssigned "me"}}selected{{end}}>Assigned to me</option>
             <option value="unassigned" {{if eq .FilterAssigned "unassigned"}}selected{{end}}>Unassigned</option>
