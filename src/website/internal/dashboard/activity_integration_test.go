@@ -20,7 +20,7 @@ func TestLoadActivity(t *testing.T) {
 	}
 	t.Cleanup(pool.Close)
 	var me int64
-	if err := pool.QueryRow(ctx, `INSERT INTO players (uid, name) VALUES ('76561190000000901', 'Activity Me') RETURNING id`).Scan(&me); err != nil {
+	if err := pool.QueryRow(ctx, `INSERT INTO players (uid, name) VALUES ('76561190000001001', 'Activity Me') RETURNING id`).Scan(&me); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { pool.Exec(ctx, `DELETE FROM players WHERE id = $1`, me) })

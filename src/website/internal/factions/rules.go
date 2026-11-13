@@ -25,9 +25,6 @@ type dbtx interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
-// Column is the players column holding a faction's level.
-func Column(faction string) string { return column[faction] }
-
 // levelOf returns a player's level in faction (0 = not a member).
 func levelOf(ctx context.Context, q dbtx, faction string, playerID int64) (int, error) {
 	var l int
