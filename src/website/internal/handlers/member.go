@@ -47,6 +47,22 @@ type dashboardData struct {
 
 	Notes  []notify.Item
 	Unread int
+
+	Activity        dashboard.Activity
+	TeamSpeakLinked bool
+	EverPlayed      bool // any session on record
+}
+
+// SetupLeft is how many getting-started steps are still to do (Discord,
+// TeamSpeak, first time on the server); 0 hides the checklist.
+func (d dashboardData) SetupLeft() int {
+	n := 0
+	for _, done := range []bool{d.DiscordUsername != "", d.TeamSpeakLinked, d.EverPlayed} {
+		if !done {
+			n++
+		}
+	}
+	return n
 }
 
 // Dashboard is the player dashboard (layout plan "Player — Dashboard").
@@ -88,6 +104,14 @@ func (d *Deps) renderDashboard(w http.ResponseWriter, r *http.Request, linkCode 
 	data.Notes, data.Unread, _ = notify.List(r.Context(), d.Pool, sess.PlayerID, 5)
 	if data.Ban, data.Appeal, err = cases.ActiveBan(r.Context(), d.Pool, sess.PlayerID); err != nil {
 		slog.Error("dashboard: ban lookup failed", "error", err)
+	}
+	if data.Activity, err = dashboard.LoadActivity(r.Context(), d.Pool, sess.PlayerID); err != nil {
+		slog.Error("dashboard: activity failed", "error", err)
+	}
+	if err := d.Pool.QueryRow(r.Context(), `
+		SELECT teamspeak_uid IS NOT NULL, EXISTS (SELECT 1 FROM player_sessions WHERE player_id = $1)
+		FROM players WHERE id = $1`, sess.PlayerID).Scan(&data.TeamSpeakLinked, &data.EverPlayed); err != nil {
+		slog.Error("dashboard: link status failed", "error", err)
 	}
 	d.Render.Render(w, "dashboard.html", data)
 }

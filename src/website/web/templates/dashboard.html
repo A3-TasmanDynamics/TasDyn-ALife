@@ -1,16 +1,102 @@
 {{define "content"}}
 <div class="pdash">
-  <div class="pdash-greeting">
-    <div>
+  <section class="pd-hero">
+    <span class="pd-avatar" aria-hidden="true">{{.Session.Initials}}</span>
+    <div class="pd-hero-id">
       <h1>G'day, {{.Name}}</h1>
-      <p class="pdash-meta">Playing since {{.Since.Format "2 Jan 2006"}} &middot; Steam64 <span class="mono">{{.UID}}</span> &middot; {{if .DiscordUsername}}Discord @{{.DiscordUsername}} linked{{else}}Discord not linked{{end}}</p>
+      <p class="pdash-meta">Playing since {{.Since.Format "2 Jan 2006"}} &middot; Steam64 <span class="mono">{{.UID}}</span></p>
+      <div class="pd-links">
+        <span class="pd-link{{if .DiscordUsername}} pd-link-on{{end}}">{{if .DiscordUsername}}&#10003; Discord @{{.DiscordUsername}}{{else}}Discord not linked{{end}}</span>
+        <span class="pd-link{{if .TeamSpeakLinked}} pd-link-on{{end}}">{{if .TeamSpeakLinked}}&#10003; TeamSpeak linked{{else}}TeamSpeak not linked{{end}}</span>
+        {{if .Bounty}}<span class="pdash-wanted">Wanted &middot; ${{money .Bounty}} bounty</span>{{end}}
+      </div>
     </div>
     <div class="pdash-actions">
       <a class="btn btn-lg" href="/profile">Profile</a>
       <a class="btn btn-lg" href="/tickets">Open a ticket</a>
       {{if .JoinURL}}<a class="btn btn-primary btn-lg pdash-join" href="{{.JoinURL}}"><span class="pdash-join-dot" aria-hidden="true"></span>Join server &middot; {{.OnlineCount}} online</a>{{end}}
     </div>
+  </section>
+
+  {{with .Ban}}
+  <section class="pdash-card pdash-pad pdash-ban" aria-labelledby="pd-ban">
+    <h2 id="pd-ban">You're banned from the server</h2>
+    <p class="pdash-dim">{{.Reason}} &middot; {{if .ExpiresAt}}until {{.ExpiresAt.Format "2 Jan 2006 15:04"}}{{else}}permanent{{end}}</p>
+    {{if $.Appeal}}
+      {{if eq $.Appeal.Status "open"}}<p class="pdash-dim"><strong>Your appeal is waiting for review</strong> (sent {{$.Appeal.CreatedAt.Format "2 Jan"}}). You'll see the decision here.</p>
+      {{else if eq $.Appeal.Status "rejected"}}<p class="pdash-dim"><strong>Your appeal was rejected:</strong> {{$.Appeal.Decision}}</p>{{end}}
+    {{else}}
+    <form method="post" action="/dashboard/appeal" class="pdash-appeal">
+      <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+      <label for="appeal-body">Appeal this ban</label>
+      <textarea id="appeal-body" name="body" rows="4" minlength="20" maxlength="4000" required placeholder="Explain what happened and why the ban should be lifted or shortened."></textarea>
+      <button class="btn btn-primary" type="submit">Send appeal</button>
+      <p class="hint">One appeal per ban. Staff see it alongside the case.</p>
+    </form>
+    {{end}}
+  </section>
+  {{end}}
+
+  {{if or .StaffApp .FactionApps}}
+  <div class="pd-alerts">
+    {{with .StaffApp}}
+    <section class="pdash-card pdash-pad" aria-labelledby="pd-app">
+      <div class="pdash-app-head"><h2 id="pd-app">Staff application #{{.ID}}</h2><span class="mod-pill mod-pill-{{if or (eq .Status "pending") (eq .Status "interview")}}open{{else}}closed{{end}}">{{.StatusText}}</span></div>
+      <ol class="pdash-steps">
+        <li class="done"><span></span><strong>Submitted</strong><small>{{.CreatedAt.Format "2 Jan"}}</small></li>
+        <li class="done"><span></span><strong>Review</strong><small>{{if eq .Status "pending"}}Now{{else}}Done{{end}}</small></li>
+        <li class="{{if or (eq .Status "interview") (eq .Status "accepted")}}done{{end}}"><span></span><strong>Interview</strong><small>{{if eq .Status "interview"}}Now{{end}}</small></li>
+        <li class="{{if or (eq .Status "accepted") (eq .Status "rejected")}}done{{end}}"><span></span><strong>Decision</strong><small>{{if .DecidedAt}}{{.DecidedAt.Format "2 Jan"}}{{end}}</small></li>
+      </ol>
+      <p class="hint">You'll get a Discord message when it moves. <a href="/staff/apply">View application</a></p>
+    </section>
+    {{end}}
+    {{range .FactionApps}}
+    <section class="pdash-card pdash-pad"><div class="pdash-app-head"><h2>{{if eq .Faction "police"}}Police{{else}}EMS{{end}} application</h2><span class="mod-pill mod-pill-open">Waiting for command</span></div><p class="hint">Sent {{.CreatedAt.Format "2 Jan 2006"}}. <a href="/factions?faction={{.Faction}}">View</a></p></section>
+    {{end}}
   </div>
+  {{end}}
+
+  {{if .SetupLeft}}
+  <section class="pdash-card pdash-pad pd-setup" aria-labelledby="pd-setup">
+    <div class="pd-setup-head"><h2 id="pd-setup">Get set up</h2><span class="pdash-count">{{.SetupLeft}} to go</span></div>
+    <ol class="pd-checklist">
+      <li class="{{if .DiscordUsername}}done{{end}}">
+        <span class="pd-check" aria-hidden="true">{{if .DiscordUsername}}&#10003;{{else}}1{{end}}</span>
+        <div>
+          <strong>Link Discord</strong>
+          <span class="pdash-small">{{if .DiscordUsername}}Linked as @{{.DiscordUsername}}.{{else}}Your roles in the Discord server follow you automatically.{{end}}</span>
+          {{if not .DiscordUsername}}
+          <div class="pdash-inline-form">
+            <a class="btn btn-primary" href="/auth/discord/connect">Connect with Discord</a>
+            <form method="post" action="/dashboard/discord/link-code" class="inline-form">
+              <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+              <button class="btn" type="submit">Get a /link code instead</button>
+            </form>
+          </div>
+          {{if .DiscordLinkCode}}<p class="hint">Run <code>/link {{.DiscordLinkCode}}</code> in the Discord server within 10 minutes.</p>{{end}}
+          {{end}}
+        </div>
+      </li>
+      <li class="{{if .TeamSpeakLinked}}done{{end}}">
+        <span class="pd-check" aria-hidden="true">{{if .TeamSpeakLinked}}&#10003;{{else}}2{{end}}</span>
+        <div>
+          <strong>Link TeamSpeak</strong>
+          <span class="pdash-small">{{if .TeamSpeakLinked}}Linked.{{else}}Add your TeamSpeak unique ID on your profile to get your server groups.{{end}}</span>
+          {{if not .TeamSpeakLinked}}<a class="pd-go" href="/profile">Link it on your profile &rarr;</a>{{end}}
+        </div>
+      </li>
+      <li class="{{if .EverPlayed}}done{{end}}">
+        <span class="pd-check" aria-hidden="true">{{if .EverPlayed}}&#10003;{{else}}3{{end}}</span>
+        <div>
+          <strong>Join the server</strong>
+          <span class="pdash-small">{{if .EverPlayed}}You've played. See you out there.{{else}}Get the connect address from Discord, then join from the Arma 3 launcher.{{end}}</span>
+          {{if and (not .EverPlayed) .JoinURL}}<a class="pd-go" href="{{.JoinURL}}">Join now &rarr;</a>{{end}}
+        </div>
+      </li>
+    </ol>
+  </section>
+  {{end}}
 
   <div class="pdash-tiles">
     <div class="pdash-tile">
@@ -40,8 +126,82 @@
     </div>
   </div>
 
+  <section class="pdash-card" aria-labelledby="pd-chars">
+    <div class="pdash-card-head"><h2 id="pd-chars">My characters</h2><span class="pdash-count">One account, three sides</span></div>
+    <div class="pdash-sides">
+      {{range .Sides}}
+      <div class="pdash-side pdash-side-{{.Key}}{{if not .Member}} pdash-side-off{{end}}">
+        <div class="pdash-side-name">{{.Name}}</div>
+        {{if .Member}}
+        <div class="pdash-side-rank">{{if .Rank}}{{.Rank}}{{else}}Citizen{{end}}</div>
+        <div class="pdash-side-stats"><span>{{.Hours}} h played</span><span>${{money .Cash}} cash</span><span>${{money .Bank}} bank</span></div>
+        {{else}}
+        <div class="pdash-side-rank">Not joined</div>
+        <div class="pdash-side-stats"><a href="/factions">Apply to join</a></div>
+        {{end}}
+      </div>
+      {{end}}
+    </div>
+  </section>
+
   <div class="pdash-grid">
     <div class="pdash-col">
+      <section class="pdash-card pdash-pad" aria-labelledby="pd-play">
+        <div class="pd-card-row"><h2 id="pd-play">Playtime</h2><span class="pdash-count">{{.Activity.TotalHours}} h in 14 days &middot; {{.Activity.ActiveDays}} day{{if ne .Activity.ActiveDays 1}}s{{end}} played</span></div>
+        {{if .Activity.TotalMins}}
+        <div class="pd-chart">
+          <div class="pd-bars" aria-hidden="true">
+            {{range .Activity.Days}}<div class="pd-bar{{if not .Minutes}} pd-bar-none{{end}}" data-tip="{{.Label}} &middot; {{if .Minutes}}{{.Hours}}{{else}}no play{{end}}"><span style="height: {{.Pct}}%"></span></div>{{end}}
+          </div>
+          <div class="pd-axis" aria-hidden="true">{{range $i, $d := .Activity.Days}}<span>{{if eq $i 0}}{{$d.Label}}{{else if eq $i 7}}{{$d.Label}}{{else if eq $i 13}}Today{{end}}</span>{{end}}</div>
+          <table class="visually-hidden"><caption>Playtime per day, last 14 days</caption><thead><tr><th>Day</th><th>Played</th></tr></thead><tbody>{{range .Activity.Days}}<tr><td>{{.Label}}</td><td>{{if .Minutes}}{{.Hours}}{{else}}none{{end}}</td></tr>{{end}}</tbody></table>
+        </div>
+        {{else}}
+        <p class="pdash-empty pdash-empty-flush">No play in the last 14 days.</p>
+        {{end}}
+      </section>
+
+      <section class="pdash-card" aria-labelledby="pd-recent">
+        <div class="pdash-card-head"><h2 id="pd-recent">Recent activity</h2><span class="pdash-count">Sessions and bank</span></div>
+        {{range .Activity.Recent}}
+        <div class="pd-event pd-event-{{.Kind}}">
+          <span class="pd-event-icon" aria-hidden="true">{{if eq .Kind "session"}}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>{{else if eq .Kind "money-in"}}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>{{else}}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>{{end}}</span>
+          <span class="pd-event-text"><span class="pdash-strong">{{.Title}}</span><span class="pdash-small">{{.Detail}}</span></span>
+          {{if ne .Kind "session"}}<span class="pd-event-amt">{{if eq .Kind "money-in"}}+{{else}}&minus;{{end}}${{money .AbsAmount}}</span>{{end}}
+          <span class="pd-event-when">{{.Ago}}</span>
+        </div>
+        {{else}}
+        <p class="pdash-empty">Nothing yet. Your sessions and bank activity show here.</p>
+        {{end}}
+      </section>
+
+      <section class="pdash-card" aria-labelledby="pd-vehicles">
+        <div class="pdash-card-head"><h2 id="pd-vehicles">My vehicles</h2><span class="pdash-count">{{len .Vehicles}} total</span></div>
+        {{range $i, $v := .Vehicles}}{{if lt $i 6}}
+        <div class="pdash-row pdash-row-vehicle">
+          <span class="pdash-strong">{{$v.Name}}</span>
+          <span class="pdash-dim">{{$v.Side}}</span>
+          <span class="pdash-dim">{{$v.Where}}</span>
+          <span class="pdash-right pdash-state-{{$v.State}}">{{$v.State}}</span>
+        </div>
+        {{end}}{{else}}
+        <p class="pdash-empty">No vehicles yet.</p>
+        {{end}}
+        {{if gt (len .Vehicles) 6}}
+        <details class="pd-more">
+          <summary>Show all {{len .Vehicles}}</summary>
+          {{range $i, $v := .Vehicles}}{{if ge $i 6}}
+          <div class="pdash-row pdash-row-vehicle">
+            <span class="pdash-strong">{{$v.Name}}</span>
+            <span class="pdash-dim">{{$v.Side}}</span>
+            <span class="pdash-dim">{{$v.Where}}</span>
+            <span class="pdash-right pdash-state-{{$v.State}}">{{$v.State}}</span>
+          </div>
+          {{end}}{{end}}
+        </details>
+        {{end}}
+      </section>
+
       <section class="pdash-card" aria-labelledby="pd-houses">
         <div class="pdash-card-head"><h2 id="pd-houses">My houses</h2><span class="pdash-count">{{len .Houses}} owned</span></div>
         {{range .Houses}}
@@ -54,105 +214,9 @@
         <p class="pdash-empty">You don't own a house yet. Houses are bought in-game.</p>
         {{end}}
       </section>
-
-      <section class="pdash-card" aria-labelledby="pd-vehicles">
-        <div class="pdash-card-head"><h2 id="pd-vehicles">My vehicles</h2><span class="pdash-count">{{len .Vehicles}} total</span></div>
-        {{range .Vehicles}}
-        <div class="pdash-row pdash-row-vehicle">
-          <span class="pdash-strong">{{.Name}}</span>
-          <span class="pdash-dim">{{.Side}}</span>
-          <span class="pdash-dim">{{.Where}}</span>
-          <span class="pdash-right pdash-state-{{.State}}">{{.State}}</span>
-        </div>
-        {{else}}
-        <p class="pdash-empty">No vehicles yet.</p>
-        {{end}}
-      </section>
-
-      <section class="pdash-card pdash-pad" aria-labelledby="pd-money">
-        <h2 id="pd-money">Send money</h2>
-        <div class="pdash-money">
-          <form method="post" action="/dashboard/transfer">
-            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-            <input type="hidden" name="transfer_token" value="{{.TransferToken}}">
-            <input type="hidden" name="mode" value="own">
-            <p class="hint">Between your own faction accounts.</p>
-            <div class="field"><label for="own-from">From</label>
-              <select id="own-from" name="from_faction"><option value="civilian">Civilian</option><option value="police">Police</option><option value="medic">Medic</option></select></div>
-            <div class="field"><label for="own-to">To</label>
-              <select id="own-to" name="to_faction"><option value="police">Police</option><option value="civilian">Civilian</option><option value="medic">Medic</option></select></div>
-            <div class="field"><label for="own-amount">Amount ($)</label><input id="own-amount" type="number" name="amount" min="1" step="1" required></div>
-            <button class="btn" type="submit">Move money</button>
-          </form>
-          <form method="post" action="/dashboard/transfer">
-            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-            <input type="hidden" name="transfer_token" value="{{.TransferToken}}">
-            <input type="hidden" name="mode" value="player">
-            <p class="hint">To another player, by their exact in-game name.</p>
-            <div class="field"><label for="pl-from">From (your account)</label>
-              <select id="pl-from" name="from_faction"><option value="civilian">Civilian</option><option value="police">Police</option><option value="medic">Medic</option></select></div>
-            <div class="field"><label for="pl-name">Recipient's name</label><input id="pl-name" type="text" name="recipient_name" required></div>
-            <div class="field"><label for="pl-acct">Recipient's account</label>
-              <select id="pl-acct" name="recipient_faction"><option value="civilian">Civilian</option><option value="police">Police</option><option value="medic">Medic</option></select></div>
-            <div class="field"><label for="pl-amount">Amount ($)</label><input id="pl-amount" type="number" name="amount" min="1" step="1" required></div>
-            <button class="btn" type="submit">Send money</button>
-          </form>
-        </div>
-      </section>
     </div>
 
     <div class="pdash-col">
-      {{with .Ban}}
-      <section class="pdash-card pdash-pad pdash-ban" aria-labelledby="pd-ban">
-        <h2 id="pd-ban">You're banned from the server</h2>
-        <p class="pdash-dim">{{.Reason}} &middot; {{if .ExpiresAt}}until {{.ExpiresAt.Format "2 Jan 2006 15:04"}}{{else}}permanent{{end}}</p>
-        {{if $.Appeal}}
-          {{if eq $.Appeal.Status "open"}}<p class="pdash-dim"><strong>Your appeal is waiting for review</strong> (sent {{$.Appeal.CreatedAt.Format "2 Jan"}}). You'll see the decision here.</p>
-          {{else if eq $.Appeal.Status "rejected"}}<p class="pdash-dim"><strong>Your appeal was rejected:</strong> {{$.Appeal.Decision}}</p>{{end}}
-        {{else}}
-        <form method="post" action="/dashboard/appeal" class="pdash-appeal">
-          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
-          <label for="appeal-body">Appeal this ban</label>
-          <textarea id="appeal-body" name="body" rows="4" minlength="20" maxlength="4000" required placeholder="Explain what happened and why the ban should be lifted or shortened."></textarea>
-          <button class="btn btn-primary" type="submit">Send appeal</button>
-          <p class="hint">One appeal per ban. Staff see it alongside the case.</p>
-        </form>
-        {{end}}
-      </section>
-      {{end}}
-      {{with .StaffApp}}
-      <section class="pdash-card pdash-pad" aria-labelledby="pd-app">
-        <div class="pdash-app-head"><h2 id="pd-app">Staff application #{{.ID}}</h2><span class="mod-pill mod-pill-{{if or (eq .Status "pending") (eq .Status "interview")}}open{{else}}closed{{end}}">{{.StatusText}}</span></div>
-        <ol class="pdash-steps">
-          <li class="done"><span></span><strong>Submitted</strong><small>{{.CreatedAt.Format "2 Jan"}}</small></li>
-          <li class="done"><span></span><strong>Review</strong><small>{{if eq .Status "pending"}}Now{{else}}Done{{end}}</small></li>
-          <li class="{{if or (eq .Status "interview") (eq .Status "accepted")}}done{{end}}"><span></span><strong>Interview</strong><small>{{if eq .Status "interview"}}Now{{end}}</small></li>
-          <li class="{{if or (eq .Status "accepted") (eq .Status "rejected")}}done{{end}}"><span></span><strong>Decision</strong><small>{{if .DecidedAt}}{{.DecidedAt.Format "2 Jan"}}{{end}}</small></li>
-        </ol>
-        <p class="hint">You'll get a Discord message when it moves. <a href="/staff/apply">View application</a></p>
-      </section>
-      {{end}}
-      {{range .FactionApps}}
-      <section class="pdash-card pdash-pad"><div class="pdash-app-head"><h2>{{if eq .Faction "police"}}Police{{else}}EMS{{end}} application</h2><span class="mod-pill mod-pill-open">Waiting for command</span></div><p class="hint">Sent {{.CreatedAt.Format "2 Jan 2006"}}. <a href="/factions?faction={{.Faction}}">View</a></p></section>
-      {{end}}
-      <section class="pdash-card" aria-labelledby="pd-chars">
-        <div class="pdash-card-head"><h2 id="pd-chars">My characters</h2>{{if .Bounty}}<span class="pdash-wanted">Wanted &middot; ${{money .Bounty}} bounty</span>{{end}}</div>
-        <div class="pdash-sides">
-          {{range .Sides}}
-          <div class="pdash-side pdash-side-{{.Key}}{{if not .Member}} pdash-side-off{{end}}">
-            <div class="pdash-side-name">{{.Name}}</div>
-            {{if .Member}}
-            <div class="pdash-side-rank">{{if .Rank}}{{.Rank}}{{else}}Citizen{{end}}</div>
-            <div class="pdash-side-stats"><span>{{.Hours}} h played</span><span>${{money .Cash}} cash</span><span>${{money .Bank}} bank</span></div>
-            {{else}}
-            <div class="pdash-side-rank">Not joined</div>
-            <div class="pdash-side-stats"><a href="/factions">Apply to join</a></div>
-            {{end}}
-          </div>
-          {{end}}
-        </div>
-      </section>
-
       <section class="pdash-card" aria-labelledby="pd-tickets">
         <div class="pdash-card-head"><h2 id="pd-tickets">My tickets</h2><a class="pdash-head-link" href="/tickets">All tickets</a></div>
         {{range .Tickets}}
@@ -168,21 +232,6 @@
         {{template "notification_list" dict "Items" .Notes "Unread" .Unread "CSRF" .CSRFToken "Back" "/dashboard#notifications"}}
         <a class="note-all" href="/notifications">All notifications</a>
       </section>
-
-      {{if not .DiscordUsername}}
-      <section class="pdash-card pdash-pad" aria-labelledby="pd-discord">
-        <h2 id="pd-discord">Connect Discord</h2>
-        <p class="pdash-dim">Linking gets you your roles in the Discord server automatically.</p>
-        <div class="pdash-inline-form">
-          <a class="btn btn-primary" href="/auth/discord/connect">Connect with Discord</a>
-          <form method="post" action="/dashboard/discord/link-code" class="inline-form">
-            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-            <button class="btn" type="submit">Get a /link code instead</button>
-          </form>
-        </div>
-        {{if .DiscordLinkCode}}<p class="hint">Run <code>/link {{.DiscordLinkCode}}</code> in the Discord server within 10 minutes.</p>{{end}}
-      </section>
-      {{end}}
 
       <section class="pdash-card pdash-pad" aria-labelledby="pd-licences">
         <h2 id="pd-licences">Licences</h2>
@@ -234,6 +283,37 @@
           <p class="pdash-empty pdash-empty-flush">You're not in a gang.</p>
         {{end}}
       </section>
+
+      <details class="pdash-card pdash-pad pd-money" id="send-money">
+        <summary><span><span class="pd-money-title">Send money</span><span class="pdash-small">Between your own accounts, or to another player</span></span></summary>
+        <div class="pdash-money">
+          <form method="post" action="/dashboard/transfer">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+            <input type="hidden" name="transfer_token" value="{{.TransferToken}}">
+            <input type="hidden" name="mode" value="own">
+            <p class="hint">Between your own faction accounts.</p>
+            <div class="field"><label for="own-from">From</label>
+              <select id="own-from" name="from_faction"><option value="civilian">Civilian</option><option value="police">Police</option><option value="medic">Medic</option></select></div>
+            <div class="field"><label for="own-to">To</label>
+              <select id="own-to" name="to_faction"><option value="police">Police</option><option value="civilian">Civilian</option><option value="medic">Medic</option></select></div>
+            <div class="field"><label for="own-amount">Amount ($)</label><input id="own-amount" type="number" name="amount" min="1" step="1" required></div>
+            <button class="btn" type="submit">Move money</button>
+          </form>
+          <form method="post" action="/dashboard/transfer">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+            <input type="hidden" name="transfer_token" value="{{.TransferToken}}">
+            <input type="hidden" name="mode" value="player">
+            <p class="hint">To another player, by their exact in-game name.</p>
+            <div class="field"><label for="pl-from">From (your account)</label>
+              <select id="pl-from" name="from_faction"><option value="civilian">Civilian</option><option value="police">Police</option><option value="medic">Medic</option></select></div>
+            <div class="field"><label for="pl-name">Recipient's name</label><input id="pl-name" type="text" name="recipient_name" required></div>
+            <div class="field"><label for="pl-acct">Recipient's account</label>
+              <select id="pl-acct" name="recipient_faction"><option value="civilian">Civilian</option><option value="police">Police</option><option value="medic">Medic</option></select></div>
+            <div class="field"><label for="pl-amount">Amount ($)</label><input id="pl-amount" type="number" name="amount" min="1" step="1" required></div>
+            <button class="btn" type="submit">Send money</button>
+          </form>
+        </div>
+      </details>
     </div>
   </div>
 
