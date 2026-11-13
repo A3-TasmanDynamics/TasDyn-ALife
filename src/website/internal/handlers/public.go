@@ -14,6 +14,11 @@ type landingData struct {
 	// ServerState is the game server's status-page state: "up", "down", or
 	// "" when it isn't monitored (GAME_QUERY_ADDR unset) or unknown.
 	ServerState string
+	// Online by faction as joined (sessions from before the faction was
+	// recorded count toward OnlineCount only).
+	OnlineCiv, OnlineCop, OnlineMedic int
+	// ActiveWeek is distinct players who connected in the last 7 days.
+	ActiveWeek int
 }
 
 // Landing renders the public landing page -- no login required. OnlineCount
@@ -28,12 +33,22 @@ func (d *Deps) Landing(w http.ResponseWriter, r *http.Request) {
 	data := landingData{Base: baseFrom(r, "")}
 
 	err := d.Pool.QueryRow(r.Context(), `
-		SELECT count(*) FROM player_sessions WHERE disconnected_at IS NULL
-	`).Scan(&data.OnlineCount)
+		SELECT count(*),
+		       count(*) FILTER (WHERE faction = 'civ'),
+		       count(*) FILTER (WHERE faction = 'cop'),
+		       count(*) FILTER (WHERE faction = 'medic')
+		FROM player_sessions WHERE disconnected_at IS NULL
+	`).Scan(&data.OnlineCount, &data.OnlineCiv, &data.OnlineCop, &data.OnlineMedic)
 	if err != nil {
 		// A DB hiccup on a non-essential stat shouldn't take the whole
 		// landing page down -- show 0 rather than a 500.
-		data.OnlineCount = 0
+		data.OnlineCount, data.OnlineCiv, data.OnlineCop, data.OnlineMedic = 0, 0, 0, 0
+	}
+	if err := d.Pool.QueryRow(r.Context(), `
+		SELECT count(DISTINCT player_id) FROM player_sessions
+		WHERE disconnected_at IS NULL OR disconnected_at > now() - interval '7 days'
+	`).Scan(&data.ActiveWeek); err != nil {
+		data.ActiveWeek = 0
 	}
 
 	if err := d.Pool.QueryRow(r.Context(), `SELECT count(*) FROM players`).Scan(&data.RegisteredCount); err != nil {
