@@ -33,7 +33,8 @@
       <details class="nav-more">
         <summary class="nav-pill {{if or (hasPrefix .Path "/roster") (hasPrefix .Path "/status") (hasPrefix .Path "/staff/apply")}}active{{end}}">More <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>
         <div class="menu-pop">
-          <a href="/roster/police"{{if hasPrefix .Path "/roster"}} aria-current="page"{{end}}>Police Roster</a>
+          <a href="/roster/police"{{if hasPrefix .Path "/roster/police"}} aria-current="page"{{end}}>Police Roster</a>
+          <a href="/roster/ems"{{if hasPrefix .Path "/roster/ems"}} aria-current="page"{{end}}>EMS Roster</a>
           <a href="/status"{{if hasPrefix .Path "/status"}} aria-current="page"{{end}}>Server Status</a>
           {{if and .Session (not .Session.StaffRank)}}<a href="/staff/apply"{{if hasPrefix .Path "/staff/apply"}} aria-current="page"{{end}}>Join the staff team</a>{{end}}
           <a href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Discord</a>
@@ -75,7 +76,8 @@
           <a href="/rules"{{if hasPrefix .Path "/rules"}} aria-current="page"{{end}}>Rules</a>
           <a href="/devlog"{{if hasPrefix .Path "/devlog"}} aria-current="page"{{end}}>Devlog</a>
           <a href="/tickets"{{if hasPrefix .Path "/tickets"}} aria-current="page"{{end}}>Support</a>
-          <a href="/roster/police"{{if hasPrefix .Path "/roster"}} aria-current="page"{{end}}>Police Roster</a>
+          <a href="/roster/police"{{if hasPrefix .Path "/roster/police"}} aria-current="page"{{end}}>Police Roster</a>
+          <a href="/roster/ems"{{if hasPrefix .Path "/roster/ems"}} aria-current="page"{{end}}>EMS Roster</a>
           <a href="/status"{{if hasPrefix .Path "/status"}} aria-current="page"{{end}}>Server Status</a>
           {{if and .Session (not .Session.StaffRank)}}<a href="/staff/apply">Join the staff team</a>{{end}}
           {{if .Session}}{{if or .Session.AdminPanelAccess .Session.SupportPanelAccess}}<a class="drawer-accent" href="/admin">Admin panel</a>{{end}}{{else}}<a class="drawer-accent" href="/auth/steam/login">Sign in with Steam</a>{{end}}
@@ -103,7 +105,7 @@
       <p>A custom-built Altis Life server for Oceania. &copy; 2026 Tasman Dynamics.</p>
     </div>
     <nav class="footer-cols" aria-label="Footer">
-      <div><h2>Play</h2><a href="/dashboard">Dashboard</a><a href="/factions">Factions</a><a href="/leaderboards">Leaderboards</a><a href="/roster/police">Police Roster</a></div>
+      <div><h2>Play</h2><a href="/dashboard">Dashboard</a><a href="/factions">Factions</a><a href="/leaderboards">Leaderboards</a><a href="/roster/police">Police Roster</a><a href="/roster/ems">EMS Roster</a></div>
       <div><h2>Community</h2><a href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Discord</a><a href="/devlog">Devlog</a><a href="/rules">Rules</a><a href="/staff/apply">Join the staff team</a></div>
       <div><h2>Help</h2><a href="/tickets">Support</a><a href="/status">Server Status</a><a href="https://github.com/A3-TasmanDynamics/TasDyn-ALife" target="_blank" rel="noopener">GitHub</a></div>
     </nav>
