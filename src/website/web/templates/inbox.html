@@ -1,0 +1,34 @@
+{{define "content"}}
+<div class="admin-shell">
+  {{template "admin_sidebar" .}}
+  <div id="admin-main" tabindex="-1" class="admin-content mod-page" data-live="ticket case flag">
+    {{template "admin_header" .}}
+    <div>
+      <h1 class="page-title admin-title">Inbox</h1>
+      <p class="admin-sub">Everything waiting on staff, across Support and Moderation, most urgent first: open tickets, player reports, ban appeals, high-confidence flags, quiet cases and the cases you lead, and staff applications. You only see what you can act on.</p>
+    </div>
+    <div class="ib-bar">
+      <nav class="seg" aria-label="Whose">
+        <a class="seg-item {{if eq .Show "all"}}active{{end}}" href="/admin/inbox{{if .Kind}}?kind={{.Kind}}{{end}}">Everything &middot; {{.Total}}</a>
+        <a class="seg-item {{if eq .Show "mine"}}active{{end}}" href="/admin/inbox?show=mine{{if .Kind}}&amp;kind={{.Kind}}{{end}}">Mine</a>
+        <a class="seg-item {{if eq .Show "unassigned"}}active{{end}}" href="/admin/inbox?show=unassigned{{if .Kind}}&amp;kind={{.Kind}}{{end}}">Nobody's</a>
+      </nav>
+      <div class="tl-filters ib-kinds" role="group" aria-label="Kind">
+        <a class="tl-chip{{if not .Kind}} active{{end}}" href="/admin/inbox{{if ne .Show "all"}}?show={{.Show}}{{end}}">All kinds</a>
+        {{range .Kinds}}{{$n := index $.Counts .Key}}{{if $n}}<a class="tl-chip{{if eq $.Kind .Key}} active{{end}}" href="/admin/inbox?kind={{.Key}}{{if ne $.Show "all"}}&amp;show={{$.Show}}{{end}}">{{.Label}} &middot; {{$n}}</a>{{end}}{{end}}
+      </div>
+    </div>
+    <section class="card dash-card">
+      {{if .Items}}<div class="lrow ib-row lrow-head"><span>Waiting</span><span>What</span><span>Who has it</span><span></span></div>{{end}}
+      {{range .Items}}
+      <div class="lrow ib-row ib-u{{.Urgency}}">
+        <span class="ib-age" title="Since {{.Since.Local.Format "2 Jan 15:04"}}">{{$.Age .Since}}</span>
+        <span class="ib-what"><span class="ib-kind ib-k-{{.Kind}}">{{.Kind}}</span> <a class="strong" href="{{.URL}}" data-row>{{.Title}}</a><span class="muted small">{{.Detail}}</span></span>
+        <span class="small">{{if .Mine}}<span class="ib-mine">You</span>{{else if .Owner}}{{.Owner}}{{else}}<span class="muted">nobody</span>{{end}}</span>
+        <span class="ib-act">{{if and (eq .Kind "ticket") .CanClaim $.CanClaim}}<form method="post" action="/admin/tickets/bulk"><input type="hidden" name="csrf_token" value="{{$.CSRFToken}}"><input type="hidden" name="back" value="/admin/inbox"><input type="hidden" name="ids" value="{{.ID}}"><button class="btn btn-sm" name="action" value="assign_me">Take it</button></form>{{end}}</span>
+      </div>
+      {{else}}<p class="empty">{{if eq .Show "mine"}}Nothing of yours is waiting.{{else}}Inbox zero. Nothing is waiting on staff.{{end}}</p>{{end}}
+    </section>
+  </div>
+</div>
+{{end}}

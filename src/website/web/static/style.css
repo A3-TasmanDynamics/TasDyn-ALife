@@ -3307,3 +3307,21 @@ a.lrow:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
 .mh-list .mh-warn { border-left-color: var(--amber); }
 .mh-list .mh-watch { border-left-color: var(--purple-text); }
 .mh p:last-child { margin: 0; }
+/* ---- Staff inbox ---- */
+.ib-bar { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.ib-kinds { padding: 0; border: 0; }
+.ib-row { grid-template-columns: 70px minmax(0, 1fr) 130px 100px; align-items: start; }
+.ib-row.lrow-head { align-items: center; }
+.ib-what { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ib-what a { color: var(--text); text-decoration: none; }
+.ib-what a:hover { text-decoration: underline; }
+.ib-kind { align-self: flex-start; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); }
+.ib-k-report, .ib-k-appeal { color: var(--amber-bright); }
+.ib-k-flag { color: var(--red-text); }
+.ib-k-case { color: var(--blue-text); }
+.ib-k-application { color: var(--purple-text); }
+.ib-age { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text-2); }
+.ib-u3 { box-shadow: inset 3px 0 0 var(--red); }
+.ib-u2 { box-shadow: inset 3px 0 0 var(--amber); }
+.ib-mine { font-weight: 700; color: var(--amber-bright); }
+.ib-act form { display: flex; justify-content: flex-end; }
