@@ -12,8 +12,8 @@ import (
 )
 
 // publicRosters are the factions whose roster anyone can see at
-// /roster/{faction} (signed in or not). Add "ems" to open the EMS one too.
-var publicRosters = map[string]bool{"police": true}
+// /roster/{faction} (signed in or not).
+var publicRosters = map[string]bool{"police": true, "ems": true}
 
 type publicRosterRow struct {
 	Rank       string
