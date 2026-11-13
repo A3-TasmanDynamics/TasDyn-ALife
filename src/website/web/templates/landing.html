@@ -12,8 +12,15 @@
       {{else}}
         <a class="cta" href="/dashboard">Go to your dashboard</a>
       {{end}}
+      {{if .JoinURL}}<a class="cta secondary lp-join" href="{{.JoinURL}}"><span class="lp-dot" aria-hidden="true"></span>Join the server</a>{{end}}
       <a class="cta secondary" href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Join the Discord</a>
     </div>
+    <ul class="lp-facts" aria-label="Server facts">
+      <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4z"/><path d="M8 2v16M16 6v16"/></svg>Altis</li>
+      <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>No mods to download</li>
+      <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>Hosted for Oceania</li>
+      <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Civilian open to all</li>
+    </ul>
   </div>
 
   <a class="lp-live" href="/status" aria-label="Server status">
@@ -130,6 +137,65 @@
   <div class="lp-pillar">
     <h3>Built in the open</h3>
     <p>The devlog covers what's changing, and the server status page shows real uptime.</p>
+  </div>
+</section>
+
+{{if .Top}}
+<section class="lp-section" aria-labelledby="lp-top">
+  <div class="lp-head lp-head-row">
+    <div>
+      <h2 id="lp-top">On the leaderboards</h2>
+      <p>Players who chose to show up. Wealth is shown as a band, never an exact balance.</p>
+    </div>
+    <a class="lp-link" href="/leaderboards">All leaderboards &rarr;</a>
+  </div>
+  <div class="lp-boards">
+    {{range .Top}}
+    <div class="lp-board">
+      <h3>{{.Title}}</h3>
+      <ol>
+        {{range .Rows}}<li class="{{if .You}}lp-you{{end}}"><span class="lp-rank">{{.Rank}}</span><span class="lp-name">{{.Name}}{{if .You}} (you){{end}}{{with .Note}}<small>{{.}}</small>{{end}}</span><span class="lp-val">{{.Value}}</span></li>{{end}}
+      </ol>
+    </div>
+    {{end}}
+  </div>
+</section>
+{{end}}
+
+<section class="lp-section" aria-labelledby="lp-faq">
+  <div class="lp-head">
+    <h2 id="lp-faq">Questions</h2>
+    <p>The things new players ask first.</p>
+  </div>
+  <div class="lp-faq">
+    <details>
+      <summary>Do I need any mods?</summary>
+      <p>No. The server runs on vanilla Arma 3 on Altis, so there's nothing to download or keep updated. Own Arma 3 on Steam and you're ready.</p>
+    </details>
+    <details>
+      <summary>Where's the server address?</summary>
+      <p>It's pinned in our <a href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Discord</a>, along with the TeamSpeak address.{{if .JoinURL}} While the server is up you can also use the <a href="{{.JoinURL}}">Join the server</a> button on this page.{{end}}</p>
+    </details>
+    <details>
+      <summary>How do I join the Police or EMS?</summary>
+      <p>Sign in with Steam, then apply on the <a href="{{if .Session}}/factions{{else}}/auth/steam/login{{end}}">Factions</a> page. Faction command reviews applications and you'll hear back on the website and in Discord. Civilian needs no application.</p>
+    </details>
+    <details>
+      <summary>Will I lose my progress if the server restarts?</summary>
+      <p>No. Your character, money, vehicles and houses are saved in our database, and every bank transfer is recorded as its own transaction.</p>
+    </details>
+    <details>
+      <summary>Someone broke the rules. What do I do?</summary>
+      <p>Open a <a href="/tickets">support ticket</a> and choose Player Report. Staff turn reports into cases, and your ticket tells you when the case is closed.</p>
+    </details>
+    <details>
+      <summary>I've been banned. Can I appeal?</summary>
+      <p>Yes. Sign in and your <a href="/dashboard">dashboard</a> shows the ban with a form to appeal it. Staff review it alongside the case.</p>
+    </details>
+    <details>
+      <summary>Do I have to show up on the leaderboards?</summary>
+      <p>No, they're opt-in. Turn it on or off from your dashboard at any time.</p>
+    </details>
   </div>
 </section>
 

@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"website/internal/dashboard"
 )
 
 type landingData struct {
@@ -19,6 +21,12 @@ type landingData struct {
 	OnlineCiv, OnlineCop, OnlineMedic int
 	// ActiveWeek is distinct players who connected in the last 7 days.
 	ActiveWeek int
+	// JoinURL is the steam://connect link ("" when the game address isn't
+	// configured); shown only while the server is up.
+	JoinURL string
+	// Top is the leaderboard teaser: the top 3 of a few boards (opted-in
+	// players only), empty boards dropped.
+	Top []dashboard.PublicBoard
 }
 
 // Landing renders the public landing page -- no login required. OnlineCount
@@ -86,6 +94,25 @@ func (d *Deps) Landing(w http.ResponseWriter, r *http.Request) {
 				s.Snippet = snippetOf(body)
 				s.PublishedAt = publishedAt.Format("2 January 2006")
 				data.LatestPosts = append(data.LatestPosts, s)
+			}
+		}
+	}
+
+	if data.ServerState == "up" {
+		data.JoinURL = joinURL(d.Cfg.GameQueryAddr)
+	}
+	var you int64
+	if data.Session != nil {
+		you = data.Session.PlayerID
+	}
+	if lb, err := dashboard.PublicLeaderboard(r.Context(), d.Pool, you, 3); err != nil {
+		slog.Error("landing: leaderboard teaser failed", "error", err)
+	} else {
+		for _, key := range []string{"playtime", "wealth", "police"} {
+			for _, b := range lb.Players {
+				if b.Key == key && len(b.Rows) > 0 {
+					data.Top = append(data.Top, b)
+				}
 			}
 		}
 	}
