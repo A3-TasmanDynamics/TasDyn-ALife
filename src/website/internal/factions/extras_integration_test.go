@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -39,8 +40,23 @@ func TestCommandExtras(t *testing.T) {
 		('ems', 4, 'Supervisor', 2, 0, '{}', true, false), ('ems', 5, 'Chief', 4, 0, '{}', true, true)`); err != nil {
 		t.Fatal(err)
 	}
-	pool.Exec(ctx, `INSERT INTO faction_quals (faction, key, name) VALUES ('ems', 'TQ', 'Test qual'), ('ems', 'AQ', 'Air qual'), ('ems', 'FTO', 'Field Training Officer')`)
-	pool.Exec(ctx, `INSERT INTO faction_divisions (faction, key, name, roles, required_qual) VALUES ('ems', 'TAIR', 'Test Air', '{Lead,Pilot}', 'AQ')`)
+	// One insert per row: a qual that's already there (the EMS setup fix seeds
+	// FTO) must neither abort the others nor be removed by the cleanup, so only
+	// what this test created is tracked and deleted.
+	var madeQuals []string
+	for _, q := range [][2]string{{"TQ", "Test qual"}, {"AQ", "Air qual"}, {FTOQual, "Field Training Officer"}} {
+		var key string
+		err := pool.QueryRow(ctx, `INSERT INTO faction_quals (faction, key, name) VALUES ('ems', $1, $2) ON CONFLICT DO NOTHING RETURNING key`, q[0], q[1]).Scan(&key)
+		if err == nil {
+			madeQuals = append(madeQuals, key)
+		} else if !errors.Is(err, pgx.ErrNoRows) {
+			t.Fatalf("create qual %s: %v", q[0], err)
+		}
+	}
+	var madeDiv bool
+	if err := pool.QueryRow(ctx, `INSERT INTO faction_divisions (faction, key, name, roles, required_qual) VALUES ('ems', 'TAIR', 'Test Air', '{Lead,Pilot}', 'AQ') ON CONFLICT DO NOTHING RETURNING true`).Scan(&madeDiv); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		t.Fatalf("create division TAIR: %v", err)
+	}
 	ids := map[string]int64{}
 	for name, lvl := range map[string]int{"chief": 5, "sup": 4, "para": 2, "para2": 2, "civ": 0, "civ2": 0, "clerk": 1, "clerk2": 1, "trainee": 0, "trainer": 2} {
 		uid := map[string]string{"chief": "76561190000000181", "sup": "76561190000000182", "para": "76561190000000183",
@@ -65,8 +81,10 @@ func TestCommandExtras(t *testing.T) {
 		pool.Exec(ctx, `DELETE FROM staff_log WHERE target_player_id = ANY($1) OR staff_player_id = ANY($1)`, all)
 		pool.Exec(ctx, `DELETE FROM rank_changes WHERE player_id = ANY($1)`, all)
 		pool.Exec(ctx, `DELETE FROM players WHERE id = ANY($1)`, all)
-		pool.Exec(ctx, `DELETE FROM faction_divisions WHERE faction = 'ems' AND key = 'TAIR'`)
-		pool.Exec(ctx, `DELETE FROM faction_quals WHERE faction = 'ems' AND key IN ('TQ', 'AQ', 'FTO')`)
+		if madeDiv {
+			pool.Exec(ctx, `DELETE FROM faction_divisions WHERE faction = 'ems' AND key = 'TAIR'`)
+		}
+		pool.Exec(ctx, `DELETE FROM faction_quals WHERE faction = 'ems' AND key = ANY($1)`, madeQuals)
 		pool.Exec(ctx, `DELETE FROM faction_rank_names WHERE faction = 'ems'`)
 	})
 	cmd := func(who string) Actor { return Actor{PlayerID: ids[who], Source: "website", Via: ViaCommand} }
