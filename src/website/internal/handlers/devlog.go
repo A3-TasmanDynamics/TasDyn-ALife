@@ -45,6 +45,7 @@ func snippetOf(body string) string {
 // required, same as the landing page.
 func (d *Deps) DevlogList(w http.ResponseWriter, r *http.Request) {
 	data := devlogListData{Base: baseFrom(r, "Devlog")}
+	data.Description = "What's new on ALife: updates, fixes and plans from the team behind the server."
 
 	rows, err := d.Pool.Query(r.Context(), `
 		SELECT slug, title, body, published_at
@@ -105,6 +106,7 @@ func (d *Deps) DevlogPost(w http.ResponseWriter, r *http.Request) {
 	}
 	p.PublishedAt = publishedAt.Format("2 January 2006")
 	p.Base = baseFrom(r, title)
+	p.Description = snippetOf(p.Body)
 
 	d.Render.Render(w, "devlog_post.html", p)
 }

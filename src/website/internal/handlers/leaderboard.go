@@ -16,6 +16,7 @@ type leaderboardData struct {
 // wealth in bands, plus gangs.
 func (d *Deps) Leaderboards(w http.ResponseWriter, r *http.Request) {
 	data := leaderboardData{Base: baseFrom(r, "Leaderboards")}
+	data.Description = "The richest, most dedicated and most wanted players on ALife, plus the top gangs. Players opt in; wealth shows as a band."
 	var you int64
 	if data.Session != nil {
 		you = data.Session.PlayerID

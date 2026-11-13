@@ -30,6 +30,7 @@ type statusData struct {
 // package for what each component's check really tests.
 func (d *Deps) Status(w http.ResponseWriter, r *http.Request) {
 	data := statusData{Base: baseFrom(r, "Status"), Days: status.Days}
+	data.Description = "Live status and uptime of the ALife game server, website, database and Discord bot."
 	if d.StatusMonitor != nil {
 		snap, err := d.StatusMonitor.Snapshot(r.Context(), statusLoc)
 		if err != nil {

@@ -33,6 +33,7 @@ type rulesData struct {
 // with recently changed rules highlighted under a "CHANGED" banner.
 func (d *Deps) Rules(w http.ResponseWriter, r *http.Request) {
 	data := rulesData{Base: baseFrom(r, "Server rules"), Q: strings.TrimSpace(r.URL.Query().Get("q"))}
+	data.Description = "The ALife server rules: what's allowed in roleplay, combat, factions and the community."
 	doc, ok, err := rules.Current(r.Context(), d.Pool)
 	if err != nil {
 		slog.Error("rules: loading failed", "error", err)

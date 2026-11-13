@@ -54,6 +54,7 @@ func (d *Deps) PublicRoster(w http.ResponseWriter, r *http.Request) {
 	data := publicRosterData{Base: baseFrom(r, name+" Roster"), Faction: faction, FactionName: name,
 		Callsign: map[bool]string{true: "Callsign", false: "Badge / callsign"}[faction == "ems"],
 		Q:        strings.TrimSpace(r.URL.Query().Get("q"))}
+	data.Description = "Everyone serving in the " + name + " on ALife: rank, callsign, division and status."
 	rows, err := factions.PersonnelRoster(ctx, d.Pool, faction, time.Now())
 	if err != nil {
 		slog.Error("public roster failed", "faction", faction, "error", err)

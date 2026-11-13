@@ -119,6 +119,7 @@ func run() error {
 	}
 	defer pool.Close()
 
+	render.SiteURL = strings.TrimRight(cfg.SiteBaseURL, "/")
 	renderer, err := render.New("web/templates")
 	if err != nil {
 		return err
@@ -287,6 +288,8 @@ func run() error {
 	})))
 
 	r.NotFound(d.NotFound)
+	r.Get("/robots.txt", d.Robots)
+	r.Get("/sitemap.xml", d.Sitemap)
 	r.Get("/", d.Landing)
 	r.Get("/devlog", d.DevlogList)
 	r.Get("/devlog/{slug}", d.DevlogPost)
