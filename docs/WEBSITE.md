@@ -4,7 +4,7 @@ A single Go web application serving four audiences from one codebase:
 
 1. A **public landing page** — no login required.
 2. A **member portal** — players log in and manage their account outside the game (view stats,
-   manage their gang, send money).
+   manage their gang). Moving money is in-game only.
 3. An **Admin Panel** — staff moderation/administration, web-equivalent of the in-game admin menu
    ([ADMIN_TOOLS.md](ADMIN_TOOLS.md)).
 4. A **Support Panel** — ticket system, bridged to Discord.
@@ -140,23 +140,9 @@ buried in settings) — this is the concrete answer to "switch between without p
     action trail. A leader can't remove or re-rank themselves this way — leaving/disbanding a gang
     is a different, not-yet-built action.
   - Gang *creation* is not built — these actions manage an existing gang's membership only.
-- **Send money** — **built** (`internal/bank/transfer.go`). Bank transfer between the player's own
-  faction accounts, or to another player identified by exact (case-insensitive) name — ambiguous or
-  unknown names are rejected rather than guessed at, since routing real money to the wrong account
-  on a bad guess is exactly the mistake worth an extra rejection to prevent. Writes through
-  `bank_accounts`/`bank_transactions` **exactly like the C++ extension is designed to** — same
-  idempotency-token pattern from [DATA_CONTRACT.md](DATA_CONTRACT.md) (a request token per
-  transfer, unique-indexed on `(account_id, request_token)`, generated fresh each time the transfer
-  form is rendered so a double-click or back-button resubmit can't double-spend), plus row-level
-  locking (`SELECT ... FOR UPDATE`, both accounts, fixed ascending-ID order to avoid deadlocking a
-  concurrent transfer touching the same two accounts in the opposite direction) so a concurrent
-  transfer against the same account can't read-then-overwrite a stale balance. The website is
-  *another writer* against the same authoritative ledger, not a parallel money system — this is why
-  `bank_accounts.balance` being authoritative (not `players.*_bank`) mattered in the original schema
-  design; it's what makes a second writer safe at all. Verified end-to-end (own-account transfer,
-  player-to-player transfer, insufficient-funds rejection, unknown-recipient rejection, and a
-  resubmitted-token replay all producing the correct ledger with no double-apply) against a real
-  local Postgres instance.
+- **Send money** — **removed** (2026-11-13). Moving money between accounts or to another
+  player is done in game only; the dashboard shows balances and bank history but has no transfer
+  form or endpoint. The website writes no money of its own.
 - **Wanted status** — outstanding `wanted_crimes` for this player, read-only.
 
 **Resolved (was an open question):** does `fn_save.sqf` ever write `players.*_bank` directly, which

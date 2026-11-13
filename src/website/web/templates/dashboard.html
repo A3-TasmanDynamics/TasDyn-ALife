@@ -304,37 +304,6 @@
           <p class="pdash-empty pdash-empty-flush">You're not in a gang.</p>
         {{end}}
       </section>
-
-      <details class="pdash-card pdash-pad pd-money" id="send-money">
-        <summary><span><span class="pd-money-title">Send money</span><span class="pdash-small">Between your own accounts, or to another player</span></span></summary>
-        <div class="pdash-money">
-          <form method="post" action="/dashboard/transfer">
-            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-            <input type="hidden" name="transfer_token" value="{{.TransferToken}}">
-            <input type="hidden" name="mode" value="own">
-            <p class="hint">Between your own faction accounts.</p>
-            <div class="field"><label for="own-from">From</label>
-              <select id="own-from" name="from_faction"><option value="civilian">Civilian</option><option value="police">Police</option><option value="medic">Medic</option></select></div>
-            <div class="field"><label for="own-to">To</label>
-              <select id="own-to" name="to_faction"><option value="police">Police</option><option value="civilian">Civilian</option><option value="medic">Medic</option></select></div>
-            <div class="field"><label for="own-amount">Amount ($)</label><input id="own-amount" type="number" name="amount" min="1" step="1" required></div>
-            <button class="btn" type="submit">Move money</button>
-          </form>
-          <form method="post" action="/dashboard/transfer">
-            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-            <input type="hidden" name="transfer_token" value="{{.TransferToken}}">
-            <input type="hidden" name="mode" value="player">
-            <p class="hint">To another player, by their exact in-game name.</p>
-            <div class="field"><label for="pl-from">From (your account)</label>
-              <select id="pl-from" name="from_faction"><option value="civilian">Civilian</option><option value="police">Police</option><option value="medic">Medic</option></select></div>
-            <div class="field"><label for="pl-name">Recipient's name</label><input id="pl-name" type="text" name="recipient_name" required></div>
-            <div class="field"><label for="pl-acct">Recipient's account</label>
-              <select id="pl-acct" name="recipient_faction"><option value="civilian">Civilian</option><option value="police">Police</option><option value="medic">Medic</option></select></div>
-            <div class="field"><label for="pl-amount">Amount ($)</label><input id="pl-amount" type="number" name="amount" min="1" step="1" required></div>
-            <button class="btn" type="submit">Send money</button>
-          </form>
-        </div>
-      </details>
     </div>
   </div>
 
