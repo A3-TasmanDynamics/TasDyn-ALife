@@ -161,6 +161,13 @@
         {{end}}
       </section>
 
+      {{with .BankChart}}
+      <section class="pdash-card pdash-pad" aria-labelledby="pd-bank">
+        <div class="pd-card-row"><h2 id="pd-bank">Bank balance</h2><span class="pdash-count">All your accounts, last 30 days &middot; <span class="{{if $.BankDown}}pd-down{{else}}pd-up{{end}}">{{if $.BankDown}}&minus;{{else}}+{{end}}${{money $.BankChange}}</span></span></div>
+        <div class="pd-chart-scroll">{{template "line_chart" (dict "C" . "Label" "Your total bank balance at the end of each day, last 30 days" "Legend" false)}}</div>
+      </section>
+      {{end}}
+
       <section class="pdash-card" aria-labelledby="pd-recent">
         <div class="pdash-card-head"><h2 id="pd-recent">Recent activity</h2><span class="pdash-count">Sessions and bank</span></div>
         {{range .Activity.Recent}}
@@ -231,6 +238,20 @@
       <section class="pdash-card note-card" id="notifications" aria-label="Notifications">
         {{template "notification_list" dict "Items" .Notes "Unread" .Unread "CSRF" .CSRFToken "Back" "/dashboard#notifications"}}
         <a class="note-all" href="/notifications">All notifications</a>
+      </section>
+
+      <section class="pdash-card pdash-pad" aria-labelledby="pd-miles">
+        <div class="pd-card-row"><h2 id="pd-miles">Milestones</h2><span class="pdash-count">{{.MilesDone}} of {{len .Milestones}}</span></div>
+        <ul class="pd-miles">
+          {{range .Milestones}}
+          <li class="{{if .Done}}done{{end}}">
+            <span class="pd-mile-icon" aria-hidden="true">{{if .Done}}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>{{end}}</span>
+            <span class="pd-mile-text"><strong>{{.Title}}</strong><span class="pdash-small">{{.Detail}}{{if .Done}}<span class="visually-hidden"> (done)</span>{{end}}</span>
+              {{if and (not .Done) .Progress}}<span class="pd-mile-bar" role="progressbar" aria-label="{{.Title}} progress" aria-valuenow="{{.Progress}}" aria-valuemin="0" aria-valuemax="100"><span style="width: {{.Progress}}%"></span></span>{{end}}
+            </span>
+          </li>
+          {{end}}
+        </ul>
       </section>
 
       <section class="pdash-card pdash-pad" aria-labelledby="pd-licences">
@@ -348,4 +369,5 @@
     </div>
   </section>
 </div>
+{{if .BankChart}}<script src="/static/chart.js" defer></script>{{end}}
 {{end}}
