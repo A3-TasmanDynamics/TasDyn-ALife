@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -187,6 +189,7 @@ type commandOverviewData struct {
 	HasSlots  bool
 	Strength  []strengthRow
 	Recent    []factions.LogEntry
+	Activity  factions.Activity
 }
 
 func (d *Deps) CommandOverview(w http.ResponseWriter, r *http.Request) {
@@ -227,6 +230,9 @@ func (d *Deps) CommandOverview(w http.ResponseWriter, r *http.Request) {
 	if data.Recent, err = factions.Log(ctx, d.Pool, cb.Faction, "", "", 0, 8); err != nil {
 		slog.Error("command: log failed", "error", err)
 	}
+	if data.Activity, err = factions.LoadActivity(ctx, d.Pool, cb.Faction, members); err != nil {
+		slog.Error("command: activity failed", "error", err)
+	}
 	d.Render.Render(w, "command_overview.html", data)
 }
 
@@ -238,6 +244,37 @@ type commandRosterData struct {
 	CanRecruit bool
 	Levels     []factions.Rank // ranks the viewer can recruit into
 	Ranks      map[int]factions.Rank
+
+	// Filters: Show is "" (everyone), "online", or a status label
+	// ("Active", "LOA", "Probation", ...); Div a division name.
+	Show, Div string
+	Chips     []rosterChip
+	Divs      []string
+}
+
+// rosterChip is one filter chip above the roster, with its count.
+type rosterChip struct {
+	Key, Label string
+	Count      int
+}
+
+// rosterURL keeps the other filters when one changes.
+func (d commandRosterData) RosterURL(show, div string) string {
+	v := url.Values{}
+	if d.Q != "" {
+		v.Set("q", d.Q)
+	}
+	if show != "" {
+		v.Set("show", show)
+	}
+	if div != "" {
+		v.Set("div", div)
+	}
+	u := "/command/" + d.Faction + "/roster"
+	if len(v) > 0 {
+		u += "?" + v.Encode()
+	}
+	return u
 }
 
 // CommandRoster is the roster: rank, badge, name, division and status.
@@ -261,9 +298,43 @@ func (d *Deps) CommandRoster(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data.Total = len(rows)
+	data.Show = strings.TrimSpace(r.URL.Query().Get("show"))
+	data.Div = strings.TrimSpace(r.URL.Query().Get("div"))
+	// Chips count across the whole roster (so they don't jump around as
+	// you filter); statuses and divisions in roster order of first sight.
+	online := 0
+	statusCount := map[string]int{}
+	var statuses []string
+	seenDiv := map[string]bool{}
+	for _, p := range rows {
+		if p.Online {
+			online++
+		}
+		if statusCount[p.Shown] == 0 {
+			statuses = append(statuses, p.Shown)
+		}
+		statusCount[p.Shown]++
+		if p.Department != "" && !seenDiv[p.Department] {
+			seenDiv[p.Department] = true
+			data.Divs = append(data.Divs, p.Department)
+		}
+	}
+	sort.Strings(data.Divs)
+	data.Chips = append(data.Chips, rosterChip{"", "Everyone", len(rows)}, rosterChip{"online", "Online now", online})
+	for _, s := range statuses {
+		if s != "" {
+			data.Chips = append(data.Chips, rosterChip{s, s, statusCount[s]})
+		}
+	}
 	needle := strings.ToLower(data.Q)
 	for _, p := range rows {
 		if needle != "" && !strings.Contains(strings.ToLower(p.Name+" "+p.Badge+" "+p.Department+" "+p.Rank.Label()), needle) {
+			continue
+		}
+		if data.Show == "online" && !p.Online || data.Show != "" && data.Show != "online" && p.Shown != data.Show {
+			continue
+		}
+		if data.Div != "" && p.Department != data.Div {
 			continue
 		}
 		data.Rows = append(data.Rows, p)
