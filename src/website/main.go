@@ -306,7 +306,6 @@ func run() error {
 		r.Get("/admin/live", d.Live) // panel access checked inside (admin or support)
 		r.Get("/dashboard", d.Dashboard)
 		r.Post("/dashboard/discord/link-code", d.GenerateDiscordLinkCode)
-		r.Post("/dashboard/transfer", d.Transfer)
 		r.Post("/dashboard/leaderboards", d.SetLeaderboardOptIn)
 		r.Post("/dashboard/appeal", d.SubmitAppeal)
 

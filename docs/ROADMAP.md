@@ -275,7 +275,7 @@ its own phase instead of embedded piecemeal inside them.
       continuing local development.
 
 **Milestone exit criteria:** a player can log in with Steam, view their stats, invite someone to
-their gang, and send money to another player, entirely from the website; a staff member holding
+their gang entirely from the website (money moves in game only); a staff member holding
 both grants can act in the Admin Panel and Support Panel and switch between them without
 re-authenticating; a new support ticket appears in Discord and a staff reply from Discord appears
 on the website ticket.

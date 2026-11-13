@@ -9,7 +9,6 @@ import (
 
 	"website/internal/applications"
 	"website/internal/auth"
-	"website/internal/bank"
 	"website/internal/cases"
 	"website/internal/chart"
 	"website/internal/dashboard"
@@ -36,7 +35,6 @@ type dashboardData struct {
 	Boards          []dashboard.Board
 	Gang            *gangInfo
 	DiscordLinkCode string
-	TransferToken   string
 	JoinURL         string // steam://connect link, "" when the game address isn't configured
 
 	ActivePoints int
@@ -81,8 +79,7 @@ func (d *Deps) Dashboard(w http.ResponseWriter, r *http.Request) {
 // freshly generated Discord /link code shown once.
 func (d *Deps) renderDashboard(w http.ResponseWriter, r *http.Request, linkCode string) {
 	sess, _ := auth.FromContext(r.Context())
-	transferToken, _ := auth.RandomState()
-	data := dashboardData{Base: baseFrom(r, "Dashboard"), TransferToken: transferToken, DiscordLinkCode: linkCode}
+	data := dashboardData{Base: baseFrom(r, "Dashboard"), DiscordLinkCode: linkCode}
 	ov, err := dashboard.Load(r.Context(), d.Pool, sess.PlayerID)
 	if err != nil {
 		slog.Error("dashboard: loading player failed", "error", err)
@@ -222,62 +219,3 @@ func (d *Deps) SetLeaderboardOptIn(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, back+"?notice="+errMsg(msg)+anchor, http.StatusSeeOther)
 }
 
-// Transfer handles both "Send Money" forms on the dashboard (move between
-// my own faction accounts, or send to another player) -- dispatched on the
-// "mode" field rather than two separate routes, since both end up calling
-// the same bank package underneath. See internal/bank/transfer.go for why
-// this was safe to build (fn_save.sqf never writes *_bank).
-func (d *Deps) Transfer(w http.ResponseWriter, r *http.Request) {
-	sess, _ := auth.FromContext(r.Context())
-	if err := r.ParseForm(); err != nil {
-		http.Redirect(w, r, "/dashboard?error="+errMsg("Invalid form submission."), http.StatusSeeOther)
-		return
-	}
-
-	amountDollars, err := strconv.ParseInt(r.FormValue("amount"), 10, 64)
-	if err != nil || amountDollars <= 0 {
-		http.Redirect(w, r, "/dashboard?error="+errMsg("Enter a whole dollar amount greater than zero."), http.StatusSeeOther)
-		return
-	}
-	token := r.FormValue("transfer_token")
-	fromFaction := r.FormValue("from_faction")
-
-	switch r.FormValue("mode") {
-	case "own":
-		toFaction := r.FormValue("to_faction")
-		err = bank.TransferOwnAccounts(r.Context(), d.Pool, sess.PlayerID, fromFaction, toFaction, amountDollars, token)
-	case "player":
-		recipientName := r.FormValue("recipient_name")
-		toFaction := r.FormValue("recipient_faction")
-		err = bank.TransferToPlayer(r.Context(), d.Pool, sess.PlayerID, fromFaction, recipientName, toFaction, amountDollars, token)
-	default:
-		http.Redirect(w, r, "/dashboard?error="+errMsg("Unknown transfer type."), http.StatusSeeOther)
-		return
-	}
-
-	if err != nil {
-		if isKnownBankError(err) {
-			http.Redirect(w, r, "/dashboard?error="+errMsg(err.Error()), http.StatusSeeOther)
-			return
-		}
-		slog.Error("transfer failed", "error", err)
-		http.Redirect(w, r, "/dashboard?error="+errMsg("Something went wrong processing that transfer."), http.StatusSeeOther)
-		return
-	}
-
-	http.Redirect(w, r, "/dashboard?notice="+errMsg("Transfer complete."), http.StatusSeeOther)
-}
-
-// isKnownBankError distinguishes a bank package sentinel (safe, specific,
-// user-facing message -- e.g. "insufficient funds") from an unexpected
-// error (DB connectivity, a bug) that should show a generic message and
-// get logged instead of echoed to the browser.
-func isKnownBankError(err error) bool {
-	switch err {
-	case bank.ErrInvalidAmount, bank.ErrInvalidFaction, bank.ErrSameAccount, bank.ErrInsufficientFunds,
-		bank.ErrDuplicateRequest, bank.ErrRecipientNotFound, bank.ErrRecipientAmbiguous, bank.ErrSelfTransfer:
-		return true
-	default:
-		return false
-	}
-}
