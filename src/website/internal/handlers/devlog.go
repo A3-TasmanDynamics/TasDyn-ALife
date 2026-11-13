@@ -95,7 +95,7 @@ func (d *Deps) DevlogPost(w http.ResponseWriter, r *http.Request) {
 		WHERE dp.slug = $1 AND dp.published_at IS NOT NULL
 	`, slug).Scan(&title, &p.Body, &p.AuthorName, &publishedAt)
 	if err == pgx.ErrNoRows {
-		http.NotFound(w, r)
+		d.NotFound(w, r)
 		return
 	}
 	if err != nil {

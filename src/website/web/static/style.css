@@ -643,7 +643,7 @@ a.admin-nav-item:hover { background: rgb(var(--tint) / 0.04); color: var(--text)
 .uptime-bar-warn { background: var(--amber); }
 .uptime-bar-down { background: var(--red); }
 .uptime-bar-none { background: var(--border); }
-.uptime-scale { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; color: var(--text-faint); }
+.uptime-scale { display: flex; justify-content: space-between; margin-top: 6px; font-size: 12px; color: var(--text-faint); }
 
 .status-unmonitored { margin: 0; font-size: 13px; color: var(--text-faint); }
 
@@ -3679,3 +3679,31 @@ a.lrow:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
 .roster-chip.active span { background: var(--amber-soft); color: var(--amber-bright); }
 @media (max-width: 1000px) { .cmd-grid-activity { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { .cmd-duty-stats { grid-template-columns: 1fr 1fr; } .cmd-duty-stats > div:last-child { grid-column: 1 / -1; } .roster-div, .roster-div select { width: 100%; } }
+
+/* ---------- Site polish pass ---------- */
+/* One size for page titles across the public site (heroes like the
+   landing page and status headline keep their own). */
+.site-body :is(.page-title, .rules-title, .apply-title, .lb-hero h1, .pd-hero h1, .prof-hero h1) { font-size: 28px; font-weight: 800; letter-spacing: -0.3px; line-height: 1.2; }
+/* Small labels: nothing under 11.5px. */
+.devlog-card-date { font-size: 12px; }
+.cmd-online, .fac-tag, .lb-you-tag { font-size: 11.5px; }
+.prof-ok, .prof-off { font-size: 12px; }
+@media (max-width: 720px) {
+  .site-body :is(.page-title, .rules-title, .apply-title, .lb-hero h1, .pd-hero h1, .prof-hero h1) { font-size: 24px; }
+  .devlog-post h1 { font-size: 26px; }
+  /* Text links that stand alone get a finger-sized hit area on phones. */
+  .site-body :is(.lp-link, .devlog-back, .pdash-head-link, .cmd-head-link, .note-all, .pd-go, .pdash-lb-all, .pdash-side-stats a, .hint > a:only-child) { display: inline-flex; align-items: center; min-height: 36px; }
+  .site-body .cta.small { min-height: 36px; display: inline-flex; align-items: center; }
+}
+
+/* 404 */
+.nf { max-width: 640px; margin: 40px auto 20px; text-align: center; }
+.nf-code { font-size: 88px; font-weight: 800; line-height: 1; letter-spacing: -3px; color: transparent; -webkit-text-stroke: 2px var(--amber); margin-bottom: 14px; }
+.nf .page-title { margin: 0 0 8px; }
+.nf-sub { color: var(--text-dim); margin: 0 0 26px; font-size: 15px; }
+.nf-links { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: left; }
+.nf-link { display: flex; flex-direction: column; gap: 3px; padding: 14px 16px; border-radius: 12px; background: var(--bg-elevated); border: 1px solid var(--border); text-decoration: none; color: var(--text); transition: border-color 0.15s ease, transform 0.15s ease; }
+.nf-link:hover { border-color: var(--amber); transform: translateY(-2px); }
+.nf-link strong { font-size: 15px; }
+.nf-link span { font-size: 13px; color: var(--text-dim); }
+@media (max-width: 520px) { .nf-links { grid-template-columns: 1fr; } .nf-code { font-size: 64px; } }

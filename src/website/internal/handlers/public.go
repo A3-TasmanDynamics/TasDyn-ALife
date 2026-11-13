@@ -3,6 +3,7 @@ package handlers
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"website/internal/dashboard"
@@ -118,4 +119,16 @@ func (d *Deps) Landing(w http.ResponseWriter, r *http.Request) {
 	}
 
 	d.Render.Render(w, "landing.html", data)
+}
+
+// NotFound is the site's 404 page, inside the normal layout so the header
+// and navigation still work, for any path no route matches. Admin, API and
+// static paths keep the plain 404 (the admin layout needs its own shell).
+func (d *Deps) NotFound(w http.ResponseWriter, r *http.Request) {
+	p := r.URL.Path
+	if strings.HasPrefix(p, "/admin") || strings.HasPrefix(p, "/api/") || strings.HasPrefix(p, "/static/") {
+		http.NotFound(w, r)
+		return
+	}
+	d.Render.RenderStatus(w, http.StatusNotFound, "notfound.html", baseFrom(r, "Page not found"))
 }
