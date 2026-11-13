@@ -11,6 +11,7 @@ import (
 	"website/internal/auth"
 	"website/internal/bank"
 	"website/internal/cases"
+	"website/internal/chart"
 	"website/internal/dashboard"
 	"website/internal/notify"
 )
@@ -51,6 +52,12 @@ type dashboardData struct {
 	Activity        dashboard.Activity
 	TeamSpeakLinked bool
 	EverPlayed      bool // any session on record
+
+	BankChart  *chart.Chart // 30-day bank balance, nil when nothing moved
+	BankChange int64        // size of the change over the 30 days
+	BankDown   bool         // the balance went down
+	Milestones []dashboard.Milestone
+	MilesDone  int
 }
 
 // SetupLeft is how many getting-started steps are still to do (Discord,
@@ -113,6 +120,24 @@ func (d *Deps) renderDashboard(w http.ResponseWriter, r *http.Request, linkCode 
 		FROM players WHERE id = $1`, sess.PlayerID).Scan(&data.TeamSpeakLinked, &data.EverPlayed); err != nil {
 		slog.Error("dashboard: link status failed", "error", err)
 	}
+	if hist, moved, err := dashboard.BankHistory(r.Context(), d.Pool, sess.PlayerID, 30); err != nil {
+		slog.Error("dashboard: bank history failed", "error", err)
+	} else if moved && len(hist) > 1 {
+		times := make([]time.Time, len(hist))
+		vals := make([]float64, len(hist))
+		for i, h := range hist {
+			times[i], vals[i] = h.Day, float64(h.Balance)
+		}
+		c := chart.Build(times, []chart.Series{{Name: "Bank", Class: "lc-s1", Values: vals}}, chart.Money, true)
+		data.BankChart = &c
+		data.BankChange = hist[len(hist)-1].Balance - hist[0].Balance
+		data.BankDown = data.BankChange < 0
+		if data.BankDown {
+			data.BankChange = -data.BankChange
+		}
+	}
+	data.Milestones = dashboard.Milestones(data.Overview, data.Gang != nil)
+	data.MilesDone = dashboard.MilestonesDone(data.Milestones)
 	d.Render.Render(w, "dashboard.html", data)
 }
 
