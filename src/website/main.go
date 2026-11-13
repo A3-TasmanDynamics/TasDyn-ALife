@@ -286,6 +286,7 @@ func run() error {
 		fileServer.ServeHTTP(w, r)
 	})))
 
+	r.NotFound(d.NotFound)
 	r.Get("/", d.Landing)
 	r.Get("/devlog", d.DevlogList)
 	r.Get("/devlog/{slug}", d.DevlogPost)
