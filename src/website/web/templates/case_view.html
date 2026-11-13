@@ -10,7 +10,7 @@
         <h1 class="page-title admin-title">Case #{{$c.ID}} &middot; {{$c.Summary}}</h1>
         <span class="mod-pill mod-pill-{{$c.Status}}">{{if eq $c.Status "open"}}Open{{else}}Closed{{end}}</span>
       </div>
-      <p class="admin-sub">{{$c.TypeLabel}} &middot; opened {{$c.CreatedAt.Format "2 Jan 2006, 15:04"}}{{if $c.FlagID}} from <a href="/admin/anticheat?flag={{$c.FlagID}}">anti-cheat flag #{{$c.FlagID}}</a>{{end}} &middot; {{len .Entries}} entries{{if $c.Outcome}} &middot; outcome: {{$c.Outcome}}{{end}}</p>
+      <p class="admin-sub">{{$c.TypeLabel}} &middot; opened {{$c.CreatedAt.Format "2 Jan 2006, 15:04"}}{{if $c.FlagID}} from <a href="/admin/anticheat?flag={{$c.FlagID}}">anti-cheat flag #{{$c.FlagID}}</a>{{end}}{{range $i, $t := .Tickets}}{{if eq $i 0}} from report {{else}}, {{end}}{{if $.CanTickets}}<a href="/admin/tickets/{{$t}}">ticket #{{$t}}</a>{{else}}ticket #{{$t}}{{end}}{{end}} &middot; {{len .Entries}} entries{{if $c.Outcome}} &middot; outcome: {{$c.Outcome}}{{end}}</p>
 
       {{if .OwnFaction}}<div class="banner banner-warn mod-inline-banner">You're in the same faction as {{range $i, $n := .OwnFaction}}{{if $i}}, {{end}}{{$n}}{{end}}. Consider handing this case to another staff member (GAMEPANEL_PARITY §6.1).</div>{{end}}
 

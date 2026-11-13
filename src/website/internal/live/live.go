@@ -34,6 +34,7 @@ type Msg struct {
 type Counts struct {
 	OpenCases         int `json:"cases"`
 	OpenFlags         int `json:"anticheat"`
+	NewReports        int `json:"reports"`
 	ActiveBans        int `json:"bans"`
 	OpenApps          int `json:"applications"`
 	OpenTickets       int `json:"tickets_open"`
@@ -141,6 +142,8 @@ func (h *Hub) Poll(ctx context.Context) ([]Msg, error) {
 	err := h.pool.QueryRow(ctx, `
 		SELECT (SELECT count(*) FROM staff_cases WHERE status = 'open'),
 		       (SELECT count(*) FROM anti_cheat_flags WHERE resolution IS NULL),
+		       (SELECT count(*) FROM support_tickets t JOIN ticket_categories tc ON tc.id = t.subcategory_id
+		         WHERE tc.key IN ('gameplay_player_report', 'discord_report_member', 'teamspeak_report_member') AND t.case_id IS NULL AND t.status <> 'closed'),
 		       (SELECT count(*) FROM banlist WHERE expires_at IS NULL OR expires_at > now()),
 		       (SELECT count(*) FROM staff_applications WHERE status IN ('pending', 'interview')),
 		       (SELECT count(*) FROM support_tickets WHERE status <> 'closed'),
@@ -151,7 +154,7 @@ func (h *Hub) Poll(ctx context.Context) ([]Msg, error) {
 		       COALESCE((SELECT max(id) FROM staff_cases), 0),
 		       COALESCE((SELECT max(id) FROM player_sessions), 0),
 		       COALESCE((SELECT EXTRACT(EPOCH FROM max(done_at)) FROM game_commands), 0)::float8`).Scan(
-		&c.OpenCases, &c.OpenFlags, &c.ActiveBans, &c.OpenApps, &c.OpenTickets, &c.UnassignedTickets, &c.Online,
+		&c.OpenCases, &c.OpenFlags, &c.NewReports, &c.ActiveBans, &c.OpenApps, &c.OpenTickets, &c.UnassignedTickets, &c.Online,
 		&cur.flag, &cur.ticket, &cur.kase, &cur.session, &cur.gameDone)
 	if err != nil {
 		return nil, err

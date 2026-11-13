@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"website/internal/auth"
+	"website/internal/cases"
 	"website/internal/replies"
 	"website/internal/discord/webhook"
 	"website/internal/notify"
@@ -202,6 +203,8 @@ type ticketThreadData struct {
 	Subcategories []categoryOption
 	StaffOptions  []staffOption // for the staff-only "assign to" dropdown
 	Replies       []replies.Reply // saved ticket replies (staff)
+	Report        *cases.Report   // set when this ticket is a player report (staff)
+	CanOpenCase   bool
 }
 
 // TicketThread renders one ticket's conversation plus, for staff, a
@@ -289,6 +292,10 @@ func (d *Deps) TicketThread(w http.ResponseWriter, r *http.Request) {
 	data := ticketThreadData{Base: baseFrom(r, t.Subject), Ticket: t, IsStaff: isStaff}
 	if isStaff {
 		data.Replies = d.savedReplies(r, "ticket")
+		if rep, ok, err := cases.GetReport(r.Context(), d.Pool, t.ID); err == nil && ok {
+			data.Report = &rep
+			data.CanOpenCase = d.can(r, "cases.lead")
+		}
 	}
 	if isStaff {
 		data.AdminShell = d.adminShell(r, "tickets")

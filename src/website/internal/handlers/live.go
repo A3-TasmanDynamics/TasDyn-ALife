@@ -75,7 +75,7 @@ func countsFor(m live.Msg, perms map[string]bool, admin, support bool) live.Msg 
 	c, _ := m.Data.(live.Counts)
 	out := map[string]int{}
 	if admin && perms["cases.view"] {
-		out["cases"], out["bans"] = c.OpenCases, c.ActiveBans
+		out["cases"], out["bans"], out["reports"] = c.OpenCases, c.ActiveBans, c.NewReports
 	}
 	if admin && perms["anticheat.review"] {
 		out["anticheat"] = c.OpenFlags

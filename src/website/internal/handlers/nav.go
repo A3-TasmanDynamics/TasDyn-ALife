@@ -51,6 +51,7 @@ var navDefs = []navSectionDef{
 	}},
 	{key: "moderation", name: "Moderation", tabs: true, items: []navDef{
 		{key: "cases", label: "Cases", url: "/admin/cases", perm: "cases.view", badge: func(s *AdminShell) (int, bool) { return s.OpenCases, true }},
+		{key: "reports", label: "Reports", url: "/admin/reports", perm: "cases.view", badge: func(s *AdminShell) (int, bool) { return s.NewReports, true }},
 		{key: "anticheat", label: "Anti-Cheat Flags", url: "/admin/anticheat", perm: "anticheat.review", badge: func(s *AdminShell) (int, bool) { return s.OpenFlags, true }},
 		{key: "bans", label: "Bans", url: "/admin/bans", perm: "cases.view", badge: func(s *AdminShell) (int, bool) { return s.ActiveBans, false }},
 		{key: "watchlist", label: "Watchlist", url: "/admin/watchlist", perm: "players.view"},
@@ -175,6 +176,7 @@ var navIcons = map[string]string{
 	"staff":         "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8a4 4 0 1 0 0-8M19 8v6M22 11h-6",
 	"staffactivity": "M3 3v18h18M7 15l4-4 3 3 5-6",
 	"map":           "M9 3L3 6v15l6-3 6 3 6-3V3l-6 3zM9 3v15M15 6v15",
+	"reports":       "M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7",
 	"schedule":      "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 7v5l3 2",
 	"replies":       "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2zM8 9h8M8 13h5",
 	"applications":  "M9 3h6v4H9zM9 5H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-3M9 12h6M9 16h4",

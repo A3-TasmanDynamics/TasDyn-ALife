@@ -16,6 +16,12 @@
 {{end}}
 
 {{define "ticket_body"}}
+{{with .Report}}
+<div class="card ticket-report" role="note">
+  <span><strong>Player report.</strong> {{if .CaseID}}Being handled in <a href="/admin/cases/{{.CaseID}}">case #{{.CaseID}}</a> ({{.CaseStatus}}). The reporter is told here when it's closed.{{else}}Moderation handles reports as cases; see Moderation → Reports.{{end}}</span>
+  {{if and (not .CaseID) $.CanOpenCase (ne .Status "closed")}}<a class="btn btn-primary btn-sm" href="/admin/cases/new?ticket={{.TicketID}}">Open a case</a>{{end}}
+</div>
+{{end}}
 <div class="ticket-layout">
   <div class="ticket-main">
     <section class="card">

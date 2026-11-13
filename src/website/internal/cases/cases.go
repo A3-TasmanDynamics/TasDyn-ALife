@@ -379,6 +379,12 @@ func SetStatus(ctx context.Context, pool *pgxpool.Pool, actor Actor, caseID int6
 	if _, err := addEntry(ctx, tx, caseID, actor.PlayerID, "status", body, 0, ""); err != nil {
 		return err
 	}
+	// Reports this case came from: tell the reporters, close their tickets.
+	if status == "closed" {
+		if err := closeReports(ctx, tx, caseID); err != nil {
+			return err
+		}
+	}
 	if err := audit.LogStaffAction(ctx, tx, audit.Entry{
 		StaffID: actor.PlayerID, Action: map[string]string{"closed": "case.close", "open": "case.reopen"}[status],
 		Source: actor.Source, Reason: fmt.Sprintf("#%d: %s", caseID, reason),
