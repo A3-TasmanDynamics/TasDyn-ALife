@@ -25,10 +25,10 @@ func TestLoadActivity(t *testing.T) {
 		cop       int
 		id        *int64
 	}{
-		{"76561190000000911", "Duty Busy", 3, &busy},
-		{"76561190000000912", "Duty Quiet", 2, &quiet},
-		{"76561190000000913", "Duty Never", 1, &never},
-		{"76561190000000914", "Duty Outsider", 0, &outsider},
+		{"76561190000001011", "Duty Busy", 3, &busy},
+		{"76561190000001012", "Duty Quiet", 2, &quiet},
+		{"76561190000001013", "Duty Never", 1, &never},
+		{"76561190000001014", "Duty Outsider", 0, &outsider},
 	} {
 		if err := pool.QueryRow(ctx, `INSERT INTO players (uid, name, cop_level) VALUES ($1, $2, $3) RETURNING id`, p.uid, p.name, p.cop).Scan(p.id); err != nil {
 			t.Fatal(err)

@@ -316,10 +316,3 @@ func FlagSummary(ctx context.Context, pool *pgxpool.Pool) (FlagStats, error) {
 	}
 	return s, rows.Err()
 }
-
-// OpenFlagCount is the sidebar badge.
-func OpenFlagCount(ctx context.Context, pool *pgxpool.Pool) int {
-	var n int
-	_ = pool.QueryRow(ctx, `SELECT count(*) FROM anti_cheat_flags WHERE resolution IS NULL`).Scan(&n)
-	return n
-}
