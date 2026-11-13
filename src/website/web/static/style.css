@@ -3656,3 +3656,26 @@ a.lrow:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
 /* Below ~520px the SVG's labels would shrink past legible; scroll instead. */
 .pd-chart-scroll { overflow-x: auto; scrollbar-width: thin; }
 .pd-chart-scroll .lc { min-width: 520px; }
+
+/* ---------- Faction Command, round 2: activity, quiet members, roster filters ---------- */
+.cmd-grid-activity { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+.cmd-duty { padding: 16px 20px 18px; }
+.cmd-duty-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+.cmd-duty-stats strong { display: block; font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.cmd-duty-stats small { font-size: 13px; font-weight: 600; color: var(--text-dim); }
+.cmd-duty-stats span { font-size: 12px; color: var(--text-dim); line-height: 1.35; display: block; }
+.cmd-empty-flush { padding: 0; }
+.cmd-quiet-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 20px; border-bottom: 1px solid var(--border-soft); font-size: 13.5px; color: var(--text); text-decoration: none; }
+.cmd-quiet-row:hover { background: var(--surface-hover); }
+.cmd-quiet-row > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmd-quiet-rank { margin-left: 8px; font-size: 12px; color: var(--text-dim); }
+.cmd-quiet-row .cmd-dim { white-space: nowrap; font-size: 12.5px; }
+.roster-div select { height: 38px; padding: 0 10px; border-radius: 8px; background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text); font-size: 13px; }
+.roster-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.roster-chip { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; text-decoration: none; color: var(--text-2); background: var(--bg-elevated); border: 1px solid var(--border); }
+.roster-chip span { font-size: 11.5px; font-weight: 700; padding: 0 7px; border-radius: 10px; background: var(--bg-input); color: var(--text-dim); }
+.roster-chip:hover { color: var(--text); border-color: var(--border-soft); }
+.roster-chip.active { color: var(--amber-bright); border-color: rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.08); }
+.roster-chip.active span { background: var(--amber-soft); color: var(--amber-bright); }
+@media (max-width: 1000px) { .cmd-grid-activity { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .cmd-duty-stats { grid-template-columns: 1fr 1fr; } .cmd-duty-stats > div:last-child { grid-column: 1 / -1; } .roster-div, .roster-div select { width: 100%; } }

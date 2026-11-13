@@ -14,6 +14,43 @@
       <div class="cmd-tile"><div class="cmd-tile-label">Open slots</div><div class="cmd-tile-value">{{if .HasSlots}}{{.OpenSlots}}{{else}}&mdash;{{end}}</div><div class="cmd-tile-sub">{{if .HasSlots}}in ranks with a slot limit{{else}}No slot limits set{{end}}</div></div>
       <div class="cmd-tile"><div class="cmd-tile-label">Your authority</div><div class="cmd-tile-value cmd-tile-value-sm">{{if .ReadOnly}}Read-only{{else}}Up to {{.AuthorityTo}}{{end}}</div><div class="cmd-tile-sub">{{if .ReadOnly}}Staff view{{else}}Promote, demote, recruit, remove{{end}}</div></div>
     </div>
+    {{with .Activity}}
+    <div class="cmd-grid cmd-grid-activity">
+      <section class="cmd-card" aria-labelledby="cmd-duty">
+        <div class="cmd-card-head"><h2 id="cmd-duty">On duty, last 14 days</h2><span class="cmd-dim">hours as {{$.FactionName}}, current members</span></div>
+        <div class="cmd-duty">
+          <div class="cmd-duty-stats">
+            <div><strong>{{.ActiveWeek}}<small> of {{.MemberCount}}</small></strong><span>members on duty this week</span></div>
+            <div><strong>{{.WeekHours}} h</strong><span>total time on duty this week</span></div>
+            <div><strong>{{.Recruits}} &middot; {{.Promotions}} &middot; {{.Demotions}} &middot; {{.Removals}}</strong><span>recruits, promotions, demotions, removals (30 days)</span></div>
+          </div>
+          {{if .TotalMins}}
+          <div class="pd-chart">
+            <div class="pd-bars" aria-hidden="true">
+              {{range .Days}}<div class="pd-bar{{if not .Minutes}} pd-bar-none{{end}}" data-tip="{{.Label}} &middot; {{if .Minutes}}{{.Hours}}{{else}}nobody on duty{{end}}"><span style="height: {{.Pct}}%"></span></div>{{end}}
+            </div>
+            <div class="pd-axis" aria-hidden="true">{{range $i, $d := .Days}}<span>{{if eq $i 0}}{{$d.Label}}{{else if eq $i 7}}{{$d.Label}}{{else if eq $i 13}}Today{{end}}</span>{{end}}</div>
+            <table class="visually-hidden"><caption>Hours on duty per day, last 14 days</caption><thead><tr><th>Day</th><th>On duty</th></tr></thead><tbody>{{range .Days}}<tr><td>{{.Label}}</td><td>{{if .Minutes}}{{.Hours}}{{else}}none{{end}}</td></tr>{{end}}</tbody></table>
+          </div>
+          {{else}}
+          <p class="cmd-empty cmd-empty-flush">Nobody has been on duty in the last 14 days.</p>
+          {{end}}
+        </div>
+      </section>
+      <section class="cmd-card" aria-labelledby="cmd-quiet">
+        <div class="cmd-card-head"><h2 id="cmd-quiet">Gone quiet</h2><span class="cmd-dim">{{.QuietTotal}} not on duty in 14+ days</span></div>
+        {{range .Quiet}}
+        <a class="cmd-quiet-row" href="/command/{{$.Faction}}/members/{{.ID}}">
+          <span><span class="cmd-strong">{{.Name}}</span><span class="cmd-quiet-rank">{{.Rank}}</span></span>
+          <span class="cmd-dim">{{.Since}}</span>
+        </a>
+        {{else}}
+        <p class="cmd-empty">Everyone has been on duty in the last two weeks.</p>
+        {{end}}
+        {{if gt .QuietTotal (len .Quiet)}}<p class="cmd-empty">The {{len .Quiet}} quietest of {{.QuietTotal}}. The rest are on the <a href="/command/{{$.Faction}}/roster">roster</a>.</p>{{end}}
+      </section>
+    </div>
+    {{end}}
     <div class="cmd-grid">
       <section class="cmd-card" aria-labelledby="cmd-strength">
         <div class="cmd-card-head"><h2 id="cmd-strength">Strength by rank</h2><span class="cmd-dim">filled / slots</span></div>
