@@ -130,5 +130,7 @@ func (d *Deps) NotFound(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	d.Render.RenderStatus(w, http.StatusNotFound, "notfound.html", baseFrom(r, "Page not found"))
+	b := baseFrom(r, "Page not found")
+	b.NoIndex = true
+	d.Render.RenderStatus(w, http.StatusNotFound, "notfound.html", b)
 }

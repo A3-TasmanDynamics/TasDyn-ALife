@@ -5,6 +5,21 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{{if .Title}}{{.Title}} · {{end}}ALife</title>
+  <meta name="description" content="{{.MetaDescription}}" />
+  {{if or .Panel .NoIndex}}<meta name="robots" content="noindex" />{{end}}
+  {{if not (or .Panel .NoIndex)}}<link rel="canonical" href="{{siteURL}}{{.Path}}" />{{end}}
+  {{- /* Link previews (Discord, Facebook, X, iMessage ...) */}}
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="ALife" />
+  <meta property="og:title" content="{{if .Title}}{{.Title}} · {{end}}ALife" />
+  <meta property="og:description" content="{{.MetaDescription}}" />
+  <meta property="og:url" content="{{siteURL}}{{.Path}}" />
+  <meta property="og:image" content="{{siteURL}}/static/brand/alife-og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="ALife: Altis Life for Oceania" />
+  <meta property="og:locale" content="en_AU" />
+  <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" type="image/svg+xml" href="/static/brand/alife-a-tile.svg" />
   <link rel="icon" type="image/png" sizes="32x32" href="/static/brand/alife-icon-32.png" />
   <link rel="apple-touch-icon" href="/static/brand/alife-icon-180.png" />

@@ -35,7 +35,13 @@ type Renderer struct {
 // page without that collision, and any page can reference it with
 // {{template "name" .}}.
 // funcs are the small helpers templates may use -- kept deliberately few.
+// SiteURL is the site's public origin (SITE_BASE_URL, no trailing slash),
+// set once at startup, for absolute links in link-preview tags and the
+// sitemap. Read through the siteURL template func at render time.
+var SiteURL string
+
 var funcs = template.FuncMap{
+	"siteURL":   func() string { return SiteURL },
 	"inc":       func(i int) int { return i + 1 },
 	"hasPrefix": strings.HasPrefix,
 	// dict builds a map for passing several values to a partial template:

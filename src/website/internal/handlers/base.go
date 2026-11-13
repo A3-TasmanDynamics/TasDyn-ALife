@@ -69,13 +69,32 @@ type Deps struct {
 // page's own data struct so layout.html's {{.Session}}/{{.Error}}/etc.
 // always resolve regardless of which page is rendering.
 type Base struct {
-	Title     string
+	Title string
+	// Description is the page's summary for search results and link
+	// previews; empty uses the site-wide one (MetaDescription).
+	Description string
+	// NoIndex keeps the page out of search results (404s; the admin
+	// panel always is).
+	NoIndex   bool
 	Path      string // request path, for the header's active nav item
 	Panel     bool   // /admin pages: full-height sidebar, no site header (layout plan)
 	Session   *auth.Session
 	Error     string
 	Notice    string
 	CSRFToken string
+}
+
+// defaultDescription is what search engines and link previews show for
+// pages without their own Description.
+const defaultDescription = "A custom-built Altis Life server for Oceania: Civilian, Police and EMS on one economy, " +
+	"backed by a real database. No mods to download."
+
+// MetaDescription is the page's Description, or the site-wide one.
+func (b Base) MetaDescription() string {
+	if b.Description != "" {
+		return b.Description
+	}
+	return defaultDescription
 }
 
 func baseFrom(r *http.Request, title string) Base {
