@@ -13,65 +13,102 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&display=swap" />
   <link rel="stylesheet" href="/static/style.css" />
-  {{if .Panel}}<script>/* admin theme before first paint: panel.js owns the switch */(function(){try{var t=localStorage.getItem("alife.theme")||"dark";if(t==="light"||(t==="system"&&matchMedia("(prefers-color-scheme: light)").matches))document.documentElement.setAttribute("data-theme","light");}catch(e){}})();</script>{{end}}
+  <script>/* theme before first paint (Dark / Light / System); panel.js and site.js own the switch */(function(){try{var t=localStorage.getItem("alife.theme")||"dark";if(t==="light"||(t==="system"&&matchMedia("(prefers-color-scheme: light)").matches))document.documentElement.setAttribute("data-theme","light");}catch(e){}})();</script>
 </head>
-<body{{if .Panel}} class="panel-body"{{end}}>
+<body class="{{if .Panel}}panel-body{{else}}site-body{{end}}">
   {{if not .Panel}}
+  <a class="skip-link" href="#site-main">Skip to content</a>
   <header class="site-header">
-    <a class="brand" href="/">
-      <img class="brand-wordmark" src="/static/brand/alife-wordmark.svg" alt="ALife" width="63" height="34" />
+    <a class="brand" href="/" aria-label="ALife home">
+      <img class="brand-wordmark wm-dark" src="/static/brand/alife-wordmark.svg" alt="ALife" width="63" height="34" /><img class="brand-wordmark wm-light" src="/static/brand/alife-wordmark-ink.svg" alt="ALife" width="63" height="34" />
     </a>
     <nav class="site-nav-main" aria-label="Main">
       <a class="nav-pill {{if hasPrefix .Path "/dashboard"}}active{{end}}" href="/dashboard" {{if hasPrefix .Path "/dashboard"}}aria-current="page"{{end}}>Dashboard</a>
       {{if .Session}}<a class="nav-pill {{if hasPrefix .Path "/factions"}}active{{end}}" href="/factions" {{if hasPrefix .Path "/factions"}}aria-current="page"{{end}}>Factions</a>{{end}}
       {{if and .Session .Session.HasCommand}}<a class="nav-pill {{if hasPrefix .Path "/command"}}active{{end}}" href="/command" {{if hasPrefix .Path "/command"}}aria-current="page"{{end}}>Command</a>{{end}}
-      {{if and .Session (not .Session.StaffRank)}}<a class="nav-pill {{if hasPrefix .Path "/staff/apply"}}active{{end}}" href="/staff/apply" {{if hasPrefix .Path "/staff/apply"}}aria-current="page"{{end}}>Join the staff team</a>{{end}}
-      <a class="nav-pill {{if hasPrefix .Path "/rules"}}active{{end}}" href="/rules" {{if hasPrefix .Path "/rules"}}aria-current="page"{{end}}>Rules</a>
       <a class="nav-pill {{if hasPrefix .Path "/leaderboards"}}active{{end}}" href="/leaderboards" {{if hasPrefix .Path "/leaderboards"}}aria-current="page"{{end}}>Leaderboards</a>
-      <a class="nav-pill {{if hasPrefix .Path "/roster"}}active{{end}}" href="/roster/police" {{if hasPrefix .Path "/roster"}}aria-current="page"{{end}}>Police Roster</a>
-      <a class="nav-pill {{if hasPrefix .Path "/tickets"}}active{{end}}" href="/tickets" {{if hasPrefix .Path "/tickets"}}aria-current="page"{{end}}>Support</a>
+      <a class="nav-pill {{if hasPrefix .Path "/rules"}}active{{end}}" href="/rules" {{if hasPrefix .Path "/rules"}}aria-current="page"{{end}}>Rules</a>
       <a class="nav-pill {{if hasPrefix .Path "/devlog"}}active{{end}}" href="/devlog" {{if hasPrefix .Path "/devlog"}}aria-current="page"{{end}}>Devlog</a>
-      <a class="nav-pill {{if hasPrefix .Path "/status"}}active{{end}}" href="/status" {{if hasPrefix .Path "/status"}}aria-current="page"{{end}}>Status</a>
+      <a class="nav-pill {{if hasPrefix .Path "/tickets"}}active{{end}}" href="/tickets" {{if hasPrefix .Path "/tickets"}}aria-current="page"{{end}}>Support</a>
+      <details class="nav-more">
+        <summary class="nav-pill {{if or (hasPrefix .Path "/roster") (hasPrefix .Path "/status") (hasPrefix .Path "/staff/apply")}}active{{end}}">More <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>
+        <div class="menu-pop">
+          <a href="/roster/police"{{if hasPrefix .Path "/roster"}} aria-current="page"{{end}}>Police Roster</a>
+          <a href="/status"{{if hasPrefix .Path "/status"}} aria-current="page"{{end}}>Server Status</a>
+          {{if and .Session (not .Session.StaffRank)}}<a href="/staff/apply"{{if hasPrefix .Path "/staff/apply"}} aria-current="page"{{end}}>Join the staff team</a>{{end}}
+          <a href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Discord</a>
+        </div>
+      </details>
     </nav>
     <div class="site-nav">
       {{if .Session}}
         {{if or .Session.AdminPanelAccess .Session.SupportPanelAccess}}<a class="panel-link" href="/admin">Admin panel</a>{{end}}
         <a class="bell" href="/notifications" aria-label="Notifications{{if .Session.Unread}}, {{.Session.Unread}} unread{{end}}"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>{{if .Session.Unread}}<span class="bell-count">{{.Session.Unread}}</span>{{end}}</a>
-        <a class="user-chip{{if hasPrefix .Path "/profile"}} active{{end}}" href="/profile" title="Your profile">
-          <span class="user-avatar" aria-hidden="true">{{.Session.Initials}}</span>
-          <span class="user-text"><span class="user-name">{{.Session.Name}}</span><span class="user-sub">{{.Session.Subtitle}}</span></span>
-        </a>
-        <form method="post" action="/auth/logout" class="inline-form"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="link-button" type="submit">Sign out</button></form>
+        <details class="user-menu">
+          <summary class="user-chip{{if hasPrefix .Path "/profile"}} active{{end}}" aria-label="Your account">
+            <span class="user-avatar" aria-hidden="true">{{.Session.Initials}}</span>
+            <span class="user-text"><span class="user-name">{{.Session.Name}}</span><span class="user-sub">{{.Session.Subtitle}}</span></span>
+          </summary>
+          <div class="menu-pop menu-pop-right">
+            <div class="menu-head"><strong>{{.Session.Name}}</strong><span>{{.Session.Subtitle}}</span></div>
+            <a href="/profile">Your profile</a>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/notifications">Notifications{{if .Session.Unread}} ({{.Session.Unread}}){{end}}</a>
+            <a href="/tickets">Your tickets</a>
+            {{if .Session.HasCommand}}<a href="/command">Faction command</a>{{end}}
+            {{if or .Session.AdminPanelAccess .Session.SupportPanelAccess}}<a href="/admin">Admin panel</a>{{end}}
+            <div class="theme-switch" role="group" aria-label="Theme"><button type="button" data-theme-set="dark" aria-pressed="false">Dark</button><button type="button" data-theme-set="light" aria-pressed="false">Light</button><button type="button" data-theme-set="system" aria-pressed="false">System</button></div>
+            <form method="post" action="/auth/logout"><input type="hidden" name="csrf_token" value="{{.CSRFToken}}"><button class="menu-signout" type="submit">Sign out</button></form>
+          </div>
+        </details>
       {{else}}
-        <a href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Discord</a>
+        <a class="site-discord" href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Discord</a>
         <a class="steam-login" href="/auth/steam/login">Sign in with Steam</a>
       {{end}}
+      <details class="site-menu">
+        <summary class="site-menu-btn" aria-label="Menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></summary>
+        <nav class="site-drawer" aria-label="Menu">
+          <a href="/dashboard"{{if hasPrefix .Path "/dashboard"}} aria-current="page"{{end}}>Dashboard</a>
+          {{if .Session}}<a href="/factions"{{if hasPrefix .Path "/factions"}} aria-current="page"{{end}}>Factions</a>{{end}}
+          {{if and .Session .Session.HasCommand}}<a href="/command"{{if hasPrefix .Path "/command"}} aria-current="page"{{end}}>Command</a>{{end}}
+          <a href="/leaderboards"{{if hasPrefix .Path "/leaderboards"}} aria-current="page"{{end}}>Leaderboards</a>
+          <a href="/rules"{{if hasPrefix .Path "/rules"}} aria-current="page"{{end}}>Rules</a>
+          <a href="/devlog"{{if hasPrefix .Path "/devlog"}} aria-current="page"{{end}}>Devlog</a>
+          <a href="/tickets"{{if hasPrefix .Path "/tickets"}} aria-current="page"{{end}}>Support</a>
+          <a href="/roster/police"{{if hasPrefix .Path "/roster"}} aria-current="page"{{end}}>Police Roster</a>
+          <a href="/status"{{if hasPrefix .Path "/status"}} aria-current="page"{{end}}>Server Status</a>
+          {{if and .Session (not .Session.StaffRank)}}<a href="/staff/apply">Join the staff team</a>{{end}}
+          {{if .Session}}{{if or .Session.AdminPanelAccess .Session.SupportPanelAccess}}<a class="drawer-accent" href="/admin">Admin panel</a>{{end}}{{else}}<a class="drawer-accent" href="/auth/steam/login">Sign in with Steam</a>{{end}}
+        </nav>
+      </details>
     </div>
   </header>
   {{end}}
 
-  <main class="site-main{{if .Panel}} site-main-panel{{end}}">
+  <main id="site-main" tabindex="-1" class="site-main{{if .Panel}} site-main-panel{{end}}">
     {{template "essential_banner" .}}
     {{if .Panel}}
       {{if or .Error .Notice}}<div class="toast-stack" role="status">{{if .Error}}<div class="banner banner-error">{{.Error}}</div>{{end}}{{if .Notice}}<div class="banner banner-notice">{{.Notice}}</div>{{end}}</div>{{end}}
     {{else}}
-      {{if .Error}}<div class="banner banner-error">{{.Error}}</div>{{end}}
-      {{if .Notice}}<div class="banner banner-notice">{{.Notice}}</div>{{end}}
+      {{if .Error}}<div class="banner banner-error" role="alert">{{.Error}}</div>{{end}}
+      {{if .Notice}}<div class="banner banner-notice" role="status">{{.Notice}}</div>{{end}}
     {{end}}
     {{template "content" .}}
   </main>
 
   {{if not .Panel}}
   <footer class="site-footer">
-    <div>&copy; 2026 Tasman Dynamics</div>
-    <nav class="site-footer-links" aria-label="Footer">
-      <a href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Discord</a>
-      <a href="https://github.com/A3-TasmanDynamics/TasDyn-ALife" target="_blank" rel="noopener">GitHub</a>
-      <a href="/rules">Rules</a>
-      <a href="/status">Status</a>
-      <a href="/tickets">Support</a>
+    <div class="footer-brand">
+      <img class="wm-dark" src="/static/brand/alife-wordmark.svg" alt="ALife" width="56" height="30" /><img class="wm-light" src="/static/brand/alife-wordmark-ink.svg" alt="ALife" width="56" height="30" />
+      <p>A custom-built Altis Life server for Oceania. &copy; 2026 Tasman Dynamics.</p>
+    </div>
+    <nav class="footer-cols" aria-label="Footer">
+      <div><h2>Play</h2><a href="/dashboard">Dashboard</a><a href="/factions">Factions</a><a href="/leaderboards">Leaderboards</a><a href="/roster/police">Police Roster</a></div>
+      <div><h2>Community</h2><a href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Discord</a><a href="/devlog">Devlog</a><a href="/rules">Rules</a><a href="/staff/apply">Join the staff team</a></div>
+      <div><h2>Help</h2><a href="/tickets">Support</a><a href="/status">Server Status</a><a href="https://github.com/A3-TasmanDynamics/TasDyn-ALife" target="_blank" rel="noopener">GitHub</a></div>
     </nav>
   </footer>
+  <script src="/static/site.js" defer></script>
   {{end}}
   {{if and .Panel .Session}}<script src="/static/admin.js" defer></script><script src="/static/panel.js" defer></script><script src="/static/live.js" defer></script><script src="/static/triage.js" defer></script>{{if .Session.AdminPanelAccess}}<script src="/static/quicksearch.js" defer></script>{{end}}{{end}}
 </body>
