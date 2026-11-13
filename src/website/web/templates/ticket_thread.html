@@ -197,6 +197,23 @@
         </dd>
       </dl>
     </section>
+    {{range .History}}
+    <section class="card mh">
+      <h2>{{.Role}}: moderation history</h2>
+      <p class="mh-who"><a href="/admin/players?id={{.PlayerID}}">{{.Name}}</a>{{if .Clean}} <span class="mh-ok">Nothing on record</span>{{end}}</p>
+      {{if not .Clean}}
+      <ul class="mh-list">
+        {{with .Ban}}<li class="mh-bad"><strong>Banned</strong> · {{.Reason}}{{if .ExpiresAt}} · until {{.ExpiresAt.Local.Format "2 Jan 15:04"}}{{else}} · permanent{{end}}</li>{{end}}
+        {{if .ShowWatch}}{{if .Watched}}<li class="mh-watch"><strong>Watched</strong> · {{.Watched}}</li>{{end}}{{end}}
+        {{if .ShowCases}}{{if .ActivePoints}}<li class="mh-warn"><strong>{{.ActivePoints}}</strong> active punishment point{{if ne .ActivePoints 1}}s{{end}}</li>{{end}}{{end}}
+        {{if .ShowCases}}{{range .OpenCases}}<li><a href="/admin/cases/{{.ID}}">Open case #{{.ID}}</a> · {{.Summary}}</li>{{end}}{{if .ClosedCases}}<li class="muted">{{.ClosedCases}} closed case{{if ne .ClosedCases 1}}s{{end}} as the subject</li>{{end}}{{end}}
+        {{if .ShowFlags}}{{if .OpenFlags}}<li class="mh-warn"><a href="/admin/anticheat?q={{.Name}}">{{.OpenFlags}} open anti-cheat flag{{if ne .OpenFlags 1}}s{{end}}</a></li>{{end}}{{end}}
+        {{if .Kicks30}}<li>{{.Kicks30}} kick{{if ne .Kicks30 1}}s{{end}} in the last 30 days</li>{{end}}
+      </ul>
+      {{end}}
+      <p class="muted small">{{.OtherTickets}} other ticket{{if ne .OtherTickets 1}}s{{end}} · <a href="/admin/players?id={{.PlayerID}}&amp;tab=timeline">Timeline</a></p>
+    </section>
+    {{end}}
     {{end}}
   </div>
 </div>

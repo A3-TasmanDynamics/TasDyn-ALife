@@ -13,9 +13,9 @@ import (
 
 	"website/internal/auth"
 	"website/internal/cases"
-	"website/internal/replies"
 	"website/internal/discord/webhook"
 	"website/internal/notify"
+	"website/internal/replies"
 )
 
 var validPriorities = map[string]bool{"low": true, "normal": true, "high": true, "urgent": true}
@@ -201,9 +201,10 @@ type ticketThreadData struct {
 	IsStaff       bool
 	TopCategories []categoryOption // for the staff-only "edit category" form
 	Subcategories []categoryOption
-	StaffOptions  []staffOption // for the staff-only "assign to" dropdown
-	Replies       []replies.Reply // saved ticket replies (staff)
-	Report        *cases.Report   // set when this ticket is a player report (staff)
+	StaffOptions  []staffOption         // for the staff-only "assign to" dropdown
+	Replies       []replies.Reply       // saved ticket replies (staff)
+	Report        *cases.Report         // set when this ticket is a player report (staff)
+	History       []cases.PlayerContext // requester's (and reported players') moderation history (staff)
 	CanOpenCase   bool
 }
 
@@ -292,6 +293,11 @@ func (d *Deps) TicketThread(w http.ResponseWriter, r *http.Request) {
 	data := ticketThreadData{Base: baseFrom(r, t.Subject), Ticket: t, IsStaff: isStaff}
 	if isStaff {
 		data.Replies = d.savedReplies(r, "ticket")
+		perms := cases.ContextPerms{Cases: d.can(r, "cases.view"), Flags: d.can(r, "anticheat.review"), Watch: d.can(r, "players.view")}
+		var herr error
+		if data.History, herr = cases.TicketContext(r.Context(), d.Pool, t.ID, ownerID, perms); herr != nil {
+			slog.Error("ticket: player history failed", "ticket", t.ID, "error", herr)
+		}
 		if rep, ok, err := cases.GetReport(r.Context(), d.Pool, t.ID); err == nil && ok {
 			data.Report = &rep
 			data.CanOpenCase = d.can(r, "cases.lead")
