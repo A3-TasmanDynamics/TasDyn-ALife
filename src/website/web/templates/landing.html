@@ -1,78 +1,148 @@
 {{define "content"}}
-<div class="landing-wrap">
+<div class="landing-wrap lp">
 
-<section class="hero-band">
-  <div class="hero">
-    <div class="hero-eyebrow">Oceania / Australia region &middot; Pre-Alpha</div>
-    <h1>A custom-built Altis Life,<br>backed by a <span class="accent">real database</span>.</h1>
-    <p class="hero-sub">TasDyn-ALife runs on a from-scratch C++/PostgreSQL bridge instead of the usual extDB3/MySQL stack &mdash; three factions, one economy, and a server built to last.</p>
-    <div class="hero-actions">
+<section class="lp-hero">
+  <div class="lp-hero-copy">
+    <div class="hero-eyebrow">Oceania / Australia &middot; Pre-Alpha</div>
+    <h1>Altis Life, <span class="accent">built from scratch</span> for Oceania.</h1>
+    <p class="lp-sub">Three factions and one economy on a custom C++/PostgreSQL server, not the usual extDB3/MySQL stack. Your progress is kept safe, and staff help you on this website and on Discord.</p>
+    <div class="lp-actions">
       {{if not .Session}}
-        <a class="cta" href="/auth/steam/login">Sign in with Steam to get started</a>
+        <a class="cta" href="/auth/steam/login">Sign in with Steam</a>
       {{else}}
-        <a class="cta" href="/dashboard">Go to your Dashboard</a>
+        <a class="cta" href="/dashboard">Go to your dashboard</a>
       {{end}}
       <a class="cta secondary" href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Join the Discord</a>
     </div>
   </div>
-</section>
 
-<section class="stat-strip">
-  <div class="stat-strip-cell">
-    <div class="label">Players Online</div>
-    <div class="value value-green">{{.OnlineCount}}</div>
-  </div>
-  <div class="stat-strip-cell">
-    <div class="label">Registered Players</div>
-    <div class="value">{{.RegisteredCount}}</div>
-  </div>
-  <div class="stat-strip-cell">
-    <div class="label">Factions Live</div>
-    <div class="value">3</div>
-  </div>
-  <a class="stat-strip-cell stat-link" href="/status">
-    <div class="label">Server Status</div>
-    {{if eq .ServerState "up"}}<div class="value value-text value-green">&#9679; Online</div>
-    {{else if eq .ServerState "down"}}<div class="value value-text value-red">&#9679; Offline</div>
-    {{else}}<div class="value value-text value-dim">Not monitored yet</div>{{end}}
+  <a class="lp-live" href="/status" aria-label="Server status">
+    <div class="lp-live-head">
+      {{if eq .ServerState "up"}}<span class="lp-state lp-state-up"><span class="lp-dot" aria-hidden="true"></span>Server online</span>
+      {{else if eq .ServerState "down"}}<span class="lp-state lp-state-down"><span class="lp-dot" aria-hidden="true"></span>Server offline</span>
+      {{else}}<span class="lp-state"><span class="lp-dot" aria-hidden="true"></span>Status not monitored yet</span>{{end}}
+      <span class="lp-live-more">Status &rarr;</span>
+    </div>
+    <div class="lp-live-count"><strong>{{.OnlineCount}}</strong><span>{{if eq .OnlineCount 1}}player{{else}}players{{end}} online now</span></div>
+    <ul class="lp-split" aria-label="Online by faction">
+      <li class="f-civ"><span class="lp-swatch" aria-hidden="true"></span>Civilian <strong>{{.OnlineCiv}}</strong></li>
+      <li class="f-cop"><span class="lp-swatch" aria-hidden="true"></span>Police <strong>{{.OnlineCop}}</strong></li>
+      <li class="f-medic"><span class="lp-swatch" aria-hidden="true"></span>Medic <strong>{{.OnlineMedic}}</strong></li>
+    </ul>
+    <div class="lp-live-foot">
+      <div><strong>{{.ActiveWeek}}</strong><span>played this week</span></div>
+      <div><strong>{{.RegisteredCount}}</strong><span>registered</span></div>
+    </div>
   </a>
 </section>
 
-<section class="feature-section">
-  <h2 class="section-title">Three factions, one economy</h2>
-  <p class="section-sub">Pick a side the moment you connect &mdash; no menus, no waiting.</p>
-  <div class="feature-grid">
-    <div class="feature-card">
-      <div class="feature-icon feature-icon-civ">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+<section class="lp-section" aria-labelledby="lp-join">
+  <div class="lp-head">
+    <h2 id="lp-join">How to join</h2>
+    <p>From nothing to on the island in four steps.</p>
+  </div>
+  <ol class="lp-steps">
+    <li class="lp-step{{if .Session}} lp-step-done{{end}}">
+      <span class="lp-step-n" aria-hidden="true">{{if .Session}}&#10003;{{else}}1{{end}}</span>
+      <h3>Sign in with Steam</h3>
+      <p>You need Arma 3 on Steam. Signing in creates your account here, where you'll find your stats, tickets and faction applications.</p>
+      {{if .Session}}<span class="lp-step-ok">Signed in as {{.Session.Name}}</span>{{else}}<a class="lp-link" href="/auth/steam/login">Sign in &rarr;</a>{{end}}
+    </li>
+    <li class="lp-step">
+      <span class="lp-step-n" aria-hidden="true">2</span>
+      <h3>Join Discord and TeamSpeak</h3>
+      <p>Discord has the connect address, the TeamSpeak address and announcements. Link both on your profile so your roles follow you.</p>
+      <a class="lp-link" href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Open Discord &rarr;</a>
+    </li>
+    <li class="lp-step">
+      <span class="lp-step-n" aria-hidden="true">3</span>
+      <h3>Read the rules</h3>
+      <p>They're short. Knowing them keeps your roleplay fun for everyone and keeps you out of a support ticket.</p>
+      <a class="lp-link" href="/rules">Server rules &rarr;</a>
+    </li>
+    <li class="lp-step">
+      <span class="lp-step-n" aria-hidden="true">4</span>
+      <h3>Connect and pick a side</h3>
+      <p>Join from the Arma 3 launcher. Civilian is open to everyone; Police and Medic are whitelisted, so apply here.</p>
+      <a class="lp-link" href="{{if .Session}}/factions{{else}}/auth/steam/login{{end}}">Faction applications &rarr;</a>
+    </li>
+  </ol>
+</section>
+
+<section class="lp-section" aria-labelledby="lp-factions">
+  <div class="lp-head">
+    <h2 id="lp-factions">Three factions, one economy</h2>
+    <p>Every dollar, arrest and revive lands in the same world.</p>
+  </div>
+  <div class="lp-factions">
+    <article class="lp-faction f-civ">
+      <div class="lp-faction-top">
+        <div class="feature-icon feature-icon-civ"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>
+        <span class="lp-chip">{{.OnlineCiv}} online</span>
       </div>
       <h3>Civilian</h3>
-      <p>Work legal jobs, build a bank balance, and decide whether the rebel life is worth the risk.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon feature-icon-cop">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V5z"/></svg>
+      <p>Open to everyone from your first login.</p>
+      <ul>
+        <li>Legal jobs, licences and a bank balance</li>
+        <li>Vehicles, houses and gangs</li>
+        <li>The rebel life, if you think it's worth the risk</li>
+      </ul>
+    </article>
+    <article class="lp-faction f-cop">
+      <div class="lp-faction-top">
+        <div class="feature-icon feature-icon-cop"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V5z"/></svg></div>
+        <span class="lp-chip">{{.OnlineCop}} online</span>
       </div>
       <h3>Police</h3>
-      <p>Arrest, impound, and patrol &mdash; a whitelist and rank structure keep the badge meaningful.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon feature-icon-medic">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+      <p>Whitelisted, with ranks and divisions.</p>
+      <ul>
+        <li>Patrols, arrests, tickets and impounds</li>
+        <li>A wanted list shared with the whole force</li>
+        <li>Training and promotions run by faction command</li>
+      </ul>
+      <a class="lp-link" href="/roster/police">Police roster &rarr;</a>
+    </article>
+    <article class="lp-faction f-medic">
+      <div class="lp-faction-top">
+        <div class="feature-icon feature-icon-medic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></div>
+        <span class="lp-chip">{{.OnlineMedic}} online</span>
       </div>
       <h3>Medic</h3>
-      <p>Revive the fallen and keep the city running &mdash; no faction survives long without you.</p>
-    </div>
+      <p>Whitelisted. Nobody gets far without you.</p>
+      <ul>
+        <li>Revive the fallen and treat the injured</li>
+        <li>Answer calls anywhere on Altis</li>
+        <li>Ranks and training like the police</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section class="lp-section lp-pillars" aria-label="Why ALife">
+  <div class="lp-pillar">
+    <h3>Your progress is safe</h3>
+    <p>Every bank transfer is a recorded transaction in PostgreSQL. Nothing gets lost when the server restarts.</p>
+  </div>
+  <div class="lp-pillar">
+    <h3>Staff you can reach</h3>
+    <p>Open a ticket here or on Discord. Reports become proper cases, and you hear back when they're closed.</p>
+  </div>
+  <div class="lp-pillar">
+    <h3>Built in the open</h3>
+    <p>The devlog covers what's changing, and the server status page shows real uptime.</p>
   </div>
 </section>
 
 {{if .LatestPosts}}
-<section class="feature-section">
-  <div class="page-header-row">
-    <h2 class="section-title" style="margin:0;">From the Devlog</h2>
-    <a class="hint" href="/devlog">View all &rarr;</a>
+<section class="lp-section" aria-labelledby="lp-devlog">
+  <div class="lp-head lp-head-row">
+    <div>
+      <h2 id="lp-devlog">From the devlog</h2>
+      <p>What's new on the server.</p>
+    </div>
+    <a class="lp-link" href="/devlog">All posts &rarr;</a>
   </div>
-  <div class="devlog-list devlog-list-teaser">
+  <div class="lp-posts">
     {{range .LatestPosts}}
     <a class="devlog-card" href="/devlog/{{.Slug}}">
       <div class="devlog-card-date">{{.PublishedAt}}</div>
@@ -85,12 +155,15 @@
 </section>
 {{end}}
 
-<section class="connect-band">
+<section class="connect-band lp-final">
   <div>
-    <h2>Ready to connect?</h2>
-    <p>Join our Discord for the connect IP, rules, and whitelist process.</p>
+    <h2>{{if .Session}}See you on Altis.{{else}}Ready to play?{{end}}</h2>
+    <p>{{if .Session}}Get the connect address from Discord, then join from the Arma 3 launcher.{{else}}Sign in with Steam, then get the connect address from Discord.{{end}}</p>
   </div>
-  <a class="cta secondary" href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Join the Discord</a>
+  <div class="lp-actions">
+    {{if not .Session}}<a class="cta" href="/auth/steam/login">Sign in with Steam</a>{{end}}
+    <a class="cta secondary" href="https://discord.gg/Wt4ahmxVrs" target="_blank" rel="noopener">Join the Discord</a>
+  </div>
 </section>
 
 </div>
