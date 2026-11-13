@@ -3560,3 +3560,48 @@ a.lrow:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
   .pd-event-when { grid-column: 2 / -1; text-align: left; min-width: 0; margin-top: -8px; }
   .pd-alerts { grid-template-columns: 1fr; }
 }
+
+/* ---------- Faction command refresh ---------- */
+.cmd-fac-police { --fac: var(--blue-text); }
+.cmd-fac-ems { --fac: var(--red-text); }
+/* The menu: always open beside the page on wide screens (sticky below the
+   site header, scrolling on its own when taller than the window); a
+   "Menu" bar that opens it on tablets and phones (site.js closes it there). */
+.cmd-menu { position: sticky; top: 84px; max-height: calc(100vh - 100px); overflow-y: auto; scrollbar-width: thin; min-width: 0; }
+.cmd-menu > .cmd-nav { position: static; }
+.cmd-menu-btn { display: none; }
+.cmd-head { padding: 18px 22px; background: var(--bg-elevated); border: 1px solid var(--border); border-left: 4px solid var(--fac, var(--amber)); border-radius: 14px; align-items: center; flex-wrap: wrap; }
+.cmd-head h1 { font-size: 24px; }
+.cmd-head > div:first-child { flex: 1; min-width: 220px; }
+.cmd-tile { border-top: 2px solid color-mix(in srgb, var(--fac, var(--border)) 55%, var(--border)); }
+.cmd-card-head { background: color-mix(in srgb, var(--bg-input) 45%, transparent); }
+.cmd-bar-fill { background: #3987e5; }
+:root[data-theme="light"] .cmd-bar-fill { background: #2a78d6; }
+.cmd-bar-full { background: var(--amber); }
+
+@media (max-width: 1000px) {
+  .cmd-shell { gap: 16px; }
+  .cmd-menu { position: static; max-height: none; overflow: visible; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px; }
+  .cmd-menu[open] { padding-bottom: 12px; }
+  .cmd-menu-btn { display: flex; align-items: center; gap: 12px; padding: 10px 14px; cursor: pointer; list-style: none; }
+  .cmd-menu-btn::-webkit-details-marker { display: none; }
+  .cmd-menu-btn .cmd-nav-badge { width: 30px; height: 30px; }
+  .cmd-menu-text { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; flex: 1; }
+  .cmd-menu-faction { font-size: 12px; color: var(--text-dim); }
+  .cmd-menu-here { font-weight: 700; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cmd-menu-label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); color: var(--text-2); }
+  .cmd-menu-label::after { content: ""; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform 0.15s ease; }
+  .cmd-menu[open] .cmd-menu-label::after { transform: translateY(1px) rotate(225deg); }
+  .cmd-menu[open] > .cmd-menu-btn { border-bottom: 1px solid var(--border-soft); margin-bottom: 8px; }
+  .cmd-menu > .cmd-nav { padding: 0 10px; }
+  .cmd-menu .cmd-nav-head { display: none; }
+}
+@media (max-width: 720px) {
+  .site-main:has(.cmd-shell) { padding: 16px 16px 40px; }
+  .cmd-head { padding: 14px 16px; }
+  .cmd-head h1 { font-size: 21px; }
+  .cmd-head .btn { margin-left: 0; }
+  .cmd-recent-row { grid-template-columns: 56px minmax(0, 1fr); }
+  .cmd-recent-row > :nth-child(n+3) { grid-column: 2; }
+  .cmd-strength-row { grid-template-columns: 80px minmax(0, 1fr) 48px; padding: 8px 16px; }
+}

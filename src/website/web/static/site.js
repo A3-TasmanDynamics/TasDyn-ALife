@@ -25,6 +25,19 @@
     }
   });
 
+  // Faction command's section menu: open beside the page on wide screens,
+  // a closed "Menu" bar on tablets and phones (without JavaScript it just
+  // stays open). Only re-synced when the width crosses the breakpoint, so
+  // opening it on a phone sticks.
+  var cmdMenu = document.querySelector(".cmd-menu");
+  var narrow = window.matchMedia ? matchMedia("(max-width: 1000px)") : null;
+  if (cmdMenu && narrow) {
+    var syncMenu = function () { cmdMenu.open = !narrow.matches; };
+    syncMenu();
+    if (narrow.addEventListener) narrow.addEventListener("change", syncMenu);
+    cmdMenu.addEventListener("toggle", function () { if (!narrow.matches && !cmdMenu.open) cmdMenu.open = true; });
+  }
+
   var KEY = "alife.theme";
   var media = window.matchMedia ? matchMedia("(prefers-color-scheme: light)") : null;
   function theme() { try { return localStorage.getItem(KEY) || "dark"; } catch (e) { return "dark"; } }

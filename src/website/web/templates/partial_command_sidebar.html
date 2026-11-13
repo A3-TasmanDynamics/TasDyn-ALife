@@ -1,4 +1,10 @@
 {{define "command_sidebar"}}
+<details class="cmd-menu" open>
+  <summary class="cmd-menu-btn">
+    <span class="cmd-nav-badge cmd-nav-badge-{{.Faction}}" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{{if eq .Faction "ems"}}<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>{{else}}<path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/>{{end}}</svg></span>
+    <span class="cmd-menu-text"><span class="cmd-menu-faction">{{.FactionName}} command</span><span class="cmd-menu-here">{{template "command_here" .}}</span></span>
+    <span class="cmd-menu-label">Menu</span>
+  </summary>
 <nav class="cmd-nav" aria-label="Command sections">
   <div class="cmd-nav-head">
     <span class="cmd-nav-badge cmd-nav-badge-{{.Faction}}" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{{if eq .Faction "ems"}}<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>{{else}}<path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/>{{end}}</svg></span>
@@ -48,4 +54,8 @@
     {{else}}{{if .AuthorityTo}}You can recruit, promote, demote and remove members up to <strong>{{.AuthorityTo}}</strong>, and{{else}}Your rank can't change ranks, but you can{{end}} discipline, train and post anyone ranked below you.{{if .Command.Cabinet}} As <strong>cabinet</strong> you can overwrite everything: act on anyone but yourself, change Command and Cabinet ranks, appoint to Administration, review any division's applications, lift blacklists early and blacklist permanently.{{else}} You also maintain this panel.{{end}}{{if and .Command.Admin (not .Command.Cabinet)}} You're in Administration{{if .Command.AdminCommander}} as its Commander, so you can appoint to it{{end}}.{{end}} Never yourself.{{end}}
   </div>
 </nav>
+</details>
 {{end}}
+
+{{/* The current section's name, for the phone menu button. */}}
+{{define "command_here"}}{{if eq .Tab "overview"}}Overview{{else if eq .Tab "roster"}}Roster{{else if eq .Tab "divisions"}}Divisions &amp; quals{{else if eq .Tab "ranks"}}Ranks &amp; gear{{else if eq .Tab "drive"}}Drive{{else if eq .Tab "recruits"}}Recruits &amp; training{{else if eq .Tab "discipline"}}Discipline{{else if eq .Tab "log"}}Command log{{else}}{{$t := .Tab}}{{range .NavDivisions}}{{if eq $t (printf "div-%s" .Key)}}{{.Name}}{{end}}{{end}}{{end}}{{end}}
