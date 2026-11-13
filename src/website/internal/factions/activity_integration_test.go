@@ -34,7 +34,9 @@ func TestLoadActivity(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	t.Cleanup(func() { pool.Exec(ctx, `DELETE FROM players WHERE id IN ($1, $2, $3, $4)`, busy, quiet, never, outsider) })
+	t.Cleanup(func() {
+		pool.Exec(ctx, `DELETE FROM players WHERE id IN ($1, $2, $3, $4)`, busy, quiet, never, outsider)
+	})
 
 	// Busy: 2 h as cop two days ago (local noon), plus 1 h as civ (not
 	// duty). Quiet: last cop session 20 days ago. Outsider: cop session but
