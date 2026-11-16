@@ -1,5 +1,9 @@
 # Roadmap
 
+> **For what's actually built today, see [FEATURES.md](FEATURES.md)** (finished, in progress,
+> ideas; mirrored on the Admin panel's project board). This roadmap is the original phase plan
+> and is behind on what's been built.
+
 **Revised target: public launch by 2027-03-03 (~23 weeks from project start on 2026-09-25).**
 
 > **This date has moved twice.** First from the original 2026-12-26 to 2027-01-20, when the

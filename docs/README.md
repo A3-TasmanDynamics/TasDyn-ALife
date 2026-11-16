@@ -4,6 +4,7 @@ Design docs and architecture decisions.
 
 | Doc | What's in it |
 |---|---|
+| [FEATURES.md](FEATURES.md) | What's finished, in progress, and on the idea list (mirrors the Admin project board) |
 | [ROADMAP.md](ROADMAP.md) | Phased plan and timeline toward public launch |
 | [ANTI_CHEAT.md](ANTI_CHEAT.md) | Threat model, defense layers, and what's explicitly out of scope |
 | [ADMIN_TOOLS.md](ADMIN_TOOLS.md) | In-game staff menu spec and the DB-backed staff rank system |
